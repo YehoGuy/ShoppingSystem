@@ -1,23 +1,14 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36" version="26.1.1">
   <diagram name="Page-1" id="8HRJrcS29TYRg6Msltps">
-    <mxGraphModel dx="1134" dy="589" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="662" dy="343" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         <mxCell id="gs_GF27UnKnZ3PShAzLE-2" value="" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="20" y="20" width="680" height="500" as="geometry" />
+          <mxGeometry x="20" y="90" width="680" height="400" as="geometry" />
         </mxCell>
         <mxCell id="gs_GF27UnKnZ3PShAzLE-3" value="User" style="html=1;whiteSpace=wrap;" vertex="1" parent="1">
-          <mxGeometry x="100" y="140" width="110" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="gs_GF27UnKnZ3PShAzLE-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="gs_GF27UnKnZ3PShAzLE-9" target="gs_GF27UnKnZ3PShAzLE-63">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="359" y="490" />
-              <mxPoint x="720" y="490" />
-              <mxPoint x="720" y="380" />
-            </Array>
-          </mxGeometry>
+          <mxGeometry x="220" y="160" width="110" height="50" as="geometry" />
         </mxCell>
         <mxCell id="gs_GF27UnKnZ3PShAzLE-9" value="Shop" style="html=1;whiteSpace=wrap;" vertex="1" parent="1">
           <mxGeometry x="304" y="410" width="110" height="50" as="geometry" />
@@ -32,7 +23,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="gs_GF27UnKnZ3PShAzLE-10" value="Basket" style="html=1;whiteSpace=wrap;" vertex="1" parent="1">
-          <mxGeometry x="480" y="140" width="110" height="50" as="geometry" />
+          <mxGeometry x="480" y="185" width="110" height="50" as="geometry" />
         </mxCell>
         <mxCell id="gs_GF27UnKnZ3PShAzLE-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=none;startFill=0;" edge="1" parent="1" source="gs_GF27UnKnZ3PShAzLE-14" target="gs_GF27UnKnZ3PShAzLE-51">
           <mxGeometry relative="1" as="geometry" />
@@ -48,20 +39,16 @@
         <mxCell id="gs_GF27UnKnZ3PShAzLE-14" value="Item" style="html=1;whiteSpace=wrap;" vertex="1" parent="1">
           <mxGeometry x="181" y="338" width="110" height="50" as="geometry" />
         </mxCell>
-        <mxCell id="gs_GF27UnKnZ3PShAzLE-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;endArrow=none;startFill=0;" edge="1" parent="1" source="gs_GF27UnKnZ3PShAzLE-21" target="gs_GF27UnKnZ3PShAzLE-3">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="gs_GF27UnKnZ3PShAzLE-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=none;startFill=0;" edge="1" parent="1" source="gs_GF27UnKnZ3PShAzLE-21" target="gs_GF27UnKnZ3PShAzLE-10">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="gs_GF27UnKnZ3PShAzLE-21" value="ShoppingCart" style="html=1;whiteSpace=wrap;" vertex="1" parent="1">
-          <mxGeometry x="310" y="140" width="110" height="50" as="geometry" />
+        <mxCell id="gs_GF27UnKnZ3PShAzLE-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;endArrow=none;startFill=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="gs_GF27UnKnZ3PShAzLE-10" target="gs_GF27UnKnZ3PShAzLE-3">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="310" y="165" as="sourcePoint" />
+          </mxGeometry>
         </mxCell>
         <mxCell id="gs_GF27UnKnZ3PShAzLE-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.75;entryY=1;entryDx=0;entryDy=0;endArrow=none;startFill=0;" edge="1" parent="1" source="gs_GF27UnKnZ3PShAzLE-25" target="gs_GF27UnKnZ3PShAzLE-10">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="gs_GF27UnKnZ3PShAzLE-25" value="&amp;lt;&amp;lt;Interface&amp;gt;&amp;gt;&lt;div&gt;PaymentMethod&lt;/div&gt;" style="html=1;whiteSpace=wrap;" vertex="1" parent="1">
-          <mxGeometry x="545" y="235" width="110" height="50" as="geometry" />
+          <mxGeometry x="548" y="280" width="110" height="50" as="geometry" />
         </mxCell>
         <mxCell id="gs_GF27UnKnZ3PShAzLE-26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.75;entryY=0;entryDx=0;entryDy=0;endArrow=none;startFill=0;" edge="1" parent="1" source="gs_GF27UnKnZ3PShAzLE-29" target="gs_GF27UnKnZ3PShAzLE-10">
           <mxGeometry relative="1" as="geometry">
@@ -72,19 +59,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="gs_GF27UnKnZ3PShAzLE-29" value="&amp;lt;&amp;lt;Interface&amp;gt;&amp;gt;&lt;div&gt;ShippingMethod&lt;/div&gt;" style="html=1;whiteSpace=wrap;" vertex="1" parent="1">
-          <mxGeometry x="545" y="50" width="110" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="gs_GF27UnKnZ3PShAzLE-44" value="ShippingProviderAPI" style="html=1;verticalLabelPosition=bottom;align=center;labelBackgroundColor=#ffffff;verticalAlign=top;strokeWidth=2;strokeColor=#0080F0;shadow=0;dashed=0;shape=mxgraph.ios7.icons.cloud;" vertex="1" parent="1">
-          <mxGeometry x="740" y="80" width="90" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="gs_GF27UnKnZ3PShAzLE-45" value="paymentProviderAPI" style="html=1;verticalLabelPosition=bottom;align=center;labelBackgroundColor=#ffffff;verticalAlign=top;strokeWidth=2;strokeColor=#0080F0;shadow=0;dashed=0;shape=mxgraph.ios7.icons.cloud;" vertex="1" parent="1">
-          <mxGeometry x="740" y="200" width="90" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="gs_GF27UnKnZ3PShAzLE-46" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.065;entryY=0.55;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="gs_GF27UnKnZ3PShAzLE-25" target="gs_GF27UnKnZ3PShAzLE-45">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="gs_GF27UnKnZ3PShAzLE-47" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.004;entryY=0.754;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="gs_GF27UnKnZ3PShAzLE-29" target="gs_GF27UnKnZ3PShAzLE-44">
-          <mxGeometry relative="1" as="geometry" />
+          <mxGeometry x="510" y="110" width="110" height="50" as="geometry" />
         </mxCell>
         <mxCell id="gs_GF27UnKnZ3PShAzLE-51" value="ItemReview" style="html=1;whiteSpace=wrap;" vertex="1" parent="1">
           <mxGeometry x="425" y="338" width="110" height="50" as="geometry" />
@@ -98,14 +73,14 @@
             <mxPoint x="548" y="434.29" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="gs_GF27UnKnZ3PShAzLE-64" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;endArrow=none;startFill=0;" edge="1" parent="1" source="gs_GF27UnKnZ3PShAzLE-56" target="gs_GF27UnKnZ3PShAzLE-3">
+        <mxCell id="gs_GF27UnKnZ3PShAzLE-64" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=none;startFill=0;" edge="1" parent="1" source="gs_GF27UnKnZ3PShAzLE-56" target="gs_GF27UnKnZ3PShAzLE-3">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="gs_GF27UnKnZ3PShAzLE-56" value="Message" style="html=1;whiteSpace=wrap;" vertex="1" parent="1">
-          <mxGeometry x="220" y="240" width="110" height="50" as="geometry" />
+          <mxGeometry x="60" y="160" width="110" height="50" as="geometry" />
         </mxCell>
         <mxCell id="gs_GF27UnKnZ3PShAzLE-57" value="" style="shape=note2;boundedLbl=1;whiteSpace=wrap;html=1;size=25;verticalAlign=top;align=left;spacingLeft=5;whiteSpace=wrap;" vertex="1" parent="1">
-          <mxGeometry x="50" y="235" width="160" height="60" as="geometry" />
+          <mxGeometry x="50" y="230" width="160" height="60" as="geometry" />
         </mxCell>
         <mxCell id="gs_GF27UnKnZ3PShAzLE-58" value="notification is a message that was sent from the system" style="resizeWidth=1;part=1;html=1;strokeColor=none;fillColor=none;align=left;spacingLeft=5;whiteSpace=wrap;" vertex="1" parent="gs_GF27UnKnZ3PShAzLE-57">
           <mxGeometry width="130" height="60" relative="1" as="geometry" />
@@ -115,9 +90,6 @@
         </mxCell>
         <mxCell id="gs_GF27UnKnZ3PShAzLE-62" value="Bid" style="html=1;whiteSpace=wrap;" vertex="1" parent="1">
           <mxGeometry x="60" y="410" width="110" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="gs_GF27UnKnZ3PShAzLE-63" value="ConstraintHandler" style="html=1;verticalLabelPosition=bottom;align=center;labelBackgroundColor=#ffffff;verticalAlign=top;strokeWidth=2;strokeColor=#0080F0;shadow=0;dashed=0;shape=mxgraph.ios7.icons.cloud;" vertex="1" parent="1">
-          <mxGeometry x="740" y="350" width="90" height="60" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36" version="26.1.1">
   <diagram name="Page-1" id="7QO93HXw_c3ERf3M77N_">
-    <mxGraphModel dx="1985" dy="1030" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="662" dy="343" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -24,15 +24,6 @@
         </mxCell>
         <mxCell id="uwUr2cUdtDy3B9ZlAmyg-5" value="Member" style="html=1;whiteSpace=wrap;" vertex="1" parent="1">
           <mxGeometry x="165" y="250" width="110" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="uwUr2cUdtDy3B9ZlAmyg-97" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="uwUr2cUdtDy3B9ZlAmyg-9" target="uwUr2cUdtDy3B9ZlAmyg-96">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="359" y="490" />
-              <mxPoint x="720" y="490" />
-              <mxPoint x="720" y="380" />
-            </Array>
-          </mxGeometry>
         </mxCell>
         <mxCell id="uwUr2cUdtDy3B9ZlAmyg-9" value="Shop" style="html=1;whiteSpace=wrap;" vertex="1" parent="1">
           <mxGeometry x="304" y="410" width="110" height="50" as="geometry" />
@@ -231,9 +222,6 @@
         </mxCell>
         <mxCell id="uwUr2cUdtDy3B9ZlAmyg-92" value="Bid" style="html=1;whiteSpace=wrap;" vertex="1" parent="1">
           <mxGeometry x="60" y="410" width="110" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="uwUr2cUdtDy3B9ZlAmyg-96" value="ConstraintHandler" style="html=1;verticalLabelPosition=bottom;align=center;labelBackgroundColor=#ffffff;verticalAlign=top;strokeWidth=2;strokeColor=#0080F0;shadow=0;dashed=0;shape=mxgraph.ios7.icons.cloud;" vertex="1" parent="1">
-          <mxGeometry x="740" y="350" width="90" height="60" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
