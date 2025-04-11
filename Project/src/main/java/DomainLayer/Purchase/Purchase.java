@@ -6,12 +6,13 @@ import java.util.Map;
 
 public class Purchase {
 
-    protected int userId;                           // initiating user ID
-    protected int storeId;                         // store ID
-    protected HashMap<Integer, Integer> items;    // itemId -> quantity
-    protected Address shippingAddress;           // shipping address
-    protected boolean isCompleted;              // purchase status   
-    protected LocalDateTime timeOfCompletion;  // time of purchase completion
+    protected final int purchaseId;                     // purchase ID
+    protected final int userId;                        // initiating user ID
+    protected final int storeId;                      // store ID
+    protected final HashMap<Integer, Integer> items; // itemId -> quantity
+    protected Address shippingAddress;              // shipping address
+    protected boolean isCompleted;                 // purchase status   
+    protected LocalDateTime timeOfCompletion;     // time of purchase completion
       
 
     /**
@@ -21,7 +22,8 @@ public class Purchase {
      * @param storeId the ID of the store where the purchase is made.
      * @param items a map of item IDs to their quantities.
      */
-    public Purchase(int userId, int storeId, Map<Integer, Integer> items, Address shippingAddress) {
+    public Purchase(int purchaseId, int userId, int storeId, Map<Integer, Integer> items, Address shippingAddress) {
+        this.purchaseId = purchaseId;
         this.userId = userId;
         this.storeId = storeId;
         this.items = new HashMap<>(items);
@@ -37,12 +39,22 @@ public class Purchase {
      * @param userId the ID of the user initiating the purchase.
      * @param storeId the ID of the store where the purchase is made.
      */
-    public Purchase(int userId, int storeId, Address shippingAddress) {
+    public Purchase(int purchaseId, int userId, int storeId, Address shippingAddress) {
+        this.purchaseId = purchaseId;
         this.userId = userId;
         this.storeId = storeId;
         this.items = new HashMap<>();
         this.shippingAddress = shippingAddress;
         this.isCompleted = false;
+    }
+
+    /**
+     * Returns the ID of the purchase.
+     * 
+     * @return the purchase ID.
+     */
+    public int getPurchaseId() {
+        return purchaseId;
     }
 
     /**

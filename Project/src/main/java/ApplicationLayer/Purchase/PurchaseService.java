@@ -1,4 +1,4 @@
-package ServiceLayer.Purchase;
+package ApplicationLayer.Purchase;
 
 public class PurchaseService {
     // This class will handle the purchase logic
