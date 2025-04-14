@@ -1,0 +1,11 @@
+public abstract class User {
+    final private ShoppingCart shoppingCart; // Shopping cart associated with the user
+
+    public User(int cartId) {
+        this.shoppingCart = new ShoppingCart(cartId); // Initialize the shopping cart
+    }
+
+    public ShoppingCart getShoppingCart() {
+        return shoppingCart; // Return the user's shopping cart
+    }
+}
