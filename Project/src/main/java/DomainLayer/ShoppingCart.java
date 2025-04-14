@@ -2,16 +2,10 @@ import java.util.Dictionary;
 import java.util.Hashtable;
 
 public class ShoppingCart {
-    final private int cartId;
     final private Dictionary<Integer, Dictionary<Integer,Integer>> items; // shopID, (productID, quantity)
     
-    public ShoppingCart(int cartId) {
-        this.cartId = cartId;
+    public ShoppingCart() {
         this.items = new Hashtable<>();
-    }
-    
-    public int getCartId() {
-        return cartId;
     }
 
     public void clearCart() {
