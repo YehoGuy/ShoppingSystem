@@ -13,8 +13,7 @@ public class Member extends User {
     private String address; // Address of the user
     private List<Role> roles; // List of roles associated with the user
     
-    public Member(int cartId, int memberId, String username, String password, String email, String phoneNumber, String address) {
-        super(cartId); // Call the constructor of the User class
+    public Member(int memberId, String username, String password, String email, String phoneNumber, String address) {
         this.memberId = memberId; // Initialize member ID
         this.username = username; // Initialize username
         this.password = password; // Initialize password
