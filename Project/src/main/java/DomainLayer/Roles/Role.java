@@ -1,4 +1,3 @@
-import java.util.ArrayList;
 /**
  * Interface representing a Role in the system.
  * A role is associated with a shop and an assignee, and it has a set of permissions.
@@ -17,7 +16,7 @@ public interface Role {
     /**
      * The permissions associated with the role.
      */
-    private ArrayList<Integer> permissions;
+    private List<Integer> permissions;
 
     /**
      * Adds a permission to the role.
