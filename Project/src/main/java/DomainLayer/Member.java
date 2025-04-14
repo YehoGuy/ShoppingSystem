@@ -1,7 +1,7 @@
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.management.relation.Role;
+import DomainLayer.User;
+import DomainLayer.Role;
 
 public class Member extends User {
     final private int memberId;
