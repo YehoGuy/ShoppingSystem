@@ -1,4 +1,4 @@
-package main.java.DomainLayer;
+package DomainLayer;
 
 import java.util.List;
 import java.util.Map;
@@ -18,26 +18,30 @@ public interface IUserRepository {
     public User getUserById(int id);
 
     /**
-     * Retrieves a user by their user object.
-     * 
-     * @param user The user object to search for.
-     * @return The user matching the given user object, or null if not found.
+     * Adds a new guest user to the repository.
      */
-    public User getUser(User user);
+    public void addGuest();
 
     /**
-     * Adds a new user to the repository.
-     * 
-     * @param user The user to be added.
+     * Adds a new member user to the repository.
+     * @param username The username of the member.
+     * @param password The password of the member.
+     * @param email The email address of the member.
+     * @param phoneNumber The phone number of the member.
+     * @param address The address of the member.
      */
-    public void addUser(User user);
+    public void addMember(String username, String password, String email, String phoneNumber, String address);
 
     /**
-     * Updates the details of an existing user in the repository.
-     * 
-     * @param user The user with updated information.
+     * Updates the details of an existing member.
+     * @param id The unique identifier of the member to be updated.
+     * @param username The new username of the member.
+     * @param password The new password of the member.
+     * @param email The new email address of the member.
+     * @param phoneNumber The new phone number of the member.
+     * @param address The new address of the member.
      */
-    public void updateUser(User user);
+    public void updateMember(int id, String username, String password, String email, String phoneNumber, String address);
 
     /**
      * Removes a user from the repository by their unique ID.
@@ -45,13 +49,6 @@ public interface IUserRepository {
      * @param id The unique identifier of the user to be removed.
      */
     public void removeUserById(int id);
-
-    /**
-     * Removes a user from the repository using their user object.
-     * 
-     * @param user The user object to be removed.
-     */
-    public void removeUserByUserObject(User user);
 
     /**
      * Retrieves a mapping of user IDs to user objects.
@@ -73,6 +70,20 @@ public interface IUserRepository {
      * @return A list containing all user IDs.
      */
     public List<Integer> getUsersIdsList();
+
+    /**
+     * Retrieves a list of all guest users in the repository.
+     * 
+     * @return A list containing all guest user objects.
+     */
+    public List<Guest> getGuestsList();
+
+    /**
+     * Retrieves a list of all member users in the repository.
+     * 
+     * @return A list containing all member user objects.
+     */
+    public List<Member> getMembersList();
 
     /**
      * Clears all user data from the repository.
