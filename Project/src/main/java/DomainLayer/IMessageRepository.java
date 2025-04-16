@@ -1,12 +1,13 @@
+package DomainLayer;
+
 import java.util.List;
-import DomainLayer.Message;
 
 public interface IMessageRepository{
     /**
      * Adds a message to the repository.
      * @param message The message to add.
      */
-    void addMessage(Message message);
+    void addMessage(int senderId, int receiverId, String content, String timestamp, boolean userToUser);
 
     /**
      * Gets all messages from the repository.
@@ -31,7 +32,7 @@ public interface IMessageRepository{
      * Updates a message in the repository.
      * @param message The message to update.
      */
-    void updateMessage(Message message);
+    void updateMessage(int id, int senderId, int receiverId, String content, String timestamp, boolean userToUser);
 
     /**
      * Gets all messages sent by a specific user.
