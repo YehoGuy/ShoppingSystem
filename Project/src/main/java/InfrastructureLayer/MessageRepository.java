@@ -1,5 +1,6 @@
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.List;
 import java.util.Map;
 import DomainLayer.IMessageRepository;
@@ -7,17 +8,17 @@ import DomainLayer.Message;
 
 public class MessageRepository implements IMessageRepository {
     private Map<Integer, Message> messages; // Map to store messages with their IDs as keys
-    private int nextId; // Counter for generating unique message IDs
+    private AtomicInteger nextId; // Counter for generating unique message IDs
 
     public MessageRepository() {
-        messages = new HashMap<>(); // Initialize the map
-        nextId = 1; // Start ID counter at 1
+        messages = new ConcurrentHashMap<>(); // Initialize the map
+        nextId = new AtomicInteger(1); // Start ID counter at 1
     }
 
     @Override
     public void addMessage(Message message) {
-        messages.put(nextId, message); // Add the message to the map with a unique ID
-        nextId++; // Increment the ID counter for the next message
+        id = nextId.getAndIncrement(); // Get the next unique ID
+        messages.put(id, message); // Add the message to the map with a unique ID
     }
 
     @Override
