@@ -1,4 +1,4 @@
-package main.java.DomainLayer;
+package DomainLayer;
 
 public interface IAuthTokenRepository {
     
@@ -16,7 +16,7 @@ public interface IAuthTokenRepository {
      * @param userId The unique identifier of the user.
      * @param token The authentication token to be associated with the user ID.
      */
-    void setAuthToken(int userId, String token);
+    void setAuthToken(int userId, AuthToken token);
 
     /**
      * Removes the authentication token for a given user ID.
