@@ -70,13 +70,23 @@ public interface IShopRepository {
     double getShopAverageRating(int shopId);
 
     /**
-     * Adds a given quantity of an item to the specified shop.
+     * Adds a given quantity of an item to the specified shop, and sets its price.
      *
      * @param shopId   the shop id.
      * @param itemId   the item id.
      * @param quantity the quantity to add.
+     * @param price    the price for the item (must be non-negative).
      */
-    void addItemToShop(int shopId, int itemId, int quantity);
+    void addItemToShop(int shopId, int itemId, int quantity, int price);
+
+    /**
+     * Updates the price for an existing item in the specified shop.
+     *
+     * @param shopId the shop id.
+     * @param itemId the item id.
+     * @param price  the new price (must be non-negative).
+     */
+    void updateItemPriceInShop(int shopId, int itemId, int price);
 
     /**
      * Removes an item from the specified shop.

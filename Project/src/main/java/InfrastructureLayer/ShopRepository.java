@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import DomainLayer.Shop.Shop
+import DomainLayer.Shop.Shop;
 
 public class ShopRepository implements IShopRepository {
 
@@ -90,10 +90,37 @@ public class ShopRepository implements IShopRepository {
         }
     }
 
-    public void addItemToShop(int shopId, int itemId, int quantity) {
+    /**
+     * Adds a given quantity of an item to the specified shop,
+     * and also sets/updates the item’s price.
+     *
+     * @param shopId   the shop id.
+     * @param itemId   the item id.
+     * @param quantity the quantity to add.
+     * @param price    the price for the item (must be non-negative).
+     */
+    public void addItemToShop(int shopId, int itemId, int quantity, int price) {
         Shop shop = shops.get(shopId);
         if (shop != null) {
             shop.addItem(itemId, quantity);
+            // Immediately update the price for the item after adding it.
+            shop.updateItemPrice(itemId, price);
+        } else {
+            throw new IllegalArgumentException("Shop not found: " + shopId);
+        }
+    }
+
+    /**
+     * Updates the price of an existing item in a shop.
+     *
+     * @param shopId the shop id.
+     * @param itemId the item id.
+     * @param price  the new price (must be non-negative).
+     */
+    public void updateItemPriceInShop(int shopId, int itemId, int price) {
+        Shop shop = shops.get(shopId);
+        if (shop != null) {
+            shop.updateItemPrice(itemId, price);
         } else {
             throw new IllegalArgumentException("Shop not found: " + shopId);
         }
@@ -116,7 +143,6 @@ public class ShopRepository implements IShopRepository {
             throw new IllegalArgumentException("Shop not found: " + shopId);
         }
     }
-
 
     /**
      * Closes the shop identified by shopId.

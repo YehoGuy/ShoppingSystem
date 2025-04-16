@@ -130,17 +130,33 @@ public class ShopService {
     }
 
     /**
-     * Adds a given quantity of an item to the specified shop.
+     * Adds a given quantity of an item to the specified shop and sets its price.
      *
      * @param shopId   the shop id.
      * @param itemId   the item id.
      * @param quantity the quantity to add.
+     * @param price    the price for the item (must be non-negative).
      */
-    public void addItemToShop(int shopId, int itemId, int quantity) {
+    public void addItemToShop(int shopId, int itemId, int quantity, int price) {
         try {
-            shopRepository.addItemToShop(shopId, itemId, quantity);
+            shopRepository.addItemToShop(shopId, itemId, quantity, price);
         } catch (Exception e) {
             throw new RuntimeException("Error adding item " + itemId + " to shop " + shopId + ": " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Updates the price for an existing item in the specified shop.
+     *
+     * @param shopId the shop id.
+     * @param itemId the item id.
+     * @param price  the new price (must be non-negative).
+     */
+    public void updateItemPriceInShop(int shopId, int itemId, int price) {
+        try {
+            shopRepository.updateItemPriceInShop(shopId, itemId, price);
+        } catch (Exception e) {
+            throw new RuntimeException("Error updating price for item " + itemId + " in shop " + shopId + ": " + e.getMessage(), e);
         }
     }
 
