@@ -1,7 +1,14 @@
 package InfrastructureLayerTests;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -83,4 +90,49 @@ class PurchaseRepositoryTests {
         var ids = store99Purchases.stream().map(Purchase::getPurchaseId).toList();
         assertTrue(ids.contains(pId1) && ids.contains(pId2));
     }
+
+    @Test
+    void testConcurrentAddPurchase() throws InterruptedException {
+        final int THREAD_COUNT = 20;
+
+        // We'll store all generated purchase IDs here
+        List<Integer> allGeneratedIds = Collections.synchronizedList(new ArrayList<>());
+
+        // Create a thread pool
+        ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
+        CountDownLatch latch = new CountDownLatch(THREAD_COUNT);
+
+        for (int i = 0; i < THREAD_COUNT; i++) {
+            final int userId = i;
+            executor.submit(() -> {
+                try {
+                    int purchaseId = repository.addPurchase(
+                            userId,
+                            100, 
+                            Map.of(1, 1),
+                            new Address()
+                                .withCountry("Country" + userId)
+                                .withCity("City" + userId)
+                    );
+                    allGeneratedIds.add(purchaseId);
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        // Wait for all threads to finish
+        latch.await();
+        executor.shutdown();
+
+        // Check for duplicates in the generated IDs
+        Set<Integer> uniqueIds = new HashSet<>(allGeneratedIds);
+        assertEquals(
+                allGeneratedIds.size(),
+                uniqueIds.size(),
+                "Duplicate purchase IDs found in concurrent addPurchase() calls!"
+        );
+    }
+
+    
 }

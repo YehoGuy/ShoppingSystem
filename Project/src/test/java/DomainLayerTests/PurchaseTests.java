@@ -1,6 +1,9 @@
 package DomainLayerTests;
 
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -74,5 +77,43 @@ class PurchaseTests {
         purchase.cancelPurchase();
         assertFalse(purchase.isCompleted());
         assertNull(purchase.getTimeOfCompletion());
+    }
+
+    @Test
+    void testConcurrentAddItem() throws InterruptedException {
+        // Create a single purchase
+        Purchase purchase = new Purchase(1, 10, 20, null);
+
+        final int THREAD_COUNT = 20;
+        final int INCREMENTS_PER_THREAD = 1000;  // each thread adds item (id=99) 1,000 times
+
+        ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
+        CountDownLatch latch = new CountDownLatch(THREAD_COUNT);
+
+        // Spawn threads that all modify the same Purchase object
+        for (int t = 0; t < THREAD_COUNT; t++) {
+            executor.submit(() -> {
+                try {
+                    for (int i = 0; i < INCREMENTS_PER_THREAD; i++) {
+                        purchase.addItem(99, 1);
+                    }
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        latch.await();     // wait for all threads to finish
+        executor.shutdown();
+
+        // In a perfectly synchronized scenario, item #99's quantity should be 20,000.
+        // But since Purchase's addItem() is not thread-safe, this might fail sporadically.
+        Integer finalQuantity = purchase.getItems().get(99);
+
+        // Note: This test could intermittently pass or fail if there's a race condition.
+        // If concurrency is unsafely handled, you might see a number < 20000.
+        // The test is considered "failed" if the final quantity isn't what we expect:
+        assertEquals(20_000, finalQuantity,
+                "Race condition detected! The final quantity is incorrect due to unsynchronized access.");
     }
 }
