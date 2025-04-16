@@ -1,4 +1,4 @@
-import DomainLayer.ShoppingCart; // Importing the ShoppingCart class
+package DomainLayer;
 
 public abstract class User {
     final private ShoppingCart shoppingCart; // Shopping cart associated with the user
