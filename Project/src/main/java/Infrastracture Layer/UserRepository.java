@@ -15,22 +15,66 @@ public class UserRepository implements IUserRepository {
     }
 
     public User getUserById(int id) {
+        if (!userMapping.containsKey(id)) {
+            throw new IllegalArgumentException("User with ID " + user.getId() + " doesn't exist.");
+        }
         return userMapping.get(id);
     }
 
     public User getUser(User user) {
+        if (!userMapping.containsKey(user.getId())) {
+            throw new IllegalArgumentException("User with ID " + user.getId() + " doesn't exist.");
+        }
         return userMapping.get(user.getId()); // Assuming User has a method getId()
     }
 
     public void addUser(User user) {
+        if (userMapping.containsKey(user.getId())) {
+            throw new IllegalArgumentException("User with ID " + user.getId() + " already exists.");
+        }
         userMapping.put(user.getId(), user);
     }
 
+    public void updateUser(User user) {
+        if (!userMapping.containsKey(user.getId())) {
+            throw new IllegalArgumentException("User with ID " + user.getId() + " doesn't exist.");
+        }
+        removeUserByUserObject(user);
+        userMapping.put(user.getId(), user);
+    }
+
+
     public void removeUserById(int id) {
+        if (!userMapping.containsKey(id)) {
+            throw new IllegalArgumentException("User with ID " + user.getId() + " doesn't exist.");
+        }
         userMapping.remove(id);
     }
 
     public void removeUserByUserObject(User user) {
+        if (!userMapping.containsKey(user.getId())) {
+            throw new IllegalArgumentException("User with ID " + user.getId() + " doesn't exist.");
+        }
         userMapping.remove(user.getId());
     }
+
+    public Map<Integer, User> getUserMapping() {
+        return userMapping;
+    }
+
+    public List<User> getUsersList() {
+        return new ArrayList<>(userMapping.values());
+    }
+
+    public List<Integer> getUsersIdsList() {
+        return new ArrayList<>(userMapping.keySet());
+    }
+
+    public void clear() {
+        userMapping.clear();
+    }
+
+
+
+
 }
