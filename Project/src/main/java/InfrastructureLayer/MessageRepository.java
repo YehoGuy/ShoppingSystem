@@ -32,4 +32,25 @@ public class MessageRepository implements IMessageRepository {
     public void updateMessage(Message message) {
         messages.put(message.getMessageId(), message); // Update the message in the map
     }
+
+    @Override
+    public List<Message> getMessagesBySenderId(int senderId) {
+        List<Message> result = new ArrayList<>(); // List to store messages sent by the specified user
+        for (Message message : messages.values()) {
+            if (message.getSenderId() == senderId) {
+                result.add(message); // Add the message to the result list if it matches the sender ID
+            }
+        }
+        return result; // Return the list of messages sent by the specified user
+    }
+
+    @Override
+    public List<Message> getMessagesByReceiverId(int receiverId) {
+        List<Message> result = new ArrayList<>(); // List to store messages received by the specified user
+        for (Message message : messages.values()) {
+            if (message.getReceiverId() == receiverId) {
+                result.add(message); // Add the message to the result list if it matches the receiver ID
+            }
+        }
+        return result; // Return the list of messages received by the specified user
 }
