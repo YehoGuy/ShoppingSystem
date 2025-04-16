@@ -148,9 +148,10 @@ public class Purchase {
     /**
      * Marks the purchase as completed.
      */
-    public void completePurchase() {
+    public int completePurchase() {
         this.isCompleted = true;
         this.timeOfCompletion = LocalDateTime.now();
+        return 1;
     }
 
     /**
