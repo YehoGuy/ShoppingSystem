@@ -1,22 +1,11 @@
+package DomainLayer.Roles;
+
 /**
  * Interface representing a Role in the system.
  * A role is associated with a shop and an assignee, and it has a set of permissions.
  */
 
 public interface Role {
-    
-    /**
-     * The shop ID of the role.
-     */
-    private int shopId;
-    /**
-     * The assignee ID of the role.
-     */
-    private int assigneeId;
-    /**
-     * The permissions associated with the role.
-     */
-    private List<Integer> permissions;
 
     /**
      * Adds a permission to the role.
