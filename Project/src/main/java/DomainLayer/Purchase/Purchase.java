@@ -1,15 +1,15 @@
 package DomainLayer.Purchase;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Purchase {
 
     protected final int purchaseId;                     // purchase ID
     protected final int userId;                        // initiating user ID
     protected final int storeId;                      // store ID
-    protected final HashMap<Integer, Integer> items; // itemId -> quantity
+    protected final ConcurrentHashMap<Integer, Integer> items; // itemId -> quantity
     protected Address shippingAddress;              // shipping address
     protected boolean isCompleted;                 // purchase status   
     protected LocalDateTime timeOfCompletion;     // time of purchase completion
@@ -26,7 +26,7 @@ public class Purchase {
         this.purchaseId = purchaseId;
         this.userId = userId;
         this.storeId = storeId;
-        this.items = new HashMap<>(items);
+        this.items = new ConcurrentHashMap<>(items);
         this.shippingAddress = shippingAddress;
         this.isCompleted = false;
     }
@@ -43,7 +43,7 @@ public class Purchase {
         this.purchaseId = purchaseId;
         this.userId = userId;
         this.storeId = storeId;
-        this.items = new HashMap<>();
+        this.items = new ConcurrentHashMap<>();
         this.shippingAddress = shippingAddress;
         this.isCompleted = false;
     }
@@ -80,7 +80,7 @@ public class Purchase {
      * 
      * @return a {@code HashMap} containing the items and their quantities.
      */
-    public HashMap<Integer, Integer> getItems() {
+    public ConcurrentHashMap<Integer, Integer> getItems() {
         return items;
     }
 
@@ -118,11 +118,8 @@ public class Purchase {
      * @param quantity the quantity of the item to add.
      */
     public void addItem(int itemId, int quantity) {
-        if (items.containsKey(itemId)) {
-            items.put(itemId, items.get(itemId) + quantity);
-        } else {
-            items.put(itemId, quantity);
-        }
+        // merge() ensures the add is atomic and no increments are lost
+        items.merge(itemId, quantity, Integer::sum);
     }
 
     /**
@@ -135,14 +132,11 @@ public class Purchase {
      * @param quantity the quantity of the item to remove.
      */
     public void removeItem(int itemId, int quantity) {
-        if (items.containsKey(itemId)) {
-            int currentQuantity = items.get(itemId);
-            if (currentQuantity > quantity) {
-                items.put(itemId, currentQuantity - quantity);
-            } else {
-                items.remove(itemId);
-            }
-        }
+        // computeIfPresent() runs atomically and removes the entry if quantity <= 0
+        items.computeIfPresent(itemId, (key, oldVal) -> {
+            int newVal = oldVal - quantity;
+            return (newVal > 0) ? newVal : null; // if 0 or below, remove
+        });
     }
 
     /**
