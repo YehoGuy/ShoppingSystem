@@ -1,4 +1,4 @@
-package ServiceLayer.Purchase;
+package ApplicationLayer.Purchase;
 
 /**
  * Represents a shipping method for processing shipments and retrieving shipping details.

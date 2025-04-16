@@ -1,4 +1,4 @@
-package ServiceLayer.Purchase;
+package ApplicationLayer.Purchase;
 
 public interface PaymentMethod {
     // This interface will define the methods for different payment methods
