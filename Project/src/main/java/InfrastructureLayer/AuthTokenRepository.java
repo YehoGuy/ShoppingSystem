@@ -9,17 +9,11 @@ public class AuthTokenRepository extends IAuthTokenRepository {
         authTokenMap = new HashMap<>();
     }
 
-    /**
-     * Retrieves the authentication token for a given user ID.
-     * 
-     * @param userId The unique identifier of the user.
-     * @return The authentication token associated with the given user ID, or null if not found.
-     */
     public DomainLayer.AuthToken getAuthToken(int userId) {
         return authTokenMap.get(userId);
     }
 
-    public void setAuthToken(int userId, String token) {
+    public void setAuthToken(int userId, DomainLayer.AuthToken token) {
         authTokenMap.put(userId, token);
     }
 
