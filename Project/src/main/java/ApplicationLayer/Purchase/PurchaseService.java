@@ -1,6 +1,15 @@
 package ApplicationLayer.Purchase;
 
+import DomainLayer.Purchase.IPurchaseRepository;
+
 public class PurchaseService {
+
+    IPurchaseRepository purchaseRepository;
+
+    public PurchaseService(IPurchaseRepository purchaseRepository) {
+        this.purchaseRepository = purchaseRepository;
+    }
+    
     // This class will handle the purchase logic
     // It will interact with the PurchaseRepository to save purchase data
     // It will also handle any business logic related to purchases

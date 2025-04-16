@@ -1,15 +1,21 @@
 package DomainLayer.Purchase;
 
 import java.util.ArrayList;
+import java.util.Map;
 
 public interface IPurchaseRepository {
 
     /**
-     * add the given purchase to the repository.
+     * Adds a purchase to the repository.
      *
-     * @param purchase The purchase to add.
+     * @param userId The ID of the user making the purchase.
+     * @param storeId The ID of the store where the purchase is made.
+     * @param items A map of item IDs to their quantities.
+     * @param shippingAddresse The shipping address for the purchase.
+     * @return The ID of the newly created purchase.
+     * @throws IllegalArgumentException if the purchase ID already exists.
      */
-    void addPurchase(Purchase purchase);
+    int addPurchase(int userId, int storeId, Map<Integer, Integer> items, Address shippingAddresse);
 
     /**
      * Retrieves a purchase by its ID.
