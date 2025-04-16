@@ -1,3 +1,6 @@
+import java.util.List;
+import DomainLayer.Message;
+
 public interface IMessageRepository{
     /**
      * Adds a message to the repository.

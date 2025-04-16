@@ -1,3 +1,10 @@
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import DomainLayer.IMessageRepository;
+import DomainLayer.Message;
+
 public class MessageRepository implements IMessageRepository {
     private Map<Integer, Message> messages; // Map to store messages with their IDs as keys
     private int nextId; // Counter for generating unique message IDs
@@ -53,4 +60,5 @@ public class MessageRepository implements IMessageRepository {
             }
         }
         return result; // Return the list of messages received by the specified user
+    }
 }
