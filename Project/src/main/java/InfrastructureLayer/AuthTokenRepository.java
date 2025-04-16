@@ -1,4 +1,4 @@
-import java.util.HashMap;
+import java.util.ConcurrentHashMap;
 import DomainLayer.IAuthTokenRepository;
 import DomainLayer.AuthToken;
 
@@ -6,7 +6,7 @@ public class AuthTokenRepository extends IAuthTokenRepository {
     private Map<Integer, DomainLayer.AuthToken> authTokenMap; // Maps user IDs to their authentication tokens
 
     public AuthTokenRepository() {
-        authTokenMap = new HashMap<>();
+        authTokenMap = new ConcurrentHashMap<>();
     }
 
     public DomainLayer.AuthToken getAuthToken(int userId) {
