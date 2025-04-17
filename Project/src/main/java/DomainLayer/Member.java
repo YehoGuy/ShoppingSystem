@@ -1,9 +1,11 @@
+package DomainLayer;
+
 import java.util.ArrayList;
 import java.util.List;
 import DomainLayer.User;
-import DomainLayer.Role;
+import DomainLayer.Roles.Role;
 
-public class Member extends User {
+public class Member extends DomainLayer.User {
     final private int memberId;
     private List<Integer> orderHistory;// List of order IDs
     private String username; // Username of the user
@@ -11,7 +13,7 @@ public class Member extends User {
     private String email; // Email address of the user
     private String phoneNumber; // Phone number of the user
     private String address; // Address of the user
-    private List<Role> roles; // List of roles associated with the user
+    private List<DomainLayer.Roles.Role> roles; // List of roles associated with the user
     
     public Member(int memberId, String username, String password, String email, String phoneNumber, String address) {
         this.memberId = memberId; // Initialize member ID
@@ -76,19 +78,19 @@ public class Member extends User {
         orderHistory.add(orderId); // Add an order ID to the order history
     }
 
-    public List<Role> getRoles() {
+    public List<DomainLayer.Roles.Role> getRoles() {
         return roles; // Return the list of roles
     }
 
-    public void addRole(Role role) {
+    public void addRole(DomainLayer.Roles.Role role) {
         roles.add(role); // Add a role to the list of roles
     }
 
-    public void removeRole(Role role) {
+    public void removeRole(DomainLayer.Roles.Role role) {
         roles.remove(role); // Remove a role from the list of roles
     }
 
-    public boolean hasRole(Role role) {
+    public boolean hasRole(DomainLayer.Roles.Role role) {
         return roles.contains(role); // Check if the user has a specific role
     }
 }

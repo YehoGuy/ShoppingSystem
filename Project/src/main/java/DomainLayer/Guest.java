@@ -1,3 +1,5 @@
+package DomainLayer;
+
 import DomainLayer.User;
 
 public class Guest extends User {
