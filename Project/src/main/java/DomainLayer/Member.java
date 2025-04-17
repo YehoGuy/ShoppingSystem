@@ -2,7 +2,7 @@ package DomainLayer;
 
 import java.util.ArrayList;
 import java.util.List;
-import DomainLayer.User;
+
 import DomainLayer.Roles.Role;
 
 public class Member extends User {
@@ -13,7 +13,7 @@ public class Member extends User {
     private String email; // Email address of the user
     private String phoneNumber; // Phone number of the user
     private String address; // Address of the user
-    private List<Roles> roles; // List of roles associated with the user
+    private List<Role> roles; // List of roles associated with the user
     
     public Member(int memberId, String username, String password, String email, String phoneNumber, String address) {
         super(memberId); // Call the User class constructor
@@ -79,19 +79,19 @@ public class Member extends User {
         orderHistory.add(orderId); // Add an order ID to the order history
     }
 
-    public List<Roles> getRoles() {
+    public List<Role> getRoles() {
         return roles; // Return the list of roles
     }
 
-    public void addRole(Roles role) {
+    public void addRole(Role role) {
         roles.add(role); // Add a role to the list of roles
     }
 
-    public void removeRole(Roles role) {
+    public void removeRole(Role role) {
         roles.remove(role); // Remove a role from the list of roles
     }
 
-    public boolean hasRole(Roles role) {
+    public boolean hasRole(Role role) {
         return roles.contains(role); // Check if the user has a specific role
     }
 }
