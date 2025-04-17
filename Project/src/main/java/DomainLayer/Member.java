@@ -5,7 +5,7 @@ import java.util.List;
 import DomainLayer.User;
 import DomainLayer.Roles.Role;
 
-public class Member extends DomainLayer.User {
+public class Member extends User {
     final private int memberId;
     private List<Integer> orderHistory;// List of order IDs
     private String username; // Username of the user
@@ -13,9 +13,10 @@ public class Member extends DomainLayer.User {
     private String email; // Email address of the user
     private String phoneNumber; // Phone number of the user
     private String address; // Address of the user
-    private List<DomainLayer.Roles.Role> roles; // List of roles associated with the user
+    private List<Roles> roles; // List of roles associated with the user
     
     public Member(int memberId, String username, String password, String email, String phoneNumber, String address) {
+        super(memberId); // Call the User class constructor
         this.memberId = memberId; // Initialize member ID
         this.username = username; // Initialize username
         this.password = password; // Initialize password
@@ -78,19 +79,19 @@ public class Member extends DomainLayer.User {
         orderHistory.add(orderId); // Add an order ID to the order history
     }
 
-    public List<DomainLayer.Roles.Role> getRoles() {
+    public List<Roles> getRoles() {
         return roles; // Return the list of roles
     }
 
-    public void addRole(DomainLayer.Roles.Role role) {
+    public void addRole(Roles role) {
         roles.add(role); // Add a role to the list of roles
     }
 
-    public void removeRole(DomainLayer.Roles.Role role) {
+    public void removeRole(Roles role) {
         roles.remove(role); // Remove a role from the list of roles
     }
 
-    public boolean hasRole(DomainLayer.Roles.Role role) {
+    public boolean hasRole(Roles role) {
         return roles.contains(role); // Check if the user has a specific role
     }
 }
