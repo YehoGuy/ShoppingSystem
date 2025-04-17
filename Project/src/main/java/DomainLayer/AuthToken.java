@@ -1,3 +1,5 @@
+package DomainLayer;
+
 public class AuthToken {
     private String token; // The authentication token string
     private long expirationTime; // The time when the token expires

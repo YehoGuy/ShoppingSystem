@@ -1,19 +1,22 @@
-import java.util.ConcurrentHashMap;
+package InfrastructureLayer;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import DomainLayer.IAuthTokenRepository;
 import DomainLayer.AuthToken;
 
-public class AuthTokenRepository extends IAuthTokenRepository {
+public class AuthTokenRepository implements IAuthTokenRepository {
     private Map<Integer, DomainLayer.AuthToken> authTokenMap; // Maps user IDs to their authentication tokens
 
     public AuthTokenRepository() {
         authTokenMap = new ConcurrentHashMap<>();
     }
 
-    public DomainLayer.AuthToken getAuthToken(int userId) {
+    public AuthToken getAuthToken(int userId) {
         return authTokenMap.get(userId);
     }
 
-    public void setAuthToken(int userId, DomainLayer.AuthToken token) {
+    public void setAuthToken(int userId, AuthToken token) {
         authTokenMap.put(userId, token);
     }
 
