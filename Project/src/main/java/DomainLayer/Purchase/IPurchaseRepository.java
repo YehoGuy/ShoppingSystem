@@ -1,0 +1,51 @@
+package DomainLayer.Purchase;
+
+import java.util.ArrayList;
+import java.util.Map;
+
+public interface IPurchaseRepository {
+
+    /**
+     * Adds a purchase to the repository.
+     *
+     * @param userId The ID of the user making the purchase.
+     * @param storeId The ID of the store where the purchase is made.
+     * @param items A map of item IDs to their quantities.
+     * @param shippingAddresse The shipping address for the purchase.
+     * @return The ID of the newly created purchase.
+     * @throws IllegalArgumentException if the purchase ID already exists.
+     */
+    int addPurchase(int userId, int storeId, Map<Integer, Integer> items, Address shippingAddresse);
+
+    /**
+     * Retrieves a purchase by its ID.
+     *
+     * @param purchaseId The ID of the purchase to retrieve.
+     * @return The purchase with the specified ID, or null if not found.
+     */
+    Purchase getPurchaseById(int purchaseId);
+
+    /**
+     * Deletes a purchase by its ID.
+     *
+     * @param purchaseId The ID of the purchase to delete.
+     */
+    void deletePurchase(int purchaseId);
+
+    /**
+     * Retrieves all purchases made by a specific user.
+     *
+     * @param userId The ID of the user whose purchases to retrieve.
+     * @return A list of purchases made by the specified user.
+     */
+    ArrayList<Purchase> getUserPurchases(int userId);
+
+    /**
+     * Retrieves all purchases made in a specific store.
+     *
+     * @param storeId The ID of the store whose purchases to retrieve.
+     * @return A list of purchases made in the specified store.
+     */
+    ArrayList<Purchase> getStorePurchases(int storeId);
+
+}
