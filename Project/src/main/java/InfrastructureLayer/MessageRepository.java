@@ -1,3 +1,5 @@
+package InfrastructureLayer;
+
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -16,8 +18,9 @@ public class MessageRepository implements IMessageRepository {
     }
 
     @Override
-    public void addMessage(Message message) {
-        id = nextId.getAndIncrement(); // Get the next unique ID
+    public void addMessage(int senderId, int receiverId, String content, String timestamp, boolean userToUser) {
+        int id = nextId.getAndIncrement(); // Get the next unique ID
+        Message message = new Message(id, senderId, receiverId, content, timestamp, userToUser); // Create a new message object
         messages.put(id, message); // Add the message to the map with a unique ID
     }
 
@@ -28,7 +31,11 @@ public class MessageRepository implements IMessageRepository {
 
     @Override
     public Message getMessageById(int id) {
-        return messages.get(id); // Return the message with the specified ID, or null if not found
+        try{
+            return messages.get(id); // Return the message with the specified ID, or null if not found
+        } catch (IndexOutOfBoundsException e) {
+            throw new IndexOutOfBoundsException("Message with ID " + id + " not found."); // Handle case where message ID is not found
+        }
     }
 
     @Override
@@ -37,8 +44,13 @@ public class MessageRepository implements IMessageRepository {
     }
 
     @Override
-    public void updateMessage(Message message) {
-        messages.put(message.getMessageId(), message); // Update the message in the map
+    public void updateMessage(int id, int senderId, int receiverId, String content, String timestamp, boolean userToUser) {
+        try{
+            Message message = messages.get(id); // Get the message with the specified ID
+            messages.put(message.getMessageId(), message); // Update the message in the map
+        } catch (IndexOutOfBoundsException e) {
+            throw new IndexOutOfBoundsException("Message with ID " + id + " not found."); // Handle case where message ID is not found
+        }
     }
 
     @Override

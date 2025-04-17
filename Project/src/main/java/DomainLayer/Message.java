@@ -1,3 +1,5 @@
+package DomainLayer;
+
 public class Message {
     final private int messageId;
     final private int senderId; // User ID of the sender
