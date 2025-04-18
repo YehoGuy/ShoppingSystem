@@ -25,7 +25,7 @@ public class AuthTokenService {
     private IAuthTokenRepository authTokenRepository; 
     private UserService userService; 
 
-    public AuthTokenService(IAuthTokenRepository authTokenRepository, IuserService userService) {
+    public AuthTokenService(IAuthTokenRepository authTokenRepository, UserService userService) {
         this.authTokenRepository = authTokenRepository; 
         this.userService = userService; 
     }
