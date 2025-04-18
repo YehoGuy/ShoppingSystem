@@ -1,39 +1,116 @@
 package DomainLayer.Roles;
 
-/**
- * Interface representing a Role in the system.
- * A role is associated with a shop and an assignee, and it has a set of permissions.
- */
+public class Role {
 
-public interface Role {
+    private final int assigneeId;
+    private final int shopId;
+    private PermissionsEnum[] permissions;
+
+    public Role(int assigneeId, int shopId, PermissionsEnum[] permissions) {
+        this.assigneeId = assigneeId;
+        this.shopId = shopId;
+        this.permissions = permissions;
+    }
+
+    public int getAssigneeId() {
+        return assigneeId;
+    }
+
+    public int getShopId() {
+        return shopId;
+    }
+
+    public PermissionsEnum[] getPermissions() {
+        return permissions;
+    }
+
+    public void setPermissions(PermissionsEnum[] permissions) {
+        this.permissions = permissions;
+    }
 
     /**
-     * Adds a permission to the role.
-     * @param permissionId The ID of the permission to add.
-     * @return A message indicating the result of the operation.
+     * Sets the roles for a founder in the shop.
      */
-    String addPermission(int permissionId);
+    public void setFoundersPermissions() {
+        this.permissions = new PermissionsEnum[]{
+                PermissionsEnum.manageItems,
+                PermissionsEnum.setPolicy,
+                PermissionsEnum.manageOwners,
+                PermissionsEnum.leaveShopAsOwner,
+                PermissionsEnum.manageManagers,
+                PermissionsEnum.getStaffInfo,
+                PermissionsEnum.handleMessages,
+                PermissionsEnum.getHistory
+        };
+    }
+
     /**
-     * Removes a permission from the role.
-     * @param permissionId The ID of the permission to remove.
-     * @return A message indicating the result of the operation.
+     * Sets the roles for an owner in the shop.
      */
-    String removePermission(int permissionId);
-    /**
-     * Checks if the role has a specific permission.
-     * @param permissionId The ID of the permission to check.
-     * @return True if the role has the permission, false otherwise.
-     */
-    boolean hasPermission(int permissionId);
-    /**
-     * Gets the shop id of the role.
-     * @return A shop id.
-     */
-    int getShopId();
-    /**
-     * Gets the assignee id of the role.
-     * @return An assignee id.
-     */
-    int getAssigneeId();
+    public void setOwnersPermissions() {
+        this.permissions = new PermissionsEnum[]{
+                PermissionsEnum.manageItems,
+                PermissionsEnum.setPolicy,
+                PermissionsEnum.manageOwners,
+                PermissionsEnum.leaveShopAsOwner,
+                PermissionsEnum.manageManagers,
+                PermissionsEnum.getStaffInfo,
+                PermissionsEnum.handleMessages,
+                PermissionsEnum.getHistory
+        };
+    }
+
+    public boolean hasPermission(PermissionsEnum permission) {
+        for (PermissionsEnum p : this.permissions) {
+            if (p == permission) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void addPermission(PermissionsEnum permission) {
+        for (PermissionsEnum p : this.permissions) {
+            if (p == permission) {
+                return; // Role already exists, no need to add it again
+            }
+        }
+        PermissionsEnum[] newPermissions = new PermissionsEnum[this.permissions.length + 1];
+        System.arraycopy(this.permissions, 0, newPermissions, 0, this.permissions.length);
+        newPermissions[permissions.length] = permission;
+        this.permissions = newPermissions;
+    }
+
+    public void removePermissions(PermissionsEnum permission) {
+        int indexToRemove = -1;
+        for (int i = 0; i < permissions.length; i++) {
+            if (permissions[i] == permission) {
+                indexToRemove = i;
+                break;
+            }
+        }
+        if (indexToRemove != -1) {
+            PermissionsEnum[] newPermissions = new PermissionsEnum[permissions.length - 1];
+            System.arraycopy(permissions, 0, newPermissions, 0, indexToRemove);
+            System.arraycopy(permissions, indexToRemove + 1, newPermissions, indexToRemove, permissions.length - indexToRemove - 1);
+            this.permissions = newPermissions;
+        }
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("Role{");
+        sb.append("assigneeId=").append(assigneeId);
+        sb.append(", shopId=").append(shopId);
+        sb.append(", permissions=[");
+        for (int i = 0; i < permissions.length; i++) {
+            sb.append(permissions[i]);
+            if (i < permissions.length - 1) {
+                sb.append(", ");
+            }
+        }
+        sb.append("]}");
+        return sb.toString();
+    }
 
 }
