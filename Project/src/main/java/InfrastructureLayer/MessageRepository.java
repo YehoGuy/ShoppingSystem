@@ -18,9 +18,9 @@ public class MessageRepository implements IMessageRepository {
     }
 
     @Override
-    public void addMessage(int senderId, int receiverId, String content, String timestamp, boolean userToUser) {
+    public void addMessage(int senderId, int receiverId, String content, String timestamp, boolean userToUser, int previousMessageId) {
         int id = nextId.getAndIncrement(); // Get the next unique ID
-        Message message = new Message(id, senderId, receiverId, content, timestamp, userToUser); // Create a new message object
+        Message message = new Message(id, senderId, receiverId, content, timestamp, userToUser, previousMessageId); // Create a new message object
         messages.put(id, message); // Add the message to the map with a unique ID
     }
 
@@ -40,13 +40,22 @@ public class MessageRepository implements IMessageRepository {
 
     @Override
     public void deleteMessage(int id) {
-        messages.remove(id); // Remove the message with the specified ID from the map
+        Message message = messages.get(id); // Get the message with the specified ID
+        if (message != null) {
+            message.delete(); // Mark the message as deleted
+        } else {
+            throw new IndexOutOfBoundsException("Message with ID " + id + " not found."); // Handle case where message ID is not found
+        }
     }
 
     @Override
-    public void updateMessage(int id, int senderId, int receiverId, String content, String timestamp, boolean userToUser) {
+    public void updateMessage(int id, String content, String timestamp) {
         try{
             Message message = messages.get(id); // Get the message with the specified ID
+            if (message == null) {
+                throw new IndexOutOfBoundsException("Message with ID " + id + " not found."); // Handle case where message ID is not found
+            }
+            message = new Message(id, message.getSenderId(), message.getReceiverId(), content, timestamp, message.isUserToUser(), message.getPreviousMessageId()); // Create a new message object with updated content
             messages.put(message.getMessageId(), message); // Update the message in the map
         } catch (IndexOutOfBoundsException e) {
             throw new IndexOutOfBoundsException("Message with ID " + id + " not found."); // Handle case where message ID is not found
@@ -57,7 +66,7 @@ public class MessageRepository implements IMessageRepository {
     public List<Message> getMessagesBySenderId(int senderId) {
         List<Message> result = new ArrayList<>(); // List to store messages sent by the specified user
         for (Message message : messages.values()) {
-            if (message.getSenderId() == senderId) {
+            if (message.getSenderId() == senderId && !message.isDeleted()) {
                 result.add(message); // Add the message to the result list if it matches the sender ID
             }
         }
@@ -68,10 +77,58 @@ public class MessageRepository implements IMessageRepository {
     public List<Message> getMessagesByReceiverId(int receiverId) {
         List<Message> result = new ArrayList<>(); // List to store messages received by the specified user
         for (Message message : messages.values()) {
-            if (message.getReceiverId() == receiverId) {
+            if (message.getReceiverId() == receiverId && !message.isDeleted()) {
                 result.add(message); // Add the message to the result list if it matches the receiver ID
             }
         }
         return result; // Return the list of messages received by the specified user
     }
+
+    @Override
+    public Message getPreviousMessage(int messageId) {
+        Message message = messages.get(messageId); // Get the message with the specified ID
+        if (message != null) {
+            if(message.getPreviousMessageId() == -1) {
+                return null; // Return null if there is no previous message
+            }
+            message = messages.get(message.getPreviousMessageId()); // Get the previous message
+            if (message != null && !message.isDeleted()) {
+                return message; // Return the previous message if it exists and is not deleted
+            }
+            return null; // Return null if the previous message is deleted or not found
+        }
+        return null; // Return null if the message or previous message is not found
+    }
+
+    private Message getPreviousMessageNotMatterWhat(int messageId) {
+        Message message = messages.get(messageId); // Get the message with the specified ID
+        if (message != null) {
+            if(message.getPreviousMessageId() == -1) {
+                return null; // Return null if there is no previous message
+            }
+            message = messages.get(message.getPreviousMessageId()); // Get the previous message
+            return message; // Return the previous message if it exists
+        }
+        return null; // Return null if the message or previous message is not found
+    }
+
+    @Override
+    public List<Message> getFullConversation(int messageId) {
+        List<Message> conversation = new ArrayList<>(); // List to store the full conversation
+        Message message = messages.get(messageId); // Get the message with the specified ID
+        if (message != null) {
+            conversation.add(message); // Add the current message to the conversation list
+            while (message.getPreviousMessageId() != -1) { // Loop until there are no more previous messages
+                message = getPreviousMessageNotMatterWhat(messageId); // Get the previous message
+                if (message != null && !message.isDeleted()) {
+                    conversation.add(message); // Add the previous message to the conversation list
+                } else {
+                    break; // Break if the previous message is not found
+                }
+            }
+        }
+        return conversation; // Return the full conversation as a list of messages
+    }
+
+ 
 }
