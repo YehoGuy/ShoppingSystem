@@ -2,6 +2,7 @@ package ApplicationLayer.Item;
 
 import java.util.List;
 
+import ApplicationLayer.LoggerService;
 import DomainLayer.Item.IItemRepository;
 import DomainLayer.Item.Item;
 import DomainLayer.Item.ItemReview;
@@ -28,8 +29,12 @@ public class ItemService {
      */
     public Item createItem(String name, String description) {
         try {
-            return itemRepository.createItem(name, description);
+            LoggerService.logMethodExecution("createItem", name, description);
+            Item returnItem = itemRepository.createItem(name, description);
+            LoggerService.logMethodExecutionEnd("createItem", returnItem);
+            return returnItem;
         } catch (Exception e) {
+            LoggerService.logError("createItem", e, name, description);
             throw new RuntimeException("Error creating item: " + e.getMessage(), e);
         }
     }
@@ -42,8 +47,12 @@ public class ItemService {
      */
     public Item getItem(int itemId) {
         try {
-            return itemRepository.getItem(itemId);
+            LoggerService.logMethodExecution("getItem", itemId);
+            Item returnItem = itemRepository.getItem(itemId);
+            LoggerService.logMethodExecutionEnd("getItem", returnItem);
+            return returnItem;
         } catch (Exception e) {
+            LoggerService.logError("getItem", e, itemId);
             throw new RuntimeException("Error retrieving item with id " + itemId + ": " + e.getMessage(), e);
         }
     }
@@ -55,8 +64,12 @@ public class ItemService {
      */
     public List<Item> getAllItems() {
         try {
-            return itemRepository.getAllItems();
+            LoggerService.logMethodExecution("getAllItems");
+            List<Item> returnItems = itemRepository.getAllItems();
+            LoggerService.logMethodExecutionEnd("getAllItems", returnItems);
+            return returnItems;
         } catch (Exception e) {
+            LoggerService.logError("getAllItems", e);
             throw new RuntimeException("Error retrieving all items: " + e.getMessage(), e);
         }
     }
@@ -70,8 +83,12 @@ public class ItemService {
      */
     public void addReviewToItem(int itemId, int rating, String reviewText) {
         try {
+            LoggerService.logMethodExecution("addReviewToItem", itemId, rating, reviewText);
             itemRepository.addReviewToItem(itemId, rating, reviewText);
+            LoggerService.logMethodExecutionEndVoid("addReviewToItem");
+            
         } catch (Exception e) {
+            LoggerService.logError("addReviewToItem", e, itemId, rating, reviewText);
             throw new RuntimeException("Error adding review to item " + itemId + ": " + e.getMessage(), e);
         }
     }
@@ -84,8 +101,12 @@ public class ItemService {
      */
     public List<ItemReview> getItemReviews(int itemId) {
         try {
-            return itemRepository.getItemReviews(itemId);
+            LoggerService.logMethodExecution("getItemReviews", itemId);
+            List<ItemReview> returnItems = itemRepository.getItemReviews(itemId);           
+            LoggerService.logMethodExecutionEnd("getItemReviews", returnItems);
+            return returnItems;
         } catch (Exception e) {
+            LoggerService.logError("getItemReviews", e, itemId);
             throw new RuntimeException("Error retrieving reviews for item " + itemId + ": " + e.getMessage(), e);
         }
     }
@@ -98,8 +119,12 @@ public class ItemService {
      */
     public double getItemAverageRating(int itemId) {
         try {
-            return itemRepository.getItemAverageRating(itemId);
+            LoggerService.logMethodExecution("getItemAverageRating", itemId);
+            double returnDouble = itemRepository.getItemAverageRating(itemId);
+            LoggerService.logMethodExecutionEnd("getItemAverageRating", returnDouble);
+            return returnDouble;
         } catch (Exception e) {
+            LoggerService.logError("getItemAverageRating", e, itemId);
             throw new RuntimeException("Error retrieving average rating for item " + itemId + ": " + e.getMessage(), e);
         }
     }
@@ -111,8 +136,11 @@ public class ItemService {
      */
     public void deleteItem(int itemId) {
         try {
+            LoggerService.logMethodExecution("deleteItem", itemId);
             itemRepository.deleteItem(itemId);
+            LoggerService.logMethodExecutionEndVoid("deleteItem");
         } catch (Exception e) {
+            LoggerService.logError("deleteItem", e, itemId);
             throw new RuntimeException("Error deleting item " + itemId + ": " + e.getMessage(), e);
         }
     }
