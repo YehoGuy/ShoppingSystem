@@ -14,6 +14,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    mvn install:install-file -Dfile=spring-context-5.3.9.jar -DgroupId=org.springframework -DartifactId=spring-context -Dversion=5.3.9 -Dpackaging=jar
+
     <dependencies>
         <!-- JUnit 5 (Jupiter) -->
         <dependency>
@@ -22,6 +24,47 @@
         <version>5.9.3</version>
         <scope>test</scope>
         </dependency>
+        
+        <dependency>
+
+        <groupId>io.jsonwebtoken</groupId>
+
+        <artifactId>jjwt-api</artifactId>
+
+        <version>0.11.5</version>
+
+        </dependency>
+
+        <dependency>
+
+        <groupId>io.jsonwebtoken</groupId>
+
+        <artifactId>jjwt-impl</artifactId>
+
+        <version>0.11.5</version>
+
+        <scope>runtime</scope>
+
+    </dependency>
+
+    <dependency>
+
+        <groupId>io.jsonwebtoken</groupId>
+
+        <artifactId>jjwt-jackson</artifactId>
+
+        <version>0.11.5</version>
+
+        <scope>runtime</scope>
+
+    </dependency>
+
+    <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-context</artifactId>
+        <version>5.3.9</version>
+    </dependency>
+
 
          <!-- SLF4J API -->
     <dependency>
@@ -37,6 +80,7 @@
         <version>1.4.11</version> <!-- Use the latest version -->
     </dependency>
     </dependencies>
+
 
     <build>
         <plugins>
