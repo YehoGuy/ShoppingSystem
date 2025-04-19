@@ -2,6 +2,7 @@ package ApplicationLayer.Shop;
 
 import java.util.List;
 
+import ApplicationLayer.LoggerService;
 import DomainLayer.Shop.IShopRepository;
 import DomainLayer.Shop.Shop;
 
@@ -28,9 +29,14 @@ public class ShopService {
      * @return the newly created Shop.
      */
     public Shop createShop(String name, String purchasePolicy, int globalDiscount) {
-        try {
-            return shopRepository.createShop(name, purchasePolicy, globalDiscount);
-        } catch (Exception e) {
+        try { 
+           LoggerService.logMethodExecution("createShop", name, purchasePolicy, globalDiscount);
+            Shop returnShop = shopRepository.createShop(name, purchasePolicy, globalDiscount);
+            LoggerService.logMethodExecutionEnd("createShop", returnShop);
+            return returnShop;
+        } catch (Exception e) 
+        {
+            LoggerService.logError("createShop", e, name, purchasePolicy, globalDiscount);
             throw new RuntimeException("Error creating shop: " + e.getMessage(), e);
         }
     }
@@ -43,8 +49,13 @@ public class ShopService {
      */
     public Shop getShop(int shopId) {
         try {
-            return shopRepository.getShop(shopId);
+            LoggerService.logMethodExecution("getShop", shopId);
+            Shop returnShop = shopRepository.getShop(shopId);
+            LoggerService.logMethodExecutionEnd("getShop", returnShop);
+            return returnShop;
+
         } catch (Exception e) {
+            LoggerService.logError("getShop", e, shopId);
             throw new RuntimeException("Error retrieving shop with id " + shopId + ": " + e.getMessage(), e);
         }
     }
@@ -56,8 +67,12 @@ public class ShopService {
      */
     public List<Shop> getAllShops() {
         try {
-            return shopRepository.getAllShops();
+            LoggerService.logMethodExecution("getAllShops");
+            List<Shop> returnShops = shopRepository.getAllShops();
+            LoggerService.logMethodExecutionEnd("getAllShops", returnShops);
+            return returnShops;
         } catch (Exception e) {
+            LoggerService.logError("getAllShops", e);
             throw new RuntimeException("Error retrieving all shops: " + e.getMessage(), e);
         }
     }
@@ -70,8 +85,11 @@ public class ShopService {
      */
     public void updatePurchasePolicy(int shopId, String newPolicy) {
         try {
+            LoggerService.logMethodExecution("updatePurchasePolicy", shopId, newPolicy);
             shopRepository.updatePurchasePolicy(shopId, newPolicy);
+            LoggerService.logMethodExecutionEndVoid("updatePurchasePolicy");
         } catch (Exception e) {
+            LoggerService.logError("updatePurchasePolicy", e, shopId, newPolicy);
             throw new RuntimeException("Error updating purchase policy for shop " + shopId + ": " + e.getMessage(), e);
         }
     }
@@ -84,8 +102,11 @@ public class ShopService {
      */
     public void setGlobalDiscount(int shopId, int discount) {
         try {
+            LoggerService.logMethodExecution("setGlobalDiscount", shopId, discount);
             shopRepository.setGlobalDiscount(shopId, discount);
+            LoggerService.logMethodExecutionEndVoid("setGlobalDiscount");
         } catch (Exception e) {
+            LoggerService.logError("setGlobalDiscount", e, shopId, discount);
             throw new RuntimeException("Error setting global discount for shop " + shopId + ": " + e.getMessage(), e);
         }
     }
@@ -99,8 +120,11 @@ public class ShopService {
      */
     public void setDiscountForItem(int shopId, int itemId, int discount) {
         try {
+            LoggerService.logMethodExecution("setDiscountForItem", shopId, itemId, discount);
             shopRepository.setDiscountForItem(shopId, itemId, discount);
+            LoggerService.logMethodExecutionEndVoid("setDiscountForItem");
         } catch (Exception e) {
+            LoggerService.logError("setDiscountForItem", e, shopId, itemId, discount);
             throw new RuntimeException("Error setting discount for item " + itemId + " in shop " + shopId + ": " + e.getMessage(), e);
         }
     }
@@ -114,8 +138,11 @@ public class ShopService {
      */
     public void addReviewToShop(int shopId, int rating, String reviewText) {
         try {
+            LoggerService.logMethodExecution("addReviewToShop", shopId, rating, reviewText);
             shopRepository.addReviewToShop(shopId, rating, reviewText);
+            LoggerService.logMethodExecutionEndVoid("addReviewToShop");
         } catch (Exception e) {
+            LoggerService.logError("addReviewToShop", e, shopId, rating, reviewText);
             throw new RuntimeException("Error adding review to shop " + shopId + ": " + e.getMessage(), e);
         }
     }
@@ -128,8 +155,12 @@ public class ShopService {
      */
     public double getShopAverageRating(int shopId) {
         try {
-            return shopRepository.getShopAverageRating(shopId);
+            LoggerService.logMethodExecution("getShopAverageRating", shopId);
+            double returnDouble = shopRepository.getShopAverageRating(shopId);
+            LoggerService.logMethodExecutionEnd("getShopAverageRating", returnDouble);
+            return returnDouble;
         } catch (Exception e) {
+            LoggerService.logError("getShopAverageRating", e, shopId);
             throw new RuntimeException("Error retrieving average rating for shop " + shopId + ": " + e.getMessage(), e);
         }
     }
@@ -144,8 +175,11 @@ public class ShopService {
      */
     public void addItemToShop(int shopId, int itemId, int quantity, int price) {
         try {
+            LoggerService.logMethodExecution("addItemToShop", shopId, itemId, quantity, price);
             shopRepository.addItemToShop(shopId, itemId, quantity, price);
+            LoggerService.logMethodExecutionEndVoid("addItemToShop");
         } catch (Exception e) {
+            LoggerService.logError("addItemToShop", e, shopId, itemId, quantity, price);
             throw new RuntimeException("Error adding item " + itemId + " to shop " + shopId + ": " + e.getMessage(), e);
         }
     }
@@ -159,8 +193,11 @@ public class ShopService {
      */
     public void updateItemPriceInShop(int shopId, int itemId, int price) {
         try {
+            LoggerService.logMethodExecution("updateItemPriceInShop", shopId, itemId, price);
             shopRepository.updateItemPriceInShop(shopId, itemId, price);
+            LoggerService.logMethodExecutionEndVoid("updateItemPriceInShop");
         } catch (Exception e) {
+            LoggerService.logError("updateItemPriceInShop", e, shopId, itemId, price);
             throw new RuntimeException("Error updating price for item " + itemId + " in shop " + shopId + ": " + e.getMessage(), e);
         }
     }
@@ -173,8 +210,11 @@ public class ShopService {
      */
     public void removeItemFromShop(int shopId, int itemId) {
         try {
+            LoggerService.logMethodExecution("removeItemFromShop", shopId, itemId);
             shopRepository.removeItemFromShop(shopId, itemId);
+            LoggerService.logMethodExecutionEndVoid("removeItemFromShop");
         } catch (Exception e) {
+            LoggerService.logError("removeItemFromShop", e, shopId, itemId);
             throw new RuntimeException("Error removing item " + itemId + " from shop " + shopId + ": " + e.getMessage(), e);
         }
     }
@@ -188,8 +228,12 @@ public class ShopService {
      */
     public int getItemQuantityFromShop(int shopId, int itemId) {
         try {
-            return shopRepository.getItemQuantityFromShop(shopId, itemId);
+            LoggerService.logMethodExecution("getItemQuantityFromShop", shopId, itemId);
+            int returnInt = shopRepository.getItemQuantityFromShop(shopId, itemId);
+            LoggerService.logMethodExecutionEnd("getItemQuantityFromShop", returnInt);
+            return returnInt;
         } catch (Exception e) {
+            LoggerService.logError("getItemQuantityFromShop", e, shopId, itemId);
             throw new RuntimeException("Error retrieving quantity for item " + itemId + " from shop " + shopId + ": " + e.getMessage(), e);
         }
     }
@@ -202,8 +246,11 @@ public class ShopService {
      */
     public void closeShop(Integer shopId) {
         try {
+            LoggerService.logMethodExecution("closeShop", shopId);
             shopRepository.closeShop(shopId);
+            LoggerService.logMethodExecutionEndVoid("closeShop");
         } catch (Exception e) {
+            LoggerService.logError("closeShop", e, shopId);
             throw new RuntimeException("Error closing shop " + shopId + ": " + e.getMessage(), e);
         }
     }
@@ -217,8 +264,12 @@ public class ShopService {
      */
     public boolean checkSupplyAvailability(Integer shopId, Integer itemId) {
         try {
-            return shopRepository.checkSupplyAvailability(shopId, itemId);
+            LoggerService.logMethodExecution("checkSupplyAvailability", shopId, itemId);
+            boolean returnBoolean = shopRepository.checkSupplyAvailability(shopId, itemId);
+            LoggerService.logMethodExecutionEnd("checkSupplyAvailability", returnBoolean);
+            return returnBoolean;
         } catch (Exception e) {
+            LoggerService.logError("checkSupplyAvailability", e, shopId, itemId);
             throw new RuntimeException("Error checking supply for item " + itemId + " in shop " + shopId + ": " + e.getMessage(), e);
         }
     }
@@ -232,8 +283,11 @@ public class ShopService {
      */
     public void removeSupply(Integer shopId, Integer itemId, Integer supply) {
         try {
+            LoggerService.logMethodExecution("removeSupply", shopId, itemId, supply);
             shopRepository.removeSupply(shopId, itemId, supply);
+            LoggerService.logMethodExecutionEndVoid("removeSupply");
         } catch (Exception e) {
+            LoggerService.logError("removeSupply", e, shopId, itemId, supply);
             throw new RuntimeException("Error removing supply for item " + itemId + " in shop " + shopId + ": " + e.getMessage(), e);
         }
     }
@@ -246,8 +300,12 @@ public class ShopService {
      */
     public List<Integer> getItems(Integer shopId) {
         try {
-            return shopRepository.getItems(shopId);
+            LoggerService.logMethodExecution("getItems", shopId);
+            List<Integer> returnItems = shopRepository.getItems(shopId);
+            LoggerService.logMethodExecutionEnd("getItems", returnItems);
+            return returnItems;
         } catch (Exception e) {
+            LoggerService.logError("getItems", e, shopId);
             throw new RuntimeException("Error retrieving items for shop " + shopId + ": " + e.getMessage(), e);
         }
     }

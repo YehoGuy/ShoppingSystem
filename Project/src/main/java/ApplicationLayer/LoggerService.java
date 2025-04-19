@@ -19,4 +19,12 @@ public class LoggerService {
         logger.error("Error in method: " + methodName + " - " +" with arguments: " + argString + e.getMessage(), e);
     }
 
+    public static void logMethodExecutionEnd(String methodName, Object returnValue) {
+        logger.info("Method: " + methodName + " executed successfully. Return value: " + returnValue);
+    }
+
+    public static void logMethodExecutionEndVoid(String methodName) {
+        logger.info("Method: " + methodName + " executed successfully.");
+    }    
+
 }
