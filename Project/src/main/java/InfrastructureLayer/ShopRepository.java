@@ -1,9 +1,13 @@
+package InfrastructureLayer;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+
+import DomainLayer.Shop.IShopRepository;
 import DomainLayer.Shop.Shop;
 
 public class ShopRepository implements IShopRepository {

@@ -1,3 +1,5 @@
+package DomainLayer.Item;
+
 import java.util.List;
 import DomainLayer.Item.Item;
 import DomainLayer.Item.ItemReview;

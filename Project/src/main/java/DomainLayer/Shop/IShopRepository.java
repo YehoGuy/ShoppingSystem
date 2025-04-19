@@ -1,3 +1,5 @@
+package DomainLayer.Shop;
+
 import java.util.List;
 
 public interface IShopRepository {

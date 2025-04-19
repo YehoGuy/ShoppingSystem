@@ -1,4 +1,8 @@
+package ApplicationLayer.Item;
+
 import java.util.List;
+
+import DomainLayer.Item.IItemRepository;
 import DomainLayer.Item.Item;
 import DomainLayer.Item.ItemReview;
 
