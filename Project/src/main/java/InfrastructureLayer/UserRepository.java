@@ -31,10 +31,11 @@ public class UserRepository implements IUserRepository {
         return userMapping.get(id);
     }
 
-    public void addGuest() {
+    public int addGuest() {
         int id = userIdCounter.incrementAndGet(); // Generate a new ID for the guest
         Guest guest = new Guest(id); // Assuming Guest is a subclass of User
         userMapping.put(id, guest); // Add the guest to the mapping
+        return id; // Return the ID of the newly created guest
     }
 
     public void addMember(String username, String password, String email, String phoneNumber, String address) {
@@ -43,15 +44,97 @@ public class UserRepository implements IUserRepository {
         userMapping.put(id, member); // Add the member to the mapping
     }
 
-    public void updateMember(int id, String username, String password, String email, String phoneNumber, String address) {
+    public void updateMemberUsername(int id, String username) {
         if (!userMapping.containsKey(id)) {
             throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
         }
-        removeUserById(id);
-        User user = new Member(id, username, password, email, phoneNumber, address); // Assuming User has a constructor with these parameters
-        userMapping.put(id, user);
+        User user = userMapping.get(id);
+        if (user instanceof Member) {
+            ((Member) user).setUsername(username);
+        } else {
+            throw new IllegalArgumentException("User with ID " + id + " is not a Member.");
+        }
     }
 
+    public void updateMemberPassword(int id, String password) {
+        if (!userMapping.containsKey(id)) {
+            throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+        }
+        User user = userMapping.get(id);
+        if (user instanceof Member) {
+            ((Member) user).setPassword(password);
+        } else {
+            throw new IllegalArgumentException("User with ID " + id + " is not a Member.");
+        }
+    }
+
+    public void updateMemberEmail(int id, String email) {
+        if (!userMapping.containsKey(id)) {
+            throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+        }
+        User user = userMapping.get(id);
+        if (user instanceof Member) {
+            ((Member) user).setEmail(email);
+        } else {
+            throw new IllegalArgumentException("User with ID " + id + " is not a Member.");
+        }
+    }
+
+    public void updateMemberPhoneNumber(int id, String phoneNumber) {
+        if (!userMapping.containsKey(id)) {
+            throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+        }
+        User user = userMapping.get(id);
+        if (user instanceof Member) {
+            ((Member) user).setPhoneNumber(phoneNumber);
+        } else {
+            throw new IllegalArgumentException("User with ID " + id + " is not a Member.");
+        }
+    }
+
+    public void updateMemberAddress(int id, String address) {
+        if (!userMapping.containsKey(id)) {
+            throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+        }
+        User user = userMapping.get(id);
+        if (user instanceof Member) {
+            ((Member) user).setAddress(address);
+        } else {
+            throw new IllegalArgumentException("User with ID " + id + " is not a Member.");
+        }
+    }
+    
+    public int isUsernameAndPasswordValid(String username, String password) {
+        for (User user : userMapping.values()) {
+            if (user instanceof Member) {
+                Member member = (Member) user;
+                if (member.getUsername().equals(username) && member.getPassword().equals(password)) {
+                    return member.getMemberId(); // Return the ID of the member if username and password match
+                }
+            }
+        }
+        return -1; // Return -1 if no match is found
+    }
+    
+    public boolean isUsernameTaken (String username) {
+        for (User user : userMapping.values()) {
+            if (user instanceof Member) {
+                Member member = (Member) user;
+                if (member.getUsername().equals(username)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public boolean isGuestById(int id) {
+        if (!userMapping.containsKey(id)) {
+            return false;
+        }
+        User user = userMapping.get(id);
+        return user instanceof Guest;
+    }
 
     public void removeUserById(int id) {
         if (!userMapping.containsKey(id)) {

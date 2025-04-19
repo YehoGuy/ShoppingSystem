@@ -1,11 +1,11 @@
 package DomainLayer;
 
+import java.lang.reflect.Member;
 import java.util.List;
 import java.util.Map;
 
 /**
  * Interface for managing user data in a repository.
- * Provides methods for adding, updating, removing, and retrieving users.
  */
 public interface IUserRepository {
 
@@ -24,6 +24,7 @@ public interface IUserRepository {
 
     /**
      * Adds a new member user to the repository.
+     * 
      * @param username The username of the member.
      * @param password The password of the member.
      * @param email The email address of the member.
@@ -31,17 +32,6 @@ public interface IUserRepository {
      * @param address The address of the member.
      */
     public void addMember(String username, String password, String email, String phoneNumber, String address);
-
-    /**
-     * Updates the details of an existing member.
-     * @param id The unique identifier of the member to be updated.
-     * @param username The new username of the member.
-     * @param password The new password of the member.
-     * @param email The new email address of the member.
-     * @param phoneNumber The new phone number of the member.
-     * @param address The new address of the member.
-     */
-    public void updateMember(int id, String username, String password, String email, String phoneNumber, String address);
 
     /**
      * Removes a user from the repository by their unique ID.
@@ -89,4 +79,45 @@ public interface IUserRepository {
      * Clears all user data from the repository.
      */
     public void clear();
+
+    /**
+     * Updates the phone number of a member user by their unique ID.
+     * 
+     * @param id The unique identifier of the member.
+     * @param phoneNumber The new phone number to be updated.
+     */
+    public void updateMemberPhoneNumber(int id, String phoneNumber);
+
+    /**
+     * Updates the address of a member user by their unique ID.
+     * 
+     * @param id The unique identifier of the member.
+     * @param address The new address to be updated.
+     */
+    public void updateMemberAddress(int id, String address);
+
+    /**
+     * Validates if the provided username and password match a member in the repository.
+     * 
+     * @param username The username to validate.
+     * @param password The password to validate.
+     * @return The unique ID of the member if valid, or -1 if invalid.
+     */
+    public int isUsernameAndPasswordValid(String username, String password);
+
+    /**
+     * Checks if a username is already taken by a member in the repository.
+     * 
+     * @param username The username to check.
+     * @return True if the username is taken, false otherwise.
+     */
+    public boolean isUsernameTaken(String username);
+
+    /**
+     * Checks if a user with the given ID is a guest.
+     * 
+     * @param id The unique identifier of the user.
+     * @return True if the user is a guest, false otherwise.
+     */
+    public boolean isGuestById(int id);
 }
