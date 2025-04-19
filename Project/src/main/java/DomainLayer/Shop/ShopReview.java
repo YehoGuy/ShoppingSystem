@@ -1,8 +1,10 @@
+package DomainLayer.Shop;
+
 
 /**
  * A domain-specific class representing a review with a rating and a review text.
  */
-class ShopReview {
+public class ShopReview {
     private final int rating;      // Rating as an integer.
     private final String reviewText; // The review text.
 

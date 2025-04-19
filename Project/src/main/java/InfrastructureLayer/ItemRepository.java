@@ -1,9 +1,12 @@
+package InfrastructureLayer;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import DomainLayer.Item.IItemRepository;
 import DomainLayer.Item.Item;
 import DomainLayer.Item.ItemReview;
 

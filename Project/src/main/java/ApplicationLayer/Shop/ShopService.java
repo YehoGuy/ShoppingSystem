@@ -1,4 +1,9 @@
+package ApplicationLayer.Shop;
+
 import java.util.List;
+
+import DomainLayer.Shop.IShopRepository;
+import DomainLayer.Shop.Shop;
 
 public class ShopService {
 
