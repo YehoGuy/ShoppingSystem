@@ -23,18 +23,18 @@ public class AuthTokenService {
     private SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS256); 
 
     private IAuthTokenRepository authTokenRepository; 
-    private UserService userService; 
+    // private UserService userService; 
 
-    public AuthTokenService(IAuthTokenRepository authTokenRepository, UserService userService) {
+    public AuthTokenService(IAuthTokenRepository authTokenRepository) {
         this.authTokenRepository = authTokenRepository; 
-        this.userService = userService; 
+        // this.userService = userService; 
     }
 
     public String Login(String username, String password) {
-            String token = generateAuthToken(); 
+            String token = generateAuthToken(username); 
             long expirationTime = System.currentTimeMillis() + EXPIRATION_TIME; 
             AuthToken authToken = new AuthToken(token,expirationTime);
-            int userId = userService.getUserIdByUsername(username);
+            int userId = 0;//userService.getUserIdByUsername(username);
             authTokenRepository.setAuthToken(userId, authToken);
             return token;
     }
@@ -49,9 +49,12 @@ public class AuthTokenService {
         }
     }
 
-    private String generateAuthToken() {
+    private String generateAuthToken(String username) {
+        if (username == null || username.isEmpty()) {
+            throw new IllegalArgumentException("Username cannot be null or empty");
+        }
         return Jwts.builder()
-                .setSubject("user")
+                .setSubject("username")
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(key)
                 .compact();
