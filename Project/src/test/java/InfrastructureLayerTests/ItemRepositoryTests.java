@@ -7,9 +7,9 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import DomainLayer.Item.Item;
-import DomainLayer.Item.ItemReview;
-import InfrastructureLayer.ItemRepository;
+import main.DomainLayer.Item.Item;
+import main.DomainLayer.Item.ItemReview;
+import main.InfrastructureLayer.ItemRepository;
 
 public class ItemRepositoryTests {
 

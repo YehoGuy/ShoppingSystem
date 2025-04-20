@@ -1,24 +1,67 @@
-package ApplicationLayer.Shop;
+package main.ApplicationLayer.Shop;
 
 import java.util.List;
 
-import ApplicationLayer.LoggerService;
-import DomainLayer.Shop.IShopRepository;
-import DomainLayer.Shop.Shop;
+import main.ApplicationLayer.Item.ItemService;
+import main.ApplicationLayer.LoggerService;
+import main.DomainLayer.Shop.IShopRepository;
+import main.DomainLayer.Shop.Shop;
+import main.DomainLayer.Item.Item;
+
+import main.InfrastructureLayer.ShopRepository;
 
 public class ShopService {
 
+    private static volatile ShopService instance;
+
     // Use the interface type for the repository dependency.
     private final IShopRepository shopRepository;
+    private ItemService itemService;
 
     /**
-     * Constructor for ShopService.
+     * Private constructor to prevent direct instantiation.
      *
      * @param shopRepository an instance of IShopRepository that handles storage of Shop instances.
      */
-    public ShopService(IShopRepository shopRepository) {
+    private ShopService(IShopRepository shopRepository) {
         this.shopRepository = shopRepository;
+        itemService = ItemService.getInstance();
     }
+
+    /**
+     * Returns the singleton instance, initializing it with a default ShopRepository if necessary.
+     *
+     * @return the singleton ShopService
+     */
+    public static ShopService getInstance() {
+        if (instance == null) {
+            synchronized (ShopService.class) {
+                if (instance == null) {
+                    instance = new ShopService(new ShopRepository());
+                }
+            }
+        }
+        return instance;
+    }
+
+    /**
+     * Returns the singleton instance, initializing it with the provided repository if necessary.
+     * Subsequent calls will ignore the repository parameter once the instance is initialized.
+     *
+     * @param repo a custom IShopRepository implementation
+     * @return the singleton ShopService
+     */
+    public static ShopService getInstance(IShopRepository repo) {
+        if (instance == null) {
+            synchronized (ShopService.class) {
+                if (instance == null) {
+                    instance = new ShopService(repo);
+                }
+            }
+        }
+        return instance;
+    }
+
 
     /**
      * Creates a new shop with the specified parameters.
@@ -298,15 +341,32 @@ public class ShopService {
      * @param shopId the shop id.
      * @return a list of item IDs.
      */
-    public List<Integer> getItems(Integer shopId) {
+    public List<Item> getItemsByShop(Integer shopId) {
         try {
             LoggerService.logMethodExecution("getItems", shopId);
-            List<Integer> returnItems = shopRepository.getItems(shopId);
+            List<Integer> returnItems = shopRepository.getItemsByShop(shopId);
             LoggerService.logMethodExecutionEnd("getItems", returnItems);
-            return returnItems;
+            List<Item> items = itemService.getItemsByIds(returnItems);
+            LoggerService.logMethodExecutionEnd("getItems", items);
+            return items;
         } catch (Exception e) {
             LoggerService.logError("getItems", e, shopId);
             throw new RuntimeException("Error retrieving items for shop " + shopId + ": " + e.getMessage(), e);
         }
+    }
+
+    public List<Item> getItems() {
+        try {
+            LoggerService.logMethodExecution("getItems");
+            List<Integer> returnItemsIds = shopRepository.getItems();
+            LoggerService.logMethodExecutionEnd("getItems", returnItemsIds);
+            List<Item> returnItems = itemService.getItemsByIds(returnItemsIds);
+            return returnItems;
+        } catch (Exception e) {
+            LoggerService.logError("getItems", e);
+            throw new RuntimeException("Error retrieving all items: " + e.getMessage(), e);
+        }
+
+
     }
 }

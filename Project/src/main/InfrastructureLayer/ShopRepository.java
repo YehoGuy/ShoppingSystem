@@ -1,14 +1,13 @@
-package InfrastructureLayer;
+package main.InfrastructureLayer;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import DomainLayer.Shop.IShopRepository;
-import DomainLayer.Shop.Shop;
+import main.DomainLayer.Shop.IShopRepository;
+import main.DomainLayer.Shop.Shop;
 
 public class ShopRepository implements IShopRepository {
 
@@ -199,7 +198,7 @@ public class ShopRepository implements IShopRepository {
      * @param shopId the shop id.
      * @return a list of item IDs.
      */
-    public List<Integer> getItems(Integer shopId) {
+    public List<Integer> getItemsByShop(Integer shopId) {
         Shop shop = shops.get(shopId);
         if (shop != null) {
             return shop.getItemIds();
@@ -207,4 +206,29 @@ public class ShopRepository implements IShopRepository {
             throw new IllegalArgumentException("Shop not found: " + shopId);
         }
     }
+
+    public List<Integer> getItems(){
+        return Collections.unmodifiableList(
+                shops.values().stream()
+                        .flatMap(shop -> shop.getItemIds().stream())
+                        .collect(Collectors.toList())
+        );
+    }
+
+    /**
+     * Returns the name of the shop identified by shopId.
+     *
+     * @param shopId the shop id.
+     * @return the name of the shop.
+     */
+    public String getShopName(int shopId) {
+        Shop shop = shops.get(shopId);
+        if (shop != null) {
+            return shop.getName();
+        } else {
+            throw new IllegalArgumentException("Shop not found: " + shopId);
+        }
+    }
+
+
 }
