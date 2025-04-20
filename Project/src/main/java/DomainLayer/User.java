@@ -17,7 +17,7 @@ public abstract class User {
 
     public void mergeShoppingCart(ShoppingCart otherCart) {
         if (otherCart != null) {
-            this.shoppingCart.merge(otherCart); // Merge the items from the other cart into this user's cart
+            this.shoppingCart.mergeCart(otherCart); // Merge the items from the other cart into this user's cart
         }
     }
 

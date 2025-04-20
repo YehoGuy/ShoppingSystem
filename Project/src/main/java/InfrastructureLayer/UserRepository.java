@@ -165,15 +165,16 @@ public class UserRepository implements IUserRepository {
         return guestUsers;
     }
 
+    @Override
     public List<Member> getMembersList() {
-        List<Member> memberUsers = new ArrayList<>();
-        for (User user : userMapping.values()) {
-            if (user instanceof Member) {
-                memberUsers.add((Member) user);
+            List<Member> memberUsers = new ArrayList<>();
+            for (User user : userMapping.values()) {
+                if (user instanceof Member) {
+                    memberUsers.add((Member) user);
+                }
             }
+            return memberUsers;
         }
-        return memberUsers;
-    }
 
     public void clear() {
         userMapping.clear();

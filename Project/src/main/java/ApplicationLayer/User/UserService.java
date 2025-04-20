@@ -1,7 +1,7 @@
-
-import java.lang.reflect.Member;
-
+package ApplicationLayer.User;
+import DomainLayer.Member;
 import DomainLayer.User;
+import InfrastructureLayer.UserRepository;
 
 public class UserService {
     private final UserRepository userRepository;
@@ -69,7 +69,39 @@ public class UserService {
             return -1; // Indicate failure to create a guest user
         }
     }
+
+    public int loginAsMember(String username, String password, int id_if_guest) {
+        try {
+            if (username == null || password == null) {
+                throw new IllegalArgumentException("Username and password cannot be null.");
+            }
+            if (username.isEmpty() || password.isEmpty()) {
+                throw new IllegalArgumentException("Username and password cannot be empty.");
+            }
+            int loginAsMember_id = userRepository.isUsernameAndPasswordValid(username, password);
+            if (loginAsMember_id > 0) { // valid login attempt
+                if (id_if_guest == -1) { // if the user is not a guest, it's their initial login
+                    return loginAsMember_id; // Return the ID of the logged-in member    
+                } else if (userRepository.isGuestById(id_if_guest)) { // ensure the given id matches a guest in the data
+                    // merge the guest cart with the member cart
+                    User member = userRepository.getUserById(loginAsMember_id);
+                    User guest = userRepository.getUserById(id_if_guest);
+                    member.mergeShoppingCart(guest.getShoppingCart());
+                    // remove the guest user from the data
+                    userRepository.removeUserById(id_if_guest);
+                    // Return the ID of the logged-in member
+                    return loginAsMember_id; 
+                } else {
+                    throw new IllegalArgumentException("The given id does not match a guest in the data. Probably it is a member id!");
+                }
+            }
+        } catch (Exception e) {
+            return -1; // Indicate failure to log in as a member
+        }
+        return -1; // Default return value for unhandled cases
+    }
     
+   /*  
     public int loginAsMember(String username, String password, int id_if_guest) {
         try {
             if (username == null || password == null) {
@@ -107,6 +139,8 @@ public class UserService {
             return -1; // Indicate failure to log in as a member
         }
     }
+
+    */
 
     public boolean signUp(String username, String password, String email, String phoneNumber, String address) {
         try {

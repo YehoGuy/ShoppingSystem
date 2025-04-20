@@ -1,6 +1,4 @@
 package DomainLayer;
-
-import java.lang.reflect.Member;
 import java.util.List;
 import java.util.Map;
 
@@ -20,7 +18,7 @@ public interface IUserRepository {
     /**
      * Adds a new guest user to the repository.
      */
-    public void addGuest();
+    public int addGuest();
 
     /**
      * Adds a new member user to the repository.
