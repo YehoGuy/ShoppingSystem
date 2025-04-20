@@ -18,7 +18,7 @@ public class AuthServiceTests {
     private AuthTokenService authService = new AuthTokenService(new AuthTokenRepository());
 
     @Test
-    public void generateToken_ShouldCreateValidJWT() {
+    public void testGenerateToken() {
         String username = "testUser";
         
         String token = authService.generateAuthToken(username);
@@ -35,7 +35,7 @@ public class AuthServiceTests {
     }
 
     @Test
-    public void generateToken_ShouldHaveCorrectExpiration() {
+    public void testExpirationTime() {
         String username = "testUser";
         
         String token = authService.generateAuthToken(username);
@@ -50,7 +50,7 @@ public class AuthServiceTests {
     }
 
     @Test
-    public void validateToken_ShouldReturnTrueForValidToken() {
+    public void testValidateToken() {
         String username = "testUser";
         String token = authService.generateAuthToken(username);
         
@@ -60,7 +60,7 @@ public class AuthServiceTests {
     }
 
     @Test
-    public void validateToken_ShouldReturnFalseForInvalidToken() {
+    public void testInvalidToken() {
         String invalidToken = "invalidToken";
         
         int isValid = authService.ValidateToken(invalidToken);
