@@ -7,8 +7,8 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import main.DomainLayer.Shop.Shop;
-import main.InfrastructureLayer.ShopRepository;
+import DomainLayer.Shop.Shop;
+import InfrastructureLayer.ShopRepository;
 
 public class ShopRepositoryTests {
 
@@ -119,7 +119,7 @@ public class ShopRepositoryTests {
         Shop s = repo.createShop("S", "P", 0);
         repo.addItemToShop(s.getId(), 1, 1, 10);
         repo.addItemToShop(s.getId(), 2, 1, 20);
-        List<Integer> ids = repo.getItemsByShop(s.getId());
+        List<Integer> ids = repo.getItems(s.getId());
         assertTrue(ids.contains(1));
         assertTrue(ids.contains(2));
     }
