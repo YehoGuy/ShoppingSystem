@@ -18,4 +18,12 @@ public class AuthToken {
     public Date getExpirationTime() {
         return expirationTime;
     }
+
+    public void setExpirationDate(Date expirationTime) {
+        this.expirationTime = expirationTime;
+    }
+
+    public boolean isExpired() {
+        return new Date().after(expirationTime); // Check if the current date is after the expiration time
+    }
 }

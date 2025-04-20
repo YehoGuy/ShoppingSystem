@@ -15,16 +15,16 @@ public class AuthTokenRepoTests {
     private IAuthTokenRepository authTokenRepo;
     private AuthToken authToken1;
     private AuthToken authToken2;
-    private Date expirationDate1; // Set expiration date to 10 seconds in the future
-    private Date expirationDate2; // Set expiration date to 10 seconds in the future
+    private Date expirationDate1; 
+    private Date expirationDate2; 
 
     @BeforeEach
     public void setup() {
         authTokenRepo = new AuthTokenRepository();
-        expirationDate1 = new Date(System.currentTimeMillis() + 1000000000000L); // Set expiration date to 10 seconds in the future
-        expirationDate2 = new Date(System.currentTimeMillis() + 2000000000000L); // Set expiration date to 20 seconds in the future
-        authToken1 = new AuthToken("token1", expirationDate1); // Set expiration date to 10 seconds in the future
-        authToken2 = new AuthToken("token2", expirationDate2); // Set expiration date to 20 seconds in the future
+        expirationDate1 = new Date(System.currentTimeMillis() + 1000000000000L); 
+        expirationDate2 = new Date(System.currentTimeMillis() + 2000000000000L); 
+        authToken1 = new AuthToken("token1", expirationDate1); 
+        authToken2 = new AuthToken("token2", expirationDate2); 
     }
 
     @Test
@@ -53,7 +53,7 @@ public class AuthTokenRepoTests {
     public void testGetAuthToken() {
         authTokenRepo.setAuthToken(1, authToken1);
         assertEquals(authToken1, authTokenRepo.getAuthToken(1));
-        assertNull(authTokenRepo.getAuthToken(2)); // No token set for user ID 2
+        assertNull(authTokenRepo.getAuthToken(2)); 
     }
 
     @Test

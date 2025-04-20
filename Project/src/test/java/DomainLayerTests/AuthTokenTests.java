@@ -1,21 +1,22 @@
 package DomainLayerTests;
 
 import java.util.Date;
-import DomainLayer.AuthToken;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import DomainLayer.AuthToken;
+
 public class AuthTokenTests {
-    private AuthToken authToken;
-    private Date expirationDate; // Set expiration date to 10 seconds in the future
+    private static AuthToken authToken;
+    private static Date expirationDate; 
     @BeforeEach
     public static void setup() {
-        expirationDate = new Date(System.currentTimeMillis()+100*60*60); // Set expiration date to 10 seconds in the future
-        authToken = new AuthToken("token",expirationDate); // Set expiration date to 10 seconds in the future
+        expirationDate = new Date(System.currentTimeMillis()+1000*60*60); 
+        authToken = new AuthToken("token",expirationDate); 
         
     }
 
@@ -26,13 +27,14 @@ public class AuthTokenTests {
 
     @Test
     public void testGetExpirationDate() {
-        assertEquals(Date, authToken.getExpirationDate());
+        assertEquals(expirationDate, authToken.getExpirationTime());
     }
 
     @Test
-    public void testIsExpired() {
-        assertFalse(authToken.isExpired());
-        authToken.setExpirationDate(new Date(System.currentTimeMillis())); // Set to past date
+    public void testIsExpired() throws InterruptedException {
+        assertFalse(authToken.isExpired()); 
+        authToken.setExpirationDate(new Date(System.currentTimeMillis())); 
+        Thread.sleep(1000);
         assertTrue(authToken.isExpired());
     }
 }
