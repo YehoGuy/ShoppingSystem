@@ -2,17 +2,17 @@ package ApplicationLayer;
 
 import java.util.Date;
 import java.util.function.Function;
-import org.springframework.beans.factory.annotation.Value;
-import javax.crypto.SecretKey;
-import javax.swing.JComboBox;
 
-import DomainLayer.IAuthTokenRepository;
-import ApplicationLayer.UserService;
+import javax.crypto.SecretKey;
+
+import org.springframework.beans.factory.annotation.Value;
+
 import DomainLayer.AuthToken;
+import DomainLayer.IAuthTokenRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 
