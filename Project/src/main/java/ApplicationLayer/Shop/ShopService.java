@@ -30,7 +30,7 @@ public class ShopService {
      */
     public Shop createShop(String name, String purchasePolicy, int globalDiscount) {
         try { 
-           LoggerService.logMethodExecution("createShop", name, purchasePolicy, globalDiscount);
+            LoggerService.logMethodExecution("createShop", name, purchasePolicy, globalDiscount);
             Shop returnShop = shopRepository.createShop(name, purchasePolicy, globalDiscount);
             LoggerService.logMethodExecutionEnd("createShop", returnShop);
             return returnShop;
