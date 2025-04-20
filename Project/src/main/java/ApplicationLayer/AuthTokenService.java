@@ -33,7 +33,7 @@ public class AuthTokenService {
     public String AuthenticateGuest(int guestId) {
         String token = generateAuthToken("guest");
         long expirationTime = System.currentTimeMillis() + EXPIRATION_TIME;
-        AuthToken authToken = new AuthToken(token, expirationTime);
+        AuthToken authToken = new AuthToken(token, new Date(expirationTime));
         authTokenRepository.setAuthToken(guestId, authToken);
         return token;
     }
@@ -42,7 +42,7 @@ public class AuthTokenService {
     public String Login(String username, String password) {
             String token = generateAuthToken(username); 
             long expirationTime = System.currentTimeMillis() + EXPIRATION_TIME; 
-            AuthToken authToken = new AuthToken(token,expirationTime);
+            AuthToken authToken = new AuthToken(token, new Date(expirationTime));
             int userId = 0;//userService.getUserIdByUsername(username);
             authTokenRepository.setAuthToken(userId, authToken);
             return token;
