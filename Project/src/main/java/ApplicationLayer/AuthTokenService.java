@@ -30,10 +30,11 @@ public class AuthTokenService {
         // this.userService = userService; 
     }
 
-    public String AuthenticateGuest() {
+    public String AuthenticateGuest(int guestId) {
         String token = generateAuthToken("guest");
         long expirationTime = System.currentTimeMillis() + EXPIRATION_TIME;
         AuthToken authToken = new AuthToken(token, expirationTime);
+        authTokenRepository.setAuthToken(guestId, authToken);
         return token;
     }
 
@@ -62,7 +63,8 @@ public class AuthTokenService {
             throw new IllegalArgumentException("Username cannot be null or empty");
         }
         return Jwts.builder()
-                .setSubject("username")
+                .setSubject(username)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(key)
                 .compact();
