@@ -58,7 +58,7 @@ public class AuthTokenService {
         }
     }
 
-    private String generateAuthToken(String username) {
+    public String generateAuthToken(String username) {
         if (username == null || username.isEmpty()) {
             throw new IllegalArgumentException("Username cannot be null or empty");
         }

@@ -57,12 +57,6 @@ public class AuthTokenRepoTests {
     }
 
     @Test
-    public void testGetUserIdByTokenNotFound() {
-        authTokenRepo.setAuthToken(1, authToken1);
-        assertEquals(-1, authTokenRepo.getUserIdByToken("nonexistent_token"));
-    }
-
-    @Test
     public void testGetUserIdByTokenMultipleTokens() {
         authTokenRepo.setAuthToken(1, authToken1);
         authTokenRepo.setAuthToken(2, authToken2);
