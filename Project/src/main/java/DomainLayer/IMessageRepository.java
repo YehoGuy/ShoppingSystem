@@ -7,7 +7,7 @@ public interface IMessageRepository{
      * Adds a message to the repository.
      * @param message The message to add.
      */
-    void addMessage(int senderId, int receiverId, String content, String timestamp, boolean userToUser);
+    void addMessage(int senderId, int receiverId, String content, String timestamp, boolean userToUser, int previousMessageId);
 
     /**
      * Gets all messages from the repository.
@@ -32,7 +32,7 @@ public interface IMessageRepository{
      * Updates a message in the repository.
      * @param message The message to update.
      */
-    void updateMessage(int id, int senderId, int receiverId, String content, String timestamp, boolean userToUser);
+    void updateMessage(int id, String content, String timestamp);
 
     /**
      * Gets all messages sent by a specific user.
@@ -47,4 +47,18 @@ public interface IMessageRepository{
      * @return A list of messages received by the specified user.
      */
     List<Message> getMessagesByReceiverId(int receiverId);
+
+    /**
+     * get the message that this message was sent as response to
+     * @param messageId
+     * @return
+     */
+    Message getPreviousMessage(int messageId);
+
+    /**
+     * get all the messages in the conversation that this message is part of, up to that message
+     * @param messageId
+     * @return
+     */
+    List<Message> getFullConversation(int messageId);
 }
