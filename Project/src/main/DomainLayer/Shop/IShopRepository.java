@@ -1,4 +1,4 @@
-package DomainLayer.Shop;
+package main.DomainLayer.Shop;
 
 import java.util.List;
 
@@ -134,10 +134,25 @@ public interface IShopRepository {
     void removeSupply(Integer shopId, Integer itemId, Integer supply);
 
     /**
-     * Returns a list of item IDs that belong to the shop identified by shopId.
+     * Retrieves a list of item IDs that belong to the shop identified by shopId.
      *
      * @param shopId the shop id.
      * @return a list of item IDs.
      */
-    List<Integer> getItems(Integer shopId);
+    List<Integer> getItemsByShop(Integer shopId);
+
+    /**
+     * Retrieves a list of item IDs that belong to the shop identified by shopId.
+     *
+     * @return a list of item IDs.
+     */
+    List<Integer> getItems();
+
+    /**
+     * Retrieves the name of the shop identified by shopId.
+     *
+     * @param shopId the shop id.
+     * @return the shop name.
+     */
+    String getShopName(int shopId);
 }
