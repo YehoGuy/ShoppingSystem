@@ -63,4 +63,26 @@ public class ShoppingCart {
         shopItems.put(productId, quantity);
     }
 
+    public void mergeCart(ShoppingCart otherCart) {
+        Hashtable<Integer, Dictionary<Integer, Integer>> otherItems = 
+            (Hashtable<Integer, Dictionary<Integer, Integer>>) otherCart.items;
+
+        for (Integer shopId : otherItems.keySet()) {
+            if (!items.containsKey(shopId)) {
+                items.put(shopId, otherItems.get(shopId));
+            } else {
+                Dictionary<Integer, Integer> currentBasket = items.get(shopId);
+                Dictionary<Integer, Integer> otherBasket = otherItems.get(shopId);
+
+                for (Integer productId : ((Hashtable<Integer, Integer>) otherBasket).keySet()) {
+                    int quantity = otherBasket.get(productId);
+                    if (currentBasket.get(productId) != null) {
+                        quantity += currentBasket.get(productId);
+                    }
+                    currentBasket.put(productId, quantity);
+                }
+            }
+        }
+    }
+
 }
