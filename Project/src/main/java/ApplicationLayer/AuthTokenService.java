@@ -7,7 +7,7 @@ import javax.crypto.SecretKey;
 import javax.swing.JComboBox;
 
 import DomainLayer.IAuthTokenRepository;
-import DomainLayer.IuserService;
+import ApplicationLayer.UserService;
 import DomainLayer.AuthToken;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -29,6 +29,14 @@ public class AuthTokenService {
         this.authTokenRepository = authTokenRepository; 
         // this.userService = userService; 
     }
+
+    public String AuthenticateGuest() {
+        String token = generateAuthToken("guest");
+        long expirationTime = System.currentTimeMillis() + EXPIRATION_TIME;
+        AuthToken authToken = new AuthToken(token, expirationTime);
+        return token;
+    }
+
 
     public String Login(String username, String password) {
             String token = generateAuthToken(username); 
