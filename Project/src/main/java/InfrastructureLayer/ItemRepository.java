@@ -1,15 +1,14 @@
-package main.InfrastructureLayer;
+package InfrastructureLayer;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import main.DomainLayer.Item.IItemRepository;
-import main.DomainLayer.Item.Item;
-import main.DomainLayer.Item.ItemReview;
+import DomainLayer.Item.IItemRepository;
+import DomainLayer.Item.Item;
+import DomainLayer.Item.ItemReview;
 
 public class ItemRepository implements IItemRepository {
 
@@ -78,17 +77,5 @@ public class ItemRepository implements IItemRepository {
         if (removed == null) {
             throw new IllegalArgumentException("Item not found: " + itemId);
         }
-    }
-
-    @override
-    public List<Item> getItemsByIds(List<Integer> itemIds) {
-        if (itemIds == null) {
-            return Collections.emptyList();
-        }
-        List<Item> result = itemIds.stream()
-                .map(items::get)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-        return Collections.unmodifiableList(result);
     }
 }

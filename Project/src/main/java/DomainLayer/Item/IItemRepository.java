@@ -1,6 +1,8 @@
-package main.DomainLayer.Item;
+package DomainLayer.Item;
 
 import java.util.List;
+import DomainLayer.Item.Item;
+import DomainLayer.Item.ItemReview;
 
 public interface IItemRepository {
 
@@ -60,13 +62,4 @@ public interface IItemRepository {
      * @param itemId the item id
      */
     void deleteItem(int itemId);
-
-    /**
-     * Retrieves a list of Item objects for the given list of item IDs.
-     * If an ID is not found, it is skipped.
-     *
-     * @param itemIds the list of item IDs to fetch
-     * @return an unmodifiable list of corresponding Item instances
-     */
-    List<Item> getItemsByIds(List<Integer> itemIds);
 }

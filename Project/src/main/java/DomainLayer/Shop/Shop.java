@@ -1,4 +1,4 @@
-package main.DomainLayer.Shop;
+package DomainLayer.Shop;
 
 import java.util.ArrayList;
 import java.util.Collections;

@@ -1,60 +1,23 @@
-package main.ApplicationLayer.Item;
+package ApplicationLayer.Item;
 
 import java.util.List;
 
-import main.ApplicationLayer.LoggerService;
-import main.DomainLayer.Item.IItemRepository;
-import main.DomainLayer.Item.Item;
-import main.DomainLayer.Item.ItemReview;
-import DomainLayer.Item.ItemRepository;
+import ApplicationLayer.LoggerService;
+import DomainLayer.Item.IItemRepository;
+import DomainLayer.Item.Item;
+import DomainLayer.Item.ItemReview;
 
 public class ItemService {
-
-    private static volatile ItemService instance;
 
     private final IItemRepository itemRepository;
 
     /**
-     * Private constructor to prevent direct instantiation.
+     * Constructor for ItemService.
      *
      * @param itemRepository an instance of IItemRepository that handles storage of Item instances.
      */
-    private ItemService(IItemRepository itemRepository) {
+    public ItemService(IItemRepository itemRepository) {
         this.itemRepository = itemRepository;
-    }
-
-    /**
-     * Returns the singleton instance, initializing with the default ItemRepository if necessary.
-     *
-     * @return the singleton ItemService
-     */
-    public static ItemService getInstance() {
-        if (instance == null) {
-            synchronized (ItemService.class) {
-                if (instance == null) {
-                    instance = new ItemService(new ItemRepository());
-                }
-            }
-        }
-        return instance;
-    }
-
-    /**
-     * Returns the singleton instance, initializing with the provided repository if necessary.
-     * Subsequent calls ignore the repository parameter once initialized.
-     *
-     * @param repo a custom IItemRepository implementation
-     * @return the singleton ItemService
-     */
-    public static ItemService getInstance(IItemRepository repo) {
-        if (instance == null) {
-            synchronized (ItemService.class) {
-                if (instance == null) {
-                    instance = new ItemService(repo);
-                }
-            }
-        }
-        return instance;
     }
 
     /**
@@ -123,6 +86,7 @@ public class ItemService {
             LoggerService.logMethodExecution("addReviewToItem", itemId, rating, reviewText);
             itemRepository.addReviewToItem(itemId, rating, reviewText);
             LoggerService.logMethodExecutionEndVoid("addReviewToItem");
+            
         } catch (Exception e) {
             LoggerService.logError("addReviewToItem", e, itemId, rating, reviewText);
             throw new RuntimeException("Error adding review to item " + itemId + ": " + e.getMessage(), e);
@@ -138,7 +102,7 @@ public class ItemService {
     public List<ItemReview> getItemReviews(int itemId) {
         try {
             LoggerService.logMethodExecution("getItemReviews", itemId);
-            List<ItemReview> returnItems = itemRepository.getItemReviews(itemId);
+            List<ItemReview> returnItems = itemRepository.getItemReviews(itemId);           
             LoggerService.logMethodExecutionEnd("getItemReviews", returnItems);
             return returnItems;
         } catch (Exception e) {
@@ -178,24 +142,6 @@ public class ItemService {
         } catch (Exception e) {
             LoggerService.logError("deleteItem", e, itemId);
             throw new RuntimeException("Error deleting item " + itemId + ": " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Retrieves a list of Item objects for the given list of item IDs.
-     *
-     * @param itemIds the list of item IDs to fetch
-     * @return an unmodifiable list of corresponding Item instances
-     */
-    public List<Item> getItemsByIds(List<Integer> itemIds) {
-        try {
-            LoggerService.logMethodExecution("getItemsByIds", itemIds);
-            List<Item> result = itemRepository.getItemsByIds(itemIds);
-            LoggerService.logMethodExecutionEnd("getItemsByIds", result);
-            return result;
-        } catch (Exception e) {
-            LoggerService.logError("getItemsByIds", e, itemIds);
-            throw new RuntimeException("Error fetching items: " + e.getMessage(), e);
         }
     }
 }
