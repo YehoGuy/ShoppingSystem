@@ -1,10 +1,12 @@
 package DomainLayer;
 
+import java.util.Date;
+
 public class AuthToken {
     private String token; // The authentication token string
-    private long expirationTime; // The time when the token expires
+    private Date expirationTime; // The time when the token expires
 
-    public AuthToken(String token, long expirationTime) {
+    public AuthToken(String token, Date expirationTime) {
         this.token = token;
         this.expirationTime = expirationTime;
     }
@@ -13,7 +15,15 @@ public class AuthToken {
         return token;
     }
 
-    public long getExpirationTime() {
+    public Date getExpirationTime() {
         return expirationTime;
+    }
+
+    public void setExpirationDate(Date expirationTime) {
+        this.expirationTime = expirationTime;
+    }
+
+    public boolean isExpired() {
+        return new Date().after(expirationTime); // Check if the current date is after the expiration time
     }
 }
