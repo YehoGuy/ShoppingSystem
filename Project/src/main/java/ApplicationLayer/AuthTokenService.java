@@ -30,6 +30,10 @@ public class AuthTokenService {
         // this.userService = userService; 
     }
 
+    public SecretKey getKey() {
+        return key; 
+    }
+
     public String AuthenticateGuest(int guestId) {
         String token = generateAuthToken("guest");
         long expirationTime = System.currentTimeMillis() + EXPIRATION_TIME;

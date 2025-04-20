@@ -11,10 +11,10 @@ import org.junit.jupiter.api.Test;
 import DomainLayer.AuthToken;
 
 public class AuthTokenTests {
-    private static AuthToken authToken;
-    private static Date expirationDate; 
+    private AuthToken authToken;
+    private Date expirationDate; 
     @BeforeEach
-    public static void setup() {
+    public void setup() {
         expirationDate = new Date(System.currentTimeMillis()+1000*60*60); 
         authToken = new AuthToken("token",expirationDate); 
         

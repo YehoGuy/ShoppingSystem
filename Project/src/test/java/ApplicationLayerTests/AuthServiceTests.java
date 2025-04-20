@@ -1,31 +1,35 @@
 package ApplicationLayerTests;
 
+import javax.crypto.SecretKey;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import org.junit.jupiter.api.Test;
 
 import ApplicationLayer.AuthTokenService;
 import InfrastructureLayer.AuthTokenRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 
 public class AuthServiceTests {
     
-    private static final String SECRET_KEY = "testSecretKey";
-    private static final long EXPIRATION_TIME = 864000000; // 10 days
-    
     private AuthTokenService authService = new AuthTokenService(new AuthTokenRepository());
+
+    private static final long EXPIRATION_TIME = 86400000; 
+    private SecretKey key = authService.getKey();
+    
 
     @Test
     public void testGenerateToken() {
         String username = "testUser";
         
         String token = authService.generateAuthToken(username);
-        
-        assertNotNull(token);
-        Claims claims = Jwts.parser()
-                .setSigningKey(SECRET_KEY)
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
                 .parseClaimsJws(token)
                 .getBody();
                 
@@ -40,11 +44,11 @@ public class AuthServiceTests {
         
         String token = authService.generateAuthToken(username);
         
-        Claims claims = Jwts.parser()
-                .setSigningKey(SECRET_KEY)
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
                 .parseClaimsJws(token)
                 .getBody();
-                
         long diff = claims.getExpiration().getTime() - claims.getIssuedAt().getTime();
         assertEquals(EXPIRATION_TIME, diff);
     }
@@ -52,19 +56,19 @@ public class AuthServiceTests {
     @Test
     public void testValidateToken() {
         String username = "testUser";
-        String token = authService.generateAuthToken(username);
+        String token = authService.Login(username, username);
         
-        int isValid = authService.ValidateToken(token);
+        Integer isValid = authService.ValidateToken(token);
         
-        assertNotEquals(-1, isValid);
+        assertNotNull(isValid);
     }
 
     @Test
     public void testInvalidToken() {
         String invalidToken = "invalidToken";
         
-        int isValid = authService.ValidateToken(invalidToken);
+        Integer isValid = authService.ValidateToken(invalidToken);
         
-        assertEquals(-1, isValid);
+        assertNull(isValid);
     }
 }
