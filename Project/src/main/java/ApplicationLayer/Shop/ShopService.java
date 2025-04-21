@@ -463,7 +463,6 @@ public class ShopService {
                 // product rating
                 double pr = item.getAverageRating();
                 if (minProductRating != null && pr < minProductRating) continue;
-
                 results.add(item);
             }
             return results;
