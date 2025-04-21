@@ -72,8 +72,8 @@ public class ShopRepositoryTests {
     public void testReviewsAndAverage() {
         Shop s = repo.createShop("S", "P", 0);
         assertEquals(0.0, repo.getShopAverageRating(s.getId()));
-        repo.addReviewToShop(s.getId(), 4, "Good");
-        repo.addReviewToShop(s.getId(), 2, "Bad");
+        repo.addReviewToShop(s.getId(),1, 4, "Good");
+        repo.addReviewToShop(s.getId(),1, 2, "Bad");
         assertEquals(3.0, repo.getShopAverageRating(s.getId()));
     }
 
@@ -123,7 +123,7 @@ public class ShopRepositoryTests {
         Shop s = repo.createShop("S", "P", 0);
         repo.addItemToShop(s.getId(), 1, 1, 10);
         repo.addItemToShop(s.getId(), 2, 1, 20);
-        List<Integer> ids = repo.getItems(s.getId());
+        List<Integer> ids = repo.getItemsByShop(s.getId());
         assertTrue(ids.contains(1));
         assertTrue(ids.contains(2));
     }
@@ -140,7 +140,7 @@ public class ShopRepositoryTests {
         assertThrows(IllegalArgumentException.class, () -> repo.updatePurchasePolicy(999, "X"));
         assertThrows(IllegalArgumentException.class, () -> repo.setGlobalDiscount(999, 1));
         assertThrows(IllegalArgumentException.class, () -> repo.addItemToShop(999, 1, 1, 1));
-        assertThrows(IllegalArgumentException.class, () -> repo.addReviewToShop(999, 5, ""));
+        assertThrows(IllegalArgumentException.class, () -> repo.addReviewToShop(999, 1, 5, ""));
         assertThrows(IllegalArgumentException.class, () -> repo.removeSupply(999, 1, 1));
         assertThrows(IllegalArgumentException.class, () -> repo.closeShop(999));
     }

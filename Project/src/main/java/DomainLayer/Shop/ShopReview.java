@@ -7,10 +7,12 @@ package DomainLayer.Shop;
 public class ShopReview {
     private final int rating;      // Rating as an integer.
     private final String reviewText; // The review text.
+    private final int userId;     // The ID of the user who wrote the review.
 
-    public ShopReview(int rating, String reviewText) {
+    public ShopReview(int userId, int rating, String reviewText) {
         this.rating = rating;
         this.reviewText = reviewText;
+        this.userId = userId;
     }
 
     public int getRating() {
@@ -19,6 +21,9 @@ public class ShopReview {
 
     public String getReviewText() {
         return reviewText;
+    }
+    public int getUserId() {
+        return userId;
     }
 
     @Override

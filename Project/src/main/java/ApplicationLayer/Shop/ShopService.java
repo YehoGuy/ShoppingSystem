@@ -8,13 +8,12 @@ import ApplicationLayer.Item.ItemService;
 import ApplicationLayer.LoggerService;
 import DomainLayer.Item.Item;
 import DomainLayer.Item.ItemCategory;
+import DomainLayer.Roles.PermissionsEnum;
 import ApplicationLayer.User.UserService;
 import DomainLayer.Shop.IShopRepository;
 import DomainLayer.Shop.Shop;
 
 public class ShopService {
-
-    // Use the interface type for the repository dependency.
     private final IShopRepository shopRepository;
     private AuthTokenService authTokenService;
     private ItemService itemService;
@@ -43,9 +42,11 @@ public class ShopService {
      * @param globalDiscount the global discount for all items in the shop.
      * @return the newly created Shop.
      */
-    public Shop createShop(String name, String purchasePolicy, int globalDiscount) {
-        try { 
+    public Shop createShop(String name, String purchasePolicy, int globalDiscount, String token) {
+        try {
             LoggerService.logMethodExecution("createShop", name, purchasePolicy, globalDiscount);
+            Integer userId = authTokenService.ValidateToken(token);
+            userService.validateMemberId(userId);
             Shop returnShop = shopRepository.createShop(name, purchasePolicy, globalDiscount);
             LoggerService.logMethodExecutionEnd("createShop", returnShop);
             return returnShop;
@@ -62,9 +63,10 @@ public class ShopService {
      * @param shopId the shop id.
      * @return the Shop instance.
      */
-    public Shop getShop(int shopId) {
+    public Shop getShop(int shopId, String token) {
         try {
             LoggerService.logMethodExecution("getShop", shopId);
+            Integer userId = authTokenService.ValidateToken(token);
             Shop returnShop = shopRepository.getShop(shopId);
             LoggerService.logMethodExecutionEnd("getShop", returnShop);
             return returnShop;
@@ -80,9 +82,10 @@ public class ShopService {
      *
      * @return an unmodifiable list of Shop instances.
      */
-    public List<Shop> getAllShops() {
+    public List<Shop> getAllShops(String token) {
         try {
             LoggerService.logMethodExecution("getAllShops");
+            Integer userId = authTokenService.ValidateToken(token);
             List<Shop> returnShops = shopRepository.getAllShops();
             LoggerService.logMethodExecutionEnd("getAllShops", returnShops);
             return returnShops;
@@ -98,9 +101,13 @@ public class ShopService {
      * @param shopId    the shop id.
      * @param newPolicy the new purchase policy.
      */
-    public void updatePurchasePolicy(int shopId, String newPolicy) {
+    public void updatePurchasePolicy(int shopId, String newPolicy, String token) {
         try {
             LoggerService.logMethodExecution("updatePurchasePolicy", shopId, newPolicy);
+            Integer userId = authTokenService.ValidateToken(token);
+            if(!userService.hasPermission(userId,PermissionsEnum.setPolicy,shopId)){
+                throw new RuntimeException("User does not have permission to update purchase policy for shop " + shopId);
+            }
             shopRepository.updatePurchasePolicy(shopId, newPolicy);
             LoggerService.logMethodExecutionEndVoid("updatePurchasePolicy");
         } catch (Exception e) {
@@ -115,9 +122,13 @@ public class ShopService {
      * @param shopId   the shop id.
      * @param discount the global discount value.
      */
-    public void setGlobalDiscount(int shopId, int discount) {
+    public void setGlobalDiscount(int shopId, int discount,String token) {
         try {
             LoggerService.logMethodExecution("setGlobalDiscount", shopId, discount);
+            Integer userId = authTokenService.ValidateToken(token);
+            if(!userService.hasPermission(userId,PermissionsEnum.setPolicy,shopId)){
+                throw new RuntimeException("User does not have permission to update discount for shop " + shopId);
+            }
             shopRepository.setGlobalDiscount(shopId, discount);
             LoggerService.logMethodExecutionEndVoid("setGlobalDiscount");
         } catch (Exception e) {
@@ -133,9 +144,13 @@ public class ShopService {
      * @param itemId   the item id.
      * @param discount the discount value.
      */
-    public void setDiscountForItem(int shopId, int itemId, int discount) {
+    public void setDiscountForItem(int shopId, int itemId, int discount,String token) {
         try {
             LoggerService.logMethodExecution("setDiscountForItem", shopId, itemId, discount);
+            Integer userId = authTokenService.ValidateToken(token);
+            if(!userService.hasPermission(userId,PermissionsEnum.setPolicy,shopId)){
+                throw new RuntimeException("User does not have permission to update discount for shop " + shopId);
+            }
             shopRepository.setDiscountForItem(shopId, itemId, discount);
             LoggerService.logMethodExecutionEndVoid("setDiscountForItem");
         } catch (Exception e) {
@@ -151,10 +166,12 @@ public class ShopService {
      * @param rating     the review rating.
      * @param reviewText the review text.
      */
-    public void addReviewToShop(int shopId, int rating, String reviewText) {
+    public void addReviewToShop(int shopId, int rating, String reviewText, String token) {
         try {
             LoggerService.logMethodExecution("addReviewToShop", shopId, rating, reviewText);
-            shopRepository.addReviewToShop(shopId, rating, reviewText);
+            Integer userId = authTokenService.ValidateToken(token);
+            userService.validateMemberId(userId);
+            shopRepository.addReviewToShop(shopId, userId, rating, reviewText);
             LoggerService.logMethodExecutionEndVoid("addReviewToShop");
         } catch (Exception e) {
             LoggerService.logError("addReviewToShop", e, shopId, rating, reviewText);
@@ -168,9 +185,10 @@ public class ShopService {
      * @param shopId the shop id.
      * @return the average rating.
      */
-    public double getShopAverageRating(int shopId) {
+    public double getShopAverageRating(int shopId, String token) {
         try {
             LoggerService.logMethodExecution("getShopAverageRating", shopId);
+            authTokenService.ValidateToken(token);
             double returnDouble = shopRepository.getShopAverageRating(shopId);
             LoggerService.logMethodExecutionEnd("getShopAverageRating", returnDouble);
             return returnDouble;
@@ -188,14 +206,37 @@ public class ShopService {
      * @param quantity the quantity to add.
      * @param price    the price for the item (must be non-negative).
      */
-    public void addItemToShop(int shopId, int itemId, int quantity, int price) {
+    public void addItemToShop(int shopId, int itemId, int quantity, int price, String token) {
         try {
             LoggerService.logMethodExecution("addItemToShop", shopId, itemId, quantity, price);
+            Integer userId = authTokenService.ValidateToken(token);
+            if(!userService.hasPermission(userId,PermissionsEnum.manageItems,shopId)){
+                throw new RuntimeException("User does not have permission to add item to shop " + shopId);
+            }
             shopRepository.addItemToShop(shopId, itemId, quantity, price);
             LoggerService.logMethodExecutionEndVoid("addItemToShop");
         } catch (Exception e) {
             LoggerService.logError("addItemToShop", e, shopId, itemId, quantity, price);
             throw new RuntimeException("Error adding item " + itemId + " to shop " + shopId + ": " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Adds a given quantity of an item to the specified shop.
+     *
+     * @param shopId   the shop id.
+     * @param itemId   the item id.
+     * @param quantity the quantity to add.
+     */
+    public void addSupplyToItem(int shopId, int itemId, int quantity, String token) {
+        try {
+            LoggerService.logMethodExecution("addSupplyToItem", shopId, itemId, quantity);
+            Integer userId = authTokenService.ValidateToken(token);
+            shopRepository.addSupplyToItem(shopId, itemId, quantity);
+            LoggerService.logMethodExecutionEndVoid("addSupplyToItem");
+        } catch (Exception e) {
+            LoggerService.logError("addSupplyToItem", e, shopId, itemId, quantity);
+            throw new RuntimeException("Error adding supply for item " + itemId + " in shop " + shopId + ": " + e.getMessage(), e);
         }
     }
 
@@ -206,9 +247,13 @@ public class ShopService {
      * @param itemId the item id.
      * @param price  the new price (must be non-negative).
      */
-    public void updateItemPriceInShop(int shopId, int itemId, int price) {
+    public void updateItemPriceInShop(int shopId, int itemId, int price, String token) {
         try {
             LoggerService.logMethodExecution("updateItemPriceInShop", shopId, itemId, price);
+            Integer userId = authTokenService.ValidateToken(token);
+            if(!userService.hasPermission(userId,PermissionsEnum.manageItems,shopId)){
+                throw new RuntimeException("User does not have permission to update price for item " + itemId + " in shop " + shopId);
+            }
             shopRepository.updateItemPriceInShop(shopId, itemId, price);
             LoggerService.logMethodExecutionEndVoid("updateItemPriceInShop");
         } catch (Exception e) {
@@ -223,9 +268,13 @@ public class ShopService {
      * @param shopId the shop id.
      * @param itemId the item id.
      */
-    public void removeItemFromShop(int shopId, int itemId) {
+    public void removeItemFromShop(int shopId, int itemId, String token) {
         try {
             LoggerService.logMethodExecution("removeItemFromShop", shopId, itemId);
+            Integer userId = authTokenService.ValidateToken(token);
+            if(!userService.hasPermission(userId,PermissionsEnum.manageItems,shopId)){
+                throw new RuntimeException("User does not have permission to remove item " + itemId + " from shop " + shopId);
+            }
             shopRepository.removeItemFromShop(shopId, itemId);
             LoggerService.logMethodExecutionEndVoid("removeItemFromShop");
         } catch (Exception e) {
@@ -241,9 +290,10 @@ public class ShopService {
      * @param itemId the item id.
      * @return the quantity.
      */
-    public int getItemQuantityFromShop(int shopId, int itemId) {
+    public int getItemQuantityFromShop(int shopId, int itemId, String token) {
         try {
             LoggerService.logMethodExecution("getItemQuantityFromShop", shopId, itemId);
+            authTokenService.ValidateToken(token);
             int returnInt = shopRepository.getItemQuantityFromShop(shopId, itemId);
             LoggerService.logMethodExecutionEnd("getItemQuantityFromShop", returnInt);
             return returnInt;
@@ -259,9 +309,13 @@ public class ShopService {
      *
      * @param shopId the shop id.
      */
-    public void closeShop(Integer shopId) {
+    public void closeShop(Integer shopId, String token) {
         try {
             LoggerService.logMethodExecution("closeShop", shopId);
+            Integer userId = authTokenService.ValidateToken(token);
+            if(!userService.hasPermission(userId,PermissionsEnum.closeShop,shopId)){
+                throw new RuntimeException("User does not have permission to close shop " + shopId);
+            }
             shopRepository.closeShop(shopId);
             LoggerService.logMethodExecutionEndVoid("closeShop");
         } catch (Exception e) {
@@ -277,9 +331,10 @@ public class ShopService {
      * @param itemId the item id.
      * @return true if available, false otherwise.
      */
-    public boolean checkSupplyAvailability(Integer shopId, Integer itemId) {
+    public boolean checkSupplyAvailability(Integer shopId, Integer itemId, String token) {
         try {
             LoggerService.logMethodExecution("checkSupplyAvailability", shopId, itemId);
+            authTokenService.ValidateToken(token);
             boolean returnBoolean = shopRepository.checkSupplyAvailability(shopId, itemId);
             LoggerService.logMethodExecutionEnd("checkSupplyAvailability", returnBoolean);
             return returnBoolean;
@@ -296,9 +351,10 @@ public class ShopService {
      * @param itemId the item id.
      * @param supply the supply to remove.
      */
-    public void removeSupply(Integer shopId, Integer itemId, Integer supply) {
+    public void removeSupply(Integer shopId, Integer itemId, Integer supply, String token) {
         try {
             LoggerService.logMethodExecution("removeSupply", shopId, itemId, supply);
+            Integer userId = authTokenService.ValidateToken(token);
             shopRepository.removeSupply(shopId, itemId, supply);
             LoggerService.logMethodExecutionEndVoid("removeSupply");
         } catch (Exception e) {
@@ -313,9 +369,10 @@ public class ShopService {
      * @param shopId the shop id.
      * @return a list of Item instances.
      */
-    public List<Item> getItemsByShop(Integer shopId) {
+    public List<Item> getItemsByShop(Integer shopId, String token) {
         try {
             LoggerService.logMethodExecution("getItems", shopId);
+            authTokenService.ValidateToken(token);
             List<Integer> returnItems = shopRepository.getItemsByShop(shopId);
             LoggerService.logMethodExecutionEnd("getItems", returnItems);
             List<Item> items = itemService.getItemsByIds(returnItems);
@@ -332,9 +389,10 @@ public class ShopService {
      *
      * @return a list of Item instances.
      */
-    public List<Item> getItems() {
+    public List<Item> getItems(String token) {
         try {
             LoggerService.logMethodExecution("getItems");
+            authTokenService.ValidateToken(token);
             List<Integer> returnItemsIds = shopRepository.getItems();
             LoggerService.logMethodExecutionEnd("getItems", returnItemsIds);
             List<Item> returnItems = itemService.getItemsByIds(returnItemsIds);
@@ -356,23 +414,23 @@ public class ShopService {
             Integer minPrice,
             Integer maxPrice,
             Double minProductRating,
-            Double minShopRating) 
+            Double minShopRating, String token) 
         {
         try{
             LoggerService.logMethodExecution(
                 "searchItems", name, category, keywords,
                 minPrice, maxPrice, minProductRating, minShopRating
             );
-
+            authTokenService.ValidateToken(token);
             List<Item> results = new ArrayList<>();
-            for (Shop shop : getAllShops()) {
+            for (Shop shop : getAllShops(token)) {
                 if (minShopRating != null && shop.getAverageRating() < minShopRating) {
                     continue;
                 }
                 // delegate per‑shop filtering
                 results.addAll(filterItemsInShop(
                     shop, name, category, keywords,
-                    minPrice, maxPrice, minProductRating
+                    minPrice, maxPrice, minProductRating, token
                 ));
             }
 
@@ -396,18 +454,18 @@ public class ShopService {
             List<String> keywords,
             Integer minPrice,
             Integer maxPrice,
-            Double minProductRating) 
-        {
+            Double minProductRating, String token) 
+    {
         try{
             LoggerService.logMethodExecution(
                 "searchItemsInShop", shopId, name, category, keywords,
                 minPrice, maxPrice, minProductRating
             );
-    
-            Shop shop = getShop(shopId);
+            authTokenService.ValidateToken(token);
+            Shop shop = getShop(shopId, token);
             List<Item> results = filterItemsInShop(
                 shop, name, category, keywords,
-                minPrice, maxPrice, minProductRating
+                minPrice, maxPrice, minProductRating, token
             );
     
             LoggerService.logMethodExecutionEnd("searchItemsInShop", results);
@@ -431,11 +489,11 @@ public class ShopService {
             List<String> keywords,
             Integer minPrice,
             Integer maxPrice,
-            Double minProductRating) 
+            Double minProductRating, String token) 
     {
         try{
             List<Item> results = new ArrayList<>();
-            List<Item> shopItems = getItemsByShop(shop.getId());
+            List<Item> shopItems = getItemsByShop(shop.getId(), token);
             for (Item item : shopItems) {
                 // name
                 if (name != null &&
@@ -473,3 +531,4 @@ public class ShopService {
         }
     }
 }
+

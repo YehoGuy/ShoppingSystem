@@ -57,8 +57,8 @@ public class ShopTests {
     public void testReviewsAndAverageRating() {
         assertTrue(shop.getReviews().isEmpty());
         assertEquals(0.0, shop.getAverageRating());
-        shop.addReview(5, "Great");
-        shop.addReview(new ShopReview(3, "Okay"));
+        shop.addReview(1,5, "Great");
+        shop.addReview(new ShopReview(1,3, "Okay"));
         List<ShopReview> reviews = shop.getReviews();
         assertEquals(2, reviews.size());
         assertEquals(4.0, shop.getAverageRating());

@@ -138,10 +138,10 @@ public class Member extends User {
             role.removePermissions(permission); // Remove the permission from the role
         }
     }
-    public boolean hasPermission(PermissionsEnum permission) {
+    public boolean hasPermission(PermissionsEnum permission, int shopdId) {
         // Check if the user has a specific permission through their roles
         for (Role role : roles) {
-            if (role.hasPermission(permission)) {
+            if (role.getShopId()==shopdId && role.hasPermission(permission)) {
                 return true; // User has the permission
             }
         }

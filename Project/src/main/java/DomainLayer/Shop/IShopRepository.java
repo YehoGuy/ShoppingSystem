@@ -61,7 +61,7 @@ public interface IShopRepository {
      * @param rating     the review rating.
      * @param reviewText the review text.
      */
-    void addReviewToShop(int shopId, int rating, String reviewText);
+    void addReviewToShop(int shopId,int userId, int rating, String reviewText);
 
     /**
      * Retrieves the average rating of the specified shop.
@@ -80,6 +80,15 @@ public interface IShopRepository {
      * @param price    the price for the item (must be non-negative).
      */
     void addItemToShop(int shopId, int itemId, int quantity, int price);
+
+    /**
+     * Adds a given quantity of an item to the specified shop.
+     *
+     * @param shopId   the shop id.
+     * @param itemId   the item id.
+     * @param quantity the quantity to add.
+     */
+    void addSupplyToItem(int shopId, int itemId, int quantity);
 
     /**
      * Updates the price for an existing item in the specified shop.
