@@ -131,7 +131,7 @@ public class UserService {
 
 
 
-    public int loginAsGuest() {
+    public String loginAsGuest() {
         try {
             LoggerService.logMethodExecution("loginAsGuest");
             int id = userRepository.addGuest(); // Assuming this method returns the ID of the new guest user
@@ -396,12 +396,12 @@ public class UserService {
         }
     }
 
-    public void accseptRole(int memberId, Role role) {
+    public void acceptRole(int memberId, Role role) {
         try {
             LoggerService.logMethodExecution("accseptRole", memberId, role);
             for (Member member : userRepository.getMembersList()) {
                 if (member.getMemberId() == memberId) {
-                    member.acseptRole(role);
+                    member.acceptRole(role);
                     LoggerService.logMethodExecutionEndVoid("accseptRole");
                     return;
                 }

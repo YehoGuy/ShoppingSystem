@@ -15,9 +15,10 @@ import ApplicationLayer.Message.MessageService;
 import ApplicationLayer.Shop.ShopService;
 import ApplicationLayer.User.UserService;
 import InfrastructureLayer.AuthTokenRepository;
-import InfrastructureLayer.MessageRepository;
+ import InfrastructureLayer.MessageRepository;
 import InfrastructureLayer.ShopRepository;
 import InfrastructureLayer.UserRepository;
+
 
 public class MessageServiceTests {
 
