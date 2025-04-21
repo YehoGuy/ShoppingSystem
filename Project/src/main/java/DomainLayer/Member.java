@@ -3,6 +3,7 @@ package DomainLayer;
 import java.util.ArrayList;
 import java.util.List;
 
+import DomainLayer.Roles.PermissionsEnum;
 import DomainLayer.Roles.Role;
 
 public class Member extends User {
@@ -93,5 +94,27 @@ public class Member extends User {
 
     public boolean hasRole(Role role) {
         return roles.contains(role); // Check if the user has a specific role
+    }
+
+    public void addPermission(PermissionsEnum permission) {
+        // Add a permission to the user's roles (if applicable)
+        for (Role role : roles) {
+            role.addPermission(permission); // Add the permission to the role
+        }
+    }
+    public void removePermission(PermissionsEnum permission) {
+        // Remove a permission from the user's roles (if applicable)
+        for (Role role : roles) {
+            role.removePermissions(permission); // Remove the permission from the role
+        }
+    }
+    public boolean hasPermission(PermissionsEnum permission) {
+        // Check if the user has a specific permission through their roles
+        for (Role role : roles) {
+            if (role.hasPermission(permission)) {
+                return true; // User has the permission
+            }
+        }
+        return false; // User does not have the permission
     }
 }
