@@ -58,7 +58,7 @@ public class AuthTokenService {
             return token;
     }
 
-    public String Logout(String token) {
+    public String Logout(String token) throws Exception {
         if(ValidateToken(token) != null) { 
             int userId = authTokenRepository.getUserIdByToken(token); 
             authTokenRepository.removeAuthToken(userId); 
@@ -80,7 +80,7 @@ public class AuthTokenService {
                 .compact();
     }
 
-    public Integer ValidateToken(String token) {
+    public Integer ValidateToken(String token) throws Exception {
         try {
             Jwts.parserBuilder()
                     .setSigningKey(key) 
@@ -90,13 +90,15 @@ public class AuthTokenService {
             if (userId != -1) {
                 return userId; 
             } else {
-                return null; 
+                throw new Exception("Token not found in repository"); 
             }
         }
         catch (ExpiredJwtException e) {
-            return null; 
+            throw new Exception("Token expired");
         } catch (JwtException e) {
-            return null; 
+            throw new Exception("Invalid token"); 
+        } catch (Exception e) {
+            throw new Exception("Token validation failed: " + e.getMessage()); 
         }
     }
 
