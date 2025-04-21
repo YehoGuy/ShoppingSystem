@@ -342,6 +342,7 @@ public class ShopService {
             LoggerService.logError("getItems", e);
             throw new RuntimeException("Error retrieving all items: " + e.getMessage(), e);
         }
+    }
 
 
 }
