@@ -12,7 +12,7 @@ import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,13 +53,15 @@ class PurchaseRepositoryTests {
         assertEquals("Boston", retrieved.getShippingAddress().getCity());
     }
 
-    @Test
+   @Test
     void testDeletePurchase() {
-        int purchaseId = repository.addPurchase(2, 20, Map.of(202, 5), new Address());
-        assertNotNull(repository.getPurchaseById(purchaseId));
+        int id = repository.addPurchase(2, 20, Map.of(202, 5), new Address());
+        assertNotNull(repository.getPurchaseById(id));
 
-        repository.deletePurchase(purchaseId);
-        assertNull(repository.getPurchaseById(purchaseId), "Purchase should be removed");
+        repository.deletePurchase(id);
+
+        assertThrows(IllegalArgumentException.class,
+                    () -> repository.getPurchaseById(id));
     }
 
     @Test
