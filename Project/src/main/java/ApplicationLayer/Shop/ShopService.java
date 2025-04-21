@@ -3,6 +3,8 @@ package ApplicationLayer.Shop;
 import java.util.List;
 
 import ApplicationLayer.LoggerService;
+import ApplicationLayer.Item.ItemService;
+import DomainLayer.Item.Item;
 import DomainLayer.Shop.IShopRepository;
 import DomainLayer.Shop.Shop;
 
@@ -10,14 +12,16 @@ public class ShopService {
 
     // Use the interface type for the repository dependency.
     private final IShopRepository shopRepository;
+    private final ItemService itemService;
 
     /**
      * Constructor for ShopService.
      *
      * @param shopRepository an instance of IShopRepository that handles storage of Shop instances.
      */
-    public ShopService(IShopRepository shopRepository) {
+    public ShopService(IShopRepository shopRepository, ItemService itemService) {
         this.shopRepository = shopRepository;
+        this.itemService = itemService;
     }
 
     /**
@@ -293,20 +297,41 @@ public class ShopService {
     }
 
     /**
-     * Returns a list of item IDs that belong to the shop identified by shopId.
+     * Retrieves a list of items available in the specified shop.
      *
      * @param shopId the shop id.
-     * @return a list of item IDs.
+     * @return a list of Item instances.
      */
-    public List<Integer> getItems(Integer shopId) {
+    public List<Item> getItemsByShop(Integer shopId) {
         try {
             LoggerService.logMethodExecution("getItems", shopId);
-            List<Integer> returnItems = shopRepository.getItems(shopId);
+            List<Integer> returnItems = shopRepository.getItemsByShop(shopId);
             LoggerService.logMethodExecutionEnd("getItems", returnItems);
-            return returnItems;
+            List<Item> items = itemService.getItemsByIds(returnItems);
+            LoggerService.logMethodExecutionEnd("getItems", items);
+            return items;
         } catch (Exception e) {
             LoggerService.logError("getItems", e, shopId);
             throw new RuntimeException("Error retrieving items for shop " + shopId + ": " + e.getMessage(), e);
         }
     }
+
+    /**
+     * Retrieves a list of all items available in all shops.
+     *
+     * @return a list of Item instances.
+     */
+    public List<Item> getItems() {
+        try {
+            LoggerService.logMethodExecution("getItems");
+            List<Integer> returnItemsIds = shopRepository.getItems();
+            LoggerService.logMethodExecutionEnd("getItems", returnItemsIds);
+            List<Item> returnItems = itemService.getItemsByIds(returnItemsIds);
+            return returnItems;
+        } catch (Exception e) {
+            LoggerService.logError("getItems", e);
+            throw new RuntimeException("Error retrieving all items: " + e.getMessage(), e);
+        }
+
+
 }
