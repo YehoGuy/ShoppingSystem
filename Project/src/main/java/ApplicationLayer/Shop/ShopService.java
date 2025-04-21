@@ -23,9 +23,8 @@ public class ShopService {
      *
      * @param shopRepository an instance of IShopRepository that handles storage of Shop instances.
      */
-    public ShopService(IShopRepository shopRepository, ItemService itemService) {
+    public ShopService(IShopRepository shopRepository) {
         this.shopRepository = shopRepository;
-        this.itemService = itemService;
     }
 
     public void setServices(AuthTokenService authTokenService, ItemService itemService, UserService userService) {
