@@ -33,15 +33,21 @@ public class AuthTokenService {
     }
 
     public String AuthenticateGuest(int guestId) {
+        LoggerService.logMethodExecution("AuthenticateGuest",guestId);
+        if(guestId <= 0) {
+            throw new IllegalArgumentException("Guest ID must be a positive integer");
+        }
         String token = generateAuthToken("guest");
         long expirationTime = System.currentTimeMillis() + EXPIRATION_TIME;
         AuthToken authToken = new AuthToken(token, new Date(expirationTime));
         authTokenRepository.setAuthToken(guestId, authToken);
+        LoggerService.logMethodExecutionEnd("AuthenticateGuest",token);
         return token;
     }
 
 
     public String Login(String username, String password, int userId) {
+        LoggerService.logMethodExecution("Login",username,password,userId);
         if(username == null || username.isEmpty()) {
             throw new IllegalArgumentException("Username cannot be null or empty");
         }
@@ -55,71 +61,115 @@ public class AuthTokenService {
             long expirationTime = System.currentTimeMillis() + EXPIRATION_TIME; 
             AuthToken authToken = new AuthToken(token, new Date(expirationTime));
             authTokenRepository.setAuthToken(userId, authToken);
+            LoggerService.logMethodExecutionEnd("Login",token);
             return token;
     }
 
-    public String Logout(String token) throws Exception {
+    public void Logout(String token) throws Exception {
+        LoggerService.logMethodExecution("Logout",token);
         if(ValidateToken(token) != null) { 
             int userId = authTokenRepository.getUserIdByToken(token); 
             authTokenRepository.removeAuthToken(userId); 
-            return "Logout successful"; 
+            LoggerService.logMethodExecutionEndVoid("Logout");
         } else {
-            return "Invalid token"; 
+            throw new Exception("Token not found in repository"); 
         }
     }
 
     public String generateAuthToken(String username) {
+        LoggerService.logMethodExecution("generateAuthToken",username);
         if (username == null || username.isEmpty()) {
             throw new IllegalArgumentException("Username cannot be null or empty");
         }
-        return Jwts.builder()
+
+        String token = Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(key)
                 .compact();
+        LoggerService.logMethodExecutionEnd("generateAuthToken",token);
+        return token;
     }
 
     public Integer ValidateToken(String token) throws Exception {
+        LoggerService.logMethodExecution("ValidateToken",token);
+        if (token == null || token.isEmpty()) {
+            throw new IllegalArgumentException("Token cannot be null or empty");
+        }
         try {
             Jwts.parserBuilder()
                     .setSigningKey(key) 
                     .build()
                     .parseClaimsJws(token); 
+            if(extractUsername(token) == null || extractUsername(token).isEmpty()) {
+                throw new JwtException("Invalid token"); 
+            }
             int userId = authTokenRepository.getUserIdByToken(token); 
             if (userId != -1) {
+                if(extractExpiration(token).before(new Date())) {
+                    authTokenRepository.removeAuthToken(authTokenRepository.getUserIdByToken(token));
+                    throw new ExpiredJwtException(null, null, "Token expired"); 
+                }
+                LoggerService.logMethodExecutionEnd("ValidateToken",userId);
                 return userId; 
             } else {
                 throw new Exception("Token not found in repository"); 
             }
         }
         catch (ExpiredJwtException e) {
+            LoggerService.logError("ValidateToken", e, token);
             throw new Exception("Token expired");
         } catch (JwtException e) {
+            LoggerService.logError("ValidateToken", e, token);
             throw new Exception("Invalid token"); 
         } catch (Exception e) {
+            LoggerService.logError("ValidateToken", e, token);
             throw new Exception("Token validation failed: " + e.getMessage()); 
         }
     }
 
     public String extractUsername(String token) {
-        return extractClaim(token, Claims::getSubject);  
+        LoggerService.logMethodExecution("extractUsername",token);
+        if (token == null || token.isEmpty()) {
+            throw new IllegalArgumentException("Token cannot be null or empty");
+        }
+        String username = extractClaim(token, Claims::getSubject);  
+        LoggerService.logMethodExecutionEnd("extractUsername",username);
+        return username;
     }
 
     public Date extractExpiration(String token) {
-        return extractClaim(token, Claims::getExpiration); 
+        LoggerService.logMethodExecution("extractExpiration",token);
+        if (token == null || token.isEmpty()) {
+            throw new IllegalArgumentException("Token cannot be null or empty");
+        }
+        Date expiration = extractClaim(token, Claims::getExpiration); 
+        LoggerService.logMethodExecutionEnd("extractExpiration",expiration);
+        return expiration;
     }
 
     private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = extractAllClaims(token); 
-        return claimsResolver.apply(claims); 
+        LoggerService.logMethodExecution("extractClaim",token);
+        if (token == null || token.isEmpty()) {
+            throw new IllegalArgumentException("Token cannot be null or empty");
+        }
+        T claim = claimsResolver.apply(extractAllClaims(token)); 
+        LoggerService.logMethodExecutionEnd("extractClaim",claim);
+        return claim;
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parserBuilder()
+        LoggerService.logMethodExecution("extractAllClaims",token);
+        if (token == null || token.isEmpty()) {
+            throw new IllegalArgumentException("Token cannot be null or empty");
+        }
+        Claims claims = Jwts.parserBuilder()
                 .setSigningKey(key) 
                 .build()
-                .parseClaimsJws(token) 
+                .parseClaimsJws(token)
                 .getBody(); 
+        LoggerService.logMethodExecutionEnd("extractAllClaims",claims);
+        return claims;
     }
 }
