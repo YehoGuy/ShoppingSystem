@@ -2,7 +2,6 @@ package ApplicationLayer.Item;
 
 import java.util.List;
 
-import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.LoggerService;
 import DomainLayer.Item.IItemRepository;
 import DomainLayer.Item.Item;
@@ -11,7 +10,6 @@ import DomainLayer.Item.ItemReview;
 public class ItemService {
 
     private final IItemRepository itemRepository;
-    private AuthTokenService authTokenService;
 
     /**
      * Constructor for ItemService.
@@ -20,10 +18,7 @@ public class ItemService {
      */
     public ItemService(IItemRepository itemRepository) {
         this.itemRepository = itemRepository;
-    }
-
-    public void setServices(AuthTokenService authTokenService) {
-        this.authTokenService = authTokenService;
+      
     }
 
     /**
@@ -33,14 +28,14 @@ public class ItemService {
      * @param description the item description.
      * @return the newly created Item.
      */
-    public Item createItem(String name, String description, Integer category) {
+    public Item createItem(String name, String description) {
         try {
-            LoggerService.logMethodExecution("createItem", name, description, category);
-            Item returnItem = itemRepository.createItem(name, description, category);
+            LoggerService.logMethodExecution("createItem", name, description);
+            Item returnItem = itemRepository.createItem(name, description);
             LoggerService.logMethodExecutionEnd("createItem", returnItem);
             return returnItem;
         } catch (Exception e) {
-            LoggerService.logError("createItem", e, name, description, category);
+            LoggerService.logError("createItem", e, name, description);
             throw new RuntimeException("Error creating item: " + e.getMessage(), e);
         }
     }
@@ -148,24 +143,6 @@ public class ItemService {
         } catch (Exception e) {
             LoggerService.logError("deleteItem", e, itemId);
             throw new RuntimeException("Error deleting item " + itemId + ": " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Retrieves a list of Item objects for the given list of item IDs.
-     *
-     * @param itemIds the list of item IDs to fetch
-     * @return an unmodifiable list of corresponding Item instances
-     */
-    public List<Item> getItemsByIds(List<Integer> itemIds) {
-        try {
-            LoggerService.logMethodExecution("getItemsByIds", itemIds);
-            List<Item> result = itemRepository.getItemsByIds(itemIds);
-            LoggerService.logMethodExecutionEnd("getItemsByIds", result);
-            return result;
-        } catch (Exception e) {
-            LoggerService.logError("getItemsByIds", e, itemIds);
-            throw new RuntimeException("Error fetching items: " + e.getMessage(), e);
         }
     }
 }

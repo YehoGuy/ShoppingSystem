@@ -23,9 +23,11 @@ public class AuthTokenService {
     private SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS256); 
 
     private IAuthTokenRepository authTokenRepository; 
+    // private UserService userService; 
 
     public AuthTokenService(IAuthTokenRepository authTokenRepository) {
         this.authTokenRepository = authTokenRepository; 
+        // this.userService = userService; 
     }
 
     public SecretKey getKey() {
@@ -60,13 +62,16 @@ public class AuthTokenService {
             String token = generateAuthToken(username); 
             long expirationTime = System.currentTimeMillis() + EXPIRATION_TIME; 
             AuthToken authToken = new AuthToken(token, new Date(expirationTime));
+            int userId = 0;//userService.getUserIdByUsername(username);
             authTokenRepository.setAuthToken(userId, authToken);
             LoggerService.logMethodExecutionEnd("Login",token);
             return token;
     }
 
-    public void Logout(String token) throws Exception {
-        LoggerService.logMethodExecution("Logout",token);
+
+    public String Logout(String token) {
+         LoggerService.logMethodExecution("Logout",token);
+        
         if(ValidateToken(token) != null) { 
             int userId = authTokenRepository.getUserIdByToken(token); 
             authTokenRepository.removeAuthToken(userId); 
@@ -92,11 +97,13 @@ public class AuthTokenService {
         return token;
     }
 
+
     public Integer ValidateToken(String token) throws Exception {
         LoggerService.logMethodExecution("ValidateToken",token);
         if (token == null || token.isEmpty()) {
             throw new IllegalArgumentException("Token cannot be null or empty");
         }
+
         try {
             Jwts.parserBuilder()
                     .setSigningKey(key) 
@@ -114,10 +121,11 @@ public class AuthTokenService {
                 LoggerService.logMethodExecutionEnd("ValidateToken",userId);
                 return userId; 
             } else {
-                throw new Exception("Token not found in repository"); 
+                return null; 
             }
         }
         catch (ExpiredJwtException e) {
+
             LoggerService.logError("ValidateToken", e, token);
             throw new Exception("Token expired");
         } catch (JwtException e) {
@@ -126,6 +134,7 @@ public class AuthTokenService {
         } catch (Exception e) {
             LoggerService.logError("ValidateToken", e, token);
             throw new Exception("Token validation failed: " + e.getMessage()); 
+
         }
     }
 

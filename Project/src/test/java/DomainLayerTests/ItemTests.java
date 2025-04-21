@@ -16,7 +16,7 @@ public class ItemTests {
 
     @BeforeEach
     public void setup() {
-        item = new Item(1, "Widget", "A useful widget",1);
+        item = new Item(1, "Widget", "A useful widget");
     }
 
     @Test

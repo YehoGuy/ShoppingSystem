@@ -3,7 +3,6 @@ package DomainLayer;
 import java.util.ArrayList;
 import java.util.List;
 
-import DomainLayer.Roles.PermissionsEnum;
 import DomainLayer.Roles.Role;
 
 public class Member extends User {
@@ -15,6 +14,7 @@ public class Member extends User {
     private String phoneNumber; // Phone number of the user
     private String address; // Address of the user
     private List<Role> roles; // List of roles associated with the user
+    private List<Role> pending_roles; // List of pending roles not yet confirmed/declined by the user
     
     public Member(int memberId, String username, String password, String email, String phoneNumber, String address) {
         super(memberId); // Call the User class constructor
@@ -26,6 +26,8 @@ public class Member extends User {
         this.address = address; // Initialize address
         this.orderHistory = new ArrayList<>(); // Initialize order history
         this.roles = new ArrayList<>(); // Initialize roles
+        this.pending_roles = new ArrayList<>(); // Initialize pending roles
+
     }
 
     public int getMemberId() {
@@ -84,8 +86,8 @@ public class Member extends User {
         return roles; // Return the list of roles
     }
 
-    public void addRole(Role role) {
-        roles.add(role); // Add a role to the list of roles
+    public void addRoleToPending(Role role) {
+        pending_roles.add(role); // Add a role to the list of roles
     }
 
     public void removeRole(Role role) {
@@ -96,25 +98,26 @@ public class Member extends User {
         return roles.contains(role); // Check if the user has a specific role
     }
 
-    public void addPermission(PermissionsEnum permission) {
-        // Add a permission to the user's roles (if applicable)
-        for (Role role : roles) {
-            role.addPermission(permission); // Add the permission to the role
+    public boolean equals(Object obj) {
+        if (this == obj) return true; // Check if the same object
+        if (obj == null || getClass() != obj.getClass()) return false; // Check for null or different class
+        Member member = (Member) obj; // Cast to Member
+        return memberId == member.memberId; // Compare member IDs
+    }
+
+    public void acseptRole(Role role) {
+        if (pending_roles.contains(role)) {
+            pending_roles.remove(role); // Remove the role from pending roles
+            roles.add(role); // Add the role to the list of roles
+        } else {
+            throw new IllegalArgumentException("Role not found in pending roles."); // Role not found in pending roles
         }
     }
-    public void removePermission(PermissionsEnum permission) {
-        // Remove a permission from the user's roles (if applicable)
-        for (Role role : roles) {
-            role.removePermissions(permission); // Remove the permission from the role
+    public void declineRole(Role role) {
+        if (pending_roles.contains(role)) {
+            pending_roles.remove(role); // Remove the role from pending roles
+        } else {
+            throw new IllegalArgumentException("Role not found in pending roles."); // Role not found in pending roles
         }
-    }
-    public boolean hasPermission(PermissionsEnum permission) {
-        // Check if the user has a specific permission through their roles
-        for (Role role : roles) {
-            if (role.hasPermission(permission)) {
-                return true; // User has the permission
-            }
-        }
-        return false; // User does not have the permission
     }
 }

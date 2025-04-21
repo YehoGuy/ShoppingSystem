@@ -1,28 +1,13 @@
 package ApplicationLayer.Purchase;
 
-import ApplicationLayer.AuthTokenService;
-import ApplicationLayer.Item.ItemService;
-import ApplicationLayer.Shop.ShopService;
-import ApplicationLayer.User.UserService;
 import DomainLayer.Purchase.IPurchaseRepository;
 
 public class PurchaseService {
 
-    private final IPurchaseRepository purchaseRepository;
-    private AuthTokenService authTokenService;
-    private UserService userService;
-    private ItemService itemService;
-    private ShopService shopService;
+    IPurchaseRepository purchaseRepository;
 
     public PurchaseService(IPurchaseRepository purchaseRepository) {
         this.purchaseRepository = purchaseRepository;
-    }
-
-    public void setServices(AuthTokenService authTokenService, UserService userService, ItemService itemService, ShopService shopService) {
-        this.authTokenService = authTokenService;
-        this.userService = userService;
-        this.itemService = itemService;
-        this.shopService = shopService;
     }
     
     // This class will handle the purchase logic
