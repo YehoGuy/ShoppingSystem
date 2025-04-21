@@ -241,7 +241,7 @@ public class UserService {
         }
     }
 
-    public boolean logout(String token){
+    public String logout(String token){
         try {
             LoggerService.logMethodExecution("logout", token);
             int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
@@ -250,10 +250,10 @@ public class UserService {
             }
             authTokenService.Logout(token); // Logout the user by removing the token
             LoggerService.logMethodExecutionEnd("logout", true);
-            return true; // Logout successful
+            return loginAsGuest(); // Generate a new guest token
         } catch (Exception e) {
             LoggerService.logError("logout", e, token);
-            return false; // Indicate failure to log out
+            return null; // Indicate failure to logout
         }
     }
 
