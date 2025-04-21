@@ -22,7 +22,7 @@ public class ItemRepositoryTests {
 
     @Test
     public void testCreateAndGetItem() {
-        Item item = repo.createItem("Widget", "A useful widget");
+        Item item = repo.createItem("Widget", "A useful widget",1);
         assertNotNull(item);
         assertEquals("Widget", item.getName());
         assertEquals("A useful widget", item.getDescription());
@@ -33,15 +33,15 @@ public class ItemRepositoryTests {
 
     @Test
     public void testGetAllItems() {
-        repo.createItem("A", "Desc A");
-        repo.createItem("B", "Desc B");
+        repo.createItem("A", "Desc A",1);
+        repo.createItem("B", "Desc B",1);
         List<Item> all = repo.getAllItems();
         assertEquals(2, all.size());
     }
 
     @Test
     public void testAddReviewAndGetReviews() {
-        Item item = repo.createItem("Gadget", "Cool gadget");
+        Item item = repo.createItem("Gadget", "Cool gadget",1);
         assertTrue(repo.getItemReviews(item.getId()).isEmpty());
         repo.addReviewToItem(item.getId(), 5, "Excellent");
         repo.addReviewToItem(item.getId(), 3, "Meh");
@@ -53,7 +53,7 @@ public class ItemRepositoryTests {
 
     @Test
     public void testGetAverageRating() {
-        Item item = repo.createItem("Tool", "Handy tool");
+        Item item = repo.createItem("Tool", "Handy tool",1);
         assertEquals(-1.0, repo.getItemAverageRating(item.getId()));
         repo.addReviewToItem(item.getId(), 4, "Good");
         repo.addReviewToItem(item.getId(), 2, "Poor");
@@ -62,7 +62,7 @@ public class ItemRepositoryTests {
 
     @Test
     public void testDeleteItem() {
-        Item item = repo.createItem("DeleteMe", "To be deleted");
+        Item item = repo.createItem("DeleteMe", "To be deleted",1);
         assertNotNull(repo.getItem(item.getId()));
         repo.deleteItem(item.getId());
         assertNull(repo.getItem(item.getId()));

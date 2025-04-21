@@ -3,6 +3,7 @@ package DomainLayer;
 import java.util.ArrayList;
 import java.util.List;
 
+import DomainLayer.Roles.PermissionsEnum;
 import DomainLayer.Roles.Role;
 
 public class Member extends User {
@@ -98,6 +99,7 @@ public class Member extends User {
         return roles.contains(role); // Check if the user has a specific role
     }
 
+
     public boolean equals(Object obj) {
         if (this == obj) return true; // Check if the same object
         if (obj == null || getClass() != obj.getClass()) return false; // Check for null or different class
@@ -119,5 +121,27 @@ public class Member extends User {
         } else {
             throw new IllegalArgumentException("Role not found in pending roles."); // Role not found in pending roles
         }
+    }
+    public void addPermission(PermissionsEnum permission) {
+        // Add a permission to the user's roles (if applicable)
+        for (Role role : roles) {
+            role.addPermission(permission); // Add the permission to the role
+        }
+    }
+    public void removePermission(PermissionsEnum permission) {
+        // Remove a permission from the user's roles (if applicable)
+        for (Role role : roles) {
+            role.removePermissions(permission); // Remove the permission from the role
+        }
+    }
+    public boolean hasPermission(PermissionsEnum permission) {
+        // Check if the user has a specific permission through their roles
+        for (Role role : roles) {
+            if (role.hasPermission(permission)) {
+                return true; // User has the permission
+            }
+        }
+        return false; // User does not have the permission
+
     }
 }

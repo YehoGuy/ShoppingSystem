@@ -11,8 +11,6 @@ import ApplicationLayer.AuthTokenService;
 import InfrastructureLayer.AuthTokenRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
 
 public class AuthServiceTests {
     
@@ -56,9 +54,16 @@ public class AuthServiceTests {
     @Test
     public void testValidateToken() {
         String username = "testUser";
-        String token = authService.Login(username, username);
+        String token = authService.Login(username, username, 1);
         
-        Integer isValid = authService.ValidateToken(token);
+        Integer isValid;
+        try {
+            isValid = authService.ValidateToken(token);
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            isValid = null; // Set to null if an exception occurs
+        }
         
         assertNotNull(isValid);
     }
@@ -67,7 +72,14 @@ public class AuthServiceTests {
     public void testInvalidToken() {
         String invalidToken = "invalidToken";
         
-        Integer isValid = authService.ValidateToken(invalidToken);
+        Integer isValid;
+        try {
+            isValid = authService.ValidateToken(invalidToken);
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            isValid = null; // Set to null if an exception occurs
+        }
         
         assertNull(isValid);
     }

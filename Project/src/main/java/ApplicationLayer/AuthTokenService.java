@@ -23,11 +23,9 @@ public class AuthTokenService {
     private SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS256); 
 
     private IAuthTokenRepository authTokenRepository; 
-    // private UserService userService; 
 
     public AuthTokenService(IAuthTokenRepository authTokenRepository) {
         this.authTokenRepository = authTokenRepository; 
-        // this.userService = userService; 
     }
 
     public SecretKey getKey() {
@@ -49,7 +47,10 @@ public class AuthTokenService {
 
 
     public String Login(String username, String password, int userId) {
+<<<<<<< HEAD
         LoggerService.logMethodExecution("Login",username,password,userId);
+=======
+>>>>>>> parent of ebf9a0e (Revert "Merge branch 'V1' into subrev_role_as_str_own")
         if(username == null || username.isEmpty()) {
             throw new IllegalArgumentException("Username cannot be null or empty");
         }
@@ -62,16 +63,19 @@ public class AuthTokenService {
             String token = generateAuthToken(username); 
             long expirationTime = System.currentTimeMillis() + EXPIRATION_TIME; 
             AuthToken authToken = new AuthToken(token, new Date(expirationTime));
-            int userId = 0;//userService.getUserIdByUsername(username);
             authTokenRepository.setAuthToken(userId, authToken);
             LoggerService.logMethodExecutionEnd("Login",token);
             return token;
     }
 
+<<<<<<< HEAD
 
     public String Logout(String token) {
          LoggerService.logMethodExecution("Logout",token);
         
+=======
+    public String Logout(String token) throws Exception {
+>>>>>>> parent of ebf9a0e (Revert "Merge branch 'V1' into subrev_role_as_str_own")
         if(ValidateToken(token) != null) { 
             int userId = authTokenRepository.getUserIdByToken(token); 
             authTokenRepository.removeAuthToken(userId); 
@@ -97,6 +101,7 @@ public class AuthTokenService {
         return token;
     }
 
+<<<<<<< HEAD
 
     public Integer ValidateToken(String token) throws Exception {
         LoggerService.logMethodExecution("ValidateToken",token);
@@ -104,6 +109,9 @@ public class AuthTokenService {
             throw new IllegalArgumentException("Token cannot be null or empty");
         }
 
+=======
+    public Integer ValidateToken(String token) throws Exception {
+>>>>>>> parent of ebf9a0e (Revert "Merge branch 'V1' into subrev_role_as_str_own")
         try {
             Jwts.parserBuilder()
                     .setSigningKey(key) 
@@ -121,10 +129,11 @@ public class AuthTokenService {
                 LoggerService.logMethodExecutionEnd("ValidateToken",userId);
                 return userId; 
             } else {
-                return null; 
+                throw new Exception("Token not found in repository"); 
             }
         }
         catch (ExpiredJwtException e) {
+<<<<<<< HEAD
 
             LoggerService.logError("ValidateToken", e, token);
             throw new Exception("Token expired");
@@ -135,6 +144,13 @@ public class AuthTokenService {
             LoggerService.logError("ValidateToken", e, token);
             throw new Exception("Token validation failed: " + e.getMessage()); 
 
+=======
+            throw new Exception("Token expired");
+        } catch (JwtException e) {
+            throw new Exception("Invalid token"); 
+        } catch (Exception e) {
+            throw new Exception("Token validation failed: " + e.getMessage()); 
+>>>>>>> parent of ebf9a0e (Revert "Merge branch 'V1' into subrev_role_as_str_own")
         }
     }
 

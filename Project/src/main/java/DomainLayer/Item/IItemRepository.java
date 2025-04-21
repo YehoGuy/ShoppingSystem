@@ -14,7 +14,7 @@ public interface IItemRepository {
      * @param description the item description
      * @return the newly created Item
      */
-    Item createItem(String name, String description);
+    Item createItem(String name, String description, Integer category);
 
     /**
      * Retrieves an item by its id.
@@ -62,4 +62,13 @@ public interface IItemRepository {
      * @param itemId the item id
      */
     void deleteItem(int itemId);
+
+    /**
+     * Retrieves a list of Item objects for the given list of item IDs.
+     * If an ID is not found, it is skipped.
+     *
+     * @param itemIds the list of item IDs to fetch
+     * @return an unmodifiable list of corresponding Item instances
+     */
+    List<Item> getItemsByIds(List<Integer> itemIds);
 }
