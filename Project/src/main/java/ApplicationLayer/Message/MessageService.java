@@ -9,6 +9,7 @@ import ApplicationLayer.User.UserService;
 import ApplicationLayer.Shop.ShopService;
 import DomainLayer.IMessageRepository;
 import DomainLayer.Message;
+import DomainLayer.Shop.Shop;
 
 public class MessageService {
 
@@ -32,44 +33,46 @@ public class MessageService {
     public String sendMessageToUser(String token, int receiverId, String content, int previousMessageId) {
         // need to validate the token and get the senderId from it
         try {
-            loggerService.logMethodExecution("sendMessageToUser", token, receiverId, content, previousMessageId); // Log the method execution
+            LoggerService.logMethodExecution("sendMessageToUser", token, receiverId, content, previousMessageId); // Log the method execution
             int senderId = authTokenService.ValidateToken(token); // get the senderId from the token
             userService.validateMemberId(senderId); // validate the senderId
             userService.validateMemberId(receiverId); // validate the receiverId
-            Message message = messageRepository.getMessageById(previousMessageId); // get the previous message
-            if (message == null) {
-                loggerService.logError("sendMessageToUser", new IllegalArgumentException("Previous message not found"), token, receiverId, content, previousMessageId); // Log the error
-                return "Previous message not found!";
-            }
-            if (message.getSenderId() != senderId && message.getReceiverId() != receiverId) {
-                loggerService.logError("sendMessageToUser", new IllegalArgumentException("Previous message does not belong to the sender or receiver!"), token, receiverId, content, previousMessageId); // Log the error
-                return "Previous message does not belong to the sender or receiver!";
-            }
-            if (message.getReceiverId() != senderId && message.getSenderId() != receiverId) {
-                loggerService.logError("sendMessageToUser", new IllegalArgumentException("Previous message does not belong to the sender or receiver!"), token, receiverId, content, previousMessageId); // Log the error
-                return "Previous message does not belong to the sender or receiver!";
+            if(!messageRepository.isMessagePrevious(previousMessageId, senderId, receiverId)){
+                Exception e = new Exception("Previous message with ID " + previousMessageId + " isn't proper previous message."); // Create an exception
+                LoggerService.logError("sendMessageToUser", e, token, receiverId, content, previousMessageId); // Log the error
+                return "Error sending message to user: " + e.getMessage(); // Return the error message
             }
             messageRepository.addMessage(senderId, receiverId, content, LocalDate.now().toString(), true, previousMessageId);
-            loggerService.logMethodExecutionEnd("sendMessageToUser", "Message send successfully!"); // Log the success
+            LoggerService.logMethodExecutionEnd("sendMessageToUser", "Message send successfully!"); // Log the success
             return "Message sent successfully!";
         } catch (Exception e) {
-            loggerService.logError("sendMessageToUser", e, token, receiverId, content, previousMessageId); // Log the error
+            LoggerService.logError("sendMessageToUser", e, token, receiverId, content, previousMessageId); // Log the error
             return "Error sending message to user: " + e.getMessage(); // Return the error message
         }
     }
 
-    public String sendMessageToShop(String token, int senderId /**(shouldnt be here) */, int receiverId, String content, int previousMessageId) {
+    public String sendMessageToShop(String token, int receiverId, String content, int previousMessageId) {
         // need to validate the token and get the senderId from it
         try {
-            loggerService.logMethodExecution("sendMessageToShop", token, senderId, receiverId, content, previousMessageId); // Log the method execution
+            LoggerService.logMethodExecution("sendMessageToShop", token, receiverId, content, previousMessageId); // Log the method execution
             int userId = authTokenService.ValidateToken(token); // get the senderId from the token
             userService.validateMemberId(userId); // validate the senderId
-            shopService.getShop(receiverId); // validate the receiverId
-            messageRepository.addMessage(senderId, receiverId, content, LocalDate.now().toString(), false, previousMessageId);
-            loggerService.logMethodExecutionEnd("sendMessageToShop", "Message send successfully!"); // Log the success
+            Shop s = shopService.getShop(receiverId); // validate the receiverId
+            if (s == null) {
+                Exception e = new Exception("Shop with ID " + receiverId + " doesn't exist."); // Create an exception
+                LoggerService.logError("sendMessageToShop", e, token, receiverId, content, previousMessageId); // Log the error
+                return "Error sending message to shop: " + e.getMessage(); // Return the error message
+            }
+            if(!messageRepository.isMessagePrevious(previousMessageId, userId, receiverId)){
+                Exception e = new Exception("Previous message with ID " + previousMessageId + " isn't proper previous message."); // Create an exception
+                LoggerService.logError("sendMessageToUser", e, token, receiverId, content, previousMessageId); // Log the error
+                return "Error sending message to user: " + e.getMessage(); // Return the error message
+            }
+            messageRepository.addMessage(userId, receiverId, content, LocalDate.now().toString(), false, previousMessageId);
+            LoggerService.logMethodExecutionEnd("sendMessageToShop", "Message send successfully!"); // Log the success
             return "Message sent successfully!";
         } catch (Exception e) {
-            loggerService.logError("sendMessageToShop", e, token, senderId, receiverId, content, previousMessageId); // Log the error
+            LoggerService.logError("sendMessageToShop", e, token, receiverId, content, previousMessageId); // Log the error
             return "Error sending message to shop: " + e.getMessage(); // Return the error message
         }
     }
