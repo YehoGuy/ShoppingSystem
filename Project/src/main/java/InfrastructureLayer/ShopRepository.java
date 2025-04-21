@@ -183,6 +183,44 @@ public class ShopRepository implements IShopRepository {
     }
 
     /**
+     * Checks if the supply is available for the given item in the specified shop.
+     *
+     * @param shopId the shop id.
+     * @param itemId the item id.
+     * @param supply the supply to check.
+     * @return true if the supply count is greater than or equal to the specified supply, false otherwise.
+     */
+    public boolean checkSupplyAvailabilityAndAqcuire(Integer shopId, Integer itemId, Integer supply) {
+        Shop shop = shops.get(shopId);
+        if (shop != null) {
+            int currentQuantity = shop.getItemQuantity(itemId);
+            if (currentQuantity >= supply) {
+                shop.removeItem(itemId, supply);
+                return true;
+            }
+            return false;
+        } else {
+            throw new IllegalArgumentException("Shop not found: " + shopId);
+        }
+    }
+    
+    /**
+     * adds a given quantity of an item to the specified shop.
+     * 
+     * @param shopId   the shop id.
+     * @param itemId   the item id.
+     * @param supply   the quantity to add.
+     */
+    public void addSupply(Integer shopId, Integer itemId, Integer supply) {
+        Shop shop = shops.get(shopId);
+        if (shop != null) {
+            shop.addItem(itemId, supply);
+        } else {
+            throw new IllegalArgumentException("Shop not found: " + shopId);
+        }
+    }
+
+    /**
      * Decreases the supply count for the given item in the shop by the specified supply value.
      *
      * @param shopId the shop id.

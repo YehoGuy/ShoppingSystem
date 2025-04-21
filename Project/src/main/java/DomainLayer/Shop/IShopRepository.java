@@ -125,6 +125,17 @@ public interface IShopRepository {
     boolean checkSupplyAvailability(Integer shopId, Integer itemId);
 
     /**
+     * checks if the supply is available for the given item in the specified shop
+     * and acquires the supply if available.
+     * 
+     * @param shopId the shop id.
+     * @param itemId the item id.
+     * @param supply the supply to acquire.
+     * @return true if the supply was successfully acquired, false otherwise.
+     */
+    boolean checkSupplyAvailabilityAndAqcuire(Integer shopId, Integer itemId, Integer supply);
+
+    /**
      * Decreases the supply count for the given item in the shop by the specified supply value.
      *
      * @param shopId the shop id.
@@ -147,4 +158,11 @@ public interface IShopRepository {
      * @return a list of item IDs.
      */
     List<Integer> getItems();
+
+    /**
+     * Retrieves a list of all shops.
+     *
+     * @return a list of all shops.
+     */
+    void addSupply(Integer shopId, Integer itemId, Integer supply);
 }
