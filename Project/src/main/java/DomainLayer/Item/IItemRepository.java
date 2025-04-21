@@ -14,7 +14,7 @@ public interface IItemRepository {
      * @param description the item description
      * @return the newly created Item
      */
-    Item createItem(String name, String description);
+    Item createItem(String name, String description, Integer category);
 
     /**
      * Retrieves an item by its id.

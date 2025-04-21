@@ -234,4 +234,6 @@ public class ShopRepository implements IShopRepository {
                         .collect(Collectors.toList())
         );
     }
+
+    
 }

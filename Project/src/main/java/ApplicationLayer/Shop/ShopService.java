@@ -1,11 +1,13 @@
 package ApplicationLayer.Shop;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.Item.ItemService;
 import ApplicationLayer.LoggerService;
 import DomainLayer.Item.Item;
+import DomainLayer.Item.ItemCategory;
 import ApplicationLayer.User.UserService;
 import DomainLayer.Shop.IShopRepository;
 import DomainLayer.Shop.Shop;
@@ -342,6 +344,134 @@ public class ShopService {
             LoggerService.logError("getItems", e);
             throw new RuntimeException("Error retrieving all items: " + e.getMessage(), e);
         }
+    }
 
+    /**
+     * Search across all shops (no single‑shop focus) for items matching any
+     * combination of these optional criteria.
+     */
+    public List<Item> searchItems(
+            String name,
+            ItemCategory category,
+            List<String> keywords,
+            Integer minPrice,
+            Integer maxPrice,
+            Double minProductRating,
+            Double minShopRating) 
+        {
+        try{
+            LoggerService.logMethodExecution(
+                "searchItems", name, category, keywords,
+                minPrice, maxPrice, minProductRating, minShopRating
+            );
 
+            List<Item> results = new ArrayList<>();
+            for (Shop shop : getAllShops()) {
+                if (minShopRating != null && shop.getAverageRating() < minShopRating) {
+                    continue;
+                }
+                // delegate per‑shop filtering
+                results.addAll(filterItemsInShop(
+                    shop, name, category, keywords,
+                    minPrice, maxPrice, minProductRating
+                ));
+            }
+
+            LoggerService.logMethodExecutionEnd("searchItems", results);
+            return results;
+        }
+        catch(Exception e){
+            LoggerService.logError("searchItems", e, name, category, keywords,
+                minPrice, maxPrice, minProductRating, minShopRating);
+            throw new RuntimeException("Error searching items: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Search within a specific shop for items matching any combination of these optional criteria.
+     */
+    public List<Item> searchItemsInShop(
+            Integer shopId,
+            String name,
+            ItemCategory category,
+            List<String> keywords,
+            Integer minPrice,
+            Integer maxPrice,
+            Double minProductRating) 
+        {
+        try{
+            LoggerService.logMethodExecution(
+                "searchItemsInShop", shopId, name, category, keywords,
+                minPrice, maxPrice, minProductRating
+            );
+    
+            Shop shop = getShop(shopId);
+            List<Item> results = filterItemsInShop(
+                shop, name, category, keywords,
+                minPrice, maxPrice, minProductRating
+            );
+    
+            LoggerService.logMethodExecutionEnd("searchItemsInShop", results);
+            return results;
+        }
+        catch(Exception e){
+            LoggerService.logError("searchItemsInShop", e, shopId, name, category, keywords,
+                minPrice, maxPrice, minProductRating);
+            throw new RuntimeException("Error searching items in shop: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Private helper: apply all item‑level filters within one shop.
+     * if a filter is null, it is ignored.
+     */
+    private List<Item> filterItemsInShop(
+            Shop shop,
+            String name,
+            ItemCategory category,
+            List<String> keywords,
+            Integer minPrice,
+            Integer maxPrice,
+            Double minProductRating) 
+    {
+        try{
+            List<Item> results = new ArrayList<>();
+            List<Item> shopItems = getItemsByShop(shop.getId());
+            for (Item item : shopItems) {
+                // name
+                if (name != null &&
+                    !item.getName().toLowerCase().contains(name.toLowerCase())) {
+                    continue;
+                }
+                // category
+                if (category != null && item.getCategory() != category) {
+                    continue;
+                }
+                // keywords
+                if (keywords != null && !keywords.isEmpty()) {
+                    String ln = item.getName().toLowerCase();
+                    String ld = item.getDescription().toLowerCase();
+                    boolean match = keywords.stream()
+                        .map(String::toLowerCase)
+                        .anyMatch(kw -> ln.contains(kw) || ld.contains(kw));
+                    if (!match) continue;
+                }
+                // price
+                int price = shop.getItemPrice(item.getId());
+                if (minPrice != null && price < minPrice) continue;
+                if (maxPrice != null && price > maxPrice) continue;
+                // product rating
+                double pr = item.getAverageRating();
+                if (minProductRating != null && pr < minProductRating) continue;
+
+                results.add(item);
+            }
+            return results;
+        }
+        catch(Exception e){
+            LoggerService.logError("filterItemsInShop", e, shop, name, category, keywords,
+                minPrice, maxPrice, minProductRating);
+            throw new RuntimeException("Error filtering items in shop: " + e.getMessage(), e);
+        }
+    }
 }
