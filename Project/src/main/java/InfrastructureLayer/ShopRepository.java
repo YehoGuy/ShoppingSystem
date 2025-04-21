@@ -206,4 +206,32 @@ public class ShopRepository implements IShopRepository {
             throw new IllegalArgumentException("Shop not found: " + shopId);
         }
     }
+
+    /**
+     * Returns a list of item IDs that belong to the shop identified by shopId.
+     *
+     * @param shopId the shop id.
+     * @return a list of item IDs.
+     */
+    public List<Integer> getItemsByShop(Integer shopId) {
+        Shop shop = shops.get(shopId);
+        if (shop != null) {
+            return shop.getItemIds();
+        } else {
+            throw new IllegalArgumentException("Shop not found: " + shopId);
+        }
+    }
+
+    /**
+     * Returns a list of all item IDs across all shops.
+     *
+     * @return a list of item IDs.
+     */
+    public List<Integer> getItems(){
+        return Collections.unmodifiableList(
+                shops.values().stream()
+                        .flatMap(shop -> shop.getItemIds().stream())
+                        .collect(Collectors.toList())
+        );
+    }
 }
