@@ -11,8 +11,6 @@ import ApplicationLayer.AuthTokenService;
 import InfrastructureLayer.AuthTokenRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
 
 public class AuthServiceTests {
     
@@ -56,7 +54,7 @@ public class AuthServiceTests {
     @Test
     public void testValidateToken() {
         String username = "testUser";
-        String token = authService.Login(username, username);
+        String token = authService.Login(username, username, 1);
         
         Integer isValid = authService.ValidateToken(token);
         
