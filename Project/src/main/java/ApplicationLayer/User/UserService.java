@@ -1,6 +1,8 @@
 package ApplicationLayer.User;
 import ApplicationLayer.AuthTokenService;
 import DomainLayer.Member;
+import DomainLayer.Roles.PermissionsEnum;
+import DomainLayer.Roles.Role;
 import DomainLayer.User;
 import InfrastructureLayer.UserRepository;
 
@@ -168,6 +170,92 @@ public class UserService {
             return true; // Logout successful
         } catch (Exception e) {
             return false; // Indicate failure to log out
+        }
+    }
+
+    public boolean addRole(int id, Role role) {
+        try {
+            if (userRepository.getUserMapping().containsKey(id)) {
+                User user = userRepository.getUserById(id);
+                validateMemberId(id);
+                ((Member)user).addRole(role);
+                return true; // Role added successfully
+            } else {
+                throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            }
+        } catch (Exception e) {
+            return false; // Indicate failure to add role
+        }
+    }
+
+    public boolean removeRole(int id, Role role) {
+        try {
+            if (userRepository.getUserMapping().containsKey(id)) {
+                User user = userRepository.getUserById(id);
+                validateMemberId(id);
+                ((Member)user).removeRole(role);
+                return true; // Role removed successfully
+            } else {
+                throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            }
+        } catch (Exception e) {
+            return false; // Indicate failure to remove role
+        }
+    }
+
+    public boolean hasRole(int id, Role role) {
+        try {
+            if (userRepository.getUserMapping().containsKey(id)) {
+                User user = userRepository.getUserById(id);
+                validateMemberId(id);
+                return ((Member)user).hasRole(role); // Check if the user has the specified role
+            } else {
+                throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            }
+        } catch (Exception e) {
+            return false; // Indicate failure to check role
+        }
+    }
+
+    public boolean addPermission(int id, PermissionsEnum permission) {
+        try {
+            if (userRepository.getUserMapping().containsKey(id)) {
+                User user = userRepository.getUserById(id);
+                validateMemberId(id);
+                ((Member)user).addPermission(permission); // Add permission to the user
+                return true; // Permission added successfully
+            } else {
+                throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            }
+        } catch (Exception e) {
+            return false; // Indicate failure to add permission
+        }
+    }
+    public boolean removePermission(int id, PermissionsEnum permission) {
+        try {
+            if (userRepository.getUserMapping().containsKey(id)) {
+                User user = userRepository.getUserById(id);
+                validateMemberId(id);
+                ((Member)user).removePermission(permission); // Remove permission from the user
+                return true; // Permission removed successfully
+            } else {
+                throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            }
+        } catch (Exception e) {
+            return false; // Indicate failure to remove permission
+        }
+    }
+    public boolean hasPermission(int id, PermissionsEnum permission) {
+        try {
+            if (userRepository.getUserMapping().containsKey(id)) {
+                User user = userRepository.getUserById(id);
+                validateMemberId(id);
+                return ((Member)user).hasPermission(permission); // Check if the user has the specified permission
+            } else {
+                throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            }
+        } catch (Exception e) {
+            return false; // Indicate failure to check permission
         }
     }
     
