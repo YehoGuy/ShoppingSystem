@@ -1,10 +1,15 @@
 package ApplicationLayer.User;
+
 import java.util.HashMap;
 import java.util.List;
 
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.LoggerService;
+import ApplicationLayer.AuthTokenService;
+
 import DomainLayer.Member;
+import DomainLayer.Roles.PermissionsEnum;
+import DomainLayer.Roles.Role;
 import DomainLayer.User;
 import DomainLayer.Roles.PermissionsEnum;
 import DomainLayer.Roles.Role;
@@ -13,9 +18,10 @@ import InfrastructureLayer.UserRepository;
 public class UserService {
     
     private final UserRepository userRepository;
+
     private AuthTokenService authTokenService;
 
-    private UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
@@ -107,12 +113,25 @@ public class UserService {
     }
 
     public void validateMemberId(int id) {
+
         if (id <= 0) {
             throw new IllegalArgumentException("Invalid user ID: " + id);
         }
+        if (!userRepository.getUserMapping().containsKey(id)) {
+            throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+        }
+        User user = userRepository.getUserById(id);
+        if (!(user instanceof Member)) {
+            throw new IllegalArgumentException("User with ID " + id + " is not a member.");
+
+        }
     }
 
-    public String loginAsGuest() {
+
+
+
+
+    public int loginAsGuest() {
         try {
             LoggerService.logMethodExecution("loginAsGuest");
             int id = userRepository.addGuest(); // Assuming this method returns the ID of the new guest user
@@ -240,6 +259,8 @@ public class UserService {
             return false; // Indicate failure to log out
         }
     }
+
+
 
     public HashMap<Integer, PermissionsEnum[]> getPermitionsByShop(int senderID, int shopId) {
         try {
@@ -392,5 +413,93 @@ public class UserService {
         }
     }
             
+
+
+    public boolean addRole(int id, Role role) {
+        try {
+            if (userRepository.getUserMapping().containsKey(id)) {
+                User user = userRepository.getUserById(id);
+                validateMemberId(id);
+                ((Member)user).addRole(role);
+                return true; // Role added successfully
+            } else {
+                throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            }
+        } catch (Exception e) {
+            return false; // Indicate failure to add role
+        }
+    }
+
+    public boolean removeRole(int id, Role role) {
+        try {
+            if (userRepository.getUserMapping().containsKey(id)) {
+                User user = userRepository.getUserById(id);
+                validateMemberId(id);
+                ((Member)user).removeRole(role);
+                return true; // Role removed successfully
+            } else {
+                throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            }
+        } catch (Exception e) {
+            return false; // Indicate failure to remove role
+        }
+    }
+
+    public boolean hasRole(int id, Role role) {
+        try {
+            if (userRepository.getUserMapping().containsKey(id)) {
+                User user = userRepository.getUserById(id);
+                validateMemberId(id);
+                return ((Member)user).hasRole(role); // Check if the user has the specified role
+            } else {
+                throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            }
+        } catch (Exception e) {
+            return false; // Indicate failure to check role
+        }
+    }
+
+    public boolean addPermission(int id, PermissionsEnum permission) {
+        try {
+            if (userRepository.getUserMapping().containsKey(id)) {
+                User user = userRepository.getUserById(id);
+                validateMemberId(id);
+                ((Member)user).addPermission(permission); // Add permission to the user
+                return true; // Permission added successfully
+            } else {
+                throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            }
+        } catch (Exception e) {
+            return false; // Indicate failure to add permission
+        }
+    }
+    public boolean removePermission(int id, PermissionsEnum permission) {
+        try {
+            if (userRepository.getUserMapping().containsKey(id)) {
+                User user = userRepository.getUserById(id);
+                validateMemberId(id);
+                ((Member)user).removePermission(permission); // Remove permission from the user
+                return true; // Permission removed successfully
+            } else {
+                throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            }
+        } catch (Exception e) {
+            return false; // Indicate failure to remove permission
+        }
+    }
+    public boolean hasPermission(int id, PermissionsEnum permission) {
+        try {
+            if (userRepository.getUserMapping().containsKey(id)) {
+                User user = userRepository.getUserById(id);
+                validateMemberId(id);
+                return ((Member)user).hasPermission(permission); // Check if the user has the specified permission
+            } else {
+                throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            }
+        } catch (Exception e) {
+            return false; // Indicate failure to check permission
+        }
+    }
+    
 
 }

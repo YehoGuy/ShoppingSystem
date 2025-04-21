@@ -130,5 +130,15 @@ public class MessageRepository implements IMessageRepository {
         return conversation; // Return the full conversation as a list of messages
     }
 
- 
+    public boolean isMessagePrevious(int previousMessageId, int senderId, int receiverId) {
+        if (previousMessageId == 0) return true;
+        Message message = messages.get(previousMessageId); // Get the message with the specified ID
+        if (message != null) {
+            if ((message.getSenderId() == senderId && message.getReceiverId() == receiverId) || (message.getSenderId() == receiverId && message.getReceiverId() == senderId)) {
+                return true; // Return true if the message matches the sender and receiver IDs
+            }
+        }
+        return false; // Return false if the message is not found or does not match the IDs
+    }
+
 }
