@@ -1,13 +1,19 @@
 package ApplicationLayer.User;
+import ApplicationLayer.AuthTokenService;
 import DomainLayer.Member;
 import DomainLayer.User;
 import InfrastructureLayer.UserRepository;
 
 public class UserService {
     private final UserRepository userRepository;
+    private AuthTokenService authTokenService;
 
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
+    }
+
+    public void setServices(AuthTokenService authTokenService) {
+        this.authTokenService = authTokenService;
     }
 
     public User getUserById(int id) {

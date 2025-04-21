@@ -3,15 +3,25 @@ package ApplicationLayer.Message;
 import java.time.LocalDate;
 import java.util.List;
 
+import ApplicationLayer.AuthTokenService;
+import ApplicationLayer.User.UserService;
 import DomainLayer.IMessageRepository;
 import DomainLayer.Message;
 
 public class MessageService {
 
     public IMessageRepository messageRepository;
+    private AuthTokenService authTokenService;
+    private UserService userService; 
 
     public MessageService(IMessageRepository messageRepository) {
         this.messageRepository = messageRepository;
+    }
+
+    public MessageService(IMessageRepository messageRepository, AuthTokenService authTokenService, UserService userService) {
+        this.messageRepository = messageRepository;
+        this.authTokenService = authTokenService;
+        this.userService = userService; 
     }
 
     public String sendMessageToUser( String token, int senderId /**(shouldnt be here) */, int receiverId, String content, int previousMessageId) {

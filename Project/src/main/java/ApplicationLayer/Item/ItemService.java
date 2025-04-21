@@ -2,6 +2,7 @@ package ApplicationLayer.Item;
 
 import java.util.List;
 
+import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.LoggerService;
 import DomainLayer.Item.IItemRepository;
 import DomainLayer.Item.Item;
@@ -10,6 +11,7 @@ import DomainLayer.Item.ItemReview;
 public class ItemService {
 
     private final IItemRepository itemRepository;
+    private AuthTokenService authTokenService;
 
     /**
      * Constructor for ItemService.
@@ -18,6 +20,10 @@ public class ItemService {
      */
     public ItemService(IItemRepository itemRepository) {
         this.itemRepository = itemRepository;
+    }
+
+    public void setServices(AuthTokenService authTokenService) {
+        this.authTokenService = authTokenService;
     }
 
     /**

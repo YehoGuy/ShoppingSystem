@@ -7,6 +7,7 @@ import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Value;
 
+import ApplicationLayer.User.UserService;
 import DomainLayer.AuthToken;
 import DomainLayer.IAuthTokenRepository;
 import io.jsonwebtoken.Claims;
@@ -23,11 +24,14 @@ public class AuthTokenService {
     private SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS256); 
 
     private IAuthTokenRepository authTokenRepository; 
-    // private UserService userService; 
+    private UserService userService; 
 
     public AuthTokenService(IAuthTokenRepository authTokenRepository) {
         this.authTokenRepository = authTokenRepository; 
-        // this.userService = userService; 
+    }
+
+    public void setService(UserService userService) {
+        this.userService = userService; 
     }
 
     public SecretKey getKey() {
