@@ -5,14 +5,10 @@ import java.util.List;
 
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.LoggerService;
-import ApplicationLayer.AuthTokenService;
-
 import DomainLayer.Member;
 import DomainLayer.Roles.PermissionsEnum;
 import DomainLayer.Roles.Role;
 import DomainLayer.User;
-import DomainLayer.Roles.PermissionsEnum;
-import DomainLayer.Roles.Role;
 import InfrastructureLayer.UserRepository;
 
 public class UserService {
@@ -38,6 +34,52 @@ public class UserService {
         } catch (Exception e) {
             LoggerService.logError("getUserById", e, id);
             throw new RuntimeException("Error fetching user with ID " + id + ": " + e.getMessage(), e);
+        }
+    }
+
+    public boolean isAdmin(int id) {
+        try {
+            LoggerService.logMethodExecution("isAdmin", id);
+            boolean isAdmin = userRepository.getAdminList().contains(id);
+            LoggerService.logMethodExecutionEnd("isAdmin", isAdmin);
+            return isAdmin;
+        } catch (Exception e) {
+            LoggerService.logError("isAdmin", e, id);
+            throw new RuntimeException("Error checking if user with ID " + id + " is an admin: " + e.getMessage(), e);
+        }
+    }
+
+    public List<Integer> getAdminList() {
+        try {
+            LoggerService.logMethodExecution("getAdminList");
+            List<Integer> adminList = userRepository.getAdminList();
+            LoggerService.logMethodExecutionEnd("getAdminList", adminList);
+            return adminList;
+        } catch (Exception e) {
+            LoggerService.logError("getAdminList", e);
+            throw new RuntimeException("Error fetching admin list: " + e.getMessage(), e);
+        }
+    }
+
+    public void addAdmin(int id) {
+        try {
+            LoggerService.logMethodExecution("addAdmin", id);
+            userRepository.addAdmin(id);
+            LoggerService.logMethodExecutionEndVoid("addAdmin");
+        } catch (Exception e) {
+            LoggerService.logError("addAdmin", e, id);
+            throw new RuntimeException("Error adding admin with ID " + id + ": " + e.getMessage(), e);
+        }
+    }
+
+    public void removeAdmin(int id) {
+        try {
+            LoggerService.logMethodExecution("removeAdmin", id);
+            userRepository.removeAdmin(id);
+            LoggerService.logMethodExecutionEndVoid("removeAdmin");
+        } catch (Exception e) {
+            LoggerService.logError("removeAdmin", e, id);
+            throw new RuntimeException("Error removing admin with ID " + id + ": " + e.getMessage(), e);
         }
     }
 

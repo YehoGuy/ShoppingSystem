@@ -1,30 +1,35 @@
 package InfrastructureLayer;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import DomainLayer.Guest;
 import DomainLayer.IUserRepository;
-import DomainLayer.User;
 import DomainLayer.Member;
+import DomainLayer.User;
 
 // Assuming User is a class that has been defined elsewhere in your project
 // and has a method getId() to retrieve the user's ID.
+
 
 public class UserRepository implements IUserRepository {
     // A map to store users with their IDs as keys
     private Map<Integer, DomainLayer.User> userMapping;
     private AtomicInteger userIdCounter;
-    private User admin;
+    private List<Integer> adminList;
 
     public UserRepository() {
-        this.userMapping = new HashMap<>();
+        this.userMapping = new ConcurrentHashMap<>();
+        this.adminList = Collections.synchronizedList(new ArrayList<>());
         this.userIdCounter = new AtomicInteger(0); // Initialize the user ID counter
-        this.admin = new Member(0, "admin", "123", "admin@email.com", "0000000000", "admin");
+        User admin = new Member(0, "admin", "123", "admin@email.com", "0000000000", "admin");
         userIdCounter.incrementAndGet();
+        userMapping.put(0, admin); // Add the admin user to the mapping
+        adminList.add(0); // Add the admin ID to the admin list
     }
 
     public User getUserById(int id) {
@@ -32,6 +37,41 @@ public class UserRepository implements IUserRepository {
             throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
         }
         return userMapping.get(id);
+    }
+
+    public List<Integer> getAdminList() {
+        return adminList;
+    }
+
+    public void addAdmin(int id) {
+        if (!userMapping.containsKey(id)) {
+            throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+        }
+        User user = userMapping.get(id);
+        if (user instanceof Member) {
+            adminList.add(id); // Add the user ID to the admin list
+        } else {
+            throw new IllegalArgumentException("User with ID " + id + " is not a Member.");
+        }
+    }
+
+    public void removeAdmin(int id) {
+        if (!userMapping.containsKey(id)) {
+            throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+        }
+        if(adminList.size() == 1) {
+            throw new IllegalArgumentException("Cannot remove the last admin.");
+        }
+        User user = userMapping.get(id);
+        if (user instanceof Member) {
+            adminList.remove(Integer.valueOf(id)); // Remove the user ID from the admin list
+        } else {
+            throw new IllegalArgumentException("User with ID " + id + " is not a Member.");
+        }
+    }
+
+    public boolean isAdmin(int id) {
+        return adminList.contains(id); // Check if the user ID is in the admin list
     }
 
     public int addGuest() {
