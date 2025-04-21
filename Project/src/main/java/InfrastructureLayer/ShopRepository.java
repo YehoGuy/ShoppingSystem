@@ -3,6 +3,7 @@ package InfrastructureLayer;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -16,7 +17,10 @@ public class ShopRepository implements IShopRepository {
 
     // Atomic counter to allocate unique shop ids.
     private final AtomicInteger shopIdCounter = new AtomicInteger(1);
-
+    
+    // A thread-safe list to manage closed shops.
+    private final List<Shop> closedShops = new CopyOnWriteArrayList<>();
+    
     /**
      * Creates a new shop with the specified parameters.
      * The ShopService auto-allocates a unique id for the shop.
@@ -150,6 +154,7 @@ public class ShopRepository implements IShopRepository {
     /**
      * Closes the shop identified by shopId.
      * This removes the shop from the registry.
+     * The closed shop is added to the closedShops list.
      *
      * @param shopId the shop id.
      */
@@ -158,6 +163,7 @@ public class ShopRepository implements IShopRepository {
         if (removed == null) {
             throw new IllegalArgumentException("Shop not found: " + shopId);
         }
+        closedShops.add(removed);
     }
 
     /**
@@ -206,4 +212,34 @@ public class ShopRepository implements IShopRepository {
             throw new IllegalArgumentException("Shop not found: " + shopId);
         }
     }
+
+    /**
+     * Returns a list of item IDs that belong to the shop identified by shopId.
+     *
+     * @param shopId the shop id.
+     * @return a list of item IDs.
+     */
+    public List<Integer> getItemsByShop(Integer shopId) {
+        Shop shop = shops.get(shopId);
+        if (shop != null) {
+            return shop.getItemIds();
+        } else {
+            throw new IllegalArgumentException("Shop not found: " + shopId);
+        }
+    }
+
+    /**
+     * Returns a list of all item IDs across all shops.
+     *
+     * @return a list of item IDs.
+     */
+    public List<Integer> getItems(){
+        return Collections.unmodifiableList(
+                shops.values().stream()
+                        .flatMap(shop -> shop.getItemIds().stream())
+                        .collect(Collectors.toList())
+        );
+    }
+
+    
 }

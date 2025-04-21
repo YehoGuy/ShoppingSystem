@@ -61,4 +61,13 @@ public interface IMessageRepository{
      * @return
      */
     List<Message> getFullConversation(int messageId);
+
+    /**
+     * check if the message with the given id is a response to the message with the given id
+     * @param previousMessageId the id of the message that this message is a response to
+     * @param senderId the id of the sender of the next message
+     * @param receiverId the id of the receiver of the next message
+     * @return true if the new message is a response to the message with the given id, false otherwise
+     */
+    boolean isMessagePrevious(int previousMessageId, int senderId, int receiverId);
 }
