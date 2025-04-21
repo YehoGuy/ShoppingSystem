@@ -91,6 +91,10 @@ public class Member extends User {
         pending_roles.add(role); // Add a role to the list of roles
     }
 
+    public void addRole(Role role) {
+        roles.add(role); // Add a role to the list of roles
+    }
+
     public void removeRole(Role role) {
         roles.remove(role); // Remove a role from the list of roles
     }
@@ -107,7 +111,7 @@ public class Member extends User {
         return memberId == member.memberId; // Compare member IDs
     }
 
-    public void acseptRole(Role role) {
+    public void acceptRole(Role role) {
         if (pending_roles.contains(role)) {
             pending_roles.remove(role); // Remove the role from pending roles
             roles.add(role); // Add the role to the list of roles

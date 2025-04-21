@@ -47,10 +47,7 @@ public class AuthTokenService {
 
 
     public String Login(String username, String password, int userId) {
-<<<<<<< HEAD
         LoggerService.logMethodExecution("Login",username,password,userId);
-=======
->>>>>>> parent of ebf9a0e (Revert "Merge branch 'V1' into subrev_role_as_str_own")
         if(username == null || username.isEmpty()) {
             throw new IllegalArgumentException("Username cannot be null or empty");
         }
@@ -68,14 +65,10 @@ public class AuthTokenService {
             return token;
     }
 
-<<<<<<< HEAD
 
-    public String Logout(String token) {
+    public void Logout(String token) throws Exception {
          LoggerService.logMethodExecution("Logout",token);
         
-=======
-    public String Logout(String token) throws Exception {
->>>>>>> parent of ebf9a0e (Revert "Merge branch 'V1' into subrev_role_as_str_own")
         if(ValidateToken(token) != null) { 
             int userId = authTokenRepository.getUserIdByToken(token); 
             authTokenRepository.removeAuthToken(userId); 
@@ -101,17 +94,12 @@ public class AuthTokenService {
         return token;
     }
 
-<<<<<<< HEAD
 
     public Integer ValidateToken(String token) throws Exception {
         LoggerService.logMethodExecution("ValidateToken",token);
         if (token == null || token.isEmpty()) {
             throw new IllegalArgumentException("Token cannot be null or empty");
         }
-
-=======
-    public Integer ValidateToken(String token) throws Exception {
->>>>>>> parent of ebf9a0e (Revert "Merge branch 'V1' into subrev_role_as_str_own")
         try {
             Jwts.parserBuilder()
                     .setSigningKey(key) 
@@ -133,7 +121,6 @@ public class AuthTokenService {
             }
         }
         catch (ExpiredJwtException e) {
-<<<<<<< HEAD
 
             LoggerService.logError("ValidateToken", e, token);
             throw new Exception("Token expired");
@@ -143,14 +130,6 @@ public class AuthTokenService {
         } catch (Exception e) {
             LoggerService.logError("ValidateToken", e, token);
             throw new Exception("Token validation failed: " + e.getMessage()); 
-
-=======
-            throw new Exception("Token expired");
-        } catch (JwtException e) {
-            throw new Exception("Invalid token"); 
-        } catch (Exception e) {
-            throw new Exception("Token validation failed: " + e.getMessage()); 
->>>>>>> parent of ebf9a0e (Revert "Merge branch 'V1' into subrev_role_as_str_own")
         }
     }
 
