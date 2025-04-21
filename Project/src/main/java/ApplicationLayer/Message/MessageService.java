@@ -57,7 +57,7 @@ public class MessageService {
             LoggerService.logMethodExecution("sendMessageToShop", token, receiverId, content, previousMessageId); // Log the method execution
             int userId = authTokenService.ValidateToken(token); // get the senderId from the token
             userService.validateMemberId(userId); // validate the senderId
-            Shop s = shopService.getShop(receiverId); // validate the receiverId
+            Shop s = shopService.getShop(receiverId, token); // validate the receiverId
             if (s == null) {
                 Exception e = new Exception("Shop with ID " + receiverId + " doesn't exist."); // Create an exception
                 LoggerService.logError("sendMessageToShop", e, token, receiverId, content, previousMessageId); // Log the error

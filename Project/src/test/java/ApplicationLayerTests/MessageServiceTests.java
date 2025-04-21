@@ -49,7 +49,7 @@ public class MessageServiceTests {
         userRepository.addMember("testUser2", "password", "a", "b", "c");
         token2 = authTokenService.Login("testUser2", "password2", 2);
         token1 = authTokenService.Login("testUser", "password", 1);
-        shopService.createShop("shop1", "b", 2);
+        shopService.createShop("shop1", "b", 2, token1);
     }
 
     @Test

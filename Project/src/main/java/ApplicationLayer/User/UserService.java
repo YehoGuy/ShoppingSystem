@@ -484,12 +484,12 @@ public class UserService {
             return false; // Indicate failure to remove permission
         }
     }
-    public boolean hasPermission(int id, PermissionsEnum permission) {
+    public boolean hasPermission(int id, PermissionsEnum permission, int shopId) {
         try {
             if (userRepository.getUserMapping().containsKey(id)) {
                 User user = userRepository.getUserById(id);
                 validateMemberId(id);
-                return ((Member)user).hasPermission(permission); // Check if the user has the specified permission
+                return ((Member)user).hasPermission(permission,shopId); // Check if the user has the specified permission
             } else {
                 throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
             }

@@ -143,8 +143,8 @@ public class Shop {
      * @param rating     the review rating.
      * @param reviewText the review text.
      */
-    public void addReview(int rating, String reviewText) {
-        reviews.add(new ShopReview(rating, reviewText));
+    public void addReview(int userId, int rating, String reviewText) {
+        reviews.add(new ShopReview(userId, rating, reviewText));
     }
 
     /**
@@ -183,6 +183,9 @@ public class Shop {
      * @param quantity the quantity to add.
      */
     public void addItem(int itemId, int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Quantity must be positive");
+        }
         items.merge(itemId, new AtomicInteger(quantity), (existing, value) -> {
             existing.addAndGet(quantity);
             return existing;
