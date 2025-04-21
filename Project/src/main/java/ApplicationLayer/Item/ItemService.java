@@ -150,4 +150,22 @@ public class ItemService {
             throw new RuntimeException("Error deleting item " + itemId + ": " + e.getMessage(), e);
         }
     }
+
+    /**
+     * Retrieves a list of Item objects for the given list of item IDs.
+     *
+     * @param itemIds the list of item IDs to fetch
+     * @return an unmodifiable list of corresponding Item instances
+     */
+    public List<Item> getItemsByIds(List<Integer> itemIds) {
+        try {
+            LoggerService.logMethodExecution("getItemsByIds", itemIds);
+            List<Item> result = itemRepository.getItemsByIds(itemIds);
+            LoggerService.logMethodExecutionEnd("getItemsByIds", result);
+            return result;
+        } catch (Exception e) {
+            LoggerService.logError("getItemsByIds", e, itemIds);
+            throw new RuntimeException("Error fetching items: " + e.getMessage(), e);
+        }
+    }
 }
