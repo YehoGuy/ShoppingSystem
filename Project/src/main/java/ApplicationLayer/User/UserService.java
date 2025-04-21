@@ -352,4 +352,49 @@ public class UserService {
             }
         }
     }
+
+
+    public void makeStoreOwner(int assigne, int memberId, int shopId){
+        try {
+            LoggerService.logMethodExecution("makeStoreOwner", memberId, shopId);
+            if(!userRepository.isOwner(assigne, shopId)) {
+                LoggerService.logError("makeStoreOwner", new IllegalArgumentException("Member ID " + assigne + " is not an owner of shop ID " + shopId));
+                throw new IllegalArgumentException("Member ID " + assigne + " is not an owner of shop ID " + shopId);  
+            }
+            
+            for (Member member : userRepository.getMembersList()) {
+                if (member.getMemberId() == memberId) {
+                    Role role = new Role(assigne, shopId, null);
+                    role.setOwnersPermissions();
+                    member.addRoleToPending(role);
+                    LoggerService.logMethodExecutionEndVoid("makeStoreOwner");
+                    return;
+                }
+            }
+
+            throw new IllegalArgumentException("Member ID " + memberId + " not found.");
+        }catch(Exception e) {
+            LoggerService.logError("makeStoreOwner", e, memberId, shopId);
+            throw new RuntimeException("Error making store owner for member ID " + memberId + ": " + e.getMessage(), e);
+        }
+    }
+
+    public void accseptRole(int memberId, Role role) {
+        try {
+            LoggerService.logMethodExecution("accseptRole", memberId, role);
+            for (Member member : userRepository.getMembersList()) {
+                if (member.getMemberId() == memberId) {
+                    member.acseptRole(role);
+                    LoggerService.logMethodExecutionEndVoid("accseptRole");
+                    return;
+                }
+            }
+            throw new IllegalArgumentException("Member ID " + memberId + " not found.");
+        } catch (Exception e) {
+            LoggerService.logError("accseptRole", e, memberId, role);
+            throw new RuntimeException("Error accepting role for member ID " + memberId + ": " + e.getMessage(), e);
+        }
+    }
+            
+
 }
