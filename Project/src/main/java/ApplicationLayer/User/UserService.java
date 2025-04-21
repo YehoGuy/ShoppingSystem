@@ -2,6 +2,7 @@ package ApplicationLayer.User;
 import java.util.HashMap;
 import java.util.List;
 
+import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.LoggerService;
 import DomainLayer.Member;
 import DomainLayer.User;
@@ -10,7 +11,7 @@ import DomainLayer.Roles.Role;
 import InfrastructureLayer.UserRepository;
 
 public class UserService {
-    private static volatile UserService instance;
+    
     private final UserRepository userRepository;
     private UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
@@ -122,23 +123,24 @@ public class UserService {
 
     public int loginAsGuest() {
         try {
-
             LoggerService.logMethodExecution("loginAsGuest");
             int id = userRepository.addGuest(); // Assuming this method returns the ID of the new guest user
             if (id < 0) {
                 throw new IllegalArgumentException("Failed to create a guest user.");
             }
-            LoggerService.logMethodExecutionEnd("loginAsGuest", id);
-            return id;
+            String token = authTokenService.generateAuthToken("");
+            LoggerService.logMethodExecutionEnd("loginAsGuest", token);
+            return token;
         } 
         catch (Exception e) {
             LoggerService.logError("loginAsGuest", e);
-            return -1; // Indicate failure to create a guest user
+            throw new RuntimeException("Error logging in as guest: " + e.getMessage(), e);
         }
     }
 
-    public int loginAsMember(String username, String password, int id_if_guest) {
+    public String loginAsMember(String username, String password, int id_if_guest) {
         LoggerService.logMethodExecution("loginAsMember", username, password, id_if_guest);
+        String token = null;
         try {
             if (username == null || password == null) {
                 LoggerService.logError("loginAsMember", new IllegalArgumentException("Username and password cannot be null."));
@@ -151,8 +153,9 @@ public class UserService {
             int loginAsMember_id = userRepository.isUsernameAndPasswordValid(username, password);
             if (loginAsMember_id > 0) { // valid login attempt
                 if (id_if_guest == -1) { // if the user is not a guest, it's their initial login
+                    token = authTokenService.generateAuthToken(username); // Generate a token for the member
                     LoggerService.logMethodExecutionEnd("loginAsMember", loginAsMember_id);
-                    return loginAsMember_id; // Return the ID of the logged-in member    
+                    return token; // Return the ID of the logged-in member    
                 } else if (userRepository.isGuestById(id_if_guest)) { // ensure the given id matches a guest in the data
                     // merge the guest cart with the member cart
                     User member = userRepository.getUserById(loginAsMember_id);
@@ -160,18 +163,18 @@ public class UserService {
                     member.mergeShoppingCart(guest.getShoppingCart());
                     // remove the guest user from the data
                     userRepository.removeUserById(id_if_guest);
-                    // Return the ID of the logged-in member
+                    token = authTokenService.generateAuthToken(username); // Generate a token for the member
                     LoggerService.logMethodExecutionEnd("loginAsMember", loginAsMember_id);
-                    return loginAsMember_id; 
+                    return token; 
                 } else {
                     throw new IllegalArgumentException("The given id does not match a guest in the data. Probably it is a member id!");
                 }
             }
         } catch (Exception e) {
             LoggerService.logError("loginAsMember", e, username, password, id_if_guest);
-            return -1; // Indicate failure to log in as a member
+            throw new RuntimeException("Error logging in as member: " + e.getMessage(), e);
         }
-        return -1; // Default return value for unhandled cases
+        return null; // Indicate failure to log in as a member
     }
     
    /*  
@@ -215,31 +218,34 @@ public class UserService {
 
     */
 
-    public boolean signUp(String username, String password, String email, String phoneNumber, String address) {
+    public String signUp(String username, String password, String email, String phoneNumber, String address) {
         try {
             if (userRepository.isUsernameTaken(username)) {
                 LoggerService.logError("signUp", new IllegalArgumentException("Username is already taken."));
                 throw new IllegalArgumentException("Username is already taken.");
             }
+            String token = authTokenService.generateAuthToken(username); // Generate a token for the member
             LoggerService.logMethodExecution("signUp", username, password, email, phoneNumber, address);
             userRepository.addMember(username, password, email, phoneNumber, address);
-            return true;
+            return token;
         } catch (Exception e) {
             LoggerService.logError("signUp", e, username, password, email, phoneNumber, address);
-            return false; // Indicate failure to sign up
+            throw new RuntimeException("Error signing up: " + e.getMessage(), e);
         }
     }
 
-    public boolean logout(int id){
+    public boolean logout(String token){
         try {
-            LoggerService.logMethodExecution("logout", id);
+            LoggerService.logMethodExecution("logout", token);
+            int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             if (userRepository.isGuestById(id)) {
                 userRepository.removeUserById(id); // Remove guest from the repository
             }
+            authTokenService.Logout(token); // Logout the user by removing the token
             LoggerService.logMethodExecutionEnd("logout", true);
             return true; // Logout successful
         } catch (Exception e) {
-            LoggerService.logError("logout", e, id);
+            LoggerService.logError("logout", e, token);
             return false; // Indicate failure to log out
         }
     }
