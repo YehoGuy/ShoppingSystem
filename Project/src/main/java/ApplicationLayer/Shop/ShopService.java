@@ -2,7 +2,10 @@ package ApplicationLayer.Shop;
 
 import java.util.List;
 
+import ApplicationLayer.AuthTokenService;
+import ApplicationLayer.Item.ItemService;
 import ApplicationLayer.LoggerService;
+import ApplicationLayer.User.UserService;
 import DomainLayer.Shop.IShopRepository;
 import DomainLayer.Shop.Shop;
 
@@ -10,6 +13,10 @@ public class ShopService {
 
     // Use the interface type for the repository dependency.
     private final IShopRepository shopRepository;
+    private AuthTokenService authTokenService;
+    private ItemService itemService;
+    private UserService userService;
+    
 
     /**
      * Constructor for ShopService.
@@ -18,6 +25,12 @@ public class ShopService {
      */
     public ShopService(IShopRepository shopRepository) {
         this.shopRepository = shopRepository;
+    }
+
+    public void setServices(AuthTokenService authTokenService, ItemService itemService, UserService userService) {
+        this.authTokenService = authTokenService;
+        this.itemService = itemService;
+        this.userService = userService;
     }
 
     /**

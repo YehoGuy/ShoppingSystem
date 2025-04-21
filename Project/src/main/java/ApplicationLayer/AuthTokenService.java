@@ -23,11 +23,9 @@ public class AuthTokenService {
     private SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS256); 
 
     private IAuthTokenRepository authTokenRepository; 
-    // private UserService userService; 
 
     public AuthTokenService(IAuthTokenRepository authTokenRepository) {
         this.authTokenRepository = authTokenRepository; 
-        // this.userService = userService; 
     }
 
     public SecretKey getKey() {
@@ -43,11 +41,19 @@ public class AuthTokenService {
     }
 
 
-    public String Login(String username, String password) {
+    public String Login(String username, String password, int userId) {
+        if(username == null || username.isEmpty()) {
+            throw new IllegalArgumentException("Username cannot be null or empty");
+        }
+        if(password == null || password.isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be null or empty");
+        }
+        if(userId <= 0) {
+            throw new IllegalArgumentException("User ID must be a positive integer");
+        }
             String token = generateAuthToken(username); 
             long expirationTime = System.currentTimeMillis() + EXPIRATION_TIME; 
             AuthToken authToken = new AuthToken(token, new Date(expirationTime));
-            int userId = 0;//userService.getUserIdByUsername(username);
             authTokenRepository.setAuthToken(userId, authToken);
             return token;
     }
