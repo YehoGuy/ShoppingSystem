@@ -17,11 +17,14 @@ import DomainLayer.Member;
 public class UserRepository implements IUserRepository {
     // A map to store users with their IDs as keys
     private Map<Integer, DomainLayer.User> userMapping;
-    AtomicInteger userIdCounter;
+    private AtomicInteger userIdCounter;
+    private User admin;
 
     public UserRepository() {
         this.userMapping = new HashMap<>();
         this.userIdCounter = new AtomicInteger(0); // Initialize the user ID counter
+        this.admin = new Member(0, "admin", "123", "admin@email.com", "0000000000", "admin");
+        userIdCounter.incrementAndGet();
     }
 
     public User getUserById(int id) {
