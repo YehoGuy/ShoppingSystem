@@ -113,4 +113,22 @@ public class Role {
         return sb.toString();
     }
 
+    public boolean isOwner() {
+        for (PermissionsEnum permission : permissions) {
+            if (permission == PermissionsEnum.manageOwners) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean isFounder() {
+        for (PermissionsEnum permission : permissions) {
+            if (permission == PermissionsEnum.closeShop) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

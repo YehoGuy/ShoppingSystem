@@ -245,9 +245,13 @@ public class UserService {
     }
 
 
-    public HashMap<Integer, PermissionsEnum[]> getPermitionsByShop(int shopId) {
+    public HashMap<Integer, PermissionsEnum[]> getPermitionsByShop(int senderID, int shopId) {
         try {
+            
             LoggerService.logMethodExecution("getPermitionsByShop", shopId);
+            
+            
+
             HashMap<Integer, PermissionsEnum[]> permissions = new HashMap<>();
             for (Member member : userRepository.getMembersList()) {
                 if (member.getRoles() != null) {
@@ -269,6 +273,7 @@ public class UserService {
 
     public void changePermitions(int memberId, int shopId, PermissionsEnum[] permissions) {
         try {
+
             LoggerService.logMethodExecution("changePermitions", memberId, shopId, permissions);
             for (Member member : userRepository.getMembersList()) {
                 if (member.getMemberId() == memberId) {
@@ -290,11 +295,15 @@ public class UserService {
 
     public void makeManagerOfStore(int assigne, int memberId, int shopId, PermissionsEnum[] permissions) {
         try {
+            if (!userRepository.isOwner(assigne, shopId)) {
+                LoggerService.logError("makeManagerOfStore", new IllegalArgumentException("Member ID " + assigne + " is not an owner of shop ID " + shopId));
+                throw new IllegalArgumentException("Member ID " + assigne + " is not an owner of shop ID " + shopId);  
+            }
             LoggerService.logMethodExecution("makeManagerOfStore", memberId, shopId, permissions);
             for (Member member : userRepository.getMembersList()) {
                 if (member.getMemberId() == memberId) {
                     Role role = new Role(assigne, shopId, permissions);
-                    member.addRole(role);
+                    member.addRoleToPending(role);
                     LoggerService.logMethodExecutionEndVoid("makeManagerOfStore");
                     return;
                 }
@@ -308,6 +317,12 @@ public class UserService {
 
     public void removeManagerOfStore(int memberId, int shopId) {
         try {
+
+            if (!userRepository.isOwner(memberId, shopId)) {
+                LoggerService.logError("removeManagerOfStore", new IllegalArgumentException("Member ID " + memberId + " is not an owner of shop ID " + shopId));
+                throw new IllegalArgumentException("Member ID " + memberId + " is not an owner of shop ID " + shopId);  
+            }
+
             LoggerService.logMethodExecution("removeManagerOfStore", memberId, shopId);
             for (Member member : userRepository.getMembersList()) {
                 if (member.getMemberId() == memberId) {

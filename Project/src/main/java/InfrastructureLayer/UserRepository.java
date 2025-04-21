@@ -180,4 +180,23 @@ public class UserRepository implements IUserRepository {
         userMapping.clear();
     }
 
+
+    public boolean isOwner(int id, int shopId) {
+        if(getMembersList().stream().anyMatch(m -> m.getMemberId() == id &&
+             m.getRoles().stream().anyMatch(r -> r.isOwner()))) {
+                return true;
+        }
+        return false;
+    }
+
+    public boolean isFounder(int id, int shopId) {
+        if(getMembersList().stream().anyMatch(m -> m.getMemberId() == id &&
+             m.getRoles().stream().anyMatch(r -> r.isFounder()))) {
+                return true;
+        }
+        return false;
+    }
+
+    
+
 }
