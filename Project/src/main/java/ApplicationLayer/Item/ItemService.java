@@ -33,14 +33,14 @@ public class ItemService {
      * @param description the item description.
      * @return the newly created Item.
      */
-    public Item createItem(String name, String description) {
+    public Item createItem(String name, String description, Integer category) {
         try {
-            LoggerService.logMethodExecution("createItem", name, description);
-            Item returnItem = itemRepository.createItem(name, description);
+            LoggerService.logMethodExecution("createItem", name, description, category);
+            Item returnItem = itemRepository.createItem(name, description, category);
             LoggerService.logMethodExecutionEnd("createItem", returnItem);
             return returnItem;
         } catch (Exception e) {
-            LoggerService.logError("createItem", e, name, description);
+            LoggerService.logError("createItem", e, name, description, category);
             throw new RuntimeException("Error creating item: " + e.getMessage(), e);
         }
     }
