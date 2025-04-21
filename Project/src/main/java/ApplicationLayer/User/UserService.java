@@ -51,7 +51,7 @@ public class UserService {
         userRepository.updateMemberAddress(id, address);
     }
 
-    private void validateMemberId(int id) {
+    public void validateMemberId(int id) {
         if (!userRepository.getUserMapping().containsKey(id)) {
             throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
         }
