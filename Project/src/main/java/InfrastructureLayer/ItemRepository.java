@@ -2,6 +2,7 @@ package InfrastructureLayer;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -77,5 +78,17 @@ public class ItemRepository implements IItemRepository {
         if (removed == null) {
             throw new IllegalArgumentException("Item not found: " + itemId);
         }
+    }
+
+    @Override
+    public List<Item> getItemsByIds(List<Integer> itemIds) {
+        if (itemIds == null) {
+            return Collections.emptyList();
+        }
+        List<Item> result = itemIds.stream()
+                .map(items::get)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        return Collections.unmodifiableList(result);
     }
 }
