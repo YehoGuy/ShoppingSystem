@@ -5,6 +5,7 @@ import java.util.List;
 
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.User.UserService;
+import ApplicationLayer.Shop.ShopService;
 import DomainLayer.IMessageRepository;
 import DomainLayer.Message;
 
@@ -13,15 +14,16 @@ public class MessageService {
     public IMessageRepository messageRepository;
     private AuthTokenService authTokenService;
     private UserService userService; 
+    private ShopService shopService;
 
     public MessageService(IMessageRepository messageRepository) {
         this.messageRepository = messageRepository;
     }
 
-    public MessageService(IMessageRepository messageRepository, AuthTokenService authTokenService, UserService userService) {
-        this.messageRepository = messageRepository;
+    public void setService(AuthTokenService authTokenService, UserService userService, ShopService shopService) {
         this.authTokenService = authTokenService;
         this.userService = userService; 
+        this.shopService = shopService; 
     }
 
     public String sendMessageToUser( String token, int senderId /**(shouldnt be here) */, int receiverId, String content, int previousMessageId) {
