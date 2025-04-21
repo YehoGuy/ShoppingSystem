@@ -20,9 +20,9 @@ public class ItemRepository implements IItemRepository {
     private final AtomicInteger itemIdCounter = new AtomicInteger(1);
 
     @Override
-    public Item createItem(String name, String description) {
+    public Item createItem(String name, String description, Integer category) {
         int id = itemIdCounter.getAndIncrement();
-        Item item = new Item(id, name, description);
+        Item item = new Item(id, name, description, category);
         Item previous = items.putIfAbsent(id, item);
         if (previous != null) {
             // Should never happen unless IDs clash
