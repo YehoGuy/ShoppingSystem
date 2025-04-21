@@ -17,10 +17,10 @@ public class ShopRepository implements IShopRepository {
 
     // Atomic counter to allocate unique shop ids.
     private final AtomicInteger shopIdCounter = new AtomicInteger(1);
-
+    
     // A thread-safe list to manage closed shops.
     private final List<Shop> closedShops = new CopyOnWriteArrayList<>();
-
+    
     /**
      * Creates a new shop with the specified parameters.
      * The ShopService auto-allocates a unique id for the shop.
