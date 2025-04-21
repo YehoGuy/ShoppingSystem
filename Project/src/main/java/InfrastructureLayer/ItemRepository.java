@@ -2,7 +2,6 @@ package InfrastructureLayer;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -20,9 +19,9 @@ public class ItemRepository implements IItemRepository {
     private final AtomicInteger itemIdCounter = new AtomicInteger(1);
 
     @Override
-    public Item createItem(String name, String description, Integer category) {
+    public Item createItem(String name, String description) {
         int id = itemIdCounter.getAndIncrement();
-        Item item = new Item(id, name, description, category);
+        Item item = new Item(id, name, description);
         Item previous = items.putIfAbsent(id, item);
         if (previous != null) {
             // Should never happen unless IDs clash
@@ -78,17 +77,5 @@ public class ItemRepository implements IItemRepository {
         if (removed == null) {
             throw new IllegalArgumentException("Item not found: " + itemId);
         }
-    }
-
-    @Override
-    public List<Item> getItemsByIds(List<Integer> itemIds) {
-        if (itemIds == null) {
-            return Collections.emptyList();
-        }
-        List<Item> result = itemIds.stream()
-                .map(items::get)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-        return Collections.unmodifiableList(result);
     }
 }

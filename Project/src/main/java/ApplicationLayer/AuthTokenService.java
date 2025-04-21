@@ -23,9 +23,11 @@ public class AuthTokenService {
     private SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS256); 
 
     private IAuthTokenRepository authTokenRepository; 
+    // private UserService userService; 
 
     public AuthTokenService(IAuthTokenRepository authTokenRepository) {
         this.authTokenRepository = authTokenRepository; 
+        // this.userService = userService; 
     }
 
     public SecretKey getKey() {
@@ -41,24 +43,16 @@ public class AuthTokenService {
     }
 
 
-    public String Login(String username, String password, int userId) {
-        if(username == null || username.isEmpty()) {
-            throw new IllegalArgumentException("Username cannot be null or empty");
-        }
-        if(password == null || password.isEmpty()) {
-            throw new IllegalArgumentException("Password cannot be null or empty");
-        }
-        if(userId <= 0) {
-            throw new IllegalArgumentException("User ID must be a positive integer");
-        }
+    public String Login(String username, String password) {
             String token = generateAuthToken(username); 
             long expirationTime = System.currentTimeMillis() + EXPIRATION_TIME; 
             AuthToken authToken = new AuthToken(token, new Date(expirationTime));
+            int userId = 0;//userService.getUserIdByUsername(username);
             authTokenRepository.setAuthToken(userId, authToken);
             return token;
     }
 
-    public String Logout(String token) throws Exception {
+    public String Logout(String token) {
         if(ValidateToken(token) != null) { 
             int userId = authTokenRepository.getUserIdByToken(token); 
             authTokenRepository.removeAuthToken(userId); 
@@ -80,7 +74,7 @@ public class AuthTokenService {
                 .compact();
     }
 
-    public Integer ValidateToken(String token) throws Exception {
+    public Integer ValidateToken(String token) {
         try {
             Jwts.parserBuilder()
                     .setSigningKey(key) 
@@ -90,15 +84,13 @@ public class AuthTokenService {
             if (userId != -1) {
                 return userId; 
             } else {
-                throw new Exception("Token not found in repository"); 
+                return null; 
             }
         }
         catch (ExpiredJwtException e) {
-            throw new Exception("Token expired");
+            return null; 
         } catch (JwtException e) {
-            throw new Exception("Invalid token"); 
-        } catch (Exception e) {
-            throw new Exception("Token validation failed: " + e.getMessage()); 
+            return null; 
         }
     }
 
