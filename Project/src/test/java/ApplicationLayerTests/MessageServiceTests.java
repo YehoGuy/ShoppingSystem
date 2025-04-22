@@ -1,21 +1,17 @@
 package ApplicationLayerTests;
 
-import java.util.Map;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import ApplicationLayer.AuthTokenService;
+import ApplicationLayer.Item.ItemService;
 import ApplicationLayer.Message.MessageService;
 import ApplicationLayer.Shop.ShopService;
 import ApplicationLayer.User.UserService;
 import InfrastructureLayer.AuthTokenRepository;
- import InfrastructureLayer.MessageRepository;
+import InfrastructureLayer.ItemRepository;
+import InfrastructureLayer.MessageRepository;
 import InfrastructureLayer.ShopRepository;
 import InfrastructureLayer.UserRepository;
 
@@ -42,7 +38,9 @@ public class MessageServiceTests {
         userService = new UserService(userRepository);
         shopRepository = new ShopRepository();
         shopService = new ShopService(shopRepository);
+    
         messageService.setService(authTokenService, userService, shopService); // Set the services for the message service);
+        shopService.setServices(authTokenService, new ItemService(new ItemRepository()), userService); // Set the user service for the shop service
 
         // Add a test user and shop to the repositories
         userRepository.addMember("testUser", "password", "a", "b", "c");

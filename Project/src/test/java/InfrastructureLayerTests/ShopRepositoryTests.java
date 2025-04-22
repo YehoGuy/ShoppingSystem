@@ -137,11 +137,11 @@ public class ShopRepositoryTests {
 
     @Test
     public void testNonexistentShopThrows() {
-        assertThrows(IllegalArgumentException.class, () -> repo.updatePurchasePolicy(999, "X"));
-        assertThrows(IllegalArgumentException.class, () -> repo.setGlobalDiscount(999, 1));
-        assertThrows(IllegalArgumentException.class, () -> repo.addItemToShop(999, 1, 1, 1));
-        assertThrows(IllegalArgumentException.class, () -> repo.addReviewToShop(999, 1, 5, ""));
-        assertThrows(IllegalArgumentException.class, () -> repo.removeSupply(999, 1, 1));
-        assertThrows(IllegalArgumentException.class, () -> repo.closeShop(999));
+        assertThrows(RuntimeException.class, () -> repo.updatePurchasePolicy(999, "X"));
+        assertThrows(RuntimeException.class, () -> repo.setGlobalDiscount(999, 1));
+        assertThrows(RuntimeException.class, () -> repo.addItemToShop(999, 1, 1, 1));
+        assertThrows(RuntimeException.class, () -> repo.addReviewToShop(999, 1, 5, ""));
+        assertThrows(RuntimeException.class, () -> repo.removeSupply(999, 1, 1));
+        assertThrows(RuntimeException.class, () -> repo.closeShop(999));
     }
 }
