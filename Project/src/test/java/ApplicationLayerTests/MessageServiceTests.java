@@ -43,8 +43,8 @@ public class MessageServiceTests {
         shopService.setServices(authTokenService, new ItemService(new ItemRepository()), userService); // Set the user service for the shop service
 
         // Add a test user and shop to the repositories
-        userRepository.addMember("testUser", "password", "a", "b", "c");
-        userRepository.addMember("testUser2", "password", "a", "b", "c");
+        userRepository.addMember("testUser", "password", "a@a", "b", "c");
+        userRepository.addMember("testUser2", "password", "a@a", "b", "c");
         token2 = authTokenService.Login("testUser2", "password2", 2);
         token1 = authTokenService.Login("testUser", "password", 1);
         shopService.createShop("shop1", "b", 2, token1);
