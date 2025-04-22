@@ -36,10 +36,17 @@ public class UserRepository implements IUserRepository {
         int id = userIdCounter.incrementAndGet(); // Generate a new ID for the guest
         Guest guest = new Guest(id); // Assuming Guest is a subclass of User
         userMapping.put(id, guest); // Add the guest to the mapping
+        if(!userMapping.containsKey(id) || userMapping.get(id) == null) {
+            return -1;
+        }
         return id; // Return the ID of the newly created guest
     }
 
     public void addMember(String username, String password, String email, String phoneNumber, String address) {
+        if(!email.contains("@") || email.isEmpty()){
+            throw new IllegalArgumentException("Invalid email address.");
+        }
+
         int id = userIdCounter.incrementAndGet(); // Generate a new ID for the member
         User member = new Member(id, username, password, email, phoneNumber, address); // Assuming User has a constructor with these parameters
         userMapping.put(id, member); // Add the member to the mapping

@@ -7,19 +7,19 @@ import java.util.Map;
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.LoggerService;
 import ApplicationLayer.Purchase.PaymentMethod;
+import DomainLayer.IUserRepository;
 import DomainLayer.Member;
 import DomainLayer.Roles.PermissionsEnum;
 import DomainLayer.Roles.Role;
 import DomainLayer.User;
-import InfrastructureLayer.UserRepository;
 
 public class UserService {
     
-    private final UserRepository userRepository;
+    private final IUserRepository userRepository;
 
     private AuthTokenService authTokenService;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(IUserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
@@ -177,12 +177,14 @@ public class UserService {
                 } else {
                     throw new IllegalArgumentException("The given id does not match a guest in the data. Probably it is a member id!");
                 }
+            }else{
+                LoggerService.logError("loginAsMember", new IllegalArgumentException("Invalid username or password."));
+                throw new IllegalArgumentException("Invalid username or password.");
             }
         } catch (Exception e) {
             LoggerService.logError("loginAsMember", e, username, password, id_if_guest);
             throw new RuntimeException("Error logging in as member: " + e.getMessage(), e);
         }
-        return null; // Indicate failure to log in as a member
     }
     
    /*  
