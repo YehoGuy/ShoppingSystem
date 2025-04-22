@@ -19,6 +19,9 @@ public class MessageRepository implements IMessageRepository {
 
     @Override
     public void addMessage(int senderId, int receiverId, String content, String timestamp, boolean userToUser, int previousMessageId) {
+        if (content == null || content.isEmpty()) {
+            throw new IllegalArgumentException("unable to send - message is empty."); // Validate message content
+        }
         int id = nextId.getAndIncrement(); // Get the next unique ID
         Message message = new Message(id, senderId, receiverId, content, timestamp, userToUser, previousMessageId); // Create a new message object
         messages.put(id, message); // Add the message to the map with a unique ID

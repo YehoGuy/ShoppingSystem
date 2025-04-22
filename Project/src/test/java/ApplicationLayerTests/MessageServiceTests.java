@@ -81,6 +81,12 @@ public class MessageServiceTests {
     }
 
     @Test
+    void testSendMessageToShopWithEmptyText() {
+        // Test sending a message with empty text to a shop
+        assertEquals("Error sending message to shop: unable to send - message is empty.", messageService.sendMessageToShop(token1, 1, "", 0));
+    }
+
+    @Test
     void testSendMessageToShopWithInvalidToken() {
         // Test sending a message to a shop with an invalid token
         assertEquals("Error sending message to shop: Invalid token", messageService.sendMessageToShop("invalidToken", 1, "Hello", 0));
