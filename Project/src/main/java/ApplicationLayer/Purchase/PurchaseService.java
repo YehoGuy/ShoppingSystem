@@ -71,6 +71,7 @@ public class PurchaseService {
             if(authTokenService.ValidateToken(authToken)==userId){
                 // 2. retrieve user's cart
                 HashMap<Integer, HashMap<Integer, Integer>> cart = userService.getUserShoppingCartItems(userId);
+                cartBackup = cart; // backup the cart (cart is a deep copy of the original cart)
                 // 3. check that all items are available and save them
                 for(Integer shopId : cart.keySet()){
                     aqcuired.put(shopId, new HashMap<>());
@@ -78,8 +79,10 @@ public class PurchaseService {
                         boolean aqcSuccess = shopService.checkSupplyAvailabilityAndAcquire(shopId, itemId, cart.get(shopId).get(itemId));
                         if(aqcSuccess)
                             aqcuired.put(shopId, cart.get(shopId));
-                        else
+                        else{
+                            cartBackup.get(shopId).remove(itemId);
                             throw new RuntimeException("Item "+itemId+" not available in shop "+shopId+" in quantity "+cart.get(shopId).get(itemId));
+                        }
                     }
                 }
                 // 4. create a purchase for each store (Repo creates)
@@ -90,14 +93,13 @@ public class PurchaseService {
                     /// userService.getUserPaymentMethod(userId).processPayment(calcedPrice);
                     // 6. handle shipping
                     /// userService.getUserShippingMethod(userId).processShipping(shippingAddress);
-                    // 7. remove items from the cart (backup before)
-                    cartBackup = cart; // cart is a deep copy of the original cart
-                    userService.clearUserShoppingCart(userId);
-                    // 8. LOG the purchase
-                    LoggerService.logMethodExecutionEnd("checkoutCart", purchaseIds);
-                    // 9. return purchase ID's
-                    return purchaseIds;
                 }
+                // 7. remove items from the cart (backup before)
+                userService.clearUserShoppingCart(userId);
+                // 8. LOG the purchase
+                LoggerService.logMethodExecutionEnd("checkoutCart", purchaseIds);
+                // 9. return purchase ID's
+                return purchaseIds;
             } else{
                 throw new IllegalArgumentException("Invalid authToken or userId");
             }
@@ -115,7 +117,6 @@ public class PurchaseService {
             }
             throw e;
         }
-        return null; 
     }
 
 
@@ -131,6 +132,7 @@ public class PurchaseService {
      */
     public int createBid(String authToken, int userId, int storeId, Map<Integer, Integer> items) throws Exception{
         LoggerService.logMethodExecution("createBid", userId, storeId, items);
+        Map<Integer, Integer> acquired = new HashMap<>();
         try {
             // 1. Validate the authToken & userId & userRole
             if(authTokenService.ValidateToken(authToken)==userId){
@@ -139,6 +141,7 @@ public class PurchaseService {
                     if(!shopService.checkSupplyAvailabilityAndAcquire(storeId, itemId, items.get(itemId))){
                         throw new RuntimeException("Item "+itemId+" not available in shop "+storeId);
                     }
+                    acquired.put(itemId, items.get(itemId));
                 }
                 // 3. create a bid for the store (Repo creates)
                 int purchaseId = purchaseRepository.addBid(userId, storeId, items);
@@ -151,8 +154,8 @@ public class PurchaseService {
             }
         } catch (Exception e) {
             // return items to shop
-            for(Integer itemId : items.keySet()){
-                shopService.addSupply(storeId, itemId, items.get(itemId));
+            for (Map.Entry<Integer,Integer> entry : acquired.entrySet()) {
+                shopService.addSupply(storeId, entry.getKey(), entry.getValue());
             }
             throw e;
         }
@@ -189,8 +192,6 @@ public class PurchaseService {
         } catch (Exception e) {
             throw e;
         }
-        
-        throw new UnsupportedOperationException("Not implemented yet");
     }
 
 
@@ -223,8 +224,12 @@ public class PurchaseService {
                 /// userService.getUserShippingMethod(highestBidderId).processShipping(purchase.getShippingAddress());
                 // 7. notify the bidders
                 List<Integer> bidders = ((Bid)purchase).getBiddersIds();
-                for(Integer uid : bidders)
-                    messageService.sendMessageToUser(authToken, uid, "Bid "+purchaseId+" has been finalized. ", 0);
+                for(Integer uid : bidders){
+                    if(uid != highestBidderId)
+                        messageService.sendMessageToUser(authToken, uid, "Bid "+purchaseId+" has been finalized. you did'nt win", 0);
+                    else
+                        messageService.sendMessageToUser(authToken, uid, "Congratulations! You have won the bid "+purchaseId+"!", 0);
+                }
                 // 8. LOG the purchase
                 LoggerService.logMethodExecutionEnd("finalizeBid", highestBidderId);
                 // 9. return highestBidder ID
