@@ -6,6 +6,7 @@ import java.util.List;
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.Item.ItemService;
 import ApplicationLayer.LoggerService;
+import ApplicationLayer.User.UserService;
 import DomainLayer.Item.Item;
 import DomainLayer.Item.ItemCategory;
 import DomainLayer.Roles.PermissionsEnum;
@@ -341,6 +342,46 @@ public class ShopService {
         } catch (Exception e) {
             LoggerService.logError("checkSupplyAvailability", e, shopId, itemId);
             throw new RuntimeException("Error checking supply for item " + itemId + " in shop " + shopId + ": " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Checks if the supply is available for the given item in the specified shop
+     * and acquires it if available.
+     *
+     * @param shopId the shop id.
+     * @param itemId the item id.
+     * @param supply the supply to acquire.
+     * @return true if available, false otherwise.
+     */
+    public boolean checkSupplyAvailabilityAndAcquire(Integer shopId, Integer itemId, Integer supply) {
+        try {
+            LoggerService.logMethodExecution("checkSupplyAvailabilityAndAqcuire", shopId, itemId, supply);
+            boolean returnBoolean = shopRepository.checkSupplyAvailabilityAndAqcuire(shopId, itemId, supply);
+            LoggerService.logMethodExecutionEnd("checkSupplyAvailabilityAndAqcuire", returnBoolean);
+            return returnBoolean;
+        } catch (Exception e) {
+            LoggerService.logError("checkSupplyAvailability", e, shopId, itemId);
+            throw new RuntimeException("Error checking supply for item " + itemId + " in shop " + shopId + ": " + e.getMessage(), e);
+        }
+    }
+    
+
+    /**
+     * Increases the supply count for the given item in the shop by the specified amount.
+     *
+     * @param shopId the shop id.
+     * @param itemId the item id.
+     * @param supply the supply to add.
+     */
+    public void addSupply(Integer shopId, Integer itemId, Integer supply) {
+        try {
+            LoggerService.logMethodExecution("addSupply", shopId, itemId, supply);
+            shopRepository.addSupply(shopId, itemId, supply);
+            LoggerService.logMethodExecutionEndVoid("addSupply");
+        } catch (Exception e) {
+            LoggerService.logError("addSupply", e, shopId, itemId, supply);
+            throw new RuntimeException("Error adding supply for item " + itemId + " in shop " + shopId + ": " + e.getMessage(), e);
         }
     }
 
