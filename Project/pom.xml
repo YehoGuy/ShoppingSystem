@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
@@ -14,7 +15,7 @@
   </properties>
 
   <dependencies>
-    <!-- JUnit 5 (API + Engine) -->
+    <!-- JUnit 5 -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
@@ -44,7 +45,7 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- jjwt -->
+    <!-- JSON Web Token (jjwt) -->
     <dependency>
       <groupId>io.jsonwebtoken</groupId>
       <artifactId>jjwt-api</artifactId>
@@ -70,7 +71,7 @@
       <version>5.3.9</version>
     </dependency>
 
-    <!-- SLF4J + Logback -->
+    <!-- SLF4J & Logback -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -95,11 +96,14 @@
         </configuration>
       </plugin>
 
-      <!-- Surefire for running JUnit 5 -->
+      <!-- Surefire for JUnit 5 -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.0.0-M7</version>
+        <configuration>
+          <useModulePath>false</useModulePath>
+        </configuration>
       </plugin>
     </plugins>
   </build>
