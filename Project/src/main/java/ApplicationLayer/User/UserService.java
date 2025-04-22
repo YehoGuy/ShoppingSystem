@@ -551,7 +551,7 @@ public class UserService {
      * @throws RuntimeException if an error occurs while restoring the shopping cart.
      * @throws NullPointerException if the items HashMap is null.
      */
-    public void restoreUserShoppingCart(int userId, HashMap<Integer, HashMap<Integer,Integer>> items){
+    public void restoreUserShoppingCart(int userId, Map<Integer, HashMap<Integer,Integer>> items){
         try {
             LoggerService.logMethodExecution("restoreUserShoppingCart", userId, items);
             userRepository.getShoppingCartById(userId).restoreCart(items);
@@ -630,11 +630,11 @@ public class UserService {
         }
     }
 
-    public Map<Integer, HashMap<Integer, Integer>> getShoppingCartItems(String token) {
+    public HashMap<Integer, HashMap<Integer, Integer>> getShoppingCartItems(String token) {
         try {
             LoggerService.logMethodExecution("getShoppingCartItems", token);
             int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
-            Map<Integer, HashMap<Integer, Integer>> items = userRepository.getShoppingCartById(userId).getItems();
+            HashMap<Integer, HashMap<Integer, Integer>> items = userRepository.getShoppingCartById(userId).getItems();
             LoggerService.logMethodExecutionEnd("getShoppingCartItems", items);
             return items;
         } catch (Exception e) {
