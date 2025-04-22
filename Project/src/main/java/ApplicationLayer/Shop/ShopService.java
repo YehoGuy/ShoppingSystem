@@ -207,14 +207,14 @@ public class ShopService {
      * @param quantity the quantity to add.
      * @param price    the price for the item (must be non-negative).
      */
-    public void addItemToShop(int shopId, int quantity, int price, String token) {
+    public void addItemToShop(int shopId, String name, String desc, int quantity, int price, String token) {
         try {
             LoggerService.logMethodExecution("addItemToShop", shopId, quantity, price);
             Integer userId = authTokenService.ValidateToken(token);
             if(!userService.hasPermission(userId,PermissionsEnum.manageItems,shopId)){
                 throw new RuntimeException("User does not have permission to add item to shop " + shopId);
             }
-            Integer itemId = itemService.createItem(shopId, token, token, userId, token);
+            Integer itemId = itemService.createItem(shopId, name, desc, userId, token);
             shopRepository.addItemToShop(shopId, itemId, quantity, price);
             LoggerService.logMethodExecutionEndVoid("addItemToShop");
         } catch (Exception e) {

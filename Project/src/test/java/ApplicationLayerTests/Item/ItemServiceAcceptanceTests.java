@@ -39,7 +39,6 @@ public class ItemServiceAcceptanceTests {
         doReturn(USER_ID).when(authTokenService).ValidateToken(TOKEN);
     }
 
-    // UC5 – Create Item (positive)
     @Test
     public void testCreateItemSuccess() throws Exception {
         String name        = "Widget";
@@ -63,7 +62,6 @@ public class ItemServiceAcceptanceTests {
         verify(itemRepository).createItem(name, description, category);
     }
 
-    // UC5 – Create Item (negative: repo failure)
     @Test
     public void testCreateItemInvalid() {
         String name      = "";
