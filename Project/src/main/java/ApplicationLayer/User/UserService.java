@@ -2,6 +2,7 @@ package ApplicationLayer.User;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.LoggerService;
@@ -571,6 +572,84 @@ public class UserService {
             throw new RuntimeException("Error fetching payment method for user ID " + userId + ": " + e.getMessage(), e);
         }
     }
-    
+
+    public void addItemToShoppingCart(int userId, int shopId, int itemId, int quantity) {
+        try {
+            LoggerService.logMethodExecution("addItemToShoppingCart", userId, shopId, itemId, quantity);
+            userRepository.addItemToShoppingCart(userId, shopId, itemId, quantity);
+            LoggerService.logMethodExecutionEndVoid("addItemToShoppingCart");
+        } catch (Exception e) {
+            LoggerService.logError("addItemToShoppingCart", e, userId, shopId, itemId, quantity);
+            throw new RuntimeException("Error adding item to shopping cart for user ID " + userId + ": " + e.getMessage(), e);
+        }
+    }
+
+    public void removeItemFromShoppingCart(int userId, int shopId, int itemId) {
+        try {
+            LoggerService.logMethodExecution("removeItemFromShoppingCart", userId, shopId, itemId);
+            userRepository.removeItemFromShoppingCart(userId, shopId, itemId);
+            LoggerService.logMethodExecutionEndVoid("removeItemFromShoppingCart");
+        } catch (Exception e) {
+            LoggerService.logError("removeItemFromShoppingCart", e, userId, shopId, itemId);
+            throw new RuntimeException("Error removing item from shopping cart for user ID " + userId + ": " + e.getMessage(), e);
+        }
+    }
+
+    public void updateItemQuantityInShoppingCart(int userId, int shopId, int itemId, int quantity) {
+        try {
+            LoggerService.logMethodExecution("updateItemQuantityInShoppingCart", userId, shopId, itemId, quantity);
+            userRepository.updateItemQuantityInShoppingCart(userId, shopId, itemId, quantity);
+            LoggerService.logMethodExecutionEndVoid("updateItemQuantityInShoppingCart");
+        } catch (Exception e) {
+            LoggerService.logError("updateItemQuantityInShoppingCart", e, userId, shopId, itemId, quantity);
+            throw new RuntimeException("Error updating item quantity in shopping cart for user ID " + userId + ": " + e.getMessage(), e);
+        }
+    }
+
+    public void clearShoppingCart(int userId) {
+        try {
+            LoggerService.logMethodExecution("clearShoppingCart", userId);
+            userRepository.clearShoppingCart(userId);
+            LoggerService.logMethodExecutionEndVoid("clearShoppingCart");
+        } catch (Exception e) {
+            LoggerService.logError("clearShoppingCart", e, userId);
+            throw new RuntimeException("Error clearing shopping cart for user ID " + userId + ": " + e.getMessage(), e);
+        }
+    }
+
+    public Map<Integer, HashMap<Integer, Integer>> getShoppingCartItems(int userId) {
+        try {
+            LoggerService.logMethodExecution("getShoppingCartItems", userId);
+            Map<Integer, HashMap<Integer, Integer>> items = userRepository.getShoppingCartById(userId).getItems();
+            LoggerService.logMethodExecutionEnd("getShoppingCartItems", items);
+            return items;
+        } catch (Exception e) {
+            LoggerService.logError("getShoppingCartItems", e, userId);
+            throw new RuntimeException("Error fetching shopping cart items for user ID " + userId + ": " + e.getMessage(), e);
+        }
+    }
+
+    public Map<Integer, Integer> getBasketItems(int userId, int shopId) {
+        try {
+            LoggerService.logMethodExecution("getBasketItems", userId, shopId);
+            Map<Integer, Integer> items = userRepository.getBasket(userId, shopId);
+            LoggerService.logMethodExecutionEnd("getBasketItems", items);
+            return items;
+        } catch (Exception e) {
+            LoggerService.logError("getBasketItems", e, userId, shopId);
+            throw new RuntimeException("Error fetching basket items for user ID " + userId + ": " + e.getMessage(), e);
+        }
+    }
+
+    public void addBasket(int userId, int shopId) {
+        try {
+            LoggerService.logMethodExecution("addBasket", userId, shopId);
+            userRepository.createBasket(userId, shopId);
+            LoggerService.logMethodExecutionEndVoid("addBasket");
+        } catch (Exception e) {
+            LoggerService.logError("addBasket", e, userId, shopId);
+            throw new RuntimeException("Error adding basket for user ID " + userId + ": " + e.getMessage(), e);
+        }
+    }
 
 }
