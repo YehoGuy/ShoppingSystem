@@ -1,5 +1,6 @@
 package DomainLayer.Shop;
 
+import java.util.HashMap;
 import java.util.List;
 
 public interface IShopRepository {
@@ -152,6 +153,16 @@ public interface IShopRepository {
      * @param supply the supply to remove.
      */
     void removeSupply(Integer shopId, Integer itemId, Integer supply);
+
+    /**
+     * Checks if the purchase policy allows the given items to be purchased.
+     * This is a placeholder method and should be implemented based on your business logic.
+     *
+     * @param cart  a map of item IDs and their quantities.
+     * @param token the token for the user.
+     * @return true if the purchase policy allows the items, false otherwise.
+     */
+    boolean checkPolicy(HashMap<Integer, HashMap<Integer,Integer>> cart, String token);
 
     /**
      * Retrieves a list of item IDs that belong to the shop identified by shopId.

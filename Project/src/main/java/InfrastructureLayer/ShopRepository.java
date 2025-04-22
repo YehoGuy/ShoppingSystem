@@ -1,11 +1,14 @@
 package InfrastructureLayer;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+
 
 import DomainLayer.Shop.IShopRepository;
 import DomainLayer.Shop.Shop;
@@ -267,6 +270,28 @@ public class ShopRepository implements IShopRepository {
             throw new RuntimeException("Error removing supply: " + e.getMessage(), e);
         }
     }
+
+    @Override
+    public boolean checkPolicy(HashMap<Integer, HashMap<Integer,Integer>> cart, String token) {
+        try {
+            for (Map.Entry<Integer, HashMap<Integer,Integer>> entry : cart.entrySet()) {
+                Integer shopId = entry.getKey();
+                HashMap<Integer,Integer> itemsInShop = entry.getValue();
+                Shop shop = shops.get(shopId);
+                if (shop == null) {
+                    throw new IllegalArgumentException("Shop not found: " + shopId);
+                }
+                // delegate to the Shop’s own policy checker
+                if (!shop.checkPolicy(itemsInShop)) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException("Error checking policy: " + e.getMessage(), e);
+        }
+    }
+
 
     @Override
     public List<Integer> getItemsByShop(Integer shopId) {
