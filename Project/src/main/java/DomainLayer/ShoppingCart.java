@@ -1,7 +1,6 @@
 package DomainLayer;
 
 import java.util.HashMap;
-import java.util.Map;
 
 public class ShoppingCart {
     final private HashMap<Integer, HashMap<Integer,Integer>> items; // shopID, (productID, quantity)
@@ -104,7 +103,7 @@ public class ShoppingCart {
     * Restores the shopping cart with the given items.
     * @param items A HashMap containing the items to restore in the shopping cart. shopId -> <itemId -> quantity>
     */
-    public void restoreCart(Map<Integer, HashMap<Integer, Integer>> items) {
+    public void restoreCart(HashMap<Integer, HashMap<Integer, Integer>> items) {
         // Logic to restore the shopping cart with the provided items
         for (Integer shopId : items.keySet()) {
             if (!this.items.containsKey(shopId)) {
