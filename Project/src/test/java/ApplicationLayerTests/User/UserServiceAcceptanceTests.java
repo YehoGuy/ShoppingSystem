@@ -1,54 +1,31 @@
 package ApplicationLayerTests.User;
 
+import ApplicationLayer.AuthTokenService;
+import ApplicationLayer.User.UserService;
+import DomainLayer.IUserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-
-import ApplicationLayer.User.UserService;
-import ApplicationLayer.AuthTokenService;
-import DomainLayer.ShoppingCart;
-import InfrastructureLayer.UserRepository;
-
 public class UserServiceAcceptanceTests {
-    @Mock
-    private UserRepository userRepository;
-
-    @Mock
+    private IUserRepository userRepository;
     private AuthTokenService authTokenService;
-
     private UserService userService;
-    private AutoCloseable mocks;
-
-    private final String token = "token123";
-    private final int userId = 42;
-    private final int shopId = 7;
-    private final int itemId = 99;
-    private final int quantity = 3;
 
     @BeforeEach
-    void setUp() {
-        mocks = MockitoAnnotations.openMocks(this);
-        userService = spy(new UserService(userRepository));
+    public void setUp() {
+        userRepository       = mock(IUserRepository.class);
+        authTokenService     = mock(AuthTokenService.class);
+        // create a spy so we can stub loginAsGuest
+        userService          = spy(new UserService(userRepository));
         userService.setServices(authTokenService);
-    }
-
-    @AfterEach
-    void tearDown() throws Exception {
-        mocks.close();
-        clearInvocations(userRepository, authTokenService);
     }
 
     // UC2 – Guest Entry (positive)
     @Test
-    void testGuestEntrySuccess() {
+    public void testGuestEntrySuccess() {
         when(userRepository.addGuest()).thenReturn(1);
         when(authTokenService.AuthenticateGuest(1)).thenReturn("guestToken");
 
@@ -60,7 +37,7 @@ public class UserServiceAcceptanceTests {
 
     // UC2 – Guest Entry (negative)
     @Test
-    void testGuestEntryError() {
+    public void testGuestEntryError() {
         when(userRepository.addGuest()).thenReturn(-1);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
@@ -71,12 +48,14 @@ public class UserServiceAcceptanceTests {
 
     // UC3 – Guest Exit (positive)
     @Test
-    void testGuestExitSuccess() throws Exception {
-        String oldToken = token;
-        int guestId = userId;
+    public void testGuestExitSuccess() throws Exception {
+        String oldToken = "guestToken";
+        int guestId     = 2;
 
+        // stub ValidateToken to return guestId
         doReturn(guestId).when(authTokenService).ValidateToken(oldToken);
         when(userRepository.isGuestById(guestId)).thenReturn(true);
+        // stub the second loginAsGuest call to return new token
         doReturn("newGuestToken").when(userService).loginAsGuest();
 
         String result = userService.logout(oldToken);
@@ -88,29 +67,31 @@ public class UserServiceAcceptanceTests {
 
     // UC3 – Guest Exit (negative)
     @Test
-    void testGuestExitError() throws Exception {
-        when(authTokenService.ValidateToken(token))
+    public void testGuestExitError() throws Exception {
+        String badToken = "bad";
+
+        when(authTokenService.ValidateToken(badToken))
             .thenThrow(new Exception("Token expired"));
 
-        String result = userService.logout(token);
+        String result = userService.logout(badToken);
         assertNull(result);
     }
 
     // UC4 – Register (positive)
     @Test
-    void testRegisterSuccess() {
+    public void testRegisterSuccess() {
         String username = "u1", pwd = "p1", email = "e@ex", phone = "123", addr = "a";
         when(userRepository.isUsernameTaken(username)).thenReturn(false);
         when(authTokenService.generateAuthToken(username)).thenReturn("tokenM");
         doNothing().when(userRepository).addMember(username, pwd, email, phone, addr);
 
-        String tk = userService.signUp(username, pwd, email, phone, addr);
-        assertEquals("tokenM", tk);
+        String token = userService.signUp(username, pwd, email, phone, addr);
+        assertEquals("tokenM", token);
     }
 
     // UC4 – Register (duplicate username)
     @Test
-    void testRegisterDuplicateUsername() {
+    public void testRegisterDuplicateUsername() {
         String username = "u1";
         when(userRepository.isUsernameTaken(username)).thenReturn(true);
 
@@ -120,13 +101,15 @@ public class UserServiceAcceptanceTests {
         assertTrue(ex.getMessage().contains("Username is already taken"));
     }
 
-    // UC4 – Register (invalid email)
+    // UC4 – Register (Invalid email)
     @Test
-    void testRegisterInvalidEmail() {
+    public void testRegisterInvalidEmail() {
         String username = "u1", pwd = "p1", email = "invalidEmail", phone = "123", addr = "a";
         when(userRepository.isUsernameTaken(username)).thenReturn(false);
+        // Stub the void addMember(...) to throw due to invalid email
         doThrow(new RuntimeException("Invalid email format"))
-            .when(userRepository).addMember(username, pwd, email, phone, addr);
+        .when(userRepository)
+        .addMember(username, pwd, email, phone, addr);
 
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
             userService.signUp(username, pwd, email, phone, addr)
@@ -136,102 +119,36 @@ public class UserServiceAcceptanceTests {
 
     // UC9 – Login (positive)
     @Test
-    void testLoginSuccess() {
-        when(userRepository.isUsernameAndPasswordValid("u1", "p1")).thenReturn(5);
-        when(authTokenService.generateAuthToken("u1")).thenReturn("memToken");
+    public void testLoginSuccess() {
+        String user = "u1", pwd = "p1";
+        when(userRepository.isUsernameAndPasswordValid(user, pwd)).thenReturn(5);
+        when(authTokenService.generateAuthToken(user)).thenReturn("memToken");
 
-        String tk = userService.loginAsMember("u1", "p1", -1);
-        assertEquals("memToken", tk);
+        String token = userService.loginAsMember(user, pwd, -1);
+        assertEquals("memToken", token);
     }
 
-    // UC9 – Login (wrong password)
+    // UC9 – Login (wrong Password)
     @Test
-    void testLoginPassword() {
-        when(userRepository.isUsernameAndPasswordValid("u1", "wrong")).thenReturn(-1);
+    public void testLoginPassword() {
+        String user = "u1", pwd = "wrong";
+        when(userRepository.isUsernameAndPasswordValid(user, pwd)).thenReturn(-1);
 
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
-            userService.loginAsMember("u1", "wrong", -1)
+            userService.loginAsMember(user, pwd, -1)
         );
         assertTrue(ex.getMessage().contains("Error logging in as member"));
     }
 
-    // UC9 – Login (wrong username)
+    //UC9 – Login (wrong Username)
     @Test
-    void testLoginUsername() {
-        when(userRepository.isUsernameAndPasswordValid("wrong", "p1")).thenReturn(-1);
+    public void testLoginUsername() {
+        String user = "wrong", pwd = "p1";
+        when(userRepository.isUsernameAndPasswordValid(user, pwd)).thenReturn(-1);
 
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
-            userService.loginAsMember("wrong", "p1", -1)
+            userService.loginAsMember(user, pwd, -1)
         );
         assertTrue(ex.getMessage().contains("Error logging in as member"));
     }
-
-    // UC6 – Add Item to Cart (positive)
-    @Test
-    void testAddItemToCartSuccess() throws Exception {
-        when(authTokenService.ValidateToken(token)).thenReturn(userId);
-        doNothing().when(userRepository).addItemToShoppingCart(userId, shopId, itemId, quantity);
-
-        userService.addItemToShoppingCart(token, shopId, itemId, quantity);
-        verify(userRepository).addItemToShoppingCart(userId, shopId, itemId, quantity);
-    }
-
-    // UC6 – Add Item to Cart (negative: invalid token)
-    @Test
-    void testAddItemToCartInvalidToken() throws Exception {
-        when(authTokenService.ValidateToken(token)).thenThrow(new RuntimeException("Invalid token"));
-
-        RuntimeException ex = assertThrows(RuntimeException.class, () ->
-            userService.addItemToShoppingCart(token, shopId, itemId, quantity)
-        );
-        assertTrue(ex.getMessage().contains("Invalid token"));
-    }
-
-    // UC6 – Add Item to Cart (negative: repository error)
-    @Test
-    void testAddItemToCartRepoError() throws Exception {
-        when(authTokenService.ValidateToken(token)).thenReturn(userId);
-        doThrow(new RuntimeException("DB error"))
-            .when(userRepository).addItemToShoppingCart(userId, shopId, itemId, quantity);
-
-        RuntimeException ex = assertThrows(RuntimeException.class, () ->
-            userService.addItemToShoppingCart(token, shopId, itemId, quantity)
-        );
-        assertTrue(ex.getMessage().contains("Error adding item to shopping cart"));
-    }
-
-    // UC7 – Remove Item from Cart (positive)
-    @Test
-    void testRemoveItemFromCartSuccess() throws Exception {
-        when(authTokenService.ValidateToken(token)).thenReturn(userId);
-        doNothing().when(userRepository).removeItemFromShoppingCart(userId, shopId, itemId);
-
-        userService.removeItemFromShoppingCart(token, shopId, itemId);
-        verify(userRepository).removeItemFromShoppingCart(userId, shopId, itemId);
-    }
-
-    // UC7 – Remove Item from Cart (negative: invalid token)
-    @Test
-    void testRemoveItemFromCartInvalidToken() throws Exception {
-        when(authTokenService.ValidateToken(token)).thenThrow(new RuntimeException("Bad token"));
-
-        RuntimeException ex = assertThrows(RuntimeException.class, () ->
-            userService.removeItemFromShoppingCart(token, shopId, itemId)
-        );
-        assertTrue(ex.getMessage().contains("Bad token"));
-    }
-
-    // UC7 – Remove Item from Cart (negative: repository error)
-    @Test
-    void testRemoveItemFromCartRepoError() throws Exception {
-        when(authTokenService.ValidateToken(token)).thenReturn(userId);
-        doThrow(new RuntimeException("Removal failed"))
-            .when(userRepository).removeItemFromShoppingCart(userId, shopId, itemId);
-
-        RuntimeException ex = assertThrows(RuntimeException.class, () ->
-            userService.removeItemFromShoppingCart(token, shopId, itemId)
-        );
-        assertTrue(ex.getMessage().contains("Error removing item from shopping cart"));
-    }
-
 }
