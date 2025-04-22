@@ -1,7 +1,9 @@
 package DomainLayer.Purchase;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Bid extends Purchase{
@@ -76,6 +78,14 @@ public class Bid extends Purchase{
         return maxBidder;
     }
 
+    /**
+     * Returns a list of all bidders' IDs.
+     * 
+     * @return a list of all bidders' IDs.
+     */
+    public List<Integer> getBiddersIds() {
+        return new ArrayList<>(biddings.keySet());
+    }
 
 
 
