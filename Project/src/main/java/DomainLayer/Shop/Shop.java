@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.HashMap;
 
 import ApplicationLayer.Purchase.ShippingMethod;
 
@@ -277,6 +278,21 @@ public class Shop {
     public int getItemPrice(int itemId) {
         AtomicInteger price = itemsPrices.get(itemId);
         return price != null ? price.get() : 0;
+    }
+
+    // ===== Method for Policy =====
+
+    /**
+     * Checks if the purchase policy allows the given items to be purchased.
+     * This is a placeholder method and should be implemented based on your business logic.
+     *
+     * @param items a map of item IDs and their quantities.
+     * @return true if the purchase policy allows the items, false otherwise.
+     */
+    public boolean checkPolicy(HashMap<Integer, Integer> items) {
+        // Implement the logic to check the purchase policy
+        // For now, we will just return true as a placeholder
+        return true;
     }
 
     @Override

@@ -1,6 +1,7 @@
 package ApplicationLayer.Shop;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import ApplicationLayer.AuthTokenService;
@@ -10,7 +11,6 @@ import ApplicationLayer.User.UserService;
 import DomainLayer.Item.Item;
 import DomainLayer.Item.ItemCategory;
 import DomainLayer.Roles.PermissionsEnum;
-import ApplicationLayer.User.UserService;
 import DomainLayer.Shop.IShopRepository;
 import DomainLayer.Shop.Shop;
 
@@ -67,7 +67,7 @@ public class ShopService {
     public Shop getShop(int shopId, String token) {
         try {
             LoggerService.logMethodExecution("getShop", shopId);
-            Integer userId = authTokenService.ValidateToken(token);
+            authTokenService.ValidateToken(token);
             Shop returnShop = shopRepository.getShop(shopId);
             LoggerService.logMethodExecutionEnd("getShop", returnShop);
             return returnShop;
@@ -86,7 +86,7 @@ public class ShopService {
     public List<Shop> getAllShops(String token) {
         try {
             LoggerService.logMethodExecution("getAllShops");
-            Integer userId = authTokenService.ValidateToken(token);
+            authTokenService.ValidateToken(token);
             List<Shop> returnShops = shopRepository.getAllShops();
             LoggerService.logMethodExecutionEnd("getAllShops", returnShops);
             return returnShops;
@@ -232,7 +232,7 @@ public class ShopService {
     public void addSupplyToItem(int shopId, int itemId, int quantity, String token) {
         try {
             LoggerService.logMethodExecution("addSupplyToItem", shopId, itemId, quantity);
-            Integer userId = authTokenService.ValidateToken(token);
+            authTokenService.ValidateToken(token);
             shopRepository.addSupplyToItem(shopId, itemId, quantity);
             LoggerService.logMethodExecutionEndVoid("addSupplyToItem");
         } catch (Exception e) {
@@ -395,12 +395,25 @@ public class ShopService {
     public void removeSupply(Integer shopId, Integer itemId, Integer supply, String token) {
         try {
             LoggerService.logMethodExecution("removeSupply", shopId, itemId, supply);
-            Integer userId = authTokenService.ValidateToken(token);
+            authTokenService.ValidateToken(token);
             shopRepository.removeSupply(shopId, itemId, supply);
             LoggerService.logMethodExecutionEndVoid("removeSupply");
         } catch (Exception e) {
             LoggerService.logError("removeSupply", e, shopId, itemId, supply);
             throw new RuntimeException("Error removing supply for item " + itemId + " in shop " + shopId + ": " + e.getMessage(), e);
+        }
+    }
+
+    public boolean checkPolicy(HashMap<Integer, HashMap<Integer,Integer>> cart, String token) {
+        try{
+            LoggerService.logMethodExecution("checkPolicy", cart);
+            authTokenService.ValidateToken(token);
+            boolean returnBoolean = shopRepository.checkPolicy(cart, token);
+            LoggerService.logMethodExecutionEnd("checkPolicy", returnBoolean);
+            return returnBoolean;
+        } catch (Exception e) {
+            LoggerService.logError("checkPolicy", e, cart);
+            throw new RuntimeException("Error checking policy: " + e.getMessage(), e);
         }
     }
 
