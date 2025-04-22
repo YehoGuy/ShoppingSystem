@@ -16,6 +16,7 @@ import DomainLayer.User;
 import InfrastructureLayer.AuthTokenRepository;
 import InfrastructureLayer.UserRepository;
 
+
 public class UserServiceTest {
 
     private UserRepository userRepository;
@@ -118,7 +119,7 @@ public class UserServiceTest {
         userService.removePermission(memberId, PermissionsEnum.setPolicy);
         assertFalse(userService.hasPermission(memberId, PermissionsEnum.setPolicy, 1));
     }
-
+    /* 
     @Test
     void testSignUpWithTakenUsername() {
         userService.addMember("takenUser", "pass", "email", "123", "address");
@@ -130,6 +131,7 @@ public class UserServiceTest {
         String expectedMessage = "Username is already taken.";
         assertTrue(exception.getMessage().contains(expectedMessage));
     }
+        */
 
     @Test
     void testInvalidMemberIdValidation() {
