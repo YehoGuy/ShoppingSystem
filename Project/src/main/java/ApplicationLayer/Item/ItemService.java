@@ -4,14 +4,17 @@ import java.util.List;
 
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.LoggerService;
+import ApplicationLayer.User.UserService;
 import DomainLayer.Item.IItemRepository;
 import DomainLayer.Item.Item;
 import DomainLayer.Item.ItemReview;
+import DomainLayer.Roles.PermissionsEnum;
 
 public class ItemService {
 
     private final IItemRepository itemRepository;
     private AuthTokenService authTokenService;
+    private UserService userService;
 
     /**
      * Constructor for ItemService.
@@ -23,8 +26,9 @@ public class ItemService {
       
     }
 
-    public void setServices(AuthTokenService authTokenService) {
+    public void setServices(AuthTokenService authTokenService, UserService userService) {
         this.authTokenService = authTokenService;
+        this.userService = userService;
     }
 
     /**
@@ -34,12 +38,16 @@ public class ItemService {
      * @param description the item description.
      * @return the newly created Item.
      */
-    public Item createItem(String name, String description, Integer category) {
+    public Integer createItem(int shopId, String name, String description, Integer category, String token) {
         try {
             LoggerService.logMethodExecution("createItem", name, description, category);
-            Item returnItem = itemRepository.createItem(name, description, category);
-            LoggerService.logMethodExecutionEnd("createItem", returnItem);
-            return returnItem;
+            Integer userId = authTokenService.ValidateToken(token);
+            if(!userService.hasPermission(userId,PermissionsEnum.manageItems,shopId)){
+                throw new RuntimeException("User does not have permission to add item to shop " + shopId);
+            }
+            Integer returnItemId = itemRepository.createItem(name, description, category);
+            LoggerService.logMethodExecutionEnd("createItem", itemRepository.getItem(returnItemId));
+            return returnItemId;
         } catch (Exception e) {
             LoggerService.logError("createItem", e, name, description, category);
             throw new RuntimeException("Error creating item: " + e.getMessage(), e);

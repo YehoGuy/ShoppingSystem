@@ -1,8 +1,7 @@
 package DomainLayer.Item;
 
 import java.util.List;
-import DomainLayer.Item.Item;
-import DomainLayer.Item.ItemReview;
+
 
 public interface IItemRepository {
 
@@ -12,9 +11,9 @@ public interface IItemRepository {
      *
      * @param name        the item name
      * @param description the item description
-     * @return the newly created Item
+     * @return the newly created Item id
      */
-    Item createItem(String name, String description, Integer category);
+    Integer createItem(String name, String description, Integer category);
 
     /**
      * Retrieves an item by its id.

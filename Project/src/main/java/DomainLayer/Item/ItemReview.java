@@ -1,9 +1,5 @@
 package DomainLayer.Item;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 /**
  * Represents a review for an item.
  */
