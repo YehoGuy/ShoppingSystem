@@ -211,67 +211,6 @@ public class UserRepository implements IUserRepository {
         User user = userMapping.get(id);
         return user.getShoppingCart();
     }
-
-    public void addItemToShoppingCart(int userId, int shopId, int itemId, int quantity) {
-        if (!userMapping.containsKey(userId)) {
-            throw new IllegalArgumentException("User with ID " + userId + " doesn't exist.");
-        }
-        if (quantity <= 0) {
-            throw new IllegalArgumentException("Quantity must be greater than 0.");
-        }
-        User user = userMapping.get(userId);
-        ShoppingCart shoppingCart = user.getShoppingCart();
-        shoppingCart.addItem(shopId, itemId, quantity); 
-    }
-
-    public void removeItemFromShoppingCart(int userId, int shopId, int itemId) {
-        if (!userMapping.containsKey(userId)) {
-            throw new IllegalArgumentException("User with ID " + userId + " doesn't exist.");
-        }
-        User user = userMapping.get(userId);
-        ShoppingCart shoppingCart = user.getShoppingCart();
-        shoppingCart.removeItem(shopId, itemId); 
-    }
-
-    public void updateItemQuantityInShoppingCart(int userId, int shopId, int itemId, int quantity) {
-        if (!userMapping.containsKey(userId)) {
-            throw new IllegalArgumentException("User with ID " + userId + " doesn't exist.");
-        }
-        if (quantity <= 0) {
-            throw new IllegalArgumentException("Quantity must be greater than 0.");
-        }
-        User user = userMapping.get(userId);
-        ShoppingCart shoppingCart = user.getShoppingCart();
-        shoppingCart.removeItem(shopId, shopId);
-        shoppingCart.addItem(shopId, itemId, quantity); 
-    }
-
-    public void clearShoppingCart(int userId) {
-        if (!userMapping.containsKey(userId)) {
-            throw new IllegalArgumentException("User with ID " + userId + " doesn't exist.");
-        }
-        User user = userMapping.get(userId);
-        ShoppingCart shoppingCart = user.getShoppingCart();
-        shoppingCart.clearCart(); 
-    }
-
-    public Map<Integer, Integer> getBasket(int userId, int shopId) {
-        if (!userMapping.containsKey(userId)) {
-            throw new IllegalArgumentException("User with ID " + userId + " doesn't exist.");
-        }
-        User user = userMapping.get(userId);
-        ShoppingCart shoppingCart = user.getShoppingCart();
-        return shoppingCart.getBasket(shopId); 
-    }
-
-    public void createBasket(int userId, int shopId) {
-        if (!userMapping.containsKey(userId)) {
-            throw new IllegalArgumentException("User with ID " + userId + " doesn't exist.");
-        }
-        User user = userMapping.get(userId);
-        ShoppingCart shoppingCart = user.getShoppingCart();
-        shoppingCart.addBasket(shopId); 
-    }
     
 
 }
