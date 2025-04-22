@@ -39,6 +39,42 @@ public class ItemServiceAcceptanceTests {
         doReturn(USER_ID).when(authTokenService).ValidateToken(TOKEN);
     }
 
+        // UC11 – Add Review to Item (positive)
+        @Test
+        public void testAddReviewToItemSuccess() {
+            int itemId   = 5;
+            int rating   = 4;
+            String text  = "Good item";
+    
+            // repository accepts review
+            doNothing().when(itemRepository)
+                .addReviewToItem(itemId, rating, text);
+    
+            assertDoesNotThrow(() ->
+                itemService.addReviewToItem(itemId, rating, text, TOKEN)
+            );
+            verify(itemRepository).addReviewToItem(itemId, rating, text);
+        }
+    
+        // UC11 – Add Review to Item (negative: invalid)
+        @Test
+        public void testAddReviewToItemInvalid() {
+            int itemId  = 5;
+            int rating  = 0;      // invalid
+            String text = "";     // invalid
+    
+            doThrow(new RuntimeException("Invalid review"))
+                .when(itemRepository)
+                .addReviewToItem(itemId, rating, text);
+    
+            RuntimeException ex = assertThrows(RuntimeException.class, () ->
+                itemService.addReviewToItem(itemId, rating, text, TOKEN)
+            );
+            assertTrue(ex.getMessage().contains("Error adding review to item"));
+        }
+        
+
+    // UC16 – Create Item (positive)
     @Test
     public void testCreateItemSuccess() throws Exception {
         String name        = "Widget";
@@ -62,6 +98,7 @@ public class ItemServiceAcceptanceTests {
         verify(itemRepository).createItem(name, description, category);
     }
 
+    // UC16 – Create Item (invalid data for item)
     @Test
     public void testCreateItemInvalid() {
         String name      = "";
@@ -80,41 +117,6 @@ public class ItemServiceAcceptanceTests {
         );
         assertTrue(ex.getMessage().contains("Error creating item"));
     }
-
-    // UC11 – Add Review to Item (positive)
-    @Test
-    public void testAddReviewToItemSuccess() {
-        int itemId   = 5;
-        int rating   = 4;
-        String text  = "Good item";
-
-        // repository accepts review
-        doNothing().when(itemRepository)
-            .addReviewToItem(itemId, rating, text);
-
-        assertDoesNotThrow(() ->
-            itemService.addReviewToItem(itemId, rating, text, TOKEN)
-        );
-        verify(itemRepository).addReviewToItem(itemId, rating, text);
-    }
-
-    // UC11 – Add Review to Item (negative: invalid)
-    @Test
-    public void testAddReviewToItemInvalid() {
-        int itemId  = 5;
-        int rating  = 0;      // invalid
-        String text = "";     // invalid
-
-        doThrow(new RuntimeException("Invalid review"))
-            .when(itemRepository)
-            .addReviewToItem(itemId, rating, text);
-
-        RuntimeException ex = assertThrows(RuntimeException.class, () ->
-            itemService.addReviewToItem(itemId, rating, text, TOKEN)
-        );
-        assertTrue(ex.getMessage().contains("Error adding review to item"));
-    }
-    
 
     // Optional: Fetch item by ID
     @Test
