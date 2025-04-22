@@ -10,7 +10,7 @@ public class ShoppingCart {
     }
 
     public void clearCart() {
-        items.clear();
+        ((HashMap<Integer, HashMap<Integer, Integer>>) items).clear();
     }
     
     public void addBasket(int shopId) {
@@ -80,43 +80,6 @@ public class ShoppingCart {
                     }
                     currentBasket.put(productId, quantity);
                 }
-            }
-        }
-    }
-
-    /**
-     * Returns a copy of the items in the shopping cart.
-     * The copy is a deep copy, meaning that changes to the copy will not affect the original items.
-     * @return A deep copy of the items in the shopping cart.
-     */
-    public HashMap<Integer, HashMap<Integer, Integer>> getItems() {
-        HashMap<Integer, HashMap<Integer, Integer>> copy = new HashMap<>();
-        for (Integer shopId : items.keySet()) {
-            HashMap<Integer, Integer> shopItems = items.get(shopId);
-            HashMap<Integer, Integer> copyShopItems = new HashMap<>(shopItems);
-            copy.put(shopId, copyShopItems);
-        }
-        return copy;
-    }
-
-    /**
-    * Restores the shopping cart with the given items.
-    * @param items A HashMap containing the items to restore in the shopping cart. shopId -> <itemId -> quantity>
-    */
-    public void restoreCart(HashMap<Integer, HashMap<Integer, Integer>> items) {
-        // Logic to restore the shopping cart with the provided items
-        for (Integer shopId : items.keySet()) {
-            if (!this.items.containsKey(shopId)) {
-                this.items.put(shopId, new HashMap<>());
-            }
-            HashMap<Integer, Integer> shopItems = this.items.get(shopId);
-            HashMap<Integer, Integer> newShopItems = items.get(shopId);
-            for (Integer productId : newShopItems.keySet()) {
-                int quantity = newShopItems.get(productId);
-                if (shopItems.containsKey(productId)) {
-                    quantity += shopItems.get(productId);
-                }
-                shopItems.put(productId, quantity);
             }
         }
     }

@@ -7,8 +7,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import ApplicationLayer.Purchase.ShippingMethod;
-
 /**
  * The Shop class representing a shop entity in your system.
  * It supports safe concurrent modifications and multi-threaded access.
@@ -34,8 +32,6 @@ public class Shop {
 
     // Prices: mapping from item ID to its price.
     private final ConcurrentHashMap<Integer, AtomicInteger> itemsPrices = new ConcurrentHashMap<>();
-
-    private ShippingMethod shippingMethod;
 
     /**
      * Constructor to initialize the shop.
@@ -262,10 +258,6 @@ public class Shop {
                 return existing;
             }
         });
-    }
-
-    public ShippingMethod getShippingMethod() {
-        return shippingMethod;
     }
 
     /**
