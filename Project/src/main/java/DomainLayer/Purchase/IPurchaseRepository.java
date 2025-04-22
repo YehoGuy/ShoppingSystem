@@ -18,10 +18,22 @@ public interface IPurchaseRepository {
     int addPurchase(int userId, int storeId, Map<Integer, Integer> items, Address shippingAddresse);
 
     /**
+     * Adds a bid to the repository.
+     *
+     * @param userId The ID of the user making the bid.
+     * @param storeId The ID of the store where the bid is made.
+     * @param items A map of item IDs to their quantities.
+     * @return The ID of the newly created bid.
+     * @throws IllegalArgumentException if the purchase ID already exists.
+     */
+    int addBid(int userId, int storeId, Map<Integer, Integer> items);
+
+    /**
      * Retrieves a purchase by its ID.
      *
      * @param purchaseId The ID of the purchase to retrieve.
-     * @return The purchase with the specified ID, or null if not found.
+     * @return The purchase with the specified ID.
+     * @throws IllegalArgumentException if the purchase ID does not exist.
      */
     Purchase getPurchaseById(int purchaseId);
 
@@ -47,5 +59,16 @@ public interface IPurchaseRepository {
      * @return A list of purchases made in the specified store.
      */
     ArrayList<Purchase> getStorePurchases(int storeId);
+
+    /**
+     * Retrieves all purchases made by a specific user in a specific store.
+     *
+     * @param userId The ID of the user whose purchases to retrieve.
+     * @param storeId The ID of the store whose purchases to retrieve.
+     * @return A list of purchases made by the specified user in the specified store.
+     */
+    ArrayList<Purchase> getUserStorePurchases(int userId, int storeId);
+
+
 
 }

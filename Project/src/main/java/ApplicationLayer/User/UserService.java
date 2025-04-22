@@ -5,14 +5,11 @@ import java.util.List;
 
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.LoggerService;
-import ApplicationLayer.AuthTokenService;
-
+import ApplicationLayer.Purchase.PaymentMethod;
 import DomainLayer.Member;
 import DomainLayer.Roles.PermissionsEnum;
 import DomainLayer.Roles.Role;
 import DomainLayer.User;
-import DomainLayer.Roles.PermissionsEnum;
-import DomainLayer.Roles.Role;
 import InfrastructureLayer.UserRepository;
 
 public class UserService {
@@ -498,6 +495,80 @@ public class UserService {
             }
         } catch (Exception e) {
             return false; // Indicate failure to check permission
+        }
+    }
+
+    /**
+     * Retrieves the shopping cart items for a user by their ID.
+     * @param userId The ID of the user whose shopping cart items are to be retrieved.
+     * @return A DeepCopy HashMap containing the shopping cart items for the user. shopId -> <itemId -> quantity>*
+     */
+    public HashMap<Integer, HashMap<Integer,Integer>> getUserShoppingCartItems(int userId){
+        try {
+            LoggerService.logMethodExecution("getUserShoppingCart", userId);
+            HashMap<Integer, HashMap<Integer,Integer>> cart = userRepository.getShoppingCartById(userId).getItems();
+            LoggerService.logMethodExecutionEnd("getUserShoppingCart", cart);
+            return cart;
+        } catch (Exception e) {
+            LoggerService.logError("getUserShoppingCart", e, userId);
+            throw new RuntimeException("Error fetching shopping cart for user ID " + userId + ": " + e.getMessage(), e);
+        }
+        
+    }
+
+    /**
+     * Clears the shopping cart for a user by their ID.
+     * @param userId The ID of the user whose shopping cart is to be cleared.
+     * @throws IllegalArgumentException if the user ID is invalid or the user is not a member.
+     * @throws RuntimeException if an error occurs while clearing the shopping cart.
+     */
+    public void clearUserShoppingCart(int userId){
+        try {
+            LoggerService.logMethodExecution("clearUserShoppingCart", userId);
+            userRepository.getShoppingCartById(userId).clearCart();
+            LoggerService.logMethodExecutionEndVoid("clearUserShoppingCart");
+        } catch (Exception e) {
+            LoggerService.logError("clearUserShoppingCart", e, userId);
+            throw new RuntimeException("Error clearing shopping cart for user ID " + userId + ": " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Restores the shopping cart for a user by their ID.
+     * @param userId The ID of the user whose shopping cart is to be restored.
+     * @param items A HashMap containing the items to restore in the shopping cart. shopId -> <itemId -> quantity>
+     * @throws IllegalArgumentException if the user ID is invalid or the user is not a member.
+     * @throws RuntimeException if an error occurs while restoring the shopping cart.
+     * @throws NullPointerException if the items HashMap is null.
+     */
+    public void restoreUserShoppingCart(int userId, HashMap<Integer, HashMap<Integer,Integer>> items){
+        try {
+            LoggerService.logMethodExecution("restoreUserShoppingCart", userId, items);
+            userRepository.getShoppingCartById(userId).restoreCart(items);
+            LoggerService.logMethodExecutionEndVoid("restoreUserShoppingCart");
+        } catch (Exception e) {
+            LoggerService.logError("restoreUserShoppingCart", e, userId, items);
+            throw new RuntimeException("Error restoring shopping cart for user ID " + userId + ": " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Retrieves the payment method for a user by their ID.
+     * @param userId The ID of the user whose payment method is to be retrieved.
+     * @return The PaymentMethod object associated with the user.
+     * @throws IllegalArgumentException if the user ID is invalid or the user is not a member.
+     * @throws RuntimeException if an error occurs while fetching the payment method.
+     * @throws NullPointerException if the payment method is null.
+     */
+    public PaymentMethod getUserPaymentMethod(int userId) {
+        try {
+            LoggerService.logMethodExecution("getUserPaymentMethod", userId);
+            PaymentMethod paymentMethod = userRepository.getUserById(userId).getPaymentMethod();
+            LoggerService.logMethodExecutionEnd("getUserPaymentMethod", paymentMethod);
+            return paymentMethod;
+        } catch (Exception e) {
+            LoggerService.logError("getUserPaymentMethod", e, userId);
+            throw new RuntimeException("Error fetching payment method for user ID " + userId + ": " + e.getMessage(), e);
         }
     }
     
