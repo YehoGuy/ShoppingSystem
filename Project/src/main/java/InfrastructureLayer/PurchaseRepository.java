@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import DomainLayer.Purchase.Address;
-import DomainLayer.Purchase.Bid;
 import DomainLayer.Purchase.IPurchaseRepository;
 import DomainLayer.Purchase.Purchase;
 
@@ -60,6 +59,7 @@ public class PurchaseRepository implements IPurchaseRepository {
      * @param items A map of item IDs to their quantities.
      * @param shippingAddresse The shipping address for the purchase.
      * @return The ID of the newly created purchase.
+     * @throws IllegalArgumentException if the purchase ID already exists.
      */
     public int addPurchase(int userId, int storeId, Map<Integer, Integer> items, Address shippingAddresse) {
         int id = getNewPurchaseId();
@@ -70,35 +70,13 @@ public class PurchaseRepository implements IPurchaseRepository {
 
     @Override
     /**
-     * Adds a bid to the repository.
-     *
-     * @param userId The ID of the user making the bid.
-     * @param storeId The ID of the store where the bid is made.
-     * @param items A map of item IDs to their quantities.
-     * @return The ID of the newly created bid.
-     * @throws UnsupportedOperationException if bids are not supported in this repository.
-     */
-    public int addBid(int userId, int storeId, Map<Integer, Integer> items) {
-        int id = getNewPurchaseId();
-        Bid bid = new Bid(id, userId, storeId, items);
-        purchaseStorage.put(id, bid);
-        return id;
-    }
-
-    @Override
-    /**
      * Retrieves a purchase by its ID.
      *
      * @param purchaseId The ID of the purchase to retrieve.
-     * @return The purchase with the specified ID.
-     * @throws IllegalArgumentException if the purchase ID does not exist.
+     * @return The purchase with the specified ID, or null if not found.
      */
     public Purchase getPurchaseById(int purchaseId) {
-        Purchase p = purchaseStorage.get(purchaseId);
-        if (p == null) {
-            throw new IllegalArgumentException("Purchase not found, purchaseId: " + purchaseId);
-        }
-        return p;
+        return purchaseStorage.get(purchaseId);
     }
 
     @Override
@@ -119,6 +97,7 @@ public class PurchaseRepository implements IPurchaseRepository {
      * @return A list of purchases made by the specified user.
      */
     public ArrayList<Purchase> getUserPurchases(int userId) {
+        // Logic to retrieve all purchases made by a specific user
         ArrayList<Purchase> userPurchases = new ArrayList<>();
         for (Purchase purchase : purchaseStorage.values()) {
             if (purchase.getUserId() == userId) {
@@ -136,6 +115,7 @@ public class PurchaseRepository implements IPurchaseRepository {
      * @return A list of purchases made in the specified store.
      */
     public ArrayList<Purchase> getStorePurchases(int storeId) {
+        // Logic to retrieve all purchases made in a specific store
         ArrayList<Purchase> storePurchases = new ArrayList<>();
         for (Purchase purchase : purchaseStorage.values()) {
             if (purchase.getStoreId() == storeId) {
@@ -145,23 +125,6 @@ public class PurchaseRepository implements IPurchaseRepository {
         return storePurchases;
     }
 
-    @Override
-    /**
-     * Retrieves all purchases made by a specific user in a specific store.
-     *
-     * @param userId The ID of the user whose purchases to retrieve.
-     * @param storeId The ID of the store whose purchases to retrieve.
-     * @return A list of purchases made by the specified user in the specified store.
-     */
-    public ArrayList<Purchase> getUserStorePurchases(int userId, int storeId) {
-        ArrayList<Purchase> userStorePurchases = new ArrayList<>();
-        for (Purchase purchase : purchaseStorage.values()) {
-            if (purchase.getUserId() == userId && purchase.getStoreId() == storeId) {
-                userStorePurchases.add(purchase);
-            }
-        }
-        return userStorePurchases;
-    }   
     
 
 }

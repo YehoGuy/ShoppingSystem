@@ -8,9 +8,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import DomainLayer.Guest;
 import DomainLayer.IUserRepository;
-import DomainLayer.Member;
-import DomainLayer.ShoppingCart;
 import DomainLayer.User;
+import DomainLayer.Member;
 
 // Assuming User is a class that has been defined elsewhere in your project
 // and has a method getId() to retrieve the user's ID.
@@ -198,19 +197,6 @@ public class UserRepository implements IUserRepository {
         return false;
     }
 
-    /**
-     * Retrieves the shopping cart associated with a user by their unique ID.
-     * 
-     * @param id The unique identifier of the user.
-     * @return The shopping cart associated with the user.
-     */
-    public ShoppingCart getShoppingCartById(int id) {
-        if (!userMapping.containsKey(id)) {
-            throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
-        }
-        User user = userMapping.get(id);
-        return user.getShoppingCart();
-    }
     
 
 }

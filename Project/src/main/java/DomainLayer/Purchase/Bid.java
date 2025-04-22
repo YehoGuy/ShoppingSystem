@@ -6,7 +6,7 @@ import java.util.Map;
 
 public class Bid extends Purchase{
 
-    private final Map<Integer, Double> biddings; // user (bidder) ID -> bid amount;
+    private Map<Integer, Double> biddings; // user (bidder) ID -> bid amount;
 
     /**
      * Constructs a new {@code Bid} with the specified user ID, store ID, and items.
