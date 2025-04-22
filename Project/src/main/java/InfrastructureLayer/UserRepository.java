@@ -184,7 +184,7 @@ public class UserRepository implements IUserRepository {
 
     public boolean isOwner(int id, int shopId) {
         if(getMembersList().stream().anyMatch(m -> m.getMemberId() == id &&
-             m.getRoles().stream().anyMatch(r -> r.isOwner()))) {
+             m.getRoles().stream().anyMatch(r -> r.isOwner() && r.getShopId() == shopId))) {
                 return true;
         }
         return false;
@@ -192,8 +192,8 @@ public class UserRepository implements IUserRepository {
 
     public boolean isFounder(int id, int shopId) {
         if(getMembersList().stream().anyMatch(m -> m.getMemberId() == id &&
-             m.getRoles().stream().anyMatch(r -> r.isFounder()))) {
-                return true;
+             m.getRoles().stream().anyMatch(r -> r.isFounder() && r.getShopId() == shopId))) {
+                return true; 
         }
         return false;
     }
@@ -272,6 +272,8 @@ public class UserRepository implements IUserRepository {
         ShoppingCart shoppingCart = user.getShoppingCart();
         shoppingCart.addBasket(shopId); 
     }
+
+    
     
 
 }

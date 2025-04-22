@@ -260,13 +260,15 @@ public class UserService {
 
 
 
-    public HashMap<Integer, PermissionsEnum[]> getPermitionsByShop(int senderID, int shopId) {
+    public HashMap<Integer, PermissionsEnum[]> getPermitionsByShop(String token, int shopId) {
         try {
             
             LoggerService.logMethodExecution("getPermitionsByShop", shopId);
+            int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            if (!userRepository.isOwner(id, shopId)) {
+                throw new IllegalArgumentException("Member ID " + token + " is not an owner of shop ID " + shopId);  
+            }
             
-            
-
             HashMap<Integer, PermissionsEnum[]> permissions = new HashMap<>();
             for (Member member : userRepository.getMembersList()) {
                 if (member.getRoles() != null) {
@@ -286,10 +288,14 @@ public class UserService {
         
     } 
 
-    public void changePermitions(int memberId, int shopId, PermissionsEnum[] permissions) {
+    public void changePermitions(String token, int memberId, int shopId, PermissionsEnum[] permissions) {
         try {
 
-            LoggerService.logMethodExecution("changePermitions", memberId, shopId, permissions);
+            LoggerService.logMethodExecution("changePermitions", token, memberId, shopId, permissions);
+            int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            if (!userRepository.isOwner(userId, shopId)) {
+                throw new IllegalArgumentException("Member ID " + userId + " is not an owner of shop ID " + shopId);  
+            }
             for (Member member : userRepository.getMembersList()) {
                 if (member.getMemberId() == memberId) {
                     for (Role role : member.getRoles()) {
@@ -308,13 +314,14 @@ public class UserService {
         }
     }
 
-    public void makeManagerOfStore(int assigne, int memberId, int shopId, PermissionsEnum[] permissions) {
+    public void makeManagerOfStore(String token, int assigne, int shopId, PermissionsEnum[] permissions) {
+        LoggerService.logMethodExecution("makeManagerOfStore", token, shopId, permissions);
         try {
+            int memberId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             if (!userRepository.isOwner(assigne, shopId)) {
                 LoggerService.logError("makeManagerOfStore", new IllegalArgumentException("Member ID " + assigne + " is not an owner of shop ID " + shopId));
                 throw new IllegalArgumentException("Member ID " + assigne + " is not an owner of shop ID " + shopId);  
             }
-            LoggerService.logMethodExecution("makeManagerOfStore", memberId, shopId, permissions);
             for (Member member : userRepository.getMembersList()) {
                 if (member.getMemberId() == memberId) {
                     Role role = new Role(assigne, shopId, permissions);
@@ -325,20 +332,20 @@ public class UserService {
             }
             LoggerService.logMethodExecutionEndVoid("makeManagerOfStore");
         } catch (Exception e) {
-            LoggerService.logError("makeManagerOfStore", e, memberId, shopId, permissions);
-            throw new RuntimeException("Error making manager of store for member ID " + memberId + ": " + e.getMessage(), e);
+            LoggerService.logError("makeManagerOfStore", e, token, shopId, permissions);
+            throw new RuntimeException("Error making manager of store for member ID " + token + ": " + e.getMessage(), e);
         }   
     }
 
-    public void removeManagerOfStore(int memberId, int shopId) {
+    public void removeManagerOfStore(String token, int shopId) {
+        LoggerService.logMethodExecution("removeManagerOfStore", token, shopId);
         try {
-
+            int memberId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             if (!userRepository.isOwner(memberId, shopId)) {
                 LoggerService.logError("removeManagerOfStore", new IllegalArgumentException("Member ID " + memberId + " is not an owner of shop ID " + shopId));
                 throw new IllegalArgumentException("Member ID " + memberId + " is not an owner of shop ID " + shopId);  
             }
 
-            LoggerService.logMethodExecution("removeManagerOfStore", memberId, shopId);
             for (Member member : userRepository.getMembersList()) {
                 if (member.getMemberId() == memberId) {
                     List<Role> roles = member.getRoles();
@@ -352,8 +359,8 @@ public class UserService {
 
             LoggerService.logMethodExecutionEndVoid("removeManagerOfStore");
         } catch (Exception e) {
-            LoggerService.logError("removeManagerOfStore", e, memberId, shopId);
-            throw new RuntimeException("Error removing manager of store for member ID " + memberId + ": " + e.getMessage(), e);
+            LoggerService.logError("removeManagerOfStore", e, token, shopId);
+            throw new RuntimeException("Error removing manager of store for member ID " + token + ": " + e.getMessage(), e);
         }   
     }
 
@@ -369,9 +376,10 @@ public class UserService {
     }
 
 
-    public void makeStoreOwner(int assigne, int memberId, int shopId){
+    public void makeStoreOwner(String token, int assigne, int shopId){
         try {
-            LoggerService.logMethodExecution("makeStoreOwner", memberId, shopId);
+            LoggerService.logMethodExecution("makeStoreOwner", token, shopId);
+            int memberId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             if(!userRepository.isOwner(assigne, shopId)) {
                 LoggerService.logError("makeStoreOwner", new IllegalArgumentException("Member ID " + assigne + " is not an owner of shop ID " + shopId));
                 throw new IllegalArgumentException("Member ID " + assigne + " is not an owner of shop ID " + shopId);  
@@ -389,14 +397,15 @@ public class UserService {
 
             throw new IllegalArgumentException("Member ID " + memberId + " not found.");
         }catch(Exception e) {
-            LoggerService.logError("makeStoreOwner", e, memberId, shopId);
-            throw new RuntimeException("Error making store owner for member ID " + memberId + ": " + e.getMessage(), e);
+            LoggerService.logError("makeStoreOwner", e, token, shopId);
+            throw new RuntimeException("Error making store owner for member ID " + token + ": " + e.getMessage(), e);
         }
     }
 
-    public void acceptRole(int memberId, Role role) {
+    public void acceptRole(String token, Role role) {
         try {
-            LoggerService.logMethodExecution("accseptRole", memberId, role);
+            LoggerService.logMethodExecution("accseptRole", token, role);
+            int memberId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             for (Member member : userRepository.getMembersList()) {
                 if (member.getMemberId() == memberId) {
                     member.acceptRole(role);
@@ -406,8 +415,8 @@ public class UserService {
             }
             throw new IllegalArgumentException("Member ID " + memberId + " not found.");
         } catch (Exception e) {
-            LoggerService.logError("accseptRole", e, memberId, role);
-            throw new RuntimeException("Error accepting role for member ID " + memberId + ": " + e.getMessage(), e);
+            LoggerService.logError("accseptRole", e, token, role);
+            throw new RuntimeException("Error accepting role for member ID " + token + ": " + e.getMessage(), e);
         }
     }
             
@@ -462,7 +471,7 @@ public class UserService {
             if (userRepository.getUserMapping().containsKey(id)) {
                 User user = userRepository.getUserById(id);
                 validateMemberId(id);
-                ((Member)user).addPermission(permission); // Add permission to the user
+                ((Member)user).addPermission(id,permission); // Add permission to the user
                 return true; // Permission added successfully
             } else {
                 throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
@@ -476,7 +485,7 @@ public class UserService {
             if (userRepository.getUserMapping().containsKey(id)) {
                 User user = userRepository.getUserById(id);
                 validateMemberId(id);
-                ((Member)user).removePermission(permission); // Remove permission from the user
+                ((Member)user).removePermission(id, permission); // Remove permission from the user
                 return true; // Permission removed successfully
             } else {
                 throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
@@ -658,5 +667,7 @@ public class UserService {
             throw new RuntimeException("Error adding basket for user ID " + token + ": " + e.getMessage(), e);
         }
     }
+
+
 
 }

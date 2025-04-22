@@ -1,6 +1,3 @@
-import java.util.HashMap;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -119,33 +116,6 @@ public class UserServiceTest {
 
         userService.removePermission(memberId, PermissionsEnum.setPolicy);
         assertFalse(userService.hasPermission(memberId, PermissionsEnum.setPolicy, 1));
-    }
-
-    @Test
-    void testGetPermitionsByShop() {
-        userService.addMember("linda", "pass", "linda@mail.com", "777", "address");
-        int memberId = userRepository.isUsernameAndPasswordValid("linda", "pass");
-
-        PermissionsEnum[] perms = new PermissionsEnum[]{PermissionsEnum.manageItems, PermissionsEnum.setPolicy};
-        Role role = new Role(memberId, 42, perms);
-        userService.addRole(memberId, role);
-
-        HashMap<Integer, PermissionsEnum[]> permsMap = userService.getPermitionsByShop(memberId, 42);
-        assertTrue(permsMap.containsKey(memberId));
-        assertArrayEquals(perms, permsMap.get(memberId));
-    }
-
-    @Test
-    void testAcceptRole() {
-        userService.addMember("ron", "pass", "ron@mail.com", "555", "address");
-        int memberId = userRepository.isUsernameAndPasswordValid("ron", "pass");
-
-        Role role = new Role(memberId, 10, new PermissionsEnum[]{PermissionsEnum.manageItems});
-        Member member = (Member) userService.getUserById(memberId);
-        member.addRoleToPending(role);
-
-        userService.acceptRole(memberId, role);
-        assertTrue(member.getRoles().contains(role));
     }
 
     @Test

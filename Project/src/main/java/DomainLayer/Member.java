@@ -126,16 +126,22 @@ public class Member extends User {
             throw new IllegalArgumentException("Role not found in pending roles."); // Role not found in pending roles
         }
     }
-    public void addPermission(PermissionsEnum permission) {
+    public void addPermission(int shopId, PermissionsEnum permission) {
         // Add a permission to the user's roles (if applicable)
         for (Role role : roles) {
-            role.addPermission(permission); // Add the permission to the role
+            if (role.getShopId() == shopId) {
+                role.addPermission(permission);
+                return; // Exit after adding the permission to the first matching role
+            }
         }
     }
-    public void removePermission(PermissionsEnum permission) {
+    public void removePermission(int shopId, PermissionsEnum permission) {
         // Remove a permission from the user's roles (if applicable)
         for (Role role : roles) {
-            role.removePermissions(permission); // Remove the permission from the role
+            if (role.getShopId() == shopId) {
+                role.removePermissions(permission);
+                return; // Exit after removing the permission from the first matching role
+            }
         }
     }
     public boolean hasPermission(PermissionsEnum permission, int shopdId) {
