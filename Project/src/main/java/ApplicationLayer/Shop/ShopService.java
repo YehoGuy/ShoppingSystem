@@ -430,7 +430,7 @@ public class ShopService {
             authTokenService.ValidateToken(token);
             List<Integer> returnItems = shopRepository.getItemsByShop(shopId);
             LoggerService.logMethodExecutionEnd("getItems", returnItems);
-            List<Item> items = itemService.getItemsByIds(returnItems);
+            List<Item> items = itemService.getItemsByIds(returnItems, token);
             LoggerService.logMethodExecutionEnd("getItems", items);
             return items;
         } catch (Exception e) {
@@ -450,7 +450,7 @@ public class ShopService {
             authTokenService.ValidateToken(token);
             List<Integer> returnItemsIds = shopRepository.getItems();
             LoggerService.logMethodExecutionEnd("getItems", returnItemsIds);
-            List<Item> returnItems = itemService.getItemsByIds(returnItemsIds);
+            List<Item> returnItems = itemService.getItemsByIds(returnItemsIds, token);
             return returnItems;
         } catch (Exception e) {
             LoggerService.logError("getItems", e);
