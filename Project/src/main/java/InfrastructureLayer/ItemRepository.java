@@ -20,7 +20,7 @@ public class ItemRepository implements IItemRepository {
     private final AtomicInteger itemIdCounter = new AtomicInteger(1);
 
     @Override
-    public Item createItem(String name, String description, Integer category) {
+    public Integer createItem(String name, String description, Integer category) {
         int id = itemIdCounter.getAndIncrement();
         Item item = new Item(id, name, description, category);
         Item previous = items.putIfAbsent(id, item);
@@ -28,7 +28,7 @@ public class ItemRepository implements IItemRepository {
             // Should never happen unless IDs clash
             throw new IllegalStateException("Item with id " + id + " already exists.");
         }
-        return item;
+        return item.getId();
     }
 
     @Override

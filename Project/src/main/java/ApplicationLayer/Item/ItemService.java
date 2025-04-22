@@ -4,14 +4,17 @@ import java.util.List;
 
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.LoggerService;
+import ApplicationLayer.User.UserService;
 import DomainLayer.Item.IItemRepository;
 import DomainLayer.Item.Item;
 import DomainLayer.Item.ItemReview;
+import DomainLayer.Roles.PermissionsEnum;
 
 public class ItemService {
 
     private final IItemRepository itemRepository;
     private AuthTokenService authTokenService;
+    private UserService userService;
 
     /**
      * Constructor for ItemService.
@@ -23,8 +26,9 @@ public class ItemService {
       
     }
 
-    public void setServices(AuthTokenService authTokenService) {
+    public void setServices(AuthTokenService authTokenService, UserService userService) {
         this.authTokenService = authTokenService;
+        this.userService = userService;
     }
 
     /**
@@ -34,12 +38,16 @@ public class ItemService {
      * @param description the item description.
      * @return the newly created Item.
      */
-    public Item createItem(String name, String description, Integer category) {
+    public Integer createItem(int shopId, String name, String description, Integer category, String token) {
         try {
             LoggerService.logMethodExecution("createItem", name, description, category);
-            Item returnItem = itemRepository.createItem(name, description, category);
-            LoggerService.logMethodExecutionEnd("createItem", returnItem);
-            return returnItem;
+            Integer userId = authTokenService.ValidateToken(token);
+            if(!userService.hasPermission(userId,PermissionsEnum.manageItems,shopId)){
+                throw new RuntimeException("User does not have permission to add item to shop " + shopId);
+            }
+            Integer returnItemId = itemRepository.createItem(name, description, category);
+            LoggerService.logMethodExecutionEnd("createItem", itemRepository.getItem(returnItemId));
+            return returnItemId;
         } catch (Exception e) {
             LoggerService.logError("createItem", e, name, description, category);
             throw new RuntimeException("Error creating item: " + e.getMessage(), e);
@@ -52,9 +60,10 @@ public class ItemService {
      * @param itemId the item id.
      * @return the Item instance.
      */
-    public Item getItem(int itemId) {
+    public Item getItem(int itemId, String token) {
         try {
             LoggerService.logMethodExecution("getItem", itemId);
+            authTokenService.ValidateToken(token);
             Item returnItem = itemRepository.getItem(itemId);
             LoggerService.logMethodExecutionEnd("getItem", returnItem);
             return returnItem;
@@ -69,9 +78,10 @@ public class ItemService {
      *
      * @return an unmodifiable list of Item instances.
      */
-    public List<Item> getAllItems() {
+    public List<Item> getAllItems(String token) {
         try {
             LoggerService.logMethodExecution("getAllItems");
+            authTokenService.ValidateToken(token);
             List<Item> returnItems = itemRepository.getAllItems();
             LoggerService.logMethodExecutionEnd("getAllItems", returnItems);
             return returnItems;
@@ -88,9 +98,10 @@ public class ItemService {
      * @param rating     the review rating.
      * @param reviewText the review text.
      */
-    public void addReviewToItem(int itemId, int rating, String reviewText) {
+    public void addReviewToItem(int itemId, int rating, String reviewText, String token) {
         try {
             LoggerService.logMethodExecution("addReviewToItem", itemId, rating, reviewText);
+            authTokenService.ValidateToken(token);
             itemRepository.addReviewToItem(itemId, rating, reviewText);
             LoggerService.logMethodExecutionEndVoid("addReviewToItem");
             
@@ -106,9 +117,10 @@ public class ItemService {
      * @param itemId the item id.
      * @return a list of ItemReview instances.
      */
-    public List<ItemReview> getItemReviews(int itemId) {
+    public List<ItemReview> getItemReviews(int itemId, String token) {
         try {
             LoggerService.logMethodExecution("getItemReviews", itemId);
+            authTokenService.ValidateToken(token);
             List<ItemReview> returnItems = itemRepository.getItemReviews(itemId);           
             LoggerService.logMethodExecutionEnd("getItemReviews", returnItems);
             return returnItems;
@@ -124,9 +136,10 @@ public class ItemService {
      * @param itemId the item id.
      * @return the average rating, or -1.0 if no reviews.
      */
-    public double getItemAverageRating(int itemId) {
+    public double getItemAverageRating(int itemId, String token) {
         try {
             LoggerService.logMethodExecution("getItemAverageRating", itemId);
+            authTokenService.ValidateToken(token);
             double returnDouble = itemRepository.getItemAverageRating(itemId);
             LoggerService.logMethodExecutionEnd("getItemAverageRating", returnDouble);
             return returnDouble;
@@ -137,30 +150,15 @@ public class ItemService {
     }
 
     /**
-     * Deletes the specified item.
-     *
-     * @param itemId the item id.
-     */
-    public void deleteItem(int itemId) {
-        try {
-            LoggerService.logMethodExecution("deleteItem", itemId);
-            itemRepository.deleteItem(itemId);
-            LoggerService.logMethodExecutionEndVoid("deleteItem");
-        } catch (Exception e) {
-            LoggerService.logError("deleteItem", e, itemId);
-            throw new RuntimeException("Error deleting item " + itemId + ": " + e.getMessage(), e);
-        }
-    }
-
-    /**
      * Retrieves a list of Item objects for the given list of item IDs.
      *
      * @param itemIds the list of item IDs to fetch
      * @return an unmodifiable list of corresponding Item instances
      */
-    public List<Item> getItemsByIds(List<Integer> itemIds) {
+    public List<Item> getItemsByIds(List<Integer> itemIds , String token) {
         try {
             LoggerService.logMethodExecution("getItemsByIds", itemIds);
+            authTokenService.ValidateToken(token);
             List<Item> result = itemRepository.getItemsByIds(itemIds);
             LoggerService.logMethodExecutionEnd("getItemsByIds", result);
             return result;
