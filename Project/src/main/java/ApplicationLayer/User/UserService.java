@@ -573,82 +573,89 @@ public class UserService {
         }
     }
 
-    public void addItemToShoppingCart(int userId, int shopId, int itemId, int quantity) {
+    public void addItemToShoppingCart(String token, int shopId, int itemId, int quantity) {
         try {
-            LoggerService.logMethodExecution("addItemToShoppingCart", userId, shopId, itemId, quantity);
+            LoggerService.logMethodExecution("addItemToShoppingCart", token, shopId, itemId, quantity);
+            int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             userRepository.addItemToShoppingCart(userId, shopId, itemId, quantity);
             LoggerService.logMethodExecutionEndVoid("addItemToShoppingCart");
         } catch (Exception e) {
-            LoggerService.logError("addItemToShoppingCart", e, userId, shopId, itemId, quantity);
-            throw new RuntimeException("Error adding item to shopping cart for user ID " + userId + ": " + e.getMessage(), e);
+            LoggerService.logError("addItemToShoppingCart", e, token, shopId, itemId, quantity);
+            throw new RuntimeException("Error adding item to shopping cart for user ID " + token + ": " + e.getMessage(), e);
         }
     }
 
-    public void removeItemFromShoppingCart(int userId, int shopId, int itemId) {
+    public void removeItemFromShoppingCart(String token, int shopId, int itemId) {
         try {
-            LoggerService.logMethodExecution("removeItemFromShoppingCart", userId, shopId, itemId);
+            LoggerService.logMethodExecution("removeItemFromShoppingCart", token, shopId, itemId);
+            int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             userRepository.removeItemFromShoppingCart(userId, shopId, itemId);
             LoggerService.logMethodExecutionEndVoid("removeItemFromShoppingCart");
         } catch (Exception e) {
-            LoggerService.logError("removeItemFromShoppingCart", e, userId, shopId, itemId);
-            throw new RuntimeException("Error removing item from shopping cart for user ID " + userId + ": " + e.getMessage(), e);
+            LoggerService.logError("removeItemFromShoppingCart", e, token, shopId, itemId);
+            throw new RuntimeException("Error removing item from shopping cart for user ID " + token + ": " + e.getMessage(), e);
         }
     }
 
-    public void updateItemQuantityInShoppingCart(int userId, int shopId, int itemId, int quantity) {
+    public void updateItemQuantityInShoppingCart(String token, int shopId, int itemId, int quantity) {
         try {
-            LoggerService.logMethodExecution("updateItemQuantityInShoppingCart", userId, shopId, itemId, quantity);
+            LoggerService.logMethodExecution("updateItemQuantityInShoppingCart", token, shopId, itemId, quantity);
+            int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             userRepository.updateItemQuantityInShoppingCart(userId, shopId, itemId, quantity);
             LoggerService.logMethodExecutionEndVoid("updateItemQuantityInShoppingCart");
         } catch (Exception e) {
-            LoggerService.logError("updateItemQuantityInShoppingCart", e, userId, shopId, itemId, quantity);
-            throw new RuntimeException("Error updating item quantity in shopping cart for user ID " + userId + ": " + e.getMessage(), e);
+            LoggerService.logError("updateItemQuantityInShoppingCart", e, token, shopId, itemId, quantity);
+            throw new RuntimeException("Error updating item quantity in shopping cart for user ID " + token + ": " + e.getMessage(), e);
         }
     }
 
-    public void clearShoppingCart(int userId) {
+    public void clearShoppingCart(String token) {
         try {
-            LoggerService.logMethodExecution("clearShoppingCart", userId);
+            LoggerService.logMethodExecution("clearShoppingCart", token);
+            int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             userRepository.clearShoppingCart(userId);
             LoggerService.logMethodExecutionEndVoid("clearShoppingCart");
         } catch (Exception e) {
-            LoggerService.logError("clearShoppingCart", e, userId);
-            throw new RuntimeException("Error clearing shopping cart for user ID " + userId + ": " + e.getMessage(), e);
+            LoggerService.logError("clearShoppingCart", e, token);
+            throw new RuntimeException("Error clearing shopping cart for user ID " + token + ": " + e.getMessage(), e);
         }
     }
 
-    public Map<Integer, HashMap<Integer, Integer>> getShoppingCartItems(int userId) {
+    public Map<Integer, HashMap<Integer, Integer>> getShoppingCartItems(String token) {
         try {
-            LoggerService.logMethodExecution("getShoppingCartItems", userId);
+            LoggerService.logMethodExecution("getShoppingCartItems", token);
+            int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             Map<Integer, HashMap<Integer, Integer>> items = userRepository.getShoppingCartById(userId).getItems();
             LoggerService.logMethodExecutionEnd("getShoppingCartItems", items);
             return items;
         } catch (Exception e) {
-            LoggerService.logError("getShoppingCartItems", e, userId);
-            throw new RuntimeException("Error fetching shopping cart items for user ID " + userId + ": " + e.getMessage(), e);
+            LoggerService.logError("getShoppingCartItems", e, token);
+            throw new RuntimeException("Error fetching shopping cart items for user ID " + token + ": " + e.getMessage(), e);
         }
     }
 
-    public Map<Integer, Integer> getBasketItems(int userId, int shopId) {
+    public Map<Integer, Integer> getBasketItems(String token, int shopId) {
         try {
-            LoggerService.logMethodExecution("getBasketItems", userId, shopId);
+            LoggerService.logMethodExecution("getBasketItems", token, shopId);
+            int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             Map<Integer, Integer> items = userRepository.getBasket(userId, shopId);
             LoggerService.logMethodExecutionEnd("getBasketItems", items);
             return items;
         } catch (Exception e) {
-            LoggerService.logError("getBasketItems", e, userId, shopId);
-            throw new RuntimeException("Error fetching basket items for user ID " + userId + ": " + e.getMessage(), e);
+            LoggerService.logError("getBasketItems", e, token, shopId);
+            throw new RuntimeException("Error fetching basket items for user ID " + token + ": " + e.getMessage(), e);
         }
     }
 
-    public void addBasket(int userId, int shopId) {
+    public void addBasket(String token, int shopId) {
         try {
-            LoggerService.logMethodExecution("addBasket", userId, shopId);
+            LoggerService.logMethodExecution("addBasket", token, shopId);
+            int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             userRepository.createBasket(userId, shopId);
             LoggerService.logMethodExecutionEndVoid("addBasket");
         } catch (Exception e) {
-            LoggerService.logError("addBasket", e, userId, shopId);
-            throw new RuntimeException("Error adding basket for user ID " + userId + ": " + e.getMessage(), e);
+            LoggerService.logError("addBasket", e, token, shopId);
+            throw new RuntimeException("Error adding basket for user ID " + token + ": " + e.getMessage(), e);
         }
     }
 
