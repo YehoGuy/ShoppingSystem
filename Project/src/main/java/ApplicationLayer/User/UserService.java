@@ -136,7 +136,7 @@ public class UserService {
             if (id < 0) {
                 throw new IllegalArgumentException("Failed to create a guest user.");
             }
-            String token = authTokenService.generateAuthToken("guest");
+            String token = authTokenService.AuthenticateGuest(id);
             LoggerService.logMethodExecutionEnd("loginAsGuest", token);
             return token;
         } 
