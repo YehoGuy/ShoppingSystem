@@ -32,6 +32,10 @@ public class UserService {
         return userRepository.isAdmin(id);
     }
 
+    public void setEncoderToTest(boolean isTest) {
+        passwordEncoder.setIsTest(isTest); // Set the encoder to test mode
+    }
+
     public void makeAdmin(String token, Integer id)
     {
         LoggerService.logMethodExecution("makeAdmin", token, id);
@@ -543,26 +547,26 @@ public class UserService {
         }
     }
 
-    public boolean addPermission(int id, PermissionsEnum permission) {
+    public boolean addPermission(int id, PermissionsEnum permission, int shopId) {
         try {
             if (userRepository.getUserMapping().containsKey(id)) {
                 User user = userRepository.getUserById(id);
                 validateMemberId(id);
-                ((Member)user).addPermission(id,permission); // Add permission to the user
+                ((Member)user).addPermission(shopId,permission); // Add permission to the user
                 return true; // Permission added successfully
             } else {
                 throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
             }
         } catch (Exception e) {
-            return false; // Indicate failure to add permission
+            throw new RuntimeException("Error adding permission for user ID " + id + ": " + e.getMessage(), e); // Indicate failure to add permission
         }
     }
-    public boolean removePermission(int id, PermissionsEnum permission) {
+    public boolean removePermission(int id, PermissionsEnum permission, int shopId) {
         try {
             if (userRepository.getUserMapping().containsKey(id)) {
                 User user = userRepository.getUserById(id);
                 validateMemberId(id);
-                ((Member)user).removePermission(id, permission); // Remove permission from the user
+                ((Member)user).removePermission(shopId, permission); // Remove permission from the user
                 return true; // Permission removed successfully
             } else {
                 throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");

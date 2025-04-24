@@ -30,8 +30,10 @@ public class UserServiceTest {
         authTokenRepository = new AuthTokenRepository();  // Your real repo
         authTokenService = new AuthTokenService(authTokenRepository); // Real service
         userRepository = new UserRepository();
+        userRepository.setEncoderToTest(true); // Set the encoder to test mode
         userService = new UserService(userRepository);
         userService.setServices(authTokenService);
+        userService.setEncoderToTest(true); // Set the encoder to test mode
     }
 
     @Test
@@ -134,17 +136,19 @@ public class UserServiceTest {
 
     @Test
     void testAddAndRemovePermission() {
-        userService.addMember("noa", "pass", "noa@mail.com", "222", "address");
-        int memberId = userRepository.isUsernameAndPasswordValid("noa", "pass");
-
+        userService.addMember("test", "pass", "test@mail.com", "123", "address");
+        int memberId = userRepository.isUsernameAndPasswordValid("test", "pass");
         Role role = new Role(memberId, 1, new PermissionsEnum[]{});
-        userService.addRole(memberId, role);
+        
+        assertTrue(userService.addRole(memberId, role));
 
-        userService.addPermission(memberId, PermissionsEnum.setPolicy);
-        assertTrue(userService.hasPermission(memberId, PermissionsEnum.setPolicy, 1),"member id" + memberId + "," + PermissionsEnum.setPolicy);
+        // Test adding permission
+        assertTrue(userService.addPermission(memberId, PermissionsEnum.manageItems, 1));
+        assertTrue(userService.hasPermission(memberId, PermissionsEnum.manageItems, 1));
 
-        userService.removePermission(memberId, PermissionsEnum.setPolicy);
-        assertFalse(userService.hasPermission(memberId, PermissionsEnum.setPolicy, 1));
+        // Test removing permission
+        assertTrue(userService.removePermission(memberId, PermissionsEnum.manageItems, 1));
+        assertFalse(userService.hasPermission(memberId, PermissionsEnum.manageItems, 1));
     }
     /* 
     @Test
