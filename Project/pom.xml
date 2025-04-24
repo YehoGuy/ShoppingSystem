@@ -14,6 +14,18 @@
     <maven.compiler.target>21</maven.compiler.target>
   </properties>
 
+  <dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-dependencies</artifactId>
+            <version>3.2.1</version> <!-- Compatible with Java 21 -->
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+
   <dependencies>
     <!-- JUnit 5 -->
     <dependency>
@@ -72,10 +84,11 @@
     </dependency>
 
     <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-crypto</artifactId>
-      <version>5.7.1</version>
+        <groupId>org.springframework.security</groupId>
+        <artifactId>spring-security-core</artifactId>
     </dependency>
+    
+       
 
     <!-- SLF4J & Logback -->
     <dependency>

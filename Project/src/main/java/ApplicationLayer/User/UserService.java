@@ -12,6 +12,7 @@ import DomainLayer.Member;
 import DomainLayer.Roles.PermissionsEnum;
 import DomainLayer.Roles.Role;
 import DomainLayer.User;
+import InfrastructureLayer.PasswordEncoderUtil;
 
 public class UserService {
     
@@ -19,8 +20,11 @@ public class UserService {
 
     private AuthTokenService authTokenService;
 
+    private PasswordEncoderUtil passwordEncoder;
+
     public UserService(IUserRepository userRepository) {
         this.userRepository = userRepository;
+        passwordEncoder = userRepository.passwordEncoderUtil;
     }
 
     public void setServices(AuthTokenService authTokenService) {
@@ -41,6 +45,7 @@ public class UserService {
 
     public void addMember(String username, String password, String email, String phoneNumber, String address) {
         try {
+            password = passwordEncoder.encode(password); // Encode the password using the PasswordEncoderUtil
             LoggerService.logMethodExecution("addMember", username, password, email, phoneNumber, address);
             userRepository.addMember(username, password, email, phoneNumber, address);
             LoggerService.logMethodExecutionEndVoid("addMember");
@@ -64,6 +69,7 @@ public class UserService {
 
     public void updateMemberPassword(int id, String password) {
         try {
+            password = passwordEncoder.encode(password); // Encode the password using the PasswordEncoderUtil
             LoggerService.logMethodExecution("updateMemberPassword", id, password);
             validateMemberId(id);
             userRepository.updateMemberPassword(id, password);
@@ -147,6 +153,7 @@ public class UserService {
     }
 
     public String loginAsMember(String username, String password, int id_if_guest) {
+        password = passwordEncoder.encode(password); // Encode the password using the PasswordEncoderUtil
         LoggerService.logMethodExecution("loginAsMember", username, password, id_if_guest);
         String token = null;
         try {
@@ -229,10 +236,14 @@ public class UserService {
     */
 
     public String signUp(String username, String password, String email, String phoneNumber, String address) {
+        password = passwordEncoder.encode(password); // Encode the password using the PasswordEncoderUtil
         try {
             if (userRepository.isUsernameTaken(username)) {
                 LoggerService.logError("signUp", new IllegalArgumentException("Username is already taken."));
                 throw new IllegalArgumentException("Username is already taken.");
+            }
+            if (!email.contains("@")) {
+                throw new IllegalArgumentException("Invalid email format.");
             }
             String token = authTokenService.generateAuthToken(username); // Generate a token for the member
             LoggerService.logMethodExecution("signUp", username, password, email, phoneNumber, address);

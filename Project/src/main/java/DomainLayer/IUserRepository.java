@@ -3,6 +3,8 @@ package DomainLayer;
 import java.util.List;
 import java.util.Map;
 
+import InfrastructureLayer.PasswordEncoderUtil;
+
 public interface IUserRepository {
 
     // Basic user retrieval
@@ -51,4 +53,8 @@ public interface IUserRepository {
     void clearShoppingCart(int userId);
     Map<Integer, Integer> getBasket(int userId, int shopId);
     void createBasket(int userId, int shopId);
+
+    // Password encoding
+    PasswordEncoderUtil passwordEncoderUtil = new PasswordEncoderUtil(); // Use the password encoder utility
+    void setEncoderToTest(boolean isTest); // Set the encoder to test mode
 }

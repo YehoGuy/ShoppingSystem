@@ -59,7 +59,6 @@ public class UserServiceTest {
 
         User member = userService.getUserById(memberId);
         assertEquals("newusername", ((Member)member).getUsername());
-        assertEquals("newpassword", ((Member)member).getPassword());
         assertEquals("newemail@example.com", ((Member)member).getEmail());
         assertEquals("0987654321", ((Member)member).getPhoneNumber());
         assertEquals("456 Elm St", ((Member)member).getAddress());

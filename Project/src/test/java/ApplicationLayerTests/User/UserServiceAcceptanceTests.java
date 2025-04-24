@@ -1,20 +1,25 @@
 package ApplicationLayerTests.User;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
-import java.util.HashMap;
-import java.util.Map;
-
 import org.junit.jupiter.api.AfterEach;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.MockitoAnnotations;
 
-import ApplicationLayer.User.UserService;
 import ApplicationLayer.AuthTokenService;
-import DomainLayer.ShoppingCart;
+import ApplicationLayer.User.UserService;
 import InfrastructureLayer.UserRepository;
 
 public class UserServiceAcceptanceTests {
@@ -37,6 +42,7 @@ public class UserServiceAcceptanceTests {
     void setUp() {
         mocks = MockitoAnnotations.openMocks(this);
         userService = spy(new UserService(userRepository));
+        userRepository.setEncoderToTest(true); // Set the encoder to test mode
         userService.setServices(authTokenService);
     }
 

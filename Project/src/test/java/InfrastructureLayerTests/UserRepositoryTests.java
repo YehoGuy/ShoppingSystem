@@ -27,6 +27,7 @@ public class UserRepositoryTests {
     @BeforeEach
     public void setup() {
         repo = new UserRepository();    
+        repo.setEncoderToTest(true); // Set the encoder to test mode
         guestId = repo.addGuest();  
         guest = repo.getUserById(guestId);
         repo.addMember("username", "password", "email@example.com", "111", "address");
