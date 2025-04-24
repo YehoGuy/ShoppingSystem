@@ -27,4 +27,8 @@ public class LoggerService {
         logger.info("Method: " + methodName + " executed successfully.");
     }    
 
+    public static void logDebug(String methodName, MosheTheDebugException e){
+        logger.debug("Debugging method: " + methodName + " - Exception: " + e.getMessage(), e);
+    }
+
 }
