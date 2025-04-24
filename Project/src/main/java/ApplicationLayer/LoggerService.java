@@ -1,9 +1,9 @@
 package ApplicationLayer;
 
+import java.util.Arrays;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.lang.reflect.Method;
-import java.util.Arrays;
 
 public class LoggerService {
     private static final Logger logger = LoggerFactory.getLogger(LoggerService.class);
@@ -27,7 +27,7 @@ public class LoggerService {
         logger.info("Method: " + methodName + " executed successfully.");
     }    
 
-    public static void logDebug(String methodName, MosheTheDebugException e){
+    public static void logDebug(String methodName, OurRuntime e){
         logger.debug("Debugging method: " + methodName + " - Exception: " + e.getMessage(), e);
     }
 
