@@ -30,6 +30,10 @@ public class UserRepository implements IUserRepository {
         managers.add(isUsernameAndPasswordValid("admin", "admin"));
     }
 
+    public void setEncoderToTest(boolean b) {
+        passwordEncoderUtil.setIsTest(b); // Set the encoder to test mode
+    }
+
     public User getUserById(int id) {
         if (!userMapping.containsKey(id)) {
             throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
@@ -144,7 +148,7 @@ public class UserRepository implements IUserRepository {
         for (User user : userMapping.values()) {
             if (user instanceof Member) {
                 Member member = (Member) user;
-                if (member.getUsername().equals(username) && member.getPassword().equals(password)) {
+                if (member.getUsername().equals(username) && passwordEncoderUtil.matches(password, member.getPassword())) {
                     return member.getMemberId(); // Return the ID of the member if username and password match
                 }
             }
