@@ -35,6 +35,32 @@ public class UserRepositoryTests {
     }
 
     @Test
+    void testIsAdmin()
+    {
+        assertTrue(repo.isAdmin(repo.isUsernameAndPasswordValid("admin", "admin")));
+    }
+
+    @Test
+    void addAdmin()
+    {
+        repo.addMember("username", "password", "email@email.com", "phoneNumber", "address");
+        int userid = repo.isUsernameAndPasswordValid("username", "password");
+        repo.addAdmin(userid);
+        assertTrue(repo.isAdmin(userid));
+    }
+
+    @Test
+    void removeAdmin()
+    {
+        repo.addMember("username", "password", "email@email.com", "phoneNumber", "address");
+        int userid = repo.isUsernameAndPasswordValid("username", "password");
+        repo.addAdmin(userid);
+        assertTrue(repo.isAdmin(userid));
+        repo.removeAdmin(userid);
+        assertFalse(repo.isAdmin(userid));
+    }
+
+    @Test
     public void testAddGuestAndGetUserById() {
         assertEquals(guestId, ((Guest)guest).getGuestId());
     }
@@ -142,7 +168,7 @@ public class UserRepositoryTests {
         List<Member> members = repo.getMembersList();
         assertTrue(members.contains((Member)member));
         assertFalse(members.contains((Guest)guest));
-        assertEquals(1, members.size()); // Assuming only one member is added in setup
+        assertEquals(2, members.size()); // Assuming only one member is added in setup
     }
 
     @Test

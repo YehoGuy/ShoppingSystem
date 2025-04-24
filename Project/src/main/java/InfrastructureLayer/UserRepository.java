@@ -1,9 +1,10 @@
 package InfrastructureLayer;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import DomainLayer.Guest;
@@ -18,11 +19,15 @@ import DomainLayer.User;
 public class UserRepository implements IUserRepository {
     // A map to store users with their IDs as keys
     private Map<Integer, DomainLayer.User> userMapping;
+    private List<Integer> managers;
     AtomicInteger userIdCounter;
 
     public UserRepository() {
-        this.userMapping = new HashMap<>();
+        this.userMapping = new ConcurrentHashMap<>();
         this.userIdCounter = new AtomicInteger(0); // Initialize the user ID counter
+        this.managers = new CopyOnWriteArrayList<>(); // Initialize the managers list
+        addMember("admin","admin","admin@mail.com", "0","admin st.");
+        managers.add(isUsernameAndPasswordValid("admin", "admin"));
     }
 
     public User getUserById(int id) {
@@ -30,6 +35,29 @@ public class UserRepository implements IUserRepository {
             throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
         }
         return userMapping.get(id);
+    }
+
+    public boolean isAdmin(Integer id){
+        return managers.contains(id);
+    }
+
+    public void addAdmin(Integer id) throws RuntimeException{
+        if(managers.contains(id))
+            throw new RuntimeException("All ready a manager");
+
+        managers.add(id);
+    }
+
+    public void removeAdmin(Integer id) throws RuntimeException{
+        if(id == isUsernameAndPasswordValid("admin", "admin"))
+            throw new RuntimeException("cant remove admin from the user who created the system");
+
+        managers.remove(id);
+    }
+
+    public List<Integer> getAllAdmins()
+    {
+        return managers;
     }
 
     public int addGuest() {
