@@ -34,6 +34,34 @@ public class UserServiceTest {
         userService.setServices(authTokenService);
     }
 
+    @Test
+    void testIsAdmin()
+    {
+        assertTrue(userService.isAdmin(userRepository.isUsernameAndPasswordValid("admin", "admin")));
+    }
+
+    @Test
+    void addAdmin()
+    {
+        String token = userService.loginAsMember("admin", "admin", -1);
+        userService.addMember("username", "password", "email@email.com", "phoneNumber", "address");
+        int userid = userRepository.isUsernameAndPasswordValid("username", "password");
+        userService.makeAdmin(token, userid);
+        assertTrue(userService.isAdmin(userid));
+    }
+
+    @Test
+    void removeAdmin()
+    {
+        String token = userService.loginAsMember("admin", "admin", -1);
+        userService.addMember("username", "password", "email@email.com", "phoneNumber", "address");
+        int userid = userRepository.isUsernameAndPasswordValid("username", "password");
+        userService.makeAdmin(token, userid);
+        assertTrue(userRepository.isAdmin(userid));
+        userService.removeAdmin(token, userid);
+        assertFalse(userRepository.isAdmin(userid));
+    }
+
 
     @Test
     void testAddMemberAndGetUserById() {
@@ -114,7 +142,7 @@ public class UserServiceTest {
         userService.addRole(memberId, role);
 
         userService.addPermission(memberId, PermissionsEnum.setPolicy);
-        assertTrue(userService.hasPermission(memberId, PermissionsEnum.setPolicy, 1));
+        assertTrue(userService.hasPermission(memberId, PermissionsEnum.setPolicy, 1),"member id" + memberId + "," + PermissionsEnum.setPolicy);
 
         userService.removePermission(memberId, PermissionsEnum.setPolicy);
         assertFalse(userService.hasPermission(memberId, PermissionsEnum.setPolicy, 1));

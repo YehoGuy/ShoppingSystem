@@ -7,7 +7,14 @@ public interface IUserRepository {
 
     // Basic user retrieval
     User getUserById(int id);
-    Map<Integer, User> getUserMapping();       
+    Map<Integer, User> getUserMapping();
+
+    //manager actions
+    boolean isAdmin(Integer id);
+    void addAdmin(Integer id) throws RuntimeException;
+    void removeAdmin(Integer id) throws RuntimeException;
+    List<Integer> getAllAdmins();
+      
 
     // Guest management
     int addGuest();

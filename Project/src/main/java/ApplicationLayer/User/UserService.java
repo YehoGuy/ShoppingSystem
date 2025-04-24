@@ -23,6 +23,70 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
+    public boolean isAdmin(Integer id)
+    {
+        return userRepository.isAdmin(id);
+    }
+
+    public void makeAdmin(String token, Integer id)
+    {
+        LoggerService.logMethodExecution("makeAdmin", token, id);
+        try {
+            int userId = authTokenService.ValidateToken(token);
+            if(isAdmin(userId)){
+                if(id >= 0)
+                    userRepository.addAdmin(id);
+                else
+                    throw new IllegalArgumentException("the id of the user to make admin is illegal");
+            }
+            else 
+                throw new RuntimeException("only admins can make admins");
+            LoggerService.logMethodExecutionEndVoid("makeAdmin");
+        } catch (Exception e) {
+            LoggerService.logError("makeAdmin", e, token, id);
+            throw new RuntimeException("Error making the user " + id + " an admin: " + e);
+        }
+    }
+
+    public void removeAdmin(String token, Integer id)
+    {
+        LoggerService.logMethodExecution("removeAdmin", token, id);
+        try {
+            int userId = authTokenService.ValidateToken(token);
+            if(isAdmin(userId)){
+                if(id >= 0)
+                    userRepository.removeAdmin(id);
+                else
+                    throw new IllegalArgumentException("the id of the user to make admin is illegal");
+            }
+            else 
+                throw new RuntimeException("only admins can remove admins");
+            LoggerService.logMethodExecutionEndVoid("removeAdmin");
+        } catch (Exception e) {
+            LoggerService.logError("removeAdmin", e, token, id);
+            throw new RuntimeException("Error removing the user " + id + " from being an admin: " + e);
+        }
+    }
+
+    public List<Integer> getAllAdmins(String token)
+    {
+        LoggerService.logMethodExecution("getAllAdmins", token);
+        try {
+            List<Integer> lst;
+            int userId = authTokenService.ValidateToken(token);
+            if(isAdmin(userId)){
+                lst = userRepository.getAllAdmins();
+            }
+            else 
+                throw new RuntimeException("only admins can get ids of all admins");
+            LoggerService.logMethodExecutionEndVoid("getAllAdmins");
+            return lst;
+        } catch (Exception e) {
+            LoggerService.logError("getAllAdmins", e, token);
+            throw new RuntimeException("Error getting ids of all admins: " + e);
+        }
+    }
+
     public void setServices(AuthTokenService authTokenService) {
         this.authTokenService = authTokenService;
     }
@@ -161,7 +225,7 @@ public class UserService {
             int loginAsMember_id = userRepository.isUsernameAndPasswordValid(username, password);
             if (loginAsMember_id > 0) { // valid login attempt
                 if (id_if_guest == -1) { // if the user is not a guest, it's their initial login
-                    token = authTokenService.generateAuthToken(username); // Generate a token for the member
+                    token = authTokenService.Login(username,password,loginAsMember_id); // Generate a token for the member
                     LoggerService.logMethodExecutionEnd("loginAsMember", loginAsMember_id);
                     return token; // Return the ID of the logged-in member    
                 } else if (userRepository.isGuestById(id_if_guest)) { // ensure the given id matches a guest in the data
@@ -171,7 +235,7 @@ public class UserService {
                     member.mergeShoppingCart(guest.getShoppingCart());
                     // remove the guest user from the data
                     userRepository.removeUserById(id_if_guest);
-                    token = authTokenService.generateAuthToken(username); // Generate a token for the member
+                    token = authTokenService.Login(username, password, loginAsMember_id); // Generate a token for the member
                     LoggerService.logMethodExecutionEnd("loginAsMember", loginAsMember_id);
                     return token; 
                 } else {

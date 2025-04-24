@@ -134,6 +134,7 @@ public class Member extends User {
                 return; // Exit after adding the permission to the first matching role
             }
         }
+        throw new RuntimeException("member has no role in this shop");
     }
     public void removePermission(int shopId, PermissionsEnum permission) {
         // Remove a permission from the user's roles (if applicable)
