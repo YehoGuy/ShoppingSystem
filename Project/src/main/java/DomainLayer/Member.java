@@ -155,4 +155,11 @@ public class Member extends User {
         return false; // User does not have the permission
 
     }
+
+    public List<Role> getPendingRoles() {
+        return pending_roles; // Return the list of pending roles
+    }
+    public void setPendingRoles(List<Role> pending_roles) {
+        this.pending_roles = pending_roles; // Set the list of pending roles
+    }
 }
