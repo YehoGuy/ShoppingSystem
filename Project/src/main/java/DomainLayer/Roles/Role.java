@@ -1,10 +1,13 @@
 package DomainLayer.Roles;
 
+import java.util.Arrays;
+
 public class Role {
 
     private final int assigneeId;
     private final int shopId;
     private PermissionsEnum[] permissions;
+    private final Object lock = new Object(); // lock object for synchronization
 
     /**
      * Constructor for Role class.
@@ -16,7 +19,7 @@ public class Role {
     public Role(int assigneeId, int shopId, PermissionsEnum[] permissions) {
         this.assigneeId = assigneeId;
         this.shopId = shopId;
-        this.permissions = permissions;
+        this.permissions = Arrays.copyOf(permissions, permissions.length);
     }
 
     public int getAssigneeId() {
@@ -28,114 +31,108 @@ public class Role {
     }
 
     public PermissionsEnum[] getPermissions() {
-        return permissions;
+        synchronized (lock) {
+            return Arrays.copyOf(permissions, permissions.length);
+        }
     }
 
     public void setPermissions(PermissionsEnum[] permissions) {
-        this.permissions = permissions;
+        synchronized (lock) {
+            this.permissions = Arrays.copyOf(permissions, permissions.length);
+        }
     }
 
-    /**
-     * Sets the roles for a founder in the shop.
-     */
     public void setFoundersPermissions() {
-        this.permissions = new PermissionsEnum[]{
-                PermissionsEnum.manageItems,
-                PermissionsEnum.setPolicy,
-                PermissionsEnum.manageOwners,
-                PermissionsEnum.leaveShopAsOwner,
-                PermissionsEnum.manageManagers,
-                PermissionsEnum.getStaffInfo,
-                PermissionsEnum.handleMessages,
-                PermissionsEnum.getHistory
-        };
+        synchronized (lock) {
+            this.permissions = new PermissionsEnum[]{
+                    PermissionsEnum.manageItems,
+                    PermissionsEnum.setPolicy,
+                    PermissionsEnum.manageOwners,
+                    PermissionsEnum.leaveShopAsOwner,
+                    PermissionsEnum.manageManagers,
+                    PermissionsEnum.getStaffInfo,
+                    PermissionsEnum.handleMessages,
+                    PermissionsEnum.getHistory,
+                    PermissionsEnum.closeShop // assuming this differentiates a founder
+            };
+        }
     }
 
-    /**
-     * Sets the roles for an owner in the shop.
-     */
     public void setOwnersPermissions() {
-        this.permissions = new PermissionsEnum[]{
-                PermissionsEnum.manageItems,
-                PermissionsEnum.setPolicy,
-                PermissionsEnum.manageOwners,
-                PermissionsEnum.leaveShopAsOwner,
-                PermissionsEnum.manageManagers,
-                PermissionsEnum.getStaffInfo,
-                PermissionsEnum.handleMessages,
-                PermissionsEnum.getHistory
-        };
+        synchronized (lock) {
+            this.permissions = new PermissionsEnum[]{
+                    PermissionsEnum.manageItems,
+                    PermissionsEnum.setPolicy,
+                    PermissionsEnum.manageOwners,
+                    PermissionsEnum.leaveShopAsOwner,
+                    PermissionsEnum.manageManagers,
+                    PermissionsEnum.getStaffInfo,
+                    PermissionsEnum.handleMessages,
+                    PermissionsEnum.getHistory
+            };
+        }
     }
 
     public boolean hasPermission(PermissionsEnum permission) {
-        for (PermissionsEnum p : this.permissions) {
-            if (p == permission) {
-                return true;
+        synchronized (lock) {
+            for (PermissionsEnum p : this.permissions) {
+                if (p == permission) {
+                    return true;
+                }
             }
+            return false;
         }
-        return false;
     }
 
     public void addPermission(PermissionsEnum permission) {
-        for (PermissionsEnum p : this.permissions) {
-            if (p == permission) {
-                return; // Role already exists, no need to add it again
+        synchronized (lock) {
+            for (PermissionsEnum p : this.permissions) {
+                if (p == permission) {
+                    return; // already exists
+                }
             }
+            PermissionsEnum[] newPermissions = Arrays.copyOf(this.permissions, this.permissions.length + 1);
+            newPermissions[this.permissions.length] = permission;
+            this.permissions = newPermissions;
         }
-        PermissionsEnum[] newPermissions = new PermissionsEnum[this.permissions.length + 1];
-        System.arraycopy(this.permissions, 0, newPermissions, 0, this.permissions.length);
-        newPermissions[permissions.length] = permission;
-        this.permissions = newPermissions;
     }
 
     public void removePermissions(PermissionsEnum permission) {
-        int indexToRemove = -1;
-        for (int i = 0; i < permissions.length; i++) {
-            if (permissions[i] == permission) {
-                indexToRemove = i;
-                break;
+        synchronized (lock) {
+            int indexToRemove = -1;
+            for (int i = 0; i < permissions.length; i++) {
+                if (permissions[i] == permission) {
+                    indexToRemove = i;
+                    break;
+                }
             }
-        }
-        if (indexToRemove != -1) {
-            PermissionsEnum[] newPermissions = new PermissionsEnum[permissions.length - 1];
-            System.arraycopy(permissions, 0, newPermissions, 0, indexToRemove);
-            System.arraycopy(permissions, indexToRemove + 1, newPermissions, indexToRemove, permissions.length - indexToRemove - 1);
-            this.permissions = newPermissions;
+            if (indexToRemove != -1) {
+                PermissionsEnum[] newPermissions = new PermissionsEnum[permissions.length - 1];
+                System.arraycopy(permissions, 0, newPermissions, 0, indexToRemove);
+                System.arraycopy(permissions, indexToRemove + 1, newPermissions, indexToRemove, permissions.length - indexToRemove - 1);
+                this.permissions = newPermissions;
+            }
         }
     }
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder("Role{");
-        sb.append("assigneeId=").append(assigneeId);
-        sb.append(", shopId=").append(shopId);
-        sb.append(", permissions=[");
-        for (int i = 0; i < permissions.length; i++) {
-            sb.append(permissions[i]);
-            if (i < permissions.length - 1) {
-                sb.append(", ");
-            }
+        synchronized (lock) {
+            StringBuilder sb = new StringBuilder("Role{");
+            sb.append("assigneeId=").append(assigneeId);
+            sb.append(", shopId=").append(shopId);
+            sb.append(", permissions=").append(Arrays.toString(permissions));
+            sb.append("}");
+            return sb.toString();
         }
-        sb.append("]}");
-        return sb.toString();
     }
 
     public boolean isOwner() {
-        for (PermissionsEnum permission : permissions) {
-            if (permission == PermissionsEnum.manageOwners) {
-                return true;
-            }
-        }
-        return false;
+        return hasPermission(PermissionsEnum.manageOwners);
     }
 
     public boolean isFounder() {
-        for (PermissionsEnum permission : permissions) {
-            if (permission == PermissionsEnum.closeShop) {
-                return true;
-            }
-        }
-        return false;
+        return hasPermission(PermissionsEnum.closeShop);
     }
 
 }
