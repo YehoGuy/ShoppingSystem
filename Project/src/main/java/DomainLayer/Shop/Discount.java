@@ -28,4 +28,11 @@ public interface Discount {
      */
     void setDiscount(Map<Integer, Integer> items, int discount);
 
+    /**
+     * Checks if the discount is applicable to multiple items.
+     * 
+     * @return {@code true} if the discount can be applied to multiple items, {@code false} otherwise.
+     */
+    boolean isSupportedByMultiDiscounts();
+
 }
