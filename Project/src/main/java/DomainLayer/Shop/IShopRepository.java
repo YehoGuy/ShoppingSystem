@@ -3,6 +3,8 @@ package DomainLayer.Shop;
 import java.util.HashMap;
 import java.util.List;
 
+import ApplicationLayer.Purchase.ShippingMethod;
+
 public interface IShopRepository {
 
     /**
@@ -13,7 +15,7 @@ public interface IShopRepository {
      * @param globalDiscount the global discount for all items in the shop.
      * @return the newly created Shop object with an auto-allocated id.
      */
-    Shop createShop(String name, String purchasePolicy, int globalDiscount);
+    Shop createShop(String name, String purchasePolicy, ShippingMethod shippingMethod);
 
     /**
      * Retrieves a shop by its id.
@@ -36,7 +38,7 @@ public interface IShopRepository {
      * @param shopId    the shop id.
      * @param newPolicy the new purchase policy.
      */
-    void updatePurchasePolicy(int shopId, String newPolicy);
+    void updatePurchasePolicy(int shopId, PurchasePolicy newPolicy);
 
     /**
      * Sets the global discount for the specified shop.

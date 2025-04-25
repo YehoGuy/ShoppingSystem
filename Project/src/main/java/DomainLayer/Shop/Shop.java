@@ -29,10 +29,10 @@ public class Shop {
     private final List<ShopReview> reviews;
 
     // Items: mapping from item ID to its quantity.
-    private final ConcurrentHashMap<Integer, Integer> items;
+    private final ConcurrentHashMap<Integer, AtomicInteger> items;
 
     // Prices: mapping from item ID to its price.
-    private final ConcurrentHashMap<Integer, Integer> itemsPrices;
+    private final ConcurrentHashMap<Integer, AtomicInteger> itemsPrices;
 
     private final ConcurrentHashMap<Integer, Object> itemAcquireLocks;
 
@@ -55,6 +55,7 @@ public class Shop {
         this.reviews = new CopyOnWriteArrayList<>();
         this.items = new ConcurrentHashMap<>();
         this.itemsPrices = new ConcurrentHashMap<>();
+        this.itemAcquireLocks = new ConcurrentHashMap<>();
         this.shippingMethod = shippingMethod;
     }
 
@@ -74,17 +75,11 @@ public class Shop {
         this.shippingMethod = shippingMethod;
     }
 
-    public void addDiscount(Discount discount) {
-        discounts.add(discount);
-    }
     public void addPurchasePolicy(PurchasePolicy purchasePolicy) {
         purchasePolicys.add(purchasePolicy);
     }
     public void removePurchasePolicy(PurchasePolicy purchasePolicy) {
         purchasePolicys.remove(purchasePolicy);
-    }
-    public void removeDiscount(Discount discount) {
-        discounts.remove(discount);
     }
 
     
@@ -156,45 +151,32 @@ public class Shop {
     }
 
     /**
-     * Removes a given quantity of an item.
-     * If quantity is -1, or if the quantity reaches zero or below,
-     * the item is completely removed from both the quantity map and the price map.
+     * Completely removes an item (and its price) from the shop,
+     * using a per‐item lock to avoid races, and then
+     * removes that lock from the lock‐map.
      *
-     * @param itemId   the item identifier.
-     * @param quantity the quantity to remove (use -1 to remove completely).
+     * @param itemId the item identifier to remove
      */
-    public void removeItem(int itemId, int quantity) {
-        if (!items.containsKey(itemId)) 
-            throw new IllegalArgumentException("Item does not exist in the shop");
-        synchronized(itemAcquireLocks.get(itemId)){
-            if (quantity == -1) {
-                // Remove the item completely from both maps.
-                items.remove(itemId);
-                itemsPrices.remove(itemId);
-                itemAcquireLocks.remove(itemId);
-                return;
-            } 
-            this.put(itemId, items.get(itemId) - quantity);
+    public void removeItemFromShop(int itemId) {
+        // 1) Ensure item exists
+        if (!items.containsKey(itemId)) {
+            throw new IllegalArgumentException("Item not found: " + itemId);
         }
-        if (quantity == -1) {
-            // Remove the item completely from both maps.
+
+        // 2) Grab (or create) the per‐item lock object
+        Object lock = itemAcquireLocks.computeIfAbsent(itemId, k -> new Object());
+
+        // 3) Under that lock, remove both quantity and price
+        synchronized (lock) {
             items.remove(itemId);
             itemsPrices.remove(itemId);
-            return;
         }
-        if (quantity <= 0) {
-            throw new IllegalArgumentException("Quantity must be positive");
-        }
-        items.computeIfPresent(itemId, (key, existing) -> {
-            int newQuantity = existing.addAndGet(-quantity);
-            if (newQuantity <= 0) {
-                // Remove price information as well, since the item is fully removed.
-                itemsPrices.remove(itemId);
-                return null;
-            }
-            return existing;
-        });
+
+        // 4) Finally, drop the lock entry itself
+        itemAcquireLocks.remove(itemId);
     }
+
+
 
     /**
      * Returns the current quantity of the specified item.
@@ -250,8 +232,9 @@ public class Shop {
      * @return the price, or 0 if no price is set.
      */
     public int getItemPrice(int itemId) {
-        return itemsPrices.getOrDefault(itemId, 0);
-    }
+        AtomicInteger price = itemsPrices.get(itemId);
+        return price != null ? price.get() : 0;
+    }    
 
     /**
      * Returns the total price for a given set of items.
@@ -298,81 +281,102 @@ public class Shop {
         return minPrice;
     }
 
-    // ===== Purchase Method =====
+    public void addDiscount(Discount discount) {
+        discounts.add(discount);
+    } 
 
-    /*
-     
-public int purchaseItems(Map<Integer, Integer> purchaseList) {
-    // 1) policy check up-front
-    if (!checkPolicys(purchaseList)) {
-        throw new IllegalStateException("Purchase policy violation");
+    public void removeDiscount(Discount discount) {
+        discounts.remove(discount);
     }
-
-    // remember for rollback
-    Map<Integer, Integer> originalStock = new HashMap<>();
-
-    try {
-        // 2) lock & deduct each item
-        for (Map.Entry<Integer, Integer> entry : purchaseList.entrySet()) {
-            int itemId = entry.getKey();
-            int qty    = entry.getValue();
-
-            Object lock = itemAcquireLocks.computeIfAbsent(itemId, k -> new Object());
-            synchronized (lock) {
-                int avail = items.getOrDefault(itemId, 0);
-                if (avail < qty) {
-                    throw new IllegalArgumentException("Insufficient stock for item " + itemId);
-                }
-                originalStock.put(itemId, avail);
-                items.put(itemId, avail - qty);
-            }
-        }
-
-        // 3) compute total + apply discounts
-        int finalTotal     = applyDiscounts(purchaseList);
-        return finalTotal;
-
-    } catch (RuntimeException ex) {
-        // rollback only those we already touched
-        for (Map.Entry<Integer, Integer> rolled : originalStock.entrySet()) {
-            int itemId  = rolled.getKey();
-            int prevQty = rolled.getValue();
-            Object lock = itemAcquireLocks.get(itemId);
-            synchronized (lock) {
-                items.put(itemId, prevQty);
-            }
-        }
-        throw ex;
-    }
-}
-     */
 
     /**
-     * Processes a purchase of items.
-     * This method checks the purchase policy and applies any applicable discounts.
+     * Applies a global percentage discount to the total price of any purchase.
      *
-     * @param items a map where the key is the item ID and the value is the quantity.
+     * @param percentage the discount percentage (0–100)
      */
-    public void PurchaseItems(Map<Integer, Integer> items){
-        try {
-            Map<Integer,Integer> acquired = new HashMap<>();
-            if(!checkPolicys(items))
-                    throw new IllegalArgumentException("Purchase policy not satisfied for item ");
-            for(Integer itemId : items.keySet()){
-                if(!items.containsKey(itemId))
-                    throw new IllegalArgumentException("Item " + itemId + " is not available in the shop.");
-                synchronized(itemAcquireLocks.get(itemId)){
-                    int availableQuantity = items.get(itemId);
-                    if(availableQuantity >= items.get(itemId)){
-                        acquired.put(itemId, items.get(itemId));
-                        // TODO: Complete
-                    }
-                    
-                }
-                
-            }
-        } catch (Exception e) {
+    public void globalDiscount(int percentage) {
+        if (percentage < 0 || percentage > 100) {
+            throw new IllegalArgumentException("Discount percentage must be between 0 and 100");
         }
-        
+        Discount global = new Discount() {
+            // we capture the discount percentage here
+            private int pct = percentage;
+
+            @Override
+            public int applyDiscounts(Map<Integer, Integer> items, int totalPrice) {
+                // e.g. 20% off → pay 80% of total
+                return totalPrice * (100 - pct) / 100;
+            }
+
+            @Override
+            public void setDiscount(Map<Integer, Integer> items, int discount) {
+                // allow updating the percentage if needed
+                if (discount < 0 || discount > 100) {
+                    throw new IllegalArgumentException("Discount percentage must be between 0 and 100");
+                }
+                this.pct = discount;
+            }
+        };
+        discounts.add(global);
+    }
+
+
+
+    // ===== Purchase Method =====
+     
+    /**
+     * Processes a purchase of items:
+     *   1) Checks purchase policies up front
+     *   2) Locks each item & deducts stock
+     *   3) Computes total, applies discounts, and returns the final amount
+     * If anything fails, rolls back any stock modifications.
+     *
+     * @param purchaseList map of itemId→quantity to purchase
+     * @return the total price after discounts
+     */
+    public double purchaseItems(Map<Integer, Integer> purchaseList) {
+        // 1) policy check up-front
+        if (!checkPolicys(purchaseList)) {
+            throw new IllegalStateException("Purchase policy violation");
+        }
+
+        // remember for rollback
+        Map<Integer, Integer> originalStock = new HashMap<>();
+
+        try {
+            // 2) lock & deduct each item
+            for (Map.Entry<Integer, Integer> e : purchaseList.entrySet()) {
+                int itemId = e.getKey();
+                int qty    = e.getValue();
+
+                Object lock = itemAcquireLocks.computeIfAbsent(itemId, k -> new Object());
+                synchronized (lock) {
+                    AtomicInteger availAtom = items.get(itemId);
+                    int avail = availAtom != null ? availAtom.get() : 0;
+                    if (avail < qty) {
+                        throw new IllegalArgumentException("Insufficient stock for item " + itemId);
+                    }
+                    originalStock.put(itemId, avail);
+                    availAtom.addAndGet(-qty);
+                }
+            }
+
+            // 3) compute total + apply discounts
+            double finalTotal = applyDiscount(purchaseList);
+
+            return finalTotal;
+
+        } catch (RuntimeException ex) {
+            // rollback only those we already touched
+            for (Map.Entry<Integer, Integer> r : originalStock.entrySet()) {
+                int itemId  = r.getKey();
+                int prevQty = r.getValue();
+                Object lock = itemAcquireLocks.get(itemId);
+                synchronized (lock) {
+                    items.get(itemId).set(prevQty);
+                }
+            }
+            throw ex;
+        }
     }
 }

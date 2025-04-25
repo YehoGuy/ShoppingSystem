@@ -9,8 +9,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-
+import ApplicationLayer.Purchase.ShippingMethod;
 import DomainLayer.Shop.IShopRepository;
+import DomainLayer.Shop.PurchasePolicy;
 import DomainLayer.Shop.Shop;
 
 public class ShopRepository implements IShopRepository {
@@ -20,10 +21,10 @@ public class ShopRepository implements IShopRepository {
     private final List<Shop> closedShops = new CopyOnWriteArrayList<>();
 
     @Override
-    public Shop createShop(String name, String purchasePolicy, int globalDiscount) {
+    public Shop createShop(String name, String purchasePolicy, ShippingMethod shippingMethod) {
         try {
             int id = shopIdCounter.getAndIncrement();
-            Shop shop = new Shop(id, name, purchasePolicy, globalDiscount);
+            Shop shop = new Shop(id, name, shippingMethod);
             Shop previous = shops.putIfAbsent(id, shop);
             if (previous != null) {
                 throw new IllegalStateException("Shop with id " + id + " already exists.");
@@ -55,13 +56,13 @@ public class ShopRepository implements IShopRepository {
     }
 
     @Override
-    public void updatePurchasePolicy(int shopId, String newPolicy) {
+    public void updatePurchasePolicy(int shopId, PurchasePolicy newPolicy) {
         try {
             Shop shop = shops.get(shopId);
             if (shop == null) {
                 throw new IllegalArgumentException("Shop not found: " + shopId);
             }
-            shop.setPurchasePolicy(newPolicy);
+            shop.addPurchasePolicy(newPolicy);
         } catch (Exception e) {
             throw new RuntimeException("Error updating purchase policy: " + e.getMessage(), e);
         }
@@ -165,7 +166,7 @@ public class ShopRepository implements IShopRepository {
             if (shop == null) {
                 throw new IllegalArgumentException("Shop not found: " + shopId);
             }
-            shop.removeItem(itemId, -1);
+            shop.removeItemFromShop(itemId);
         } catch (Exception e) {
             throw new RuntimeException("Error removing item from shop: " + e.getMessage(), e);
         }
