@@ -14,12 +14,13 @@ import java.util.Map;
 public interface Discount {
 
     /**
-     * Calculates the discount amount for a given set of items.
+     * Applies the discount to the given items and calculates the total price after discount.
      * 
      * @param items A map where the key is the item ID (as {@code Integer}) and the value is the quantity of the item.
-     * @return The discount amount (as {@code int}) to be applied to the purchase.
+     * @param totalPrice The total price of the purchase (as {@code int}).
+     * @return The total price after applying the discount (as {@code int}).
      */
-    int getDiscount(Map<Integer, Integer> items);
+    int applyDiscounts(Map<Integer, Integer> items, int totalPrice);
 
     /**
      * Returns the discount type as a string.
@@ -27,12 +28,4 @@ public interface Discount {
      * @return The discount type (as {@code String}).
      */
     void setDiscount(Map<Integer, Integer> items, int discount);
-
-    /**
-     * Checks if the discount is applicable to multiple items.
-     * 
-     * @return {@code true} if the discount can be applied to multiple items, {@code false} otherwise.
-     */
-    boolean isSupportedInMultiDiscounts();
-
 }
