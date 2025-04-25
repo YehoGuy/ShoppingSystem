@@ -2,6 +2,7 @@ package DomainLayer.Shop;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -163,6 +164,18 @@ public class Shop {
      * @param quantity the quantity to remove (use -1 to remove completely).
      */
     public void removeItem(int itemId, int quantity) {
+        if (!items.containsKey(itemId)) 
+            throw new IllegalArgumentException("Item does not exist in the shop");
+        synchronized(itemAcquireLocks.get(itemId)){
+            if (quantity == -1) {
+                // Remove the item completely from both maps.
+                items.remove(itemId);
+                itemsPrices.remove(itemId);
+                itemAcquireLocks.remove(itemId);
+                return;
+            } 
+            this.put(itemId, items.get(itemId) - quantity);
+        }
         if (quantity == -1) {
             // Remove the item completely from both maps.
             items.remove(itemId);
@@ -274,23 +287,65 @@ public class Shop {
         return true;
     }
 
-    /**
-     * Checks if the purchase is valid according to the shop's discounts.
-     * This method iterates through all discounts and checks if the purchase is valid.
-     *
-     * @param items a map where the key is the item ID and the value is the quantity.
-     * @return {@code true} if the purchase is valid, {@code false} otherwise.
-     */
-    private boolean checkDiscounts(Map<Integer,Integer> items){
-        for (Discount discount : discounts) {
-            if (!discount.isSupportedInMultiDiscounts()) {
-                return false;
-            }
+    
+    private double applyDiscount(Map<Integer,Integer> items){
+        int minPrice = Integer.MAX_VALUE; 
+        for(Discount discount : discounts){
+            int price = discount.applyDiscounts(items, getTotalPrice(items));
+            if(price < minPrice)
+                minPrice = price;
         }
-        return true;
+        return minPrice;
     }
 
     // ===== Purchase Method =====
+
+    /*
+     
+public int purchaseItems(Map<Integer, Integer> purchaseList) {
+    // 1) policy check up-front
+    if (!checkPolicys(purchaseList)) {
+        throw new IllegalStateException("Purchase policy violation");
+    }
+
+    // remember for rollback
+    Map<Integer, Integer> originalStock = new HashMap<>();
+
+    try {
+        // 2) lock & deduct each item
+        for (Map.Entry<Integer, Integer> entry : purchaseList.entrySet()) {
+            int itemId = entry.getKey();
+            int qty    = entry.getValue();
+
+            Object lock = itemAcquireLocks.computeIfAbsent(itemId, k -> new Object());
+            synchronized (lock) {
+                int avail = items.getOrDefault(itemId, 0);
+                if (avail < qty) {
+                    throw new IllegalArgumentException("Insufficient stock for item " + itemId);
+                }
+                originalStock.put(itemId, avail);
+                items.put(itemId, avail - qty);
+            }
+        }
+
+        // 3) compute total + apply discounts
+        int finalTotal     = applyDiscounts(purchaseList);
+        return finalTotal;
+
+    } catch (RuntimeException ex) {
+        // rollback only those we already touched
+        for (Map.Entry<Integer, Integer> rolled : originalStock.entrySet()) {
+            int itemId  = rolled.getKey();
+            int prevQty = rolled.getValue();
+            Object lock = itemAcquireLocks.get(itemId);
+            synchronized (lock) {
+                items.put(itemId, prevQty);
+            }
+        }
+        throw ex;
+    }
+}
+     */
 
     /**
      * Processes a purchase of items.
@@ -299,6 +354,25 @@ public class Shop {
      * @param items a map where the key is the item ID and the value is the quantity.
      */
     public void PurchaseItems(Map<Integer, Integer> items){
+        try {
+            Map<Integer,Integer> acquired = new HashMap<>();
+            if(!checkPolicys(items))
+                    throw new IllegalArgumentException("Purchase policy not satisfied for item ");
+            for(Integer itemId : items.keySet()){
+                if(!items.containsKey(itemId))
+                    throw new IllegalArgumentException("Item " + itemId + " is not available in the shop.");
+                synchronized(itemAcquireLocks.get(itemId)){
+                    int availableQuantity = items.get(itemId);
+                    if(availableQuantity >= items.get(itemId)){
+                        acquired.put(itemId, items.get(itemId));
+                        // TODO: Complete
+                    }
+                    
+                }
+                
+            }
+        } catch (Exception e) {
+        }
         
     }
 }
