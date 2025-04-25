@@ -33,6 +33,6 @@ public interface Discount {
      * 
      * @return {@code true} if the discount can be applied to multiple items, {@code false} otherwise.
      */
-    boolean isSupportedByMultiDiscounts();
+    boolean isSupportedInMultiDiscounts();
 
 }

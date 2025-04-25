@@ -21,4 +21,11 @@ public interface PurchasePolicy {
      */
     boolean isValidPurchase(Map<Integer, Integer> items, int totalPrice);
 
+    /**
+     * Returns the type of the purchase policy as a string.
+     * 
+     * @return The purchase policy type (as {@code String}).
+     */
+    void setPolicy(Map<Integer, Integer> items, int policy);
+
 }
