@@ -28,5 +28,9 @@ public abstract class User {
         return paymentMethod; // Return the user's payment method
     }
 
+    public void setPaymentMethod(PaymentMethod paymentMethod) {
+        this.paymentMethod = paymentMethod; // Set a new payment method for the user
+    }
+
 
 }

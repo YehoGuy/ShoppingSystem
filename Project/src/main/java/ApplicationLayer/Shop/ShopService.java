@@ -13,6 +13,7 @@ import DomainLayer.Item.ItemCategory;
 import DomainLayer.Roles.PermissionsEnum;
 import DomainLayer.Shop.IShopRepository;
 import DomainLayer.Shop.Shop;
+import DomainLayer.Roles.Role;
 
 public class ShopService {
     private final IShopRepository shopRepository;
@@ -49,6 +50,12 @@ public class ShopService {
             Integer userId = authTokenService.ValidateToken(token);
             userService.validateMemberId(userId);
             Shop returnShop = shopRepository.createShop(name, purchasePolicy, globalDiscount);
+            Role founderRole = new Role(userId, returnShop.getId(), null);
+            founderRole.setFoundersPermissions();
+            Boolean isRoleAdded = userService.addRole(userId, founderRole);
+            if (!isRoleAdded) {
+                throw new RuntimeException("Failed to add role to user " + userId + " for shop " + returnShop.getId());
+            }
             LoggerService.logMethodExecutionEnd("createShop", returnShop);
             return returnShop;
         } catch (Exception e) 

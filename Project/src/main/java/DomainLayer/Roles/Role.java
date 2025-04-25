@@ -6,6 +6,13 @@ public class Role {
     private final int shopId;
     private PermissionsEnum[] permissions;
 
+    /**
+     * Constructor for Role class.
+     *
+     * @param assigneeId  The ID of the user who gave the role.
+     * @param shopId      The ID of the shop to which the role is assigned.
+     * @param permissions  The permissions associated with the role.
+     */
     public Role(int assigneeId, int shopId, PermissionsEnum[] permissions) {
         this.assigneeId = assigneeId;
         this.shopId = shopId;
