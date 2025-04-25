@@ -1,3 +1,5 @@
+package DomainLayerTests;
+
 import DomainLayer.Member;
 import DomainLayer.Roles.PermissionsEnum;
 import DomainLayer.Roles.Role;
