@@ -21,4 +21,11 @@ public interface Discount {
      */
     int getDiscount(Map<Integer, Integer> items);
 
+    /**
+     * Returns the discount type as a string.
+     * 
+     * @return The discount type (as {@code String}).
+     */
+    void setDiscount(Map<Integer, Integer> items, int discount);
+
 }
