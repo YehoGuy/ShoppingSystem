@@ -3,7 +3,8 @@ package DomainLayer;
 import java.util.HashMap;
 
 public class ShoppingCart {
-    final private HashMap<Integer, HashMap<Integer,Integer>> items; // shopID, (productID, quantity)
+    final private HashMap<Integer, HashMap<Integer,Integer>> items; // shopID, (productID, quantity)  
+                                                                    //every entry in the HashMap is a basket.
     
     public ShoppingCart() {
         this.items = new HashMap<>();
@@ -55,11 +56,12 @@ public class ShoppingCart {
     }
 
     public void updateProduct(int shopId, int productId, int quantity) {
-        if (!((HashMap<Integer, HashMap<Integer, Integer>>) items).containsKey(shopId)) {
-            return;
+        
+        if (((HashMap<Integer, HashMap<Integer, Integer>>) items).containsKey(shopId)) {
+            HashMap<Integer, Integer> shopItems = items.get(shopId);
+            shopItems.put(productId, quantity);
         }
-        HashMap<Integer, Integer> shopItems = items.get(shopId);
-        shopItems.put(productId, quantity);
+        
     }
 
     public void mergeCart(ShoppingCart otherCart) {
