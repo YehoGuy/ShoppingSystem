@@ -8,6 +8,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.HashMap;
 
+import org.springframework.security.access.method.P;
+
 import ApplicationLayer.Purchase.ShippingMethod;
 
 /**
@@ -20,12 +22,9 @@ public class Shop {
     private final int id;
     private final String name;
 
-    // Mutable field: declared volatile for visibility across threads.
-    private volatile String purchasePolicy;
+    private final List<PurchasePolicy> purchasePolicy;
 
-    // A thread-safe mapping for discounts.
-    // Key 0 acts as the global discount.
-    private final ConcurrentHashMap<Integer, Integer> discounts = new ConcurrentHashMap<>();
+    private final List<Discount> discounts;
 
     // A thread-safe list to manage shop reviews.
     private final List<ShopReview> reviews = new CopyOnWriteArrayList<>();
