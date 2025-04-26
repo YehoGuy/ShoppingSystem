@@ -25,8 +25,9 @@ public interface IMessageRepository{
     /**
      * Deletes a message by its ID.
      * @param id The ID of the message to delete.
+     * @param senderId The ID of the sender.
      */
-    void deleteMessage(int id);
+    void deleteMessage(int id, int senderId);
 
     /**
      * Updates a message in the repository.

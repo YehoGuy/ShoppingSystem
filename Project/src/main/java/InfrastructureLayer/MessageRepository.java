@@ -3,6 +3,9 @@ package InfrastructureLayer;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import ApplicationLayer.OurRuntime;
+
 import java.util.List;
 import java.util.Map;
 import DomainLayer.IMessageRepository;
@@ -20,7 +23,7 @@ public class MessageRepository implements IMessageRepository {
     @Override
     public void addMessage(int senderId, int receiverId, String content, String timestamp, boolean userToUser, int previousMessageId) {
         if (content == null || content.isEmpty()) {
-            throw new IllegalArgumentException("unable to send - message is empty."); // Validate message content
+            throw new OurRuntime("unable to send - message is empty."); // Validate message content
         }
         int id = nextId.getAndIncrement(); // Get the next unique ID
         Message message = new Message(id, senderId, receiverId, content, timestamp, userToUser, previousMessageId); // Create a new message object
@@ -42,12 +45,14 @@ public class MessageRepository implements IMessageRepository {
     }
 
     @Override
-    public void deleteMessage(int id) {
+    public void deleteMessage(int id, int senderId) {
         Message message = messages.get(id); // Get the message with the specified ID
-        if (message != null) {
-            message.delete(); // Mark the message as deleted
+        if (message == null) {
+            throw new OurRuntime("Message with ID " + id + " not found."); // Handle case where message ID is not found
+        } else if (message.getSenderId() != senderId) {
+            throw new OurRuntime("You are not authorized to delete this message."); // Handle case where user is not authorized to delete the message
         } else {
-            throw new IndexOutOfBoundsException("Message with ID " + id + " not found."); // Handle case where message ID is not found
+            message.delete(); // Mark the message as deleted
         }
     }
 

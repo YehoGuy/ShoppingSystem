@@ -1,67 +1,73 @@
 package DomainLayer;
 
 public class Message {
-    final private int messageId;
-    final private int senderId; // User ID of the sender
-    final private int receiverId; // User/Shop ID of the receiver (depends on userToUser flag)
-    final private String content; // Message content
-    final private String timestamp; // Timestamp of when the message was sent
-    final private boolean userToUser; // true if the message is between users, false if it's User to Shop
-    final private int previousMessageId; // ID of the previous message in the conversation, -1 if none
+    private final int messageId;
+    private final int senderId; // User ID of the sender
+    private final int receiverId; // User/Shop ID of the receiver (depends on userToUser flag)
+    private final String content; // Message content
+    private final String timestamp; // Timestamp of when the message was sent
+    private final boolean userToUser; // true if the message is between users, false if it's User to Shop
+    private final int previousMessageId; // ID of the previous message in the conversation, -1 if none
     private boolean isDeleted; // Flag to indicate if the message is deleted
+    private final Object lock = new Object(); // Synchronization lock
 
     public Message(int messageId, int senderId, int receiverId, String content, String timestamp, boolean userToUser, int previousMessageId) {
-        this.messageId = messageId; // Initialize message ID
-        this.senderId = senderId; // Initialize sender ID
-        this.receiverId = receiverId; // Initialize receiver ID
-        this.content = content; // Initialize message content
-        this.timestamp = timestamp; // Initialize timestamp
-        this.userToUser = userToUser; // Initialize userToUser flag
-        this.previousMessageId = previousMessageId; // Initialize previous message ID
-        this.isDeleted = false; // Initialize deleted flag to false
+        this.messageId = messageId;
+        this.senderId = senderId;
+        this.receiverId = receiverId;
+        this.content = content;
+        this.timestamp = timestamp;
+        this.userToUser = userToUser;
+        this.previousMessageId = previousMessageId;
+        this.isDeleted = false;
     }
 
     public int getMessageId() {
-        return messageId; // Return message ID
+        return messageId;
     }
 
     public int getSenderId() {
-        return senderId; // Return sender ID
+        return senderId;
     }
 
     public int getReceiverId() {
-        return receiverId; // Return receiver ID
+        return receiverId;
     }
 
     public String getContent() {
-        return content; // Return message content
+        return content;
     }
 
     public String getTimestamp() {
-        return timestamp; // Return timestamp
+        return timestamp;
     }
 
     public boolean isUserToUser() {
-        return userToUser; // Return userToUser flag
+        return userToUser;
     }
 
     public int getPreviousMessageId() {
-        return previousMessageId; // Return previous message ID
+        return previousMessageId;
     }
 
     public boolean isDeleted() {
-        return isDeleted; // Return deleted flag
+        synchronized (lock) {
+            return isDeleted;
+        }
     }
 
     public void delete() {
-        isDeleted = true; // Set deleted flag
+        synchronized (lock) {
+            isDeleted = true;
+        }
     }
 
+    @Override
     public String toString() {
         return "Message{" +
                 ", senderId=" + senderId +
                 ", content='" + content + '\'' +
                 ", timestamp='" + timestamp + '\'' +
-                '}'; // Return string representation of the message
+                '}';
     }
 }
