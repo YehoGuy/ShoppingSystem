@@ -5,6 +5,8 @@ import java.util.List;
 
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.LoggerService;
+import ApplicationLayer.OurArg;
+import ApplicationLayer.OurRuntime;
 import ApplicationLayer.User.UserService;
 import ApplicationLayer.Shop.ShopService;
 import DomainLayer.IMessageRepository;
@@ -17,7 +19,6 @@ public class MessageService {
     private AuthTokenService authTokenService;
     private UserService userService; 
     private ShopService shopService;
-    private LoggerService loggerService;
 
     public MessageService(IMessageRepository messageRepository) {
         this.messageRepository = messageRepository;
@@ -27,7 +28,6 @@ public class MessageService {
         this.authTokenService = authTokenService;
         this.userService = userService; 
         this.shopService = shopService;
-        this.loggerService = new LoggerService(); // Initialize the logger service
     }
 
     public String sendMessageToUser(String token, int receiverId, String content, int previousMessageId) {
@@ -38,13 +38,16 @@ public class MessageService {
             userService.validateMemberId(senderId); // validate the senderId
             userService.validateMemberId(receiverId); // validate the receiverId
             if(!messageRepository.isMessagePrevious(previousMessageId, senderId, receiverId)){
-                Exception e = new Exception("Previous message with ID " + previousMessageId + " isn't proper previous message."); // Create an exception
-                LoggerService.logError("sendMessageToUser", e, token, receiverId, content, previousMessageId); // Log the error
+                OurRuntime e = new OurRuntime("Previous message with ID " + previousMessageId + " isn't proper previous message."); // Create an exception
+                LoggerService.logDebug("sendMessageToUser", e); // Log the debug message
                 return "Error sending message to user: " + e.getMessage(); // Return the error message
             }
             messageRepository.addMessage(senderId, receiverId, content, LocalDate.now().toString(), true, previousMessageId);
             LoggerService.logMethodExecutionEnd("sendMessageToUser", "Message send successfully!"); // Log the success
             return "Message sent successfully!";
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("sendMessageToUser", e);
+            return "Error sending message to user: " + e.getMessage(); // Return the error message
         } catch (Exception e) {
             LoggerService.logError("sendMessageToUser", e, token, receiverId, content, previousMessageId); // Log the error
             return "Error sending message to user: " + e.getMessage(); // Return the error message
@@ -59,30 +62,42 @@ public class MessageService {
             userService.validateMemberId(userId); // validate the senderId
             Shop s = shopService.getShop(receiverId, token); // validate the receiverId
             if (s == null) {
-                Exception e = new Exception("Shop with ID " + receiverId + " doesn't exist."); // Create an exception
-                LoggerService.logError("sendMessageToShop", e, token, receiverId, content, previousMessageId); // Log the error
+                OurRuntime e = new OurRuntime("Shop with ID " + receiverId + " doesn't exist."); // Create an exception
+                LoggerService.logDebug("sendMessageToShop", e); // Log the error
                 return "Error sending message to shop: " + e.getMessage(); // Return the error message
             }
             if(!messageRepository.isMessagePrevious(previousMessageId, userId, receiverId)){
-                Exception e = new Exception("Previous message with ID " + previousMessageId + " isn't proper previous message."); // Create an exception
-                LoggerService.logError("sendMessageToUser", e, token, receiverId, content, previousMessageId); // Log the error
+                OurRuntime e = new OurRuntime("Previous message with ID " + previousMessageId + " isn't proper previous message."); // Create an exception
+                LoggerService.logDebug("sendMessageToUser", e); // Log the error
                 return "Error sending message to user: " + e.getMessage(); // Return the error message
             }
             messageRepository.addMessage(userId, receiverId, content, LocalDate.now().toString(), false, previousMessageId);
             LoggerService.logMethodExecutionEnd("sendMessageToShop", "Message send successfully!"); // Log the success
             return "Message sent successfully!";
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("sendMessageToShop", e); // Log the error
+            return "Error sending message to shop: " + e.getMessage(); // Return the error message  
         } catch (Exception e) {
             LoggerService.logError("sendMessageToShop", e, token, receiverId, content, previousMessageId); // Log the error
             return "Error sending message to shop: " + e.getMessage(); // Return the error message
         }
     }
 
+    // from here the functions are not necessary for the project, so they aren't implemented correctly.
+
     public String deleteMessage(String token, int messageId) {
         // need to validate the token and get the senderId from it
         // need to check if the senderId is the same as the one in the message
         try {
-            messageRepository.deleteMessage(messageId);
+            LoggerService.logMethodExecution("deleteMessage", token, messageId); // Log the method execution
+            int senderId = authTokenService.ValidateToken(token); // get the senderId from the token
+            userService.validateMemberId(senderId); // validate the senderId
+            messageRepository.deleteMessage(messageId, senderId);
+            LoggerService.logMethodExecutionEnd("deleteMessage", "Message deleted successfully!"); // Log the success
             return "Message deleted successfully!";
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("deleteMessage", e); // Log the error
+            return "Error deleting message: " + e.getMessage(); // Return the error message
         } catch (Exception e) {
             throw new RuntimeException("Error deleting message: " + e.getMessage(), e);
         }
