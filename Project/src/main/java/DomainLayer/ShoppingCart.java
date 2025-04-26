@@ -25,9 +25,9 @@ public class ShoppingCart {
         items.remove(shopId);
     }
 
-    public ConcurrentHashMap<Integer, Integer> getBasket(int shopId) {
+    public HashMap<Integer, Integer> getBasket(int shopId) {
         ConcurrentHashMap<Integer, Integer> basket = items.get(shopId);
-        return basket != null ? new ConcurrentHashMap<>(basket) : null;
+        return basket != null ? new HashMap<>(basket) : null;
     }
 
     public void addItem(int shopId, int productId, int quantity) {
@@ -55,11 +55,11 @@ public class ShoppingCart {
     }
 
     public void mergeCart(ShoppingCart otherCart) {
-        Map<Integer, ConcurrentHashMap<Integer, Integer>> otherItems = otherCart.getItems();
+        HashMap<Integer, HashMap<Integer, Integer>> otherItems = otherCart.getItems();
         for (Integer shopId : otherItems.keySet()) {
             items.putIfAbsent(shopId, new ConcurrentHashMap<>());
             ConcurrentHashMap<Integer, Integer> currentBasket = items.get(shopId);
-            ConcurrentHashMap<Integer, Integer> otherBasket = otherItems.get(shopId);
+            HashMap<Integer, Integer> otherBasket = otherItems.get(shopId);
 
             synchronized (currentBasket) { // Synchronize per basket for compound updates
                 for (Integer productId : otherBasket.keySet()) {
@@ -74,10 +74,10 @@ public class ShoppingCart {
      * The copy is a deep copy, meaning that changes to the copy will not affect the original items.
      * @return A deep copy of the items in the shopping cart.
      */
-    public Map<Integer, ConcurrentHashMap<Integer, Integer>> getItems() {
-        ConcurrentHashMap<Integer, ConcurrentHashMap<Integer, Integer>> copy = new ConcurrentHashMap<>();
+    public HashMap<Integer, HashMap<Integer, Integer>> getItems() {
+        HashMap<Integer, HashMap<Integer, Integer>> copy = new HashMap<>();
         for (Map.Entry<Integer, ConcurrentHashMap<Integer, Integer>> entry : items.entrySet()) {
-            copy.put(entry.getKey(), new ConcurrentHashMap<>(entry.getValue()));
+            copy.put(entry.getKey(), new HashMap<>(entry.getValue()));
         }
         return copy;
     }
@@ -86,13 +86,13 @@ public class ShoppingCart {
     * Restores the shopping cart with the given items.
     * @param items A HashMap containing the items to restore in the shopping cart. shopId -> <itemId -> quantity>
     */
-    public void restoreCart(Map<Integer, Map<Integer, Integer>> newItems) {
+    public void restoreCart(HashMap<Integer, HashMap<Integer, Integer>> newItems) {
         for (Integer shopId : newItems.keySet()) {
             items.putIfAbsent(shopId, new ConcurrentHashMap<>());
             ConcurrentHashMap<Integer, Integer> shopItems = items.get(shopId);
-            Map<Integer, Integer> newShopItems = newItems.get(shopId);
-
-            synchronized (shopItems) { // Synchronize per basket for compound updates
+            HashMap<Integer, Integer> newShopItems = newItems.get(shopId);
+    
+            synchronized (shopItems) {
                 for (Integer productId : newShopItems.keySet()) {
                     shopItems.merge(productId, newShopItems.get(productId), Integer::sum);
                 }
