@@ -5,8 +5,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import org.apache.commons.logging.Log;
+
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.LoggerService;
+import ApplicationLayer.OurArg;
+import ApplicationLayer.OurRuntime;
 import ApplicationLayer.Purchase.PaymentMethod;
 import DomainLayer.IUserRepository;
 import DomainLayer.Member;
@@ -370,209 +374,419 @@ public class UserService {
         
     } 
 
-    public void changePermitions(String token, int memberId, int shopId, PermissionsEnum[] permissions) {
+    /**
+     * change memberId's permissions in shopId to the given permissions.
+     * only the member that gave him the role can change his permissions.
+     * the token is the token of the member that gave him the role.
+     * 
+     * @param token
+     * @param memberId
+     * @param shopId
+     * @param permissions
+     * 
+     * * @throws IllegalArgumentException
+     * * @throws OurRuntime
+     */
+    public void changePermissions(String token, int memberId, int shopId, PermissionsEnum[] permissions) {
         try {
-
-            LoggerService.logMethodExecution("changePermitions", token, memberId, shopId, permissions);
-            int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
-            if (!userRepository.isOwner(userId, shopId)) {
-                throw new IllegalArgumentException("Member ID " + userId + " is not an owner of shop ID " + shopId);  
+            LoggerService.logMethodExecution("changePermissions", token, memberId, shopId, permissions);
+            int assigneeId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            if (!userRepository.isOwner(assigneeId, shopId)) {
+                LoggerService.logDebug("changePermissions", new OurRuntime("Member ID " + assigneeId + " is not an owner of shop ID " + shopId));
+                throw new OurRuntime("Member ID " + assigneeId + " is not an owner of shop ID " + shopId);  
             }
-            for (Member member : userRepository.getMembersList()) {
-                if (member.getMemberId() == memberId) {
-                    for (Role role : member.getRoles()) {
-                        if (role.getShopId() == shopId) {
-                            role.setPermissions(permissions);
-                            LoggerService.logMethodExecutionEndVoid("changePermitions");
-                            return;
+            Member member = userRepository.getMemberById(memberId);
+            for (Role role : member.getRoles()) {
+                if (role.getShopId() == shopId) {
+                    if (role.getAssigneeId() != assigneeId) {
+                        LoggerService.logDebug("changePermissions", new OurRuntime("Member ID " + assigneeId + " is not the assignee of member ID " + memberId + " in shop ID " + shopId));
+                        throw new OurRuntime("Member ID " + assigneeId + " is not the assignee of member ID " + memberId + " in shop ID " + shopId);  
+                    }
+                    for(PermissionsEnum permission : permissions) {
+                        if (permission == null) {
+                            LoggerService.logDebug("changePermissions", new OurRuntime("Permission cannot be null."));
+                            throw new OurRuntime("Permission cannot be null.");
+                        }
+                        if (permission == PermissionsEnum.closeShop) {
+                            LoggerService.logDebug("changePermissions", new OurRuntime("Permission closeShop cannot be changed."));
+                            throw new OurRuntime("Permission closeShop cannot be changed.");
                         }
                     }
+                    userRepository.setPermissions(memberId, shopId, role, permissions);
+                    LoggerService.logMethodExecutionEndVoid("changePermissions");
+                    return;
                 }
             }
-            LoggerService.logMethodExecutionEndVoid("changePermitions");
+            LoggerService.logMethodExecutionEndVoid("changePermissions");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("changePermissions", e);
+            throw e; // Rethrow the custom exception
         } catch (Exception e) {
-            LoggerService.logError("changePermitions", e, memberId, shopId, permissions);
+            LoggerService.logError("changePermissions", e, memberId, shopId, permissions);
             throw new RuntimeException("Error changing permissions for member ID " + memberId + ": " + e.getMessage(), e);
         }
     }
 
-    public void makeManagerOfStore(String token, int assigne, int shopId, PermissionsEnum[] permissions) {
-        LoggerService.logMethodExecution("makeManagerOfStore", token, shopId, permissions);
+    /**
+     * Assigns a member as a manager of a store with the specified permissions.
+     * @param token The token of the user making the assignment.
+     * @param memberId The ID of the member to be assigned as a manager.
+     * @param shopId The ID of the store where the member will be assigned as a manager.
+     * @param permissions The permissions to be granted to the manager.
+     * 
+     * * @throws IllegalArgumentException
+     * * @throws OurRuntime
+     */
+    public void makeManagerOfStore(String token, int memberId, int shopId, PermissionsEnum[] permissions) {
         try {
-            int memberId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
-            if (!userRepository.isOwner(assigne, shopId)) {
-                LoggerService.logError("makeManagerOfStore", new IllegalArgumentException("Member ID " + assigne + " is not an owner of shop ID " + shopId));
-                throw new IllegalArgumentException("Member ID " + assigne + " is not an owner of shop ID " + shopId);  
+            LoggerService.logMethodExecution("makeManagerOfStore", token, shopId, permissions);
+            int assignee = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            if (!userRepository.isOwner(assignee, shopId)) {
+                LoggerService.logDebug("makeManagerOfStore", new OurRuntime("Member ID " + assignee + " is not an owner of shop ID " + shopId));
+                throw new OurRuntime("Member ID " + assignee + " is not an owner of shop ID " + shopId);  
             }
-            for (Member member : userRepository.getMembersList()) {
-                if (member.getMemberId() == memberId) {
-                    Role role = new Role(assigne, shopId, permissions);
-                    member.addRoleToPending(role);
-                    LoggerService.logMethodExecutionEndVoid("makeManagerOfStore");
-                    return;
-                }
-            }
+            Role role = new Role(assignee, shopId, permissions);
+            userRepository.addRoleToPending(memberId, role);
             LoggerService.logMethodExecutionEndVoid("makeManagerOfStore");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("makeManagerOfStore", e);
+            throw e; // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("makeManagerOfStore", e, token, shopId, permissions);
             throw new RuntimeException("Error making manager of store for member ID " + token + ": " + e.getMessage(), e);
         }   
     }
 
-    public void removeManagerOfStore(String token, int shopId) {
-        LoggerService.logMethodExecution("removeManagerOfStore", token, shopId);
+    /**
+     * Removes a manager from a store.
+     * @param token The token of the user making the removal.
+     * @param managerId The ID of the manager to be removed.
+     * @param shopId The ID of the store from which the manager will be removed.
+     * 
+     * * @throws IllegalArgumentException
+     * * @throws OurRuntime
+     */
+    public void removeManagerFromStore(String token, int managerId, int shopId) {
         try {
-            int memberId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
-            if (!userRepository.isOwner(memberId, shopId)) {
-                LoggerService.logError("removeManagerOfStore", new IllegalArgumentException("Member ID " + memberId + " is not an owner of shop ID " + shopId));
-                throw new IllegalArgumentException("Member ID " + memberId + " is not an owner of shop ID " + shopId);  
+            LoggerService.logMethodExecution("removeManagerOfStore", token, shopId);
+            int assigneeId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            Role role = userRepository.getRole(managerId, shopId);
+            if (role == null) {
+                LoggerService.logDebug("removeManagerOfStore", new OurRuntime("Member ID " + managerId + " is not a manager of shop ID " + shopId));
+                throw new OurRuntime("Member ID " + managerId + " is not a manager of shop ID " + shopId);  
             }
-
-            for (Member member : userRepository.getMembersList()) {
-                if (member.getMemberId() == memberId) {
-                    List<Role> roles = member.getRoles();
-                    roles.removeIf(role -> role.getShopId() == shopId);
-                    LoggerService.logMethodExecutionEndVoid("removeManagerOfStore");
-                    
-                    removeAllAssiged(memberId, shopId);
-                }
+            if (role.getAssigneeId() != assigneeId) {
+                LoggerService.logDebug("removeManagerOfStore", new OurRuntime("Member ID " + assigneeId + " is not the assignee of member ID " + managerId + " in shop ID " + shopId));
+                throw new OurRuntime("Member ID " + assigneeId + " is not the assignee of member ID " + managerId + " in shop ID " + shopId);
             }
-            
-
+            userRepository.removeRole(managerId, shopId);
             LoggerService.logMethodExecutionEndVoid("removeManagerOfStore");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("removeManagerOfStore", e);
+            throw e; // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("removeManagerOfStore", e, token, shopId);
             throw new RuntimeException("Error removing manager of store for member ID " + token + ": " + e.getMessage(), e);
         }   
     }
 
-    private void removeAllAssiged(int assigne, int shopId) {
-        for(Member m : userRepository.getMembersList()){
-            for(Role r : m.getRoles()){
-                if(r.getAssigneeId() == assigne && r.getShopId() == shopId){
-                    m.getRoles().remove(r);
-                    removeAllAssiged(m.getMemberId(), shopId);
-                }
+    /**
+     * Removes an owner from a store.
+     * @param token The token of the user making the removal.
+     * @param memberId The ID of the owner to be removed.
+     * @param shopId The ID of the store from which the owner will be removed.
+     * 
+     * * * @throws IllegalArgumentException
+     * * * @throws OurRuntime
+     */
+    public void removeOwnerFromStore(String token, int memberId, int shopId) {
+        try {
+            LoggerService.logMethodExecution("removeOwnerFromStore", token, shopId);
+            Role role = userRepository.getRole(memberId, shopId);
+            if (!role.isOwner()) {
+                LoggerService.logDebug("removeOwnerFromStore", new OurRuntime("Member ID " + memberId + " is not an owner of shop ID " + shopId));
+                throw new OurRuntime("Member ID " + memberId + " is not an owner of shop ID " + shopId);  
             }
+            int assigneeId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            if (role.getAssigneeId() != assigneeId) {
+                LoggerService.logDebug("removeOwnerFromStore", new OurRuntime("Member ID " + assigneeId + " is not the assignee of member ID " + memberId + " in shop ID " + shopId));
+                throw new OurRuntime("Member ID " + assigneeId + " is not the assignee of member ID " + memberId + " in shop ID " + shopId);
+            }
+            userRepository.removeRole(memberId, shopId);
+            removeAllAssigned(memberId, shopId); // Remove all assigned roles for the member
+            LoggerService.logMethodExecutionEndVoid("removeOwnerFromStore");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("removeOwnerFromStore", e);
+            throw e; // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("removeOwnerFromStore", e, token, shopId);
+            throw new RuntimeException("Error removing owner from store for member ID " + token + ": " + e.getMessage(), e);
         }
     }
 
-
-    public void makeStoreOwner(String token, int assigne, int shopId){
-        try {
-            LoggerService.logMethodExecution("makeStoreOwner", token, shopId);
-            int memberId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
-            if(!userRepository.isOwner(assigne, shopId)) {
-                LoggerService.logError("makeStoreOwner", new IllegalArgumentException("Member ID " + assigne + " is not an owner of shop ID " + shopId));
-                throw new IllegalArgumentException("Member ID " + assigne + " is not an owner of shop ID " + shopId);  
-            }
-            
+    private void removeAllAssigned(int assignee, int shopId) {
+        try{
             for (Member member : userRepository.getMembersList()) {
-                if (member.getMemberId() == memberId) {
-                    Role role = new Role(assigne, shopId, null);
-                    role.setOwnersPermissions();
-                    member.addRoleToPending(role);
-                    LoggerService.logMethodExecutionEndVoid("makeStoreOwner");
-                    return;
+                for (Role role : member.getRoles()) {
+                    if (role.getShopId() == shopId && role.getAssigneeId() == assignee) {
+                        userRepository.removeRole(member.getMemberId(), shopId); // Remove the role from the member
+                        if (role.isOwner()) {
+                            removeAllAssigned(assignee, shopId);
+                        }
+                    }
                 }
             }
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("removeAllAssigned", e);
+            throw e; // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("removeAllAssigned", e, assignee, shopId);
+            throw new RuntimeException("Error removing all assigned roles for member ID " + assignee + ": " + e.getMessage(), e);
+        }
+    }
 
-            throw new IllegalArgumentException("Member ID " + memberId + " not found.");
-        }catch(Exception e) {
+    /**
+     * Assigns a member as a store owner.
+     * @param token The token of the user making the assignment.
+     * @param memberId The ID of the member to be assigned as an owner.
+     * @param shopId The ID of the store where the member will be assigned as an owner.
+     * 
+     * * @throws IllegalArgumentException
+     * * @throws OurRuntime
+     */
+    public void makeStoreOwner(String token, int memberId, int shopId){
+        try {
+            LoggerService.logMethodExecution("makeStoreOwner", token, shopId);
+            int assigneeId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            if(!userRepository.isOwner(assigneeId, shopId)) {
+                LoggerService.logDebug("makeStoreOwner", new OurRuntime("Member ID " + assigneeId + " is not an owner of shop ID " + shopId));
+                throw new OurRuntime("Member ID " + assigneeId + " is not an owner of shop ID " + shopId);  
+            }
+            if(userRepository.getMemberById(memberId) == null) {
+                LoggerService.logDebug("makeStoreOwner", new OurRuntime("Member ID " + memberId + " does not exist."));
+                throw new OurRuntime("Member ID " + memberId + " does not exist.");
+            }
+            Role role = new Role(assigneeId, shopId, null);
+            role.setOwnersPermissions();
+            userRepository.addRoleToPending(memberId, role); // Add the role to the member
+            LoggerService.logMethodExecutionEndVoid("makeStoreOwner");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("makeStoreOwner", e);
+            throw e; // Rethrow the custom exception
+        } catch(Exception e) {
             LoggerService.logError("makeStoreOwner", e, token, shopId);
             throw new RuntimeException("Error making store owner for member ID " + token + ": " + e.getMessage(), e);
         }
     }
 
-    public void acceptRole(String token, Role role) {
+    /**
+     * Accepts a pending role for a member.
+     * @param token The token of the user accepting the role.
+     * @param shopId The ID of the store where the role is being accepted.
+     * 
+     * * @throws IllegalArgumentException
+     * * @throws OurRuntime
+     */
+    public void acceptRole(String token, int shopId) {
         try {
-            LoggerService.logMethodExecution("accseptRole", token, role);
+            LoggerService.logMethodExecution("acceptRole", token, shopId);
             int memberId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
-            for (Member member : userRepository.getMembersList()) {
-                if (member.getMemberId() == memberId) {
-                    member.acceptRole(role);
-                    LoggerService.logMethodExecutionEndVoid("accseptRole");
-                    return;
-                }
+            Member member = userRepository.getMemberById(memberId);
+            Role role = userRepository.getPendingRole(memberId, shopId);
+            if (role == null) {
+                LoggerService.logDebug("acceptRole", new OurRuntime("Member ID " + memberId + " has no pending role for shop ID " + shopId));
+                throw new OurRuntime("Member ID " + memberId + " has no pending role for shop ID " + shopId);  
             }
-            throw new IllegalArgumentException("Member ID " + memberId + " not found.");
+            userRepository.acceptRole(memberId, role); // Accept the role for the member
+            LoggerService.logMethodExecutionEndVoid("acceptRole");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("acceptRole", e);
+            throw e; // Rethrow the custom exception
         } catch (Exception e) {
-            LoggerService.logError("accseptRole", e, token, role);
+            LoggerService.logError("acceptRole", e, token, shopId);
             throw new RuntimeException("Error accepting role for member ID " + token + ": " + e.getMessage(), e);
         }
     }
-            
-
-
-    public boolean addRole(int id, Role role) {
+       
+    /**
+     * Adds a role to a member.
+     * @param memberId The ID of the member to whom the role is being added.
+     * @param role The role to be added to the member.
+     * 
+     * * @return true if the role was added successfully, false otherwise.
+     * 
+     * * @throws IllegalArgumentException
+     * * @throws OurRuntime
+     */
+    public boolean addRole(int memberId, Role role) {
         try {
-            LoggerService.logMethodExecution("addRole", id, role);
-            User member = userRepository.getUserById(id);
-            validateMemberId(id);
-            ((Member)member).addRole(role);
+            LoggerService.logMethodExecution("addRole", memberId, role);
+            validateMemberId(memberId);
+            userRepository.addRoleToPending(memberId, role); // Add the role to the member
             LoggerService.logMethodExecutionEnd("addRole", true);
-            return true; // Role added successfully
+            return true;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("addRole", e);
+            throw e; // Rethrow the custom exception
         } catch (Exception e) {
-            LoggerService.logError("addRole", e, id, role);
-            throw new RuntimeException("Error adding role for user ID " + id + ": " + e.getMessage(), e); // Indicate failure to add role
+            LoggerService.logError("addRole", e, memberId, role);
+            throw new RuntimeException("Error adding role for user ID " + memberId + ": " + e.getMessage(), e); // Indicate failure to add role
         }
     }
 
+    /**
+     * Removes a role from a member.
+     * @param id The ID of the member from whom the role is being removed.
+     * @param role The role to be removed from the member.
+     * 
+     * * @return true if the role was removed successfully, false otherwise.
+     * 
+     * * @throws IllegalArgumentException
+     * * @throws OurRuntime
+     */
     public boolean removeRole(int id, Role role) {
         try {
-            if (userRepository.getUserMapping().containsKey(id)) {
-                User user = userRepository.getUserById(id);
-                validateMemberId(id);
-                ((Member)user).removeRole(role);
-                return true; // Role removed successfully
-            } else {
-                throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            LoggerService.logMethodExecution("removeRole", id, role);
+            if (role == null) {
+                LoggerService.logDebug("removeRole", new OurRuntime("Role cannot be null."));
+                throw new OurRuntime("Role cannot be null.");
             }
+            validateMemberId(id);
+            Role existingRole = userRepository.getRole(id, role.getShopId());
+            if (existingRole == null) {
+                LoggerService.logDebug("removeRole", new OurRuntime("Member ID " + id + " has no role for shop ID " + role.getShopId()));
+                throw new OurRuntime("Member ID " + id + " has no role for shop ID " + role.getShopId());  
+            }
+            if (existingRole.getAssigneeId() != role.getAssigneeId()) {
+                LoggerService.logDebug("removeRole", new OurRuntime("Member ID " + id + " is not the assignee of the role for shop ID " + role.getShopId()));
+                throw new OurRuntime("Member ID " + id + " is not the assignee of the role for shop ID " + role.getShopId());  
+            }
+            userRepository.removeRole(id, role.getShopId()); // Remove the role from the member
+            return true;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("removeRole", e);
+            throw e; // Rethrow the custom exception
         } catch (Exception e) {
-            return false; // Indicate failure to remove role
+            LoggerService.logError("removeRole", e, id, role);
+            throw new RuntimeException("Error removing role for user ID " + id + ": " + e.getMessage(), e); // Indicate failure to remove role
         }
     }
 
+    /**
+     * Checks if a member has a specific role.
+     * @param id The ID of the member to check.
+     * @param role The role to check for the member.
+     * 
+     * * @return true if the member has the specified role, false otherwise.
+     * 
+     * * @throws IllegalArgumentException
+     * * @throws OurRuntime
+     */
     public boolean hasRole(int id, Role role) {
         try {
-            if (userRepository.getUserMapping().containsKey(id)) {
-                User user = userRepository.getUserById(id);
-                validateMemberId(id);
-                return ((Member)user).hasRole(role); // Check if the user has the specified role
-            } else {
-                throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            LoggerService.logMethodExecution("hasRole", id, role);
+            if (role == null) {
+                LoggerService.logDebug("hasRole", new OurRuntime("Role cannot be null."));
+                throw new OurRuntime("Role cannot be null.");
             }
+            validateMemberId(id);
+            Role existingRole = userRepository.getRole(id, role.getShopId());
+            if (existingRole == null) {
+                LoggerService.logDebug("hasRole", new OurRuntime("Member ID " + id + " has no role for shop ID " + role.getShopId()));
+                throw new OurRuntime("Member ID " + id + " has no role for shop ID " + role.getShopId());}
+            if (existingRole.getAssigneeId() != role.getAssigneeId()) {
+                LoggerService.logDebug("hasRole", new OurRuntime("Member ID " + id + " is not the assignee of the role for shop ID " + role.getShopId()));
+                throw new OurRuntime("Member ID " + id + " is not the assignee of the role for shop ID " + role.getShopId());
+            }
+            return true; // Member has the specified role
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("hasRole", e);
+            throw e; // Rethrow the custom exception
         } catch (Exception e) {
-            return false; // Indicate failure to check role
+            LoggerService.logError("hasRole", e, id, role);
+            throw new RuntimeException("Error checking role for user ID " + id + ": " + e.getMessage(), e); // Indicate failure to check role
         }
     }
 
-    public boolean addPermission(int id, PermissionsEnum permission, int shopId) {
+    /**
+     * Adds a permission to a member.
+     * @param token The token of the user adding the permission.
+     * @param id The ID of the member to whom the permission is being added.
+     * @param permission The permission to be added to the member.
+     * @param shopId The ID of the store where the permission is being added.
+     * 
+     * * @return true if the permission was added successfully, false otherwise.
+     * 
+     * * @throws IllegalArgumentException
+     * * @throws OurRuntime
+     */
+    public boolean addPermission(String token, int id, PermissionsEnum permission, int shopId) {
         try {
-            if (userRepository.getUserMapping().containsKey(id)) {
-                User user = userRepository.getUserById(id);
-                validateMemberId(id);
-                ((Member)user).addPermission(shopId,permission); // Add permission to the user
-                return true; // Permission added successfully
-            } else {
-                throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            LoggerService.logMethodExecution("addPermission", token, id, permission, shopId);
+            int assigneeId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            if (permission == null) {
+                LoggerService.logDebug("addPermission", new OurRuntime("Permission cannot be null."));
+                throw new OurRuntime("Permission cannot be null.");
             }
+            validateMemberId(id);
+            if (userRepository.getRole(id, shopId) == null) {
+                LoggerService.logDebug("addPermission", new OurRuntime("Member ID " + id + " has no role for shop ID " + shopId));
+                throw new OurRuntime("Member ID " + id + " has no role for shop ID " + shopId);  
+            }
+            if (userRepository.getRole(id, shopId).getAssigneeId() != assigneeId) {
+                LoggerService.logDebug("addPermission", new OurRuntime("Member ID " + assigneeId + " is not the assignee of member ID " + id + " in shop ID " + shopId));
+                throw new OurRuntime("Member ID " + assigneeId + " is not the assignee of member ID " + id + " in shop ID " + shopId);
+            }
+            userRepository.addPermission(id, permission, shopId); // Add the permission to the member
+            LoggerService.logMethodExecutionEnd("addPermission", true);
+            return true; // Permission added successfully
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("addPermission", e);
+            throw e; // Rethrow the custom exception
         } catch (Exception e) {
+            LoggerService.logError("addPermission", e, token, id, permission, shopId);
             throw new RuntimeException("Error adding permission for user ID " + id + ": " + e.getMessage(), e); // Indicate failure to add permission
         }
     }
-    public boolean removePermission(int id, PermissionsEnum permission, int shopId) {
+
+    /**
+     * Removes a permission from a member.
+     * @param token The token of the user removing the permission.
+     * @param id The ID of the member from whom the permission is being removed.
+     * @param permission The permission to be removed from the member.
+     * @param shopId The ID of the store where the permission is being removed.
+     * 
+     * * @return true if the permission was removed successfully, false otherwise.
+     * 
+     * * @throws IllegalArgumentException
+     * * @throws OurRuntime
+     */
+    public boolean removePermission(String token, int id, PermissionsEnum permission, int shopId) {
         try {
-            if (userRepository.getUserMapping().containsKey(id)) {
-                User user = userRepository.getUserById(id);
-                validateMemberId(id);
-                ((Member)user).removePermission(shopId, permission); // Remove permission from the user
-                return true; // Permission removed successfully
-            } else {
-                throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            LoggerService.logMethodExecution("removePermission", token, id, permission, shopId);
+            int assigneeId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            if (permission == null) {
+                LoggerService.logDebug("removePermission", new OurRuntime("Permission cannot be null."));
+                throw new OurRuntime("Permission cannot be null.");
             }
+            validateMemberId(id);
+            if (userRepository.getRole(id, shopId) == null) {
+                LoggerService.logDebug("removePermission", new OurRuntime("Member ID " + id + " has no role for shop ID " + shopId));
+                throw new OurRuntime("Member ID " + id + " has no role for shop ID " + shopId);  
+            }
+            if (userRepository.getRole(id, shopId).getAssigneeId() != assigneeId) {
+                LoggerService.logDebug("removePermission", new OurRuntime("Member ID " + assigneeId + " is not the assignee of member ID " + id + " in shop ID " + shopId));
+                throw new OurRuntime("Member ID " + assigneeId + " is not the assignee of member ID " + id + " in shop ID " + shopId);
+            }
+            userRepository.removePermission(id, permission, shopId); // Add the permission to the member
+            LoggerService.logMethodExecutionEnd("removePermission", true);
+            return true; // Permission added successfully
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("removePermission", e);
+            throw e; // Rethrow the custom exception
         } catch (Exception e) {
-            return false; // Indicate failure to remove permission
+            LoggerService.logError("removePermission", e, token, id, permission, shopId);
+            throw new RuntimeException("Error removing permission for user ID " + id + ": " + e.getMessage(), e); // Indicate failure to remove permission
         }
     }
     public boolean hasPermission(int id, PermissionsEnum permission, int shopId) {
@@ -600,6 +814,12 @@ public class UserService {
             HashMap<Integer, HashMap<Integer,Integer>> cart = userRepository.getShoppingCartById(userId).getItems();
             LoggerService.logMethodExecutionEnd("getUserShoppingCart", cart);
             return cart;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getUserShoppingCart", e);
+            throw e; // Rethrow the custom exception
+        } catch (IllegalArgumentException e) {
+            LoggerService.logError("getUserShoppingCart", e, userId);
+            throw new IllegalArgumentException("Invalid user ID: " + userId, e);
         } catch (Exception e) {
             LoggerService.logError("getUserShoppingCart", e, userId);
             throw new RuntimeException("Error fetching shopping cart for user ID " + userId + ": " + e.getMessage(), e);
@@ -618,6 +838,9 @@ public class UserService {
             LoggerService.logMethodExecution("clearUserShoppingCart", userId);
             userRepository.getShoppingCartById(userId).clearCart();
             LoggerService.logMethodExecutionEndVoid("clearUserShoppingCart");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("clearUserShoppingCart", e);
+            throw e; // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("clearUserShoppingCart", e, userId);
             throw new RuntimeException("Error clearing shopping cart for user ID " + userId + ": " + e.getMessage(), e);
@@ -637,6 +860,9 @@ public class UserService {
             LoggerService.logMethodExecution("restoreUserShoppingCart", userId, items);
             userRepository.getShoppingCartById(userId).restoreCart(items);
             LoggerService.logMethodExecutionEndVoid("restoreUserShoppingCart");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("restoreUserShoppingCart", e);
+            throw e;
         } catch (Exception e) {
             LoggerService.logError("restoreUserShoppingCart", e, userId, items);
             throw new RuntimeException("Error restoring shopping cart for user ID " + userId + ": " + e.getMessage(), e);
@@ -657,73 +883,120 @@ public class UserService {
             PaymentMethod paymentMethod = userRepository.getUserById(userId).getPaymentMethod();
             LoggerService.logMethodExecutionEnd("getUserPaymentMethod", paymentMethod);
             return paymentMethod;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getUserPaymentMethod", e);
+            throw e; // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("getUserPaymentMethod", e, userId);
             throw new RuntimeException("Error fetching payment method for user ID " + userId + ": " + e.getMessage(), e);
         }
     }
 
+    /**
+     * adds an item to the shopping cart for a user by their token.
+     * @param token
+     * @param shopId
+     * @param itemId
+     * @param quantity
+     * 
+     * * @throws OurRuntime
+     * * @throws Exception
+     */
     public void addItemToShoppingCart(String token, int shopId, int itemId, int quantity) {
         try {
             LoggerService.logMethodExecution("addItemToShoppingCart", token, shopId, itemId, quantity);
             int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             userRepository.addItemToShoppingCart(userId, shopId, itemId, quantity);
             LoggerService.logMethodExecutionEndVoid("addItemToShoppingCart");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("addItemToShoppingCart", e);
+            throw e; // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("addItemToShoppingCart", e, token, shopId, itemId, quantity);
             throw new RuntimeException("Error adding item to shopping cart for user ID " + token + ": " + e.getMessage(), e);
         }
     }
 
+    /**
+     * removes an item from the shopping cart for a user by their token.
+     * @param token
+     * @param shopId
+     * @param itemId
+     * 
+     * * @throws OurRuntime
+     * * @throws Exception
+     */
     public void removeItemFromShoppingCart(String token, int shopId, int itemId) {
         try {
             LoggerService.logMethodExecution("removeItemFromShoppingCart", token, shopId, itemId);
             int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             userRepository.removeItemFromShoppingCart(userId, shopId, itemId);
             LoggerService.logMethodExecutionEndVoid("removeItemFromShoppingCart");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("removeItemFromShoppingCart", e);
+            throw e; // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("removeItemFromShoppingCart", e, token, shopId, itemId);
             throw new RuntimeException("Error removing item from shopping cart for user ID " + token + ": " + e.getMessage(), e);
         }
     }
 
+    /**
+     * updates the quantity of an item in the shopping cart for a user by their token.
+     * @param token
+     * @param shopId
+     * @param itemId
+     * @param quantity
+     * 
+     * * @throws OurRuntime
+     * * @throws Exception
+     */
     public void updateItemQuantityInShoppingCart(String token, int shopId, int itemId, int quantity) {
         try {
             LoggerService.logMethodExecution("updateItemQuantityInShoppingCart", token, shopId, itemId, quantity);
             int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             userRepository.updateItemQuantityInShoppingCart(userId, shopId, itemId, quantity);
             LoggerService.logMethodExecutionEndVoid("updateItemQuantityInShoppingCart");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("updateItemQuantityInShoppingCart", e);
+            throw e; // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("updateItemQuantityInShoppingCart", e, token, shopId, itemId, quantity);
             throw new RuntimeException("Error updating item quantity in shopping cart for user ID " + token + ": " + e.getMessage(), e);
         }
     }
 
+    /**
+     * Clears the shopping cart for a user by their token.
+     * @param token The token of the user whose shopping cart is to be cleared.
+     * 
+     * * @throws OurRuntime
+     * * @throws Exception
+     */
     public void clearShoppingCart(String token) {
         try {
             LoggerService.logMethodExecution("clearShoppingCart", token);
             int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             userRepository.clearShoppingCart(userId);
             LoggerService.logMethodExecutionEndVoid("clearShoppingCart");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("clearShoppingCart", e);
+            throw e; // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("clearShoppingCart", e, token);
             throw new RuntimeException("Error clearing shopping cart for user ID " + token + ": " + e.getMessage(), e);
         }
     }
 
-    public Map<Integer, HashMap<Integer, Integer>> getShoppingCartItems(String token) {
-        try {
-            LoggerService.logMethodExecution("getShoppingCartItems", token);
-            int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
-            Map<Integer, HashMap<Integer, Integer>> items = userRepository.getShoppingCartById(userId).getItems();
-            LoggerService.logMethodExecutionEnd("getShoppingCartItems", items);
-            return items;
-        } catch (Exception e) {
-            LoggerService.logError("getShoppingCartItems", e, token);
-            throw new RuntimeException("Error fetching shopping cart items for user ID " + token + ": " + e.getMessage(), e);
-        }
-    }
-
+    /**
+     * Retrieves the items in the shopping basket for a user by their token and shop ID.
+     * @param token The token of the user whose shopping basket items are to be retrieved.
+     * @param shopId The ID of the shop whose items are to be retrieved.
+     * @return A HashMap containing the items in the shopping basket for the user. itemId -> quantity
+     * 
+     * * @throws OurRuntime
+     * * @throws Exception
+     */
     public Map<Integer, Integer> getBasketItems(String token, int shopId) {
         try {
             LoggerService.logMethodExecution("getBasketItems", token, shopId);
@@ -731,24 +1004,35 @@ public class UserService {
             Map<Integer, Integer> items = userRepository.getBasket(userId, shopId);
             LoggerService.logMethodExecutionEnd("getBasketItems", items);
             return items;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getBasketItems", e);
+            throw e; // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("getBasketItems", e, token, shopId);
             throw new RuntimeException("Error fetching basket items for user ID " + token + ": " + e.getMessage(), e);
         }
     }
 
+    /**
+     * Adds a new shopping basket for a user by their token and shop ID.
+     * @param token The token of the user adding the basket.
+     * @param shopId The ID of the shop where the basket is being added.
+     * 
+     * * @throws OurRuntime
+     * * @throws Exception
+     */
     public void addBasket(String token, int shopId) {
         try {
             LoggerService.logMethodExecution("addBasket", token, shopId);
             int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             userRepository.createBasket(userId, shopId);
             LoggerService.logMethodExecutionEndVoid("addBasket");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("addBasket", e);
+            throw e; // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("addBasket", e, token, shopId);
             throw new RuntimeException("Error adding basket for user ID " + token + ": " + e.getMessage(), e);
         }
     }
-
-
-
 }
