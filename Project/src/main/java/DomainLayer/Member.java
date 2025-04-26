@@ -2,21 +2,27 @@ package DomainLayer;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import DomainLayer.Roles.PermissionsEnum;
 import DomainLayer.Roles.Role;
 
 public class Member extends User {
     final private int memberId;
-    private List<Integer> orderHistory;// List of order IDs
-    private String username; // Username of the user
-    private String password; // Password of the user
-    private String email; // Email address of the user
-    private String phoneNumber; // Phone number of the user
-    private String address; // Address of the user
-    private List<Role> roles; // List of roles associated with the user
-    private List<Role> pending_roles; // List of pending roles not yet confirmed/declined by the user
+    private volatile String username; // Username of the user
+    private volatile String password; // Password of the user
+    private volatile String email; // Email address of the user
+    private volatile String phoneNumber; // Phone number of the user
+    private volatile String address; // Address of the user
     
+    private final List<Role> roles; // List of roles associated with the user
+    private final List<Integer> orderHistory;// List of order IDs
+    private final List<Role> pending_roles; // List of pending roles not yet confirmed/declined by the user
+
+    private final Object rolesLock = new Object();
+    private final Object pendingRolesLock = new Object();
+    private final Object orderHistoryLock = new Object();
+
     public Member(int memberId, String username, String password, String email, String phoneNumber, String address) {
         super(memberId); // Call the User class constructor
         this.memberId = memberId; // Initialize member ID
@@ -25,9 +31,9 @@ public class Member extends User {
         this.email = email; // Initialize email address
         this.phoneNumber = phoneNumber; // Initialize phone number
         this.address = address; // Initialize address
-        this.orderHistory = new ArrayList<>(); // Initialize order history
-        this.roles = new ArrayList<>(); // Initialize roles
-        this.pending_roles = new ArrayList<>(); // Initialize pending roles
+        this.orderHistory = new CopyOnWriteArrayList<>(); // Initialize order history
+        this.roles = new CopyOnWriteArrayList<>(); // Initialize roles
+        this.pending_roles = new CopyOnWriteArrayList<>(); // Initialize pending roles
 
     }
 
@@ -55,52 +61,66 @@ public class Member extends User {
         return address; // Return the address
     }
 
-    public void setUsername(String username) {
+    public synchronized void setUsername(String username) {
         this.username = username; // Set the username
     }
 
-    public void setPassword(String password) {
+    public synchronized void setPassword(String password) {
         this.password = password; // Set the password
     }
 
-    public void setEmail(String email) {
+    public synchronized void setEmail(String email) {
         this.email = email; // Set the email address
     }
 
-    public void setPhoneNumber(String phoneNumber) {
+    public synchronized void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber; // Set the phone number
     }
 
-    public void setAddress(String address) {
+    public synchronized void setAddress(String address) {
         this.address = address; // Set the address
     }
 
     public List<Integer> getOrderHistory() {
-        return orderHistory; // Return the order history
+        synchronized (orderHistoryLock) {
+            return new CopyOnWriteArrayList<>(orderHistory);
+        } // Return a copy of the order history
     }
 
     public void addOrderToHistory(int orderId) {
-        orderHistory.add(orderId); // Add an order ID to the order history
+        synchronized (orderHistoryLock) {
+            orderHistory.add(orderId);
+        } // Add an order ID to the order history
     }
 
     public List<Role> getRoles() {
-        return roles; // Return the list of roles
+        synchronized (rolesLock) {
+            return new CopyOnWriteArrayList<>(roles);
+        } // Return a copy of the roles
     }
 
     public void addRoleToPending(Role role) {
-        pending_roles.add(role); // Add a role to the list of roles
+        synchronized (pendingRolesLock) {
+            pending_roles.add(role);
+        } // Add a role to the list of pending roles
     }
 
     public void addRole(Role role) {
-        roles.add(role); // Add a role to the list of roles
+        synchronized (rolesLock) {
+            roles.add(role);
+        } // Add a role to the list of roles
     }
 
     public void removeRole(Role role) {
-        roles.remove(role); // Remove a role from the list of roles
+        synchronized (rolesLock) {
+            roles.remove(role);
+        } // Remove a role from the list of roles
     }
 
     public boolean hasRole(Role role) {
-        return roles.contains(role); // Check if the user has a specific role
+        synchronized (rolesLock) {
+            return roles.contains(role);
+        } // Check if the user has a specific role
     }
 
 
@@ -112,54 +132,85 @@ public class Member extends User {
     }
 
     public void acceptRole(Role role) {
-        if (pending_roles.contains(role)) {
-            pending_roles.remove(role); // Remove the role from pending roles
-            roles.add(role); // Add the role to the list of roles
-        } else {
-            throw new IllegalArgumentException("Role not found in pending roles."); // Role not found in pending roles
+        synchronized (pendingRolesLock) {
+            if (pending_roles.contains(role)) {
+                pending_roles.remove(role);
+                synchronized (rolesLock) {
+                    roles.add(role);
+                }
+            } else {
+                throw new IllegalArgumentException("Role not found in pending roles.");
+            }
         }
     }
     public void declineRole(Role role) {
-        if (pending_roles.contains(role)) {
-            pending_roles.remove(role); // Remove the role from pending roles
-        } else {
-            throw new IllegalArgumentException("Role not found in pending roles."); // Role not found in pending roles
+        synchronized (pendingRolesLock) {
+            if (pending_roles.contains(role)) {
+                pending_roles.remove(role);
+            } else {
+                throw new IllegalArgumentException("Role not found in pending roles.");
+            }
         }
     }
+
     public void addPermission(int shopId, PermissionsEnum permission) {
-        // Add a permission to the user's roles (if applicable)
-        for (Role role : roles) {
-            if (role.getShopId() == shopId) {
-                role.addPermission(permission);
-                return; // Exit after adding the permission to the first matching role
+        synchronized (rolesLock) {
+            for (Role role : roles) {
+                if (role.getShopId() == shopId) {
+                    role.addPermission(permission);
+                    return;
+                }
             }
         }
         throw new RuntimeException("member has no role in this shop");
     }
+
     public void removePermission(int shopId, PermissionsEnum permission) {
-        // Remove a permission from the user's roles (if applicable)
-        for (Role role : roles) {
-            if (role.getShopId() == shopId) {
-                role.removePermissions(permission);
-                return; // Exit after removing the permission from the first matching role
+        synchronized (rolesLock) {
+            for (Role role : roles) {
+                if (role.getShopId() == shopId) {
+                    role.removePermissions(permission);
+                    return;
+                }
             }
         }
     }
-    public boolean hasPermission(PermissionsEnum permission, int shopdId) {
-        // Check if the user has a specific permission through their roles
-        for (Role role : roles) {
-            if (role.getShopId()==shopdId && role.hasPermission(permission)) {
-                return true; // User has the permission
+    public boolean hasPermission(PermissionsEnum permission, int shopId) {
+        synchronized (rolesLock) {
+            for (Role role : roles) {
+                if (role.getShopId() == shopId && role.hasPermission(permission)) {
+                    return true;
+                }
             }
         }
-        return false; // User does not have the permission
+        return false;
 
     }
 
     public List<Role> getPendingRoles() {
-        return pending_roles; // Return the list of pending roles
+        synchronized (pendingRolesLock) {
+            return new CopyOnWriteArrayList<>(pending_roles);
+        } // Return a copy of the pending roles
     }
-    public void setPendingRoles(List<Role> pending_roles) {
-        this.pending_roles = pending_roles; // Set the list of pending roles
+
+    public void setPendingRoles(List<Role> newPendingRoles) {
+        synchronized (pendingRolesLock) {
+            this.pending_roles.clear();
+            this.pending_roles.addAll(newPendingRoles);
+        }
+    }
+    
+    public void setRoles(List<Role> newRoles) {
+        synchronized (rolesLock) {
+            this.roles.clear();
+            this.roles.addAll(newRoles);
+        }
+    }
+
+    public void setOrderHistory(List<Integer> newOrderHistory) {
+        synchronized (orderHistoryLock) {
+            this.orderHistory.clear();
+            this.orderHistory.addAll(newOrderHistory);
+        }
     }
 }

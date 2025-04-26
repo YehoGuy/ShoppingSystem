@@ -507,8 +507,9 @@ public class UserService {
     public boolean addRole(int id, Role role) {
         try {
             LoggerService.logMethodExecution("addRole", id, role);
-            Member member = userRepository.getMemberById(id);
-            member.addRole(role);
+            User member = userRepository.getUserById(id);
+            validateMemberId(id);
+            ((Member)member).addRole(role);
             LoggerService.logMethodExecutionEnd("addRole", true);
             return true; // Role added successfully
         } catch (Exception e) {
