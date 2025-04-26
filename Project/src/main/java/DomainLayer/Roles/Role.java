@@ -19,7 +19,12 @@ public class Role {
     public Role(int assigneeId, int shopId, PermissionsEnum[] permissions) {
         this.assigneeId = assigneeId;
         this.shopId = shopId;
-        this.permissions = Arrays.copyOf(permissions, permissions.length);
+        if (permissions == null) {
+            this.permissions = new PermissionsEnum[0]; // Initialize with empty permissions if null
+        }
+        else {
+            this.permissions = Arrays.copyOf(permissions, permissions.length);
+        }
     }
 
     public int getAssigneeId() {
