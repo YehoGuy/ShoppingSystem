@@ -82,6 +82,16 @@ public class ShopRepository implements IShopRepository {
     }
 
     @Override
+    public void removeGlobalDiscount(int shopId) {
+        Shop shop = shops.get(shopId);
+        if (shop == null) {
+            throw new IllegalArgumentException("Shop not found: " + shopId);
+        }
+        // this only affects that one Shop instance
+        shop.removeGlobalDiscount();
+    }
+
+    @Override
     public void setDiscountForItem(int shopId, int itemId, int discount) {
         try {
             Shop shop = shops.get(shopId);
@@ -92,6 +102,15 @@ public class ShopRepository implements IShopRepository {
         } catch (Exception e) {
             throw new RuntimeException("Error setting discount for item: " + e.getMessage(), e);
         }
+    }
+
+    @Override
+    public void removeDiscountForItem(int shopId, int itemId) {
+        Shop shop = shops.get(shopId);
+        if (shop == null) {
+            throw new IllegalArgumentException("Shop not found: " + shopId);
+        }
+        shop.removeDiscountForItem(itemId);
     }
 
     @Override
@@ -226,7 +245,8 @@ public class ShopRepository implements IShopRepository {
         if (shop != null) {
             int currentQuantity = shop.getItemQuantity(itemId);
             if (currentQuantity >= supply) {
-                shop.removeItem(itemId, supply);
+                // shop.removeItemQuantity(itemId, supply); // Decrease the supply count   ----- האם צריך להוריד את הכמות?
+                // or just return true and let the caller handle the removal  ----------- לבדוק אם זה בסדר
                 return true;
             }
             return false;
@@ -266,7 +286,7 @@ public class ShopRepository implements IShopRepository {
             if (shop == null) {
                 throw new IllegalArgumentException("Shop not found: " + shopId);
             }
-            shop.removeItem(itemId, supply);
+            shop.removeItemQuantity(itemId, supply);
         } catch (Exception e) {
             throw new RuntimeException("Error removing supply: " + e.getMessage(), e);
         }
@@ -283,7 +303,7 @@ public class ShopRepository implements IShopRepository {
                     throw new IllegalArgumentException("Shop not found: " + shopId);
                 }
                 // delegate to the Shop’s own policy checker
-                if (!shop.checkPolicy(itemsInShop)) {
+                if (!shop.checkPolicys(itemsInShop)) {
                     return false;
                 }
             }

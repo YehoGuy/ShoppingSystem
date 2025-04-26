@@ -49,6 +49,13 @@ public interface IShopRepository {
     void setGlobalDiscount(int shopId, int discount);
 
     /**
+     * Remove the global discount for the specified shop.
+     *
+     * @param shopId the shop id.
+     */
+    void removeGlobalDiscount(int shopId);
+
+    /**
      * Sets a discount for a specific item in the specified shop.
      *
      * @param shopId   the shop id.
@@ -61,6 +68,22 @@ public interface IShopRepository {
      * Adds a review to the specified shop.
      *
      * @param shopId     the shop id.
+     * @param rating     the review rating.
+     * @param reviewText the review text.
+     */
+
+    /**
+     * removes the discount for a specific item in the specified shop.
+     * @param shopId
+     * @param itemId
+     */
+    void removeDiscountForItem(int shopId, int itemId);
+
+    /**
+     * Adds a review to the specified shop.
+     *
+     * @param shopId     the shop id.
+     * @param userId     the user id.
      * @param rating     the review rating.
      * @param reviewText the review text.
      */

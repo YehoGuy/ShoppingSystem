@@ -176,6 +176,20 @@ public class Shop {
         itemAcquireLocks.remove(itemId);
     }
 
+    public void removeItemQuantity(int itemId, int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Quantity must be positive");
+        }
+        AtomicInteger currentQty = items.get(itemId);
+        if (currentQty != null) {
+            currentQty.addAndGet(-quantity);
+            if (currentQty.get() <= 0) {
+                items.remove(itemId);
+            }
+        } else {
+            throw new IllegalArgumentException("Item not found: " + itemId);
+        }
+    }
 
 
     /**
@@ -219,6 +233,17 @@ public class Shop {
                 return existing;
             }
         });
+        // Update the price in the discounts as well
+        // (if the itemId is not null and the shopId matches)
+        //  ????? --  different way to do this?
+        for (Discount d : discounts) {
+            if (d instanceof DiscountImpl
+             && d.getShopId() == this.id
+             && d.getItemId() != null
+             && d.getItemId().equals(itemId)) {
+                ((DiscountImpl)d).setPriceItem(price);
+            }
+        }
     }
 
     public ShippingMethod getShippingMethod() {
@@ -261,7 +286,7 @@ public class Shop {
      * @param items a map where the key is the item ID and the value is the quantity.
      * @return {@code true} if the purchase is valid, {@code false} otherwise.
      */
-    private boolean checkPolicys(Map<Integer,Integer> items){
+    public boolean checkPolicys(Map<Integer,Integer> items){
         for (PurchasePolicy purchasePolicy : purchasePolicys) {
             if (!purchasePolicy.isValidPurchase(items, getTotalPrice(items))) {
                 return false;
@@ -270,7 +295,7 @@ public class Shop {
         return true;
     }
 
-    
+
     private double applyDiscount(Map<Integer,Integer> items){
         int minPrice = Integer.MAX_VALUE; 
         for(Discount discount : discounts){
@@ -281,47 +306,77 @@ public class Shop {
         return minPrice;
     }
 
-    public void addDiscount(Discount discount) {
-        discounts.add(discount);
-    } 
-
-    public void removeDiscount(Discount discount) {
-        discounts.remove(discount);
-    }
-
     /**
      * Applies a global percentage discount to the total price of any purchase.
      *
      * @param percentage the discount percentage (0–100)
      */
-    public void globalDiscount(int percentage) {
-        if (percentage < 0 || percentage > 100) {
-            throw new IllegalArgumentException("Discount percentage must be between 0 and 100");
+    public void setGlobalDiscount(int percentage) {
+        // try to update existing
+        for (Discount d : discounts) {
+            if (d.getShopId() == this.id && d.getItemId() == null) {
+                d.setPercentage(percentage);
+                return;
+            }
         }
-        Discount global = new Discount() {
-            // we capture the discount percentage here
-            private int pct = percentage;
-
-            @Override
-            public int applyDiscounts(Map<Integer, Integer> items, int totalPrice) {
-                // e.g. 20% off → pay 80% of total
-                return totalPrice * (100 - pct) / 100;
-            }
-
-            @Override
-            public void setDiscount(Map<Integer, Integer> items, int discount) {
-                // allow updating the percentage if needed
-                if (discount < 0 || discount > 100) {
-                    throw new IllegalArgumentException("Discount percentage must be between 0 and 100");
-                }
-                this.pct = discount;
-            }
-        };
-        discounts.add(global);
+        // otherwise add new
+        discounts.add(new DiscountImpl(this.id, null,/* price unused */0, percentage));
     }
 
+    /**
+     * Removes a global discount from the shop.
+     * This method iterates through all discounts and removes the one that matches the given percentage.
+     *
+     * @param percentage the discount percentage to remove (0–100).
+     */ 
+    public void removeGlobalDiscount() {
+        discounts.removeIf(d ->
+            d.getShopId() == this.id &&
+            d.getItemId() == null
+        );
+    }
+    
+        /**
+     * Applies a percentage discount to a single item.
+     *
+     * @param itemId     the ID of the item to discount.
+     * @param percentage the discount percentage (0–100).
+     */
+    public void setDiscountForItem(int itemId, int percentage) {
+        for (Discount d : discounts) {
+            if (d.getShopId() == this.id
+             && d.getItemId() != null
+             && d.getItemId().equals(itemId)) {
+                d.setPercentage(percentage);
+                return;
+            }
+        }
+        discounts.add(new DiscountImpl(this.id, itemId, this.getItemPrice(itemId), percentage));
+    }
 
+    /**
+     * Removes a discount for a single item.
+     *
+     * @param itemId the ID of the item to remove the discount from.
+     */
+    public void removeDiscountForItem(int itemId) {
+        discounts.removeIf(d ->
+            d.getShopId() == this.id &&
+            d.getItemId() != null &&
+            d.getItemId().equals(itemId)
+        );
+    }
 
+    ////////*******************************//////////////////////////////////
+    /// we need to think about how to handle the case where a discount is set for combined items
+    /// for example, if we have a discount for item 1 and item 2 when bought together,
+    /// and we buy 2 of item 1 and 3 of item 2, we need to make sure that the discount is applied correctly and not double counted.
+    /// we need to make sure that the discount is applied correctly and not double counted.
+    /// we need to think about how to handle the case where a discount is for quantities of items
+    /// for example, if we have a discount for item 1 and item 2, and we buy 2 of item 1 and 3 of item 2, we need to make sure that the discount is applied correctly and not double counted.
+    /// i think we need to take the highest discount for each item and apply it to the total price - from all the discounts on the items in the cart.
+    ////////*******************************//////////////////////////////////
+    
     // ===== Purchase Method =====
      
     /**
