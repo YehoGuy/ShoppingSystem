@@ -3,6 +3,8 @@ package DomainLayer;
 import java.util.List;
 import java.util.Map;
 
+import DomainLayer.Roles.PermissionsEnum;
+import DomainLayer.Roles.Role;
 import InfrastructureLayer.PasswordEncoderUtil;
 
 public interface IUserRepository {
@@ -10,6 +12,7 @@ public interface IUserRepository {
     // Basic user retrieval
     User getUserById(int id);
     Map<Integer, User> getUserMapping();
+    Member getMemberById(int id);
 
     //manager actions
     boolean isAdmin(Integer id);
@@ -51,6 +54,16 @@ public interface IUserRepository {
     // Role checks
     boolean isOwner(int memberId, int shopId);
     boolean isFounder(int memberId, int shopId);
+
+    // Role operations
+    void setPermissions(int userId, int shopId, Role role, PermissionsEnum[] permissions);
+    void addRoleToPending(int userId, Role role);
+    Role getRole(int memberId, int shopId);
+    void removeRole(int memberId, int shopId);
+    Role getPendingRole(int memberId, int shopId);
+    void acceptRole(int id, Role role);
+    void addPermission(int id, PermissionsEnum permission, int shopId);
+    void removePermission(int id, PermissionsEnum permission, int shopId);
 
     // Shopping cart operations
     ShoppingCart getShoppingCartById(int userId);
