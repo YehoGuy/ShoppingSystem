@@ -52,10 +52,7 @@ public class ShopService {
             Shop returnShop = shopRepository.createShop(name, purchasePolicy, globalDiscount);
             Role founderRole = new Role(userId, returnShop.getId(), null);
             founderRole.setFoundersPermissions();
-            Boolean isRoleAdded = userService.addRole(userId, founderRole);
-            if (!isRoleAdded) {
-                throw new RuntimeException("Failed to add role to user " + userId + " for shop " + returnShop.getId());
-            }
+            userService.addRole(userId, founderRole);
             LoggerService.logMethodExecutionEnd("createShop", returnShop);
             return returnShop;
         } catch (Exception e) 

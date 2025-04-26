@@ -505,16 +505,15 @@ public class UserService {
 
     public boolean addRole(int id, Role role) {
         try {
-            if (userRepository.getUserMapping().containsKey(id)) {
-                User user = userRepository.getUserById(id);
-                validateMemberId(id);
-                ((Member)user).addRole(role);
-                return true; // Role added successfully
-            } else {
-                throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
-            }
+            LoggerService.logMethodExecution("addRole", id, role);
+            User member = userRepository.getUserById(id);
+            validateMemberId(id);
+            ((Member)member).addRole(role);
+            LoggerService.logMethodExecutionEnd("addRole", true);
+            return true; // Role added successfully
         } catch (Exception e) {
-            return false; // Indicate failure to add role
+            LoggerService.logError("addRole", e, id, role);
+            throw new RuntimeException("Error adding role for user ID " + id + ": " + e.getMessage(), e); // Indicate failure to add role
         }
     }
 
