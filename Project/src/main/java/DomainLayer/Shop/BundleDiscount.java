@@ -2,6 +2,8 @@ package DomainLayer.Shop;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A discount that applies a percentage off the entire purchase
@@ -9,7 +11,7 @@ import java.util.Set;
  */
 public class BundleDiscount implements Discount {
     private final int shopId;
-    private final Set<Integer> bundleItems;
+    private final Map<Integer, Integer> bundleItems; // itemId -> threshold
     private int percentage;
 
     /**
@@ -17,13 +19,13 @@ public class BundleDiscount implements Discount {
      * @param bundleItems  the set of item IDs that must all be in the cart
      * @param percentage   the discount percentage (0–100)
      */
-    public BundleDiscount(int shopId, Set<Integer> bundleItems, int percentage) {
+    public BundleDiscount(int shopId, Map<Integer, Integer> bundleItems, int percentage) {
         if (bundleItems == null || bundleItems.isEmpty()) {
             throw new IllegalArgumentException("Bundle items must not be null or empty");
         }
         validatePercentage(percentage);
         this.shopId       = shopId;
-        this.bundleItems  = Set.copyOf(bundleItems);
+        this.bundleItems  = Map.copyOf(bundleItems);
         this.percentage   = percentage;
     }
 
@@ -49,12 +51,40 @@ public class BundleDiscount implements Discount {
     }
 
     @Override
-    public int applyDiscounts(Map<Integer, Integer> items, int totalPrice) {
-        if (items.keySet().containsAll(bundleItems)) {
-            return totalPrice * (100 - percentage) / 100;
+    public Map<Integer, Integer> applyDiscounts(Map<Integer, Integer> items, Map<Integer, AtomicInteger> prices, Map<Integer, Integer> itemsDiscountedPrices) {
+        // 1) Verify bundle completeness
+        for (Map.Entry<Integer, Integer> req : bundleItems.entrySet()) {
+            int itemId      = req.getKey();
+            int requiredQty = req.getValue();
+            Integer actualQty = items.get(itemId);
+            if (actualQty == null || actualQty < requiredQty) {
+                // missing a required bundle item → no discount
+                return itemsDiscountedPrices;
+            }
         }
-        return totalPrice;
+
+        // 2) Apply discount
+        for (Map.Entry<Integer, Integer> req : bundleItems.entrySet()) {
+            int itemId      = req.getKey();
+            int requiredQty = req.getValue();
+            Integer actualQty = items.get(itemId);
+            if (actualQty != null && actualQty >= requiredQty) {
+                // apply discount to the item
+                AtomicInteger price = prices.get(itemId);
+                if (price != null) {
+                    int discountedPrice = price.get() * (100 - percentage) / 100;
+                    if(itemsDiscountedPrices.get(itemId) > discountedPrice) {
+                        itemsDiscountedPrices.put(itemId, discountedPrice);
+                    }
+                }
+            }
+        }
+
+        return itemsDiscountedPrices;
     }
+    
+    
+
 
     private void validatePercentage(int p) {
         if (p < 0 || p > 100) {

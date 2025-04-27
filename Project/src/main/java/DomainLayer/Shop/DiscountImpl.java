@@ -1,6 +1,7 @@
 package DomainLayer.Shop;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Single implementation of {@link Discount} for both global and item-specific discounts.
@@ -54,27 +55,34 @@ public class DiscountImpl implements Discount {
     }
 
     @Override
-    public int applyDiscounts(Map<Integer, Integer> items, int totalPrice) {
+    public Map<Integer, Integer> applyDiscounts(Map<Integer, Integer> items, Map<Integer, AtomicInteger> prices, Map<Integer, Integer> itemsDiscountedPrices) {
         if (itemId == null) {
             // global: apply to entire cart
-            return totalPrice * (100 - percentage) / 100;
+            for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
+                Integer itemId = entry.getKey();
+                Integer qty = entry.getValue();
+                if (qty != null && qty > 0) {
+                    // determine full price of that item (requires external price lookup)
+                    int itemPrice = prices.get(itemId).get();
+                    int discountedPrice = itemPrice * (100 - percentage) / 100;
+                    if(itemsDiscountedPrices.get(itemId) > discountedPrice) {
+                        itemsDiscountedPrices.put(itemId, discountedPrice);
+                    }
+                }
+            }
         }
         // item-specific: calculate discount only on that item
         Integer qty = items.get(itemId);
         if (qty == null || qty <= 0) {
-            return totalPrice;
+            return itemsDiscountedPrices;
         }
-        // determine full price of that item (requires external price lookup)
-        int itemPrice = priceItem;
-        int fullItemTotal = itemPrice * qty;
-        int discountedItemTotal = fullItemTotal * (100 - percentage) / 100;
-        // rest of cart at full price:
-        return (totalPrice - fullItemTotal) + discountedItemTotal;
-    }
 
-    public void setPriceItem(int priceItem) {
-        if (priceItem < 0)
-            throw new IllegalArgumentException("Price must be non-negative");
-        this.priceItem = priceItem;
+        int itemPrice = prices.get(itemId).get();
+        int discountedPrice = itemPrice * (100 - percentage) / 100;
+        if(itemsDiscountedPrices.get(itemId) > discountedPrice) {
+            itemsDiscountedPrices.put(itemId, discountedPrice);
+        }
+          
+        return itemsDiscountedPrices;
     }
 }

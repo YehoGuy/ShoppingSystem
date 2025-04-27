@@ -233,17 +233,6 @@ public class Shop {
                 return existing;
             }
         });
-        // Update the price in the discounts as well
-        // (if the itemId is not null and the shopId matches)
-        //  ????? --  different way to do this?
-        for (Discount d : discounts) {
-            if (d instanceof DiscountImpl
-             && d.getShopId() == this.id
-             && d.getItemId() != null
-             && d.getItemId().equals(itemId)) {
-                ((DiscountImpl)d).setPriceItem(price);
-            }
-        }
     }
 
     public ShippingMethod getShippingMethod() {
@@ -297,13 +286,27 @@ public class Shop {
 
 
     private double applyDiscount(Map<Integer,Integer> items){
-        int minPrice = Integer.MAX_VALUE; 
-        for(Discount discount : discounts){
-            int price = discount.applyDiscounts(items, getTotalPrice(items));
-            if(price < minPrice)
-                minPrice = price;
+        Map<Integer, Integer> itemsDiscountedPrices = new HashMap<>();
+        for(Map.Entry<Integer, Integer> entry : items.entrySet()){
+            int itemId = entry.getKey();
+            int price = getItemPrice(itemId);
+            itemsDiscountedPrices.put(itemId, price);
         }
-        return minPrice;
+
+        for(Discount discount : discounts){
+            itemsDiscountedPrices = discount.applyDiscounts(items, itemsPrices, itemsDiscountedPrices);
+        }
+        
+        // calculate the total price after applying discounts
+        double totalPrice = 0;
+        for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
+            int itemId = entry.getKey();
+            int quantity = entry.getValue();
+            int discountedPrice = itemsDiscountedPrices.get(itemId);
+            totalPrice += discountedPrice * quantity;
+        }
+
+        return totalPrice;
     }
 
     /**
@@ -366,16 +369,6 @@ public class Shop {
             d.getItemId().equals(itemId)
         );
     }
-
-    ////////*******************************//////////////////////////////////
-    /// we need to think about how to handle the case where a discount is set for combined items
-    /// for example, if we have a discount for item 1 and item 2 when bought together,
-    /// and we buy 2 of item 1 and 3 of item 2, we need to make sure that the discount is applied correctly and not double counted.
-    /// we need to make sure that the discount is applied correctly and not double counted.
-    /// we need to think about how to handle the case where a discount is for quantities of items
-    /// for example, if we have a discount for item 1 and item 2, and we buy 2 of item 1 and 3 of item 2, we need to make sure that the discount is applied correctly and not double counted.
-    /// i think we need to take the highest discount for each item and apply it to the total price - from all the discounts on the items in the cart.
-    ////////*******************************//////////////////////////////////
     
     // ===== Purchase Method =====
      
