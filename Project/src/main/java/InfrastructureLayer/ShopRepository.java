@@ -20,8 +20,9 @@ public class ShopRepository implements IShopRepository {
     private final AtomicInteger shopIdCounter = new AtomicInteger(1);
     private final List<Shop> closedShops = new CopyOnWriteArrayList<>();
 
+    
     @Override
-    public Shop createShop(String name, String purchasePolicy, ShippingMethod shippingMethod) {
+    public Shop createShop(String name, PurchasePolicy purchasePolicy, ShippingMethod shippingMethod) {
         try {
             int id = shopIdCounter.getAndIncrement();
             Shop shop = new Shop(id, name, shippingMethod);

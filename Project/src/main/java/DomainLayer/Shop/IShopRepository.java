@@ -15,7 +15,7 @@ public interface IShopRepository {
      * @param globalDiscount the global discount for all items in the shop.
      * @return the newly created Shop object with an auto-allocated id.
      */
-    Shop createShop(String name, String purchasePolicy, ShippingMethod shippingMethod);
+    Shop createShop(String name, PurchasePolicy purchasePolicy, ShippingMethod shippingMethod);
 
     /**
      * Retrieves a shop by its id.
