@@ -1,12 +1,17 @@
 package DomainLayerTests;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
+import ApplicationLayer.Purchase.ShippingMethod;
 import DomainLayer.Shop.Shop;
 import DomainLayer.Shop.ShopReview;
 
@@ -14,51 +19,39 @@ public class ShopTests {
 
     private Shop shop;
 
+    @Mock
+    private ShippingMethod shippingMethod;
+
     @BeforeEach
     public void setup() {
-        // id=1, name="TestShop", policy="Default", global discount=10
-        shop = new Shop(1, "TestShop", "DefaultPolicy", 10);
+        MockitoAnnotations.openMocks(this);
+        // id=1, name="TestShop", shippingMethod = mock
+        shop = new Shop(1, "TestShop", shippingMethod);
     }
 
     @Test
     public void testImmutableFields() {
         assertEquals(1, shop.getId());
         assertEquals("TestShop", shop.getName());
+        // shippingMethod should be exactly the mock we injected
+        assertSame(shippingMethod, shop.getShippingMethod());
     }
 
     @Test
-    public void testPurchasePolicySetter() {
-        assertEquals("DefaultPolicy", shop.getPurchasePolicy());
-        shop.setPurchasePolicy("NewPolicy");
-        assertEquals("NewPolicy", shop.getPurchasePolicy());
-    }
-
-    @Test
-    public void testGlobalDiscount() {
-        assertEquals(10, shop.getGlobalDiscount());
-        assertEquals(10, shop.getDiscountForItem(42)); // no specific => global
-        shop.setGlobalDiscount(20);
-        assertEquals(20, shop.getGlobalDiscount());
-        assertEquals(20, shop.getDiscountForItem(99));
-    }
-
-    @Test
-    public void testItemSpecificDiscount() {
-        shop.setDiscountForItem(5, 15);
-        // specific < global => global applies
-        shop.setGlobalDiscount(20);
-        assertEquals(20, shop.getDiscountForItem(5));
-        // specific > global
-        shop.setDiscountForItem(5, 25);
-        assertEquals(25, shop.getDiscountForItem(5));
+    public void testShippingMethodSetter() {
+        ShippingMethod other = mock(ShippingMethod.class);
+        shop.setShippingMethod(other);
+        assertSame(other, shop.getShippingMethod());
     }
 
     @Test
     public void testReviewsAndAverageRating() {
         assertTrue(shop.getReviews().isEmpty());
         assertEquals(0.0, shop.getAverageRating());
-        shop.addReview(1,5, "Great");
-        shop.addReview(new ShopReview(1,3, "Okay"));
+
+        shop.addReview(1, 5, "Great");
+        shop.addReview(new ShopReview(1, 3, "Okay"));
+
         List<ShopReview> reviews = shop.getReviews();
         assertEquals(2, reviews.size());
         assertEquals(4.0, shop.getAverageRating());
@@ -76,14 +69,16 @@ public class ShopTests {
     @Test
     public void testRemoveItemPartialAndFull() {
         shop.addItem(200, 5);
-        shop.removeItem(200, 2);
+        shop.removeItemQuantity(200, 2);
         assertEquals(3, shop.getItemQuantity(200));
-        // remove remaining
-        shop.removeItem(200, 3);
+
+        // remove remaining via removeItemQuantity
+        shop.removeItemQuantity(200, 3);
         assertEquals(0, shop.getItemQuantity(200));
-        // add again then remove completely via -1
+
+        // add again then remove completely via removeItemFromShop
         shop.addItem(200, 7);
-        shop.removeItem(200, -1);
+        shop.removeItemFromShop(200);
         assertEquals(0, shop.getItemQuantity(200));
     }
 
@@ -110,20 +105,55 @@ public class ShopTests {
         shop.addItem(300, 2);
         shop.updateItemPrice(300, 20);
         assertEquals(20, shop.getItemPrice(300));
+
         // remove completely
-        shop.removeItem(300, -1);
+        shop.removeItemFromShop(300);
         assertEquals(0, shop.getItemQuantity(300));
         assertEquals(0, shop.getItemPrice(300));
     }
 
     @Test
     public void testInvalidPriceThrows() {
-        assertThrows(IllegalArgumentException.class, () -> shop.updateItemPrice(5, -10));
+        assertThrows(IllegalArgumentException.class,
+            () -> shop.updateItemPrice(5, -10));
     }
 
     @Test
     public void testInvalidRemoveQuantityThrows() {
-        assertThrows(IllegalArgumentException.class, () -> shop.removeItem(5, 0));
-        assertThrows(IllegalArgumentException.class, () -> shop.removeItem(5, -2)); // other than -1
+        assertThrows(IllegalArgumentException.class,
+            () -> shop.removeItemQuantity(5, 0));
+        assertThrows(IllegalArgumentException.class,
+            () -> shop.removeItemQuantity(5, -2)); // negative other than full removal
+    }
+
+    @Test
+    public void testPurchaseItems_NoDiscount() {
+        shop.addItem(100, 2);
+        shop.updateItemPrice(100, 50);
+
+        Map<Integer,Integer> list = Map.of(100, 2);
+        // no discounts added, so total = 2 * 50 = 100.0
+        assertEquals(100.0, shop.purchaseItems(list));
+    }
+
+    @Test
+    public void testGlobalDiscount() {
+        shop.addItem(101, 3);
+        shop.updateItemPrice(101, 20);
+        // 3 * 20 = 60
+        shop.setGlobalDiscount(50); // 50% off
+        Map<Integer,Integer> list = Map.of(101, 3);
+        assertEquals(30.0, shop.purchaseItems(list));
+    }
+
+    @Test
+    public void testItemSpecificDiscount() {
+        shop.addItem(102, 5);
+        shop.updateItemPrice(102, 10);
+        // 5 * 10 = 50
+        shop.setDiscountForItem(102, 40); // 40% off this item
+        Map<Integer,Integer> list = Map.of(102, 5);
+        // pay 60% of 50 = 30.0
+        assertEquals(30.0, shop.purchaseItems(list));
     }
 }
