@@ -21,7 +21,7 @@ public class Shop {
     private final int id;
     private final String name;
 
-    private final List<PurchasePolicy> purchasePolicys;
+    private final List<PurchasePolicy> purchasePolicies;
 
     private final List<Discount> discounts;
 
@@ -29,7 +29,7 @@ public class Shop {
     private final List<ShopReview> reviews;
 
     // Items: mapping from item ID to its quantity.
-    private final ConcurrentHashMap<Integer, AtomicInteger> items;
+    private final ConcurrentHashMap<Integer, AtomicInteger> itemPrices;
 
     // Prices: mapping from item ID to its price.
     private final ConcurrentHashMap<Integer, AtomicInteger> itemsPrices;
@@ -50,10 +50,10 @@ public class Shop {
     public Shop(int id, String name, ShippingMethod shippingMethod) {
         this.id = id;
         this.name = name;
-        this.purchasePolicys = new ArrayList<>();
+        this.purchasePolicies = new ArrayList<>();
         this.discounts = new ArrayList<>();
         this.reviews = new CopyOnWriteArrayList<>();
-        this.items = new ConcurrentHashMap<>();
+        this.itemPrices = new ConcurrentHashMap<>();
         this.itemsPrices = new ConcurrentHashMap<>();
         this.itemAcquireLocks = new ConcurrentHashMap<>();
         this.shippingMethod = shippingMethod;
@@ -76,10 +76,10 @@ public class Shop {
     }
 
     public void addPurchasePolicy(PurchasePolicy purchasePolicy) {
-        purchasePolicys.add(purchasePolicy);
+        purchasePolicies.add(purchasePolicy);
     }
     public void removePurchasePolicy(PurchasePolicy purchasePolicy) {
-        purchasePolicys.remove(purchasePolicy);
+        purchasePolicies.remove(purchasePolicy);
     }
 
     
@@ -144,7 +144,7 @@ public class Shop {
         if (quantity <= 0) {
             throw new IllegalArgumentException("Quantity must be positive");
         }
-        items.merge(itemId, new AtomicInteger(quantity), (existing, value) -> {
+        itemPrices.merge(itemId, new AtomicInteger(quantity), (existing, value) -> {
             existing.addAndGet(quantity);
             return existing;
         });
@@ -159,7 +159,7 @@ public class Shop {
      */
     public void removeItemFromShop(int itemId) {
         // 1) Ensure item exists
-        if (!items.containsKey(itemId)) {
+        if (!itemPrices.containsKey(itemId)) {
             throw new IllegalArgumentException("Item not found: " + itemId);
         }
 
@@ -168,7 +168,7 @@ public class Shop {
 
         // 3) Under that lock, remove both quantity and price
         synchronized (lock) {
-            items.remove(itemId);
+            itemPrices.remove(itemId);
             itemsPrices.remove(itemId);
         }
 
@@ -180,11 +180,11 @@ public class Shop {
         if (quantity <= 0) {
             throw new IllegalArgumentException("Quantity must be positive");
         }
-        AtomicInteger currentQty = items.get(itemId);
+        AtomicInteger currentQty = itemPrices.get(itemId);
         if (currentQty != null) {
             currentQty.addAndGet(-quantity);
             if (currentQty.get() <= 0) {
-                items.remove(itemId);
+                itemPrices.remove(itemId);
             }
         } else {
             throw new IllegalArgumentException("Item not found: " + itemId);
@@ -199,7 +199,7 @@ public class Shop {
      * @return the quantity, or 0 if the item does not exist.
      */
     public int getItemQuantity(int itemId) {
-        AtomicInteger quantity = items.get(itemId);
+        AtomicInteger quantity = itemPrices.get(itemId);
         return quantity != null ? quantity.get() : 0;
     }
 
@@ -209,7 +209,7 @@ public class Shop {
      * @return a list of item IDs.
      */
     public List<Integer> getItemIds() {
-        return new ArrayList<>(items.keySet());
+        return new ArrayList<>(itemPrices.keySet());
     }
 
     // ===== Methods for Item Prices =====
@@ -276,7 +276,7 @@ public class Shop {
      * @return {@code true} if the purchase is valid, {@code false} otherwise.
      */
     public boolean checkPolicys(Map<Integer,Integer> items){
-        for (PurchasePolicy purchasePolicy : purchasePolicys) {
+        for (PurchasePolicy purchasePolicy : purchasePolicies) {
             if (!purchasePolicy.isValidPurchase(items, getTotalPrice(items))) {
                 return false;
             }
@@ -399,7 +399,7 @@ public class Shop {
 
                 Object lock = itemAcquireLocks.computeIfAbsent(itemId, k -> new Object());
                 synchronized (lock) {
-                    AtomicInteger availAtom = items.get(itemId);
+                    AtomicInteger availAtom = itemPrices.get(itemId);
                     int avail = availAtom != null ? availAtom.get() : 0;
                     if (avail < qty) {
                         throw new IllegalArgumentException("Insufficient stock for item " + itemId);
@@ -421,7 +421,7 @@ public class Shop {
                 int prevQty = r.getValue();
                 Object lock = itemAcquireLocks.get(itemId);
                 synchronized (lock) {
-                    items.get(itemId).set(prevQty);
+                    itemPrices.get(itemId).set(prevQty);
                 }
             }
             throw ex;
