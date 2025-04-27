@@ -87,7 +87,15 @@ public class Shop {
         purchasePolicies.remove(purchasePolicy);
     }
 
-    
+    // ===== Getters =====
+    /**
+     * Returns an unmodifiable view of the purchase policies.
+     * Currently for tests
+     * @return the list of purchase policies.
+     */
+    public List<PurchasePolicy> getPurchasePolicies() {
+        return Collections.unmodifiableList(purchasePolicies);
+    }
 
     // ===== Methods for Reviews =====
 
