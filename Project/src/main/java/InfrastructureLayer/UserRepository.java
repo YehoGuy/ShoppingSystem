@@ -7,18 +7,21 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import ApplicationLayer.OurRuntime;
 import DomainLayer.Guest;
 import DomainLayer.IUserRepository;
 import DomainLayer.Member;
 import DomainLayer.ShoppingCart;
 import DomainLayer.User;
+import DomainLayer.Roles.PermissionsEnum;
+import DomainLayer.Roles.Role;
 
 // Assuming User is a class that has been defined elsewhere in your project
 // and has a method getId() to retrieve the user's ID.
 
 public class UserRepository implements IUserRepository {
     // A map to store users with their IDs as keys
-    private Map<Integer, DomainLayer.User> userMapping;
+    private ConcurrentHashMap<Integer, DomainLayer.User> userMapping;
     private List<Integer> managers;
     AtomicInteger userIdCounter;
 
@@ -36,9 +39,21 @@ public class UserRepository implements IUserRepository {
 
     public User getUserById(int id) {
         if (!userMapping.containsKey(id)) {
-            throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            throw new OurRuntime("User with ID " + id + " doesn't exist.");
         }
         return userMapping.get(id);
+    }
+
+    public Member getMemberById(int id) {
+        if (!userMapping.containsKey(id)) {
+            throw new OurRuntime("User with ID " + id + " doesn't exist.");
+        }
+        User user = userMapping.get(id);
+        if (user instanceof Member) {
+            return (Member) user;
+        } else {
+            throw new OurRuntime("User with ID " + id + " is not a Member.");
+        }
     }
 
     public boolean isAdmin(Integer id){
@@ -47,20 +62,17 @@ public class UserRepository implements IUserRepository {
 
     public void addAdmin(Integer id) throws RuntimeException{
         if(managers.contains(id))
-            throw new RuntimeException("All ready a manager");
-
+            throw new OurRuntime("All ready an admin");
         managers.add(id);
     }
 
     public void removeAdmin(Integer id) throws RuntimeException{
         if(id == isUsernameAndPasswordValid("admin", "admin"))
-            throw new RuntimeException("cant remove admin from the user who created the system");
-
+            throw new OurRuntime("cant remove admin from the user who created the system");
         managers.remove(id);
     }
 
-    public List<Integer> getAllAdmins()
-    {
+    public List<Integer> getAllAdmins() {
         return managers;
     }
 
@@ -69,14 +81,14 @@ public class UserRepository implements IUserRepository {
         Guest guest = new Guest(id); // Assuming Guest is a subclass of User
         userMapping.put(id, guest); // Add the guest to the mapping
         if(!userMapping.containsKey(id) || userMapping.get(id) == null) {
-            return -1;
+            throw new IllegalArgumentException("Failed to create guest with ID " + id);
         }
         return id; // Return the ID of the newly created guest
     }
 
     public void addMember(String username, String password, String email, String phoneNumber, String address) {
         if(!email.contains("@") || email.isEmpty()){
-            throw new IllegalArgumentException("Invalid email address.");
+            throw new OurRuntime("Invalid email address.");
         }
 
         int id = userIdCounter.incrementAndGet(); // Generate a new ID for the member
@@ -86,61 +98,61 @@ public class UserRepository implements IUserRepository {
 
     public void updateMemberUsername(int id, String username) {
         if (!userMapping.containsKey(id)) {
-            throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            throw new OurRuntime("User with ID " + id + " doesn't exist.");
         }
         User user = userMapping.get(id);
         if (user instanceof Member) {
             ((Member) user).setUsername(username);
         } else {
-            throw new IllegalArgumentException("User with ID " + id + " is not a Member.");
+            throw new OurRuntime("User with ID " + id + " is not a Member.");
         }
     }
 
     public void updateMemberPassword(int id, String password) {
         if (!userMapping.containsKey(id)) {
-            throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            throw new OurRuntime("User with ID " + id + " doesn't exist.");
         }
         User user = userMapping.get(id);
         if (user instanceof Member) {
             ((Member) user).setPassword(password);
         } else {
-            throw new IllegalArgumentException("User with ID " + id + " is not a Member.");
+            throw new OurRuntime("User with ID " + id + " is not a Member.");
         }
     }
 
     public void updateMemberEmail(int id, String email) {
         if (!userMapping.containsKey(id)) {
-            throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            throw new OurRuntime("User with ID " + id + " doesn't exist.");
         }
         User user = userMapping.get(id);
         if (user instanceof Member) {
             ((Member) user).setEmail(email);
         } else {
-            throw new IllegalArgumentException("User with ID " + id + " is not a Member.");
+            throw new OurRuntime("User with ID " + id + " is not a Member.");
         }
     }
 
     public void updateMemberPhoneNumber(int id, String phoneNumber) {
         if (!userMapping.containsKey(id)) {
-            throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            throw new OurRuntime("User with ID " + id + " doesn't exist.");
         }
         User user = userMapping.get(id);
         if (user instanceof Member) {
             ((Member) user).setPhoneNumber(phoneNumber);
         } else {
-            throw new IllegalArgumentException("User with ID " + id + " is not a Member.");
+            throw new OurRuntime("User with ID " + id + " is not a Member.");
         }
     }
 
     public void updateMemberAddress(int id, String address) {
         if (!userMapping.containsKey(id)) {
-            throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            throw new OurRuntime("User with ID " + id + " doesn't exist.");
         }
         User user = userMapping.get(id);
         if (user instanceof Member) {
             ((Member) user).setAddress(address);
         } else {
-            throw new IllegalArgumentException("User with ID " + id + " is not a Member.");
+            throw new OurRuntime("User with ID " + id + " is not a Member.");
         }
     }
     
@@ -178,7 +190,7 @@ public class UserRepository implements IUserRepository {
 
     public void removeUserById(int id) {
         if (!userMapping.containsKey(id)) {
-            throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            throw new OurRuntime("User with ID " + id + " doesn't exist.");
         }
         userMapping.remove(id);
     }
@@ -245,7 +257,7 @@ public class UserRepository implements IUserRepository {
      */
     public ShoppingCart getShoppingCartById(int id) {
         if (!userMapping.containsKey(id)) {
-            throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            throw new OurRuntime("User with ID " + id + " doesn't exist.");
         }
         User user = userMapping.get(id);
         return user.getShoppingCart();
@@ -253,10 +265,10 @@ public class UserRepository implements IUserRepository {
 
     public void addItemToShoppingCart(int userId, int shopId, int itemId, int quantity) {
         if (!userMapping.containsKey(userId)) {
-            throw new IllegalArgumentException("User with ID " + userId + " doesn't exist.");
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
         }
         if (quantity <= 0) {
-            throw new IllegalArgumentException("Quantity must be greater than 0.");
+            throw new OurRuntime("Quantity must be greater than 0.");
         }
         User user = userMapping.get(userId);
         ShoppingCart shoppingCart = user.getShoppingCart();
@@ -265,7 +277,7 @@ public class UserRepository implements IUserRepository {
 
     public void removeItemFromShoppingCart(int userId, int shopId, int itemId) {
         if (!userMapping.containsKey(userId)) {
-            throw new IllegalArgumentException("User with ID " + userId + " doesn't exist.");
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
         }
         User user = userMapping.get(userId);
         ShoppingCart shoppingCart = user.getShoppingCart();
@@ -274,10 +286,10 @@ public class UserRepository implements IUserRepository {
 
     public void updateItemQuantityInShoppingCart(int userId, int shopId, int itemId, int quantity) {
         if (!userMapping.containsKey(userId)) {
-            throw new IllegalArgumentException("User with ID " + userId + " doesn't exist.");
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
         }
         if (quantity <= 0) {
-            throw new IllegalArgumentException("Quantity must be greater than 0.");
+            throw new OurRuntime("Quantity must be greater than 0.");
         }
         User user = userMapping.get(userId);
         ShoppingCart shoppingCart = user.getShoppingCart();
@@ -287,7 +299,7 @@ public class UserRepository implements IUserRepository {
 
     public void clearShoppingCart(int userId) {
         if (!userMapping.containsKey(userId)) {
-            throw new IllegalArgumentException("User with ID " + userId + " doesn't exist.");
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
         }
         User user = userMapping.get(userId);
         ShoppingCart shoppingCart = user.getShoppingCart();
@@ -296,7 +308,7 @@ public class UserRepository implements IUserRepository {
 
     public Map<Integer, Integer> getBasket(int userId, int shopId) {
         if (!userMapping.containsKey(userId)) {
-            throw new IllegalArgumentException("User with ID " + userId + " doesn't exist.");
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
         }
         User user = userMapping.get(userId);
         ShoppingCart shoppingCart = user.getShoppingCart();
@@ -305,14 +317,124 @@ public class UserRepository implements IUserRepository {
 
     public void createBasket(int userId, int shopId) {
         if (!userMapping.containsKey(userId)) {
-            throw new IllegalArgumentException("User with ID " + userId + " doesn't exist.");
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
         }
         User user = userMapping.get(userId);
         ShoppingCart shoppingCart = user.getShoppingCart();
         shoppingCart.addBasket(shopId); 
     }
 
-    
-    
+    public void setPermissions(int userId, int shopId, Role role, PermissionsEnum[] permissions) {
+        Member member = getMemberById(userId);
+        if (member == null) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        if (role == null) {
+            throw new OurRuntime("Role cannot be null.");
+        }
+        if (permissions == null || permissions.length == 0) {
+            throw new OurRuntime("Permissions cannot be null or empty.");
+        }
+        if (!member.getRoles().contains(role)) {
+            throw new OurRuntime("User with ID " + userId + " does not have the specified role.");
+        }
+        role.setPermissions(permissions); // Assuming Role has a method to set permissions
+    }
 
+    public void addRoleToPending(int userId, Role role) {
+        Member member = getMemberById(userId);
+        if (member == null) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        if (role == null) {
+            throw new OurRuntime("Role cannot be null.");
+        }
+        for (Role existingRole : member.getRoles()) {
+            if (existingRole.getShopId() == role.getShopId()) {
+                throw new OurRuntime("User with ID " + userId + " already has a role for this shop.");
+            }
+        }
+        for (Role pendingRole : member.getPendingRoles())
+            if (pendingRole.getShopId() == role.getShopId()) 
+                    throw new OurRuntime("User with ID " + userId + " already has this role pending.");
+        member.addRoleToPending(role); // Assuming Member has a method to add a role
+    }
+
+    public Role getRole(int memberId, int shopId) {
+        Member member = getMemberById(memberId);
+        if (member == null) {
+            throw new OurRuntime("User with ID " + memberId + " doesn't exist.");
+        }
+        List<Role> roles = member.getRoles();
+        for (Role role : roles) {
+            if (role.getShopId() == shopId) {
+                return role;
+            }
+        }
+        throw new OurRuntime("User with ID " + memberId + " does not have a role for this shop.");
+    }
+
+    public Role getPendingRole(int memberId, int shopId) {
+        Member member = getMemberById(memberId);
+        if (member == null) {
+            throw new OurRuntime("User with ID " + memberId + " doesn't exist.");
+        }
+        List<Role> pendingRoles = member.getPendingRoles();
+        for (Role role : pendingRoles) {
+            if (role.getShopId() == shopId) {
+                return role;
+            }
+        }
+        throw new OurRuntime("User with ID " + memberId + " does not have a pending role for this shop.");
+    }
+
+    public void removeRole(int memberId, int shopId) {
+        Member member = getMemberById(memberId);
+        if (member == null) {
+            throw new OurRuntime("User with ID " + memberId + " doesn't exist.");
+        }
+        List<Role> roles = member.getRoles();
+        for (Role role : roles) {
+            if (role.getShopId() == shopId) {
+                member.removeRole(role); // Assuming Member has a method to remove a role
+                return;
+            }
+        }
+        throw new OurRuntime("User with ID " + memberId + " does not have a role for this shop.");
+    }
+
+    public void acceptRole(int id, Role role) {
+        if (role == null) {
+            throw new OurRuntime("Role cannot be null.");
+        }
+        Member member = getMemberById(id);
+        if (member == null) {
+            throw new OurRuntime("User with ID " + id + " doesn't exist.");
+        }
+        member.acceptRole(role); // Assuming Member has a method to accept a role
+    }
+
+    public void addPermission(int userId, PermissionsEnum permission, int shopId) {
+        Member member = getMemberById(userId);
+        if (member == null) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        Role role = getRole(userId, shopId);
+        if (role == null) {
+            throw new OurRuntime("User with ID " + userId + " does not have a role for this shop.");
+        }
+        role.addPermission(permission); // Assuming Role has a method to add a permission
+    }
+
+    public void removePermission(int userId, PermissionsEnum permission, int shopId) {
+        Member member = getMemberById(userId);
+        if (member == null) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        Role role = getRole(userId, shopId);
+        if (role == null) {
+            throw new OurRuntime("User with ID " + userId + " does not have a role for this shop.");
+        }
+        role.removePermissions(permission); // Assuming Role has a method to remove a permission
+    }
 }

@@ -1,3 +1,5 @@
+package DomainLayerTests;
+
 import DomainLayer.ShoppingCart;
 import DomainLayer.User;
 import org.junit.jupiter.api.BeforeEach;
