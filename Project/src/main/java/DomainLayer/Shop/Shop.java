@@ -440,4 +440,19 @@ public class Shop {
             throw ex;
         }
     }
+
+    public void rollBackPurchase(Map<Integer, Integer> purchaseList) {
+        for (Map.Entry<Integer, Integer> e : purchaseList.entrySet()) {
+            int itemId = e.getKey();
+            int qty    = e.getValue();
+
+            Object lock = itemAcquireLocks.computeIfAbsent(itemId, k -> new Object());
+            synchronized (lock) {
+                AtomicInteger availAtom = items.get(itemId);
+                if (availAtom != null) {
+                    availAtom.addAndGet(qty);
+                }
+            }
+        }
+    }
 }
