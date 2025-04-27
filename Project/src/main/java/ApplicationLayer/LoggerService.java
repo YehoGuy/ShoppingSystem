@@ -31,4 +31,8 @@ public class LoggerService {
         logger.debug("Debugging method: " + methodName + " - Exception: " + e.getMessage(), e);
     }
 
+    public static void logDebug(String methodName, OurArg e){
+        logger.debug("Debugging method: " + methodName + " - Exception: " + e.getMessage(), e);
+    }
+
 }

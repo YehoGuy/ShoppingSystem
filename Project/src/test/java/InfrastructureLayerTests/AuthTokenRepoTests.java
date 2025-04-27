@@ -53,7 +53,7 @@ public class AuthTokenRepoTests {
     public void testGetAuthToken() {
         authTokenRepo.setAuthToken(1, authToken1);
         assertEquals(authToken1, authTokenRepo.getAuthToken(1));
-        assertNull(authTokenRepo.getAuthToken(2)); 
+        assertNull(authTokenRepo.getAuthToken(2)); // Ensure it returns null for non-existent token
     }
 
     @Test
@@ -63,5 +63,67 @@ public class AuthTokenRepoTests {
         assertEquals(1, authTokenRepo.getUserIdByToken("token1"));
         assertEquals(2, authTokenRepo.getUserIdByToken("token2"));
         assertEquals(-1, authTokenRepo.getUserIdByToken("nonexistent_token"));
+    }
+
+    @Test
+    public void testGetAuthTokenMultipleTokens() {
+        authTokenRepo.setAuthToken(1, authToken1);
+        authTokenRepo.setAuthToken(2, authToken2);
+        assertEquals(authToken1, authTokenRepo.getAuthToken(1));
+        assertEquals(authToken2, authTokenRepo.getAuthToken(2));
+        assertNull(authTokenRepo.getAuthToken(3)); 
+    }
+
+    @Test
+    public void testRemoveAuthTokenMultipleTokens() {
+        authTokenRepo.setAuthToken(1, authToken1);
+        authTokenRepo.setAuthToken(2, authToken2);
+        authTokenRepo.removeAuthToken(1);
+        assertNull(authTokenRepo.getAuthToken(1));
+        assertEquals(authToken2, authTokenRepo.getAuthToken(2));
+    }
+
+    @Test
+    public void testRemoveAuthTokenNonExistent() {
+        authTokenRepo.setAuthToken(1, authToken1);
+        authTokenRepo.removeAuthToken(2); // Attempt to remove a non-existent token
+        assertEquals(authToken1, authTokenRepo.getAuthToken(1)); // Ensure the existing token is still there
+    }
+
+    @Test
+    public void testGetUserIdByTokenNonExistent() {
+        authTokenRepo.setAuthToken(1, authToken1);
+        authTokenRepo.setAuthToken(2, authToken2);
+        assertEquals(-1, authTokenRepo.getUserIdByToken("nonexistent_token")); // Ensure it returns -1 for non-existent token
+    }
+
+    @Test
+    public void testGetAuthTokenNonExistent() {
+        authTokenRepo.setAuthToken(1, authToken1);
+        assertNull(authTokenRepo.getAuthToken(2)); // Ensure it returns null for non-existent token
+    }
+
+    @Test
+    public void testGetUserIdByTokenExpired() {
+        authTokenRepo.setAuthToken(1, authToken1);
+        authTokenRepo.setAuthToken(2, authToken2);
+        authToken1.setExpirationDate(new Date(System.currentTimeMillis())); // Set token1 to expired
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+        }
+        assertEquals(1, authTokenRepo.getUserIdByToken("token1")); // Ensure it returns -1 for expired token
+    }
+
+    @Test
+    public void testGetAuthTokenExpired() {
+        authTokenRepo.setAuthToken(1, authToken1);
+        authTokenRepo.setAuthToken(2, authToken2);
+        authToken1.setExpirationDate(new Date(System.currentTimeMillis())); // Set token1 to expired
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+        }
+        assertNull(authTokenRepo.getAuthToken(1)); // Ensure it returns null for expired token
     }
 }

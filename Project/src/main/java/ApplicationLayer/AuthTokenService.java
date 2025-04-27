@@ -35,7 +35,7 @@ public class AuthTokenService {
     public String AuthenticateGuest(int guestId) {
         LoggerService.logMethodExecution("AuthenticateGuest",guestId);
         if(guestId <= 0) {
-            throw new IllegalArgumentException("Guest ID must be a positive integer");
+            throw new OurArg("Guest ID must be a positive integer");
         }
         String token = generateAuthToken("guest");
         long expirationTime = System.currentTimeMillis() + EXPIRATION_TIME;
@@ -49,13 +49,13 @@ public class AuthTokenService {
     public String Login(String username, String password, int userId) {
         LoggerService.logMethodExecution("Login",username,password,userId);
         if(username == null || username.isEmpty()) {
-            throw new IllegalArgumentException("Username cannot be null or empty");
+            throw new OurArg("Username cannot be null or empty");
         }
         if(password == null || password.isEmpty()) {
-            throw new IllegalArgumentException("Password cannot be null or empty");
+            throw new OurArg("Password cannot be null or empty");
         }
         if(userId <= 0) {
-            throw new IllegalArgumentException("User ID must be a positive integer");
+            throw new OurArg("User ID must be a positive integer");
         }
             String token = generateAuthToken(username); 
             long expirationTime = System.currentTimeMillis() + EXPIRATION_TIME; 
@@ -81,7 +81,7 @@ public class AuthTokenService {
     public String generateAuthToken(String username) {
         LoggerService.logMethodExecution("generateAuthToken",username);
         if (username == null || username.isEmpty()) {
-            throw new IllegalArgumentException("Username cannot be null or empty");
+            throw new OurArg("Username cannot be null or empty");
         }
 
         String token = Jwts.builder()
@@ -98,7 +98,7 @@ public class AuthTokenService {
     public Integer ValidateToken(String token) throws Exception {
         LoggerService.logMethodExecution("ValidateToken",token);
         if (token == null || token.isEmpty()) {
-            throw new IllegalArgumentException("Token cannot be null or empty");
+            throw new OurArg("Token cannot be null or empty");
         }
         try {
             Jwts.parserBuilder()
@@ -120,6 +120,15 @@ public class AuthTokenService {
                 throw new Exception("Token not found in repository"); 
             }
         }
+        catch (OurArg e)
+        {
+            LoggerService.logDebug("ValidateToken", e);
+            throw new OurArg("problem with args in token validation");
+        }
+        catch (OurRuntime e) {
+            LoggerService.logDebug("ValidateToken", e);
+            throw new OurRuntime("problem with runtime in token validation");
+        }
         catch (ExpiredJwtException e) {
 
             LoggerService.logError("ValidateToken", e, token);
@@ -136,7 +145,7 @@ public class AuthTokenService {
     public String extractUsername(String token) {
         LoggerService.logMethodExecution("extractUsername",token);
         if (token == null || token.isEmpty()) {
-            throw new IllegalArgumentException("Token cannot be null or empty");
+            throw new OurArg("Token cannot be null or empty");
         }
         String username = extractClaim(token, Claims::getSubject);  
         LoggerService.logMethodExecutionEnd("extractUsername",username);
@@ -146,7 +155,7 @@ public class AuthTokenService {
     public Date extractExpiration(String token) {
         LoggerService.logMethodExecution("extractExpiration",token);
         if (token == null || token.isEmpty()) {
-            throw new IllegalArgumentException("Token cannot be null or empty");
+            throw new OurArg("Token cannot be null or empty");
         }
         Date expiration = extractClaim(token, Claims::getExpiration); 
         LoggerService.logMethodExecutionEnd("extractExpiration",expiration);
@@ -156,7 +165,7 @@ public class AuthTokenService {
     private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         LoggerService.logMethodExecution("extractClaim",token);
         if (token == null || token.isEmpty()) {
-            throw new IllegalArgumentException("Token cannot be null or empty");
+            throw new OurArg("Token cannot be null or empty");
         }
         T claim = claimsResolver.apply(extractAllClaims(token)); 
         LoggerService.logMethodExecutionEnd("extractClaim",claim);
@@ -166,7 +175,7 @@ public class AuthTokenService {
     private Claims extractAllClaims(String token) {
         LoggerService.logMethodExecution("extractAllClaims",token);
         if (token == null || token.isEmpty()) {
-            throw new IllegalArgumentException("Token cannot be null or empty");
+            throw new OurArg("Token cannot be null or empty");
         }
         Claims claims = Jwts.parserBuilder()
                 .setSigningKey(key) 
