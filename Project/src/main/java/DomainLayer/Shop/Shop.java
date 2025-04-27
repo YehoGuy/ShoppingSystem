@@ -2,11 +2,12 @@ package DomainLayer.Shop;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.HashMap;
 
 import ApplicationLayer.Purchase.ShippingMethod;
 
@@ -20,21 +21,24 @@ public class Shop {
     private final int id;
     private final String name;
 
-    // Mutable field: declared volatile for visibility across threads.
-    private volatile String purchasePolicy;
+    private final List<PurchasePolicy> purchasePolicies;
 
-    // A thread-safe mapping for discounts.
-    // Key 0 acts as the global discount.
-    private final ConcurrentHashMap<Integer, Integer> discounts = new ConcurrentHashMap<>();
+    /**
+     * Thread-safe list of discounts. CopyOnWriteArrayList allows
+     * lock-free iteration even while another thread is adding/removing discounts.
+     */
+    private final CopyOnWriteArrayList<Discount> discounts;
 
     // A thread-safe list to manage shop reviews.
-    private final List<ShopReview> reviews = new CopyOnWriteArrayList<>();
+    private final List<ShopReview> reviews;
 
     // Items: mapping from item ID to its quantity.
-    private final ConcurrentHashMap<Integer, AtomicInteger> items = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, AtomicInteger> items;
 
     // Prices: mapping from item ID to its price.
-    private final ConcurrentHashMap<Integer, AtomicInteger> itemsPrices = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, AtomicInteger> itemsPrices;
+
+    private final ConcurrentHashMap<Integer, Object> itemAcquireLocks;
 
     private ShippingMethod shippingMethod;
 
@@ -47,12 +51,16 @@ public class Shop {
      * @param purchasePolicy the shop's purchase policy.
      * @param discount       the global discount for all items in the shop.
      */
-    public Shop(int id, String name, String purchasePolicy, int discount) {
+    public Shop(int id, String name, ShippingMethod shippingMethod) {
         this.id = id;
         this.name = name;
-        this.purchasePolicy = purchasePolicy;
-        // Set the global discount using key 0.
-        discounts.put(0, discount);
+        this.purchasePolicies = new ArrayList<>();
+        this.discounts = new CopyOnWriteArrayList<>();
+        this.reviews = new CopyOnWriteArrayList<>();
+        this.items = new ConcurrentHashMap<>();
+        this.itemsPrices = new ConcurrentHashMap<>();
+        this.itemAcquireLocks = new ConcurrentHashMap<>();
+        this.shippingMethod = shippingMethod;
     }
 
     // ===== Immutable Field Getters =====
@@ -65,66 +73,28 @@ public class Shop {
         return name;
     }
 
-    // ===== Getters and Setters for Mutable Fields =====
+    // ===== setters =====
 
-    public String getPurchasePolicy() {
-        return purchasePolicy;
+    public void setShippingMethod(ShippingMethod shippingMethod) {
+        this.shippingMethod = shippingMethod;
     }
 
-    public synchronized void setPurchasePolicy(String purchasePolicy) {
-        this.purchasePolicy = purchasePolicy;
+    public void addPurchasePolicy(PurchasePolicy purchasePolicy) {
+        purchasePolicies.add(purchasePolicy);
     }
 
-    // ===== Discount Mapping Methods =====
+    public void removePurchasePolicy(PurchasePolicy purchasePolicy) {
+        purchasePolicies.remove(purchasePolicy);
+    }
 
+    // ===== Getters =====
     /**
-     * Returns the global discount (key 0) applied to all items.
-     *
-     * @return the global discount, or 0 if not set.
+     * Returns an unmodifiable view of the purchase policies.
+     * Currently for tests
+     * @return the list of purchase policies.
      */
-    public int getGlobalDiscount() {
-        return discounts.getOrDefault(0, 0);
-    }
-
-    /**
-     * Sets the global discount for the shop (applied to all items).
-     *
-     * @param discount the global discount value.
-     */
-    public synchronized void setGlobalDiscount(int discount) {
-        discounts.put(0, discount);
-    }
-
-    /**
-     * Sets a discount for a specific item.
-     * For non-zero itemId, the discount is applied directly.
-     * Use itemId 0 to update the global discount.
-     *
-     * @param itemId   the identifier of the item (0 for global discount).
-     * @param discount the discount value for the item.
-     */
-    public synchronized void setDiscountForItem(int itemId, int discount) {
-        if (itemId == 0) {
-            setGlobalDiscount(discount);
-        } else {
-            discounts.put(itemId, discount);
-        }
-    }
-
-    /**
-     * Retrieves the effective discount for a given item.
-     * Returns the maximum of the item-specific discount and the global discount.
-     *
-     * @param itemId the identifier of the item.
-     * @return the effective discount for the item.
-     */
-    public int getDiscountForItem(int itemId) {
-        int globalDiscount = discounts.getOrDefault(0, 0);
-        if (itemId == 0) {
-            return globalDiscount;
-        }
-        int itemDiscount = discounts.getOrDefault(itemId, globalDiscount);
-        return Math.max(itemDiscount, globalDiscount);
+    public List<PurchasePolicy> getPurchasePolicies() {
+        return Collections.unmodifiableList(purchasePolicies);
     }
 
     // ===== Methods for Reviews =====
@@ -194,33 +164,46 @@ public class Shop {
     }
 
     /**
-     * Removes a given quantity of an item.
-     * If quantity is -1, or if the quantity reaches zero or below,
-     * the item is completely removed from both the quantity map and the price map.
+     * Completely removes an item (and its price) from the shop,
+     * using a per‐item lock to avoid races, and then
+     * removes that lock from the lock‐map.
      *
-     * @param itemId   the item identifier.
-     * @param quantity the quantity to remove (use -1 to remove completely).
+     * @param itemId the item identifier to remove
      */
-    public void removeItem(int itemId, int quantity) {
-        if (quantity == -1) {
-            // Remove the item completely from both maps.
+    public void removeItemFromShop(int itemId) {
+        // 1) Ensure item exists
+        if (!items.containsKey(itemId)) {
+            throw new IllegalArgumentException("Item not found: " + itemId);
+        }
+
+        // 2) Grab (or create) the per‐item lock object
+        Object lock = itemAcquireLocks.computeIfAbsent(itemId, k -> new Object());
+
+        // 3) Under that lock, remove both quantity and price
+        synchronized (lock) {
             items.remove(itemId);
             itemsPrices.remove(itemId);
-            return;
         }
+
+        // 4) Finally, drop the lock entry itself
+        itemAcquireLocks.remove(itemId);
+    }
+
+    public void removeItemQuantity(int itemId, int quantity) {
         if (quantity <= 0) {
             throw new IllegalArgumentException("Quantity must be positive");
         }
-        items.computeIfPresent(itemId, (key, existing) -> {
-            int newQuantity = existing.addAndGet(-quantity);
-            if (newQuantity <= 0) {
-                // Remove price information as well, since the item is fully removed.
-                itemsPrices.remove(itemId);
-                return null;
+        AtomicInteger currentQty = items.get(itemId);
+        if (currentQty != null) {
+            currentQty.addAndGet(-quantity);
+            if (currentQty.get() <= 0) {
+                items.remove(itemId);
             }
-            return existing;
-        });
+        } else {
+            throw new IllegalArgumentException("Item not found: " + itemId);
+        }
     }
+
 
     /**
      * Returns the current quantity of the specified item.
@@ -278,33 +261,183 @@ public class Shop {
     public int getItemPrice(int itemId) {
         AtomicInteger price = itemsPrices.get(itemId);
         return price != null ? price.get() : 0;
-    }
-
-    // ===== Method for Policy =====
+    }    
 
     /**
-     * Checks if the purchase policy allows the given items to be purchased.
-     * This is a placeholder method and should be implemented based on your business logic.
+     * Returns the total price for a given set of items.
+     * The total price is calculated as the sum of the prices of each item multiplied by its quantity.
      *
-     * @param items a map of item IDs and their quantities.
-     * @return true if the purchase policy allows the items, false otherwise.
+     * @param items a map where the key is the item ID and the value is the quantity.
+     * @return the total price.
      */
-    public boolean checkPolicy(HashMap<Integer, Integer> items) {
-        // Implement the logic to check the purchase policy
-        // For now, we will just return true as a placeholder
+    public int getTotalPrice(Map<Integer, Integer> items) {
+        int total = 0;
+        for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
+            int itemId = entry.getKey();
+            int quantity = entry.getValue();
+            int price = getItemPrice(itemId);
+            total += price * quantity;
+        }
+        return total;
+    }
+
+    /**
+     * Checks if the purchase is valid according to the shop's purchase policies.
+     * This method iterates through all purchase policies and checks if the purchase is valid.
+     *
+     * @param items a map where the key is the item ID and the value is the quantity.
+     * @return {@code true} if the purchase is valid, {@code false} otherwise.
+     */
+    public boolean checkPolicys(Map<Integer,Integer> items){
+        for (PurchasePolicy purchasePolicy : purchasePolicies) {
+            if (!purchasePolicy.isValidPurchase(items, getTotalPrice(items))) {
+                return false;
+            }
+        }
         return true;
     }
 
-    @Override
-    public String toString() {
-        return "Shop{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", purchasePolicy='" + purchasePolicy + '\'' +
-                ", globalDiscount=" + getGlobalDiscount() +
-                ", averageRating=" + getAverageRating() +
-                ", items=" + items +
-                ", itemsPrices=" + itemsPrices +
-                '}';
+
+    private double applyDiscount(Map<Integer,Integer> items){
+        Map<Integer, Integer> itemsDiscountedPrices = new HashMap<>();
+        for(Map.Entry<Integer, Integer> entry : items.entrySet()){
+            int itemId = entry.getKey();
+            int price = getItemPrice(itemId);
+            itemsDiscountedPrices.put(itemId, price);
+        }
+
+        for(Discount discount : discounts){
+            itemsDiscountedPrices = discount.applyDiscounts(items, itemsPrices, itemsDiscountedPrices);
+        }
+        
+        // calculate the total price after applying discounts
+        double totalPrice = 0;
+        for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
+            int itemId = entry.getKey();
+            int quantity = entry.getValue();
+            int discountedPrice = itemsDiscountedPrices.get(itemId);
+            totalPrice += discountedPrice * quantity;
+        }
+
+        return totalPrice;
+    }
+
+    /**
+     * Applies a global percentage discount to the total price of any purchase.
+     *
+     * @param percentage the discount percentage (0–100)
+     */
+    public void setGlobalDiscount(int percentage) {
+        // try to update existing
+        for (Discount d : discounts) {
+            if (d.getShopId() == this.id && d.getItemId() == null) {
+                d.setPercentage(percentage);
+                return;
+            }
+        }
+        // otherwise add new
+        discounts.add(new DiscountImpl(this.id, null,/* price unused */0, percentage));
+    }
+
+    /**
+     * Removes a global discount from the shop.
+     * This method iterates through all discounts and removes the one that matches the given percentage.
+     *
+     * @param percentage the discount percentage to remove (0–100).
+     */ 
+    public void removeGlobalDiscount() {
+        discounts.removeIf(d ->
+            d.getShopId() == this.id &&
+            d.getItemId() == null
+        );
+    }
+    
+        /**
+     * Applies a percentage discount to a single item.
+     *
+     * @param itemId     the ID of the item to discount.
+     * @param percentage the discount percentage (0–100).
+     */
+    public void setDiscountForItem(int itemId, int percentage) {
+        for (Discount d : discounts) {
+            if (d.getShopId() == this.id
+             && d.getItemId() != null
+             && d.getItemId().equals(itemId)) {
+                d.setPercentage(percentage);
+                return;
+            }
+        }
+        discounts.add(new DiscountImpl(this.id, itemId, this.getItemPrice(itemId), percentage));
+    }
+
+    /**
+     * Removes a discount for a single item.
+     *
+     * @param itemId the ID of the item to remove the discount from.
+     */
+    public void removeDiscountForItem(int itemId) {
+        discounts.removeIf(d ->
+            d.getShopId() == this.id &&
+            d.getItemId() != null &&
+            d.getItemId().equals(itemId)
+        );
+    }
+    
+    // ===== Purchase Method =====
+     
+    /**
+     * Processes a purchase of items:
+     *   1) Checks purchase policies up front
+     *   2) Locks each item & deducts stock
+     *   3) Computes total, applies discounts, and returns the final amount
+     * If anything fails, rolls back any stock modifications.
+     *
+     * @param purchaseList map of itemId→quantity to purchase
+     * @return the total price after discounts
+     */
+    public double purchaseItems(Map<Integer, Integer> purchaseList) {
+        // 1) policy check up-front
+        if (!checkPolicys(purchaseList)) {
+            throw new IllegalStateException("Purchase policy violation");
+        }
+
+        // remember for rollback
+        Map<Integer, Integer> originalStock = new HashMap<>();
+
+        try {
+            // 2) lock & deduct each item
+            for (Map.Entry<Integer, Integer> e : purchaseList.entrySet()) {
+                int itemId = e.getKey();
+                int qty    = e.getValue();
+
+                Object lock = itemAcquireLocks.computeIfAbsent(itemId, k -> new Object());
+                synchronized (lock) {
+                    AtomicInteger availAtom = items.get(itemId);
+                    int avail = availAtom != null ? availAtom.get() : 0;
+                    if (avail < qty) {
+                        throw new IllegalArgumentException("Insufficient stock for item " + itemId);
+                    }
+                    originalStock.put(itemId, avail);
+                    availAtom.addAndGet(-qty);
+                }
+            }
+
+            // 3) compute total + apply discounts
+            double finalTotal = applyDiscount(purchaseList);
+
+            return finalTotal;
+
+        } catch (RuntimeException ex) {
+            // rollback only those we already touched
+            for (Map.Entry<Integer, Integer> r : originalStock.entrySet()) {
+                int itemId  = r.getKey();
+                int prevQty = r.getValue();
+                Object lock = itemAcquireLocks.get(itemId);
+                synchronized (lock) {
+                    items.get(itemId).set(prevQty);
+                }
+            }
+            throw ex;
+        }
     }
 }

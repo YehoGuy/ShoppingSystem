@@ -3,6 +3,8 @@ package DomainLayer.Shop;
 import java.util.HashMap;
 import java.util.List;
 
+import ApplicationLayer.Purchase.ShippingMethod;
+
 public interface IShopRepository {
 
     /**
@@ -13,7 +15,7 @@ public interface IShopRepository {
      * @param globalDiscount the global discount for all items in the shop.
      * @return the newly created Shop object with an auto-allocated id.
      */
-    Shop createShop(String name, String purchasePolicy, int globalDiscount);
+    Shop createShop(String name, PurchasePolicy purchasePolicy, ShippingMethod shippingMethod);
 
     /**
      * Retrieves a shop by its id.
@@ -36,7 +38,7 @@ public interface IShopRepository {
      * @param shopId    the shop id.
      * @param newPolicy the new purchase policy.
      */
-    void updatePurchasePolicy(int shopId, String newPolicy);
+    void updatePurchasePolicy(int shopId, PurchasePolicy newPolicy);
 
     /**
      * Sets the global discount for the specified shop.
@@ -45,6 +47,13 @@ public interface IShopRepository {
      * @param discount the global discount value.
      */
     void setGlobalDiscount(int shopId, int discount);
+
+    /**
+     * Remove the global discount for the specified shop.
+     *
+     * @param shopId the shop id.
+     */
+    void removeGlobalDiscount(int shopId);
 
     /**
      * Sets a discount for a specific item in the specified shop.
@@ -59,6 +68,22 @@ public interface IShopRepository {
      * Adds a review to the specified shop.
      *
      * @param shopId     the shop id.
+     * @param rating     the review rating.
+     * @param reviewText the review text.
+     */
+
+    /**
+     * removes the discount for a specific item in the specified shop.
+     * @param shopId
+     * @param itemId
+     */
+    void removeDiscountForItem(int shopId, int itemId);
+
+    /**
+     * Adds a review to the specified shop.
+     *
+     * @param shopId     the shop id.
+     * @param userId     the user id.
      * @param rating     the review rating.
      * @param reviewText the review text.
      */

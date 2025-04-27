@@ -9,8 +9,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-
+import ApplicationLayer.Purchase.ShippingMethod;
 import DomainLayer.Shop.IShopRepository;
+import DomainLayer.Shop.PurchasePolicy;
 import DomainLayer.Shop.Shop;
 
 public class ShopRepository implements IShopRepository {
@@ -19,11 +20,12 @@ public class ShopRepository implements IShopRepository {
     private final AtomicInteger shopIdCounter = new AtomicInteger(1);
     private final List<Shop> closedShops = new CopyOnWriteArrayList<>();
 
+    
     @Override
-    public Shop createShop(String name, String purchasePolicy, int globalDiscount) {
+    public Shop createShop(String name, PurchasePolicy purchasePolicy, ShippingMethod shippingMethod) {
         try {
             int id = shopIdCounter.getAndIncrement();
-            Shop shop = new Shop(id, name, purchasePolicy, globalDiscount);
+            Shop shop = new Shop(id, name, shippingMethod);
             Shop previous = shops.putIfAbsent(id, shop);
             if (previous != null) {
                 throw new IllegalStateException("Shop with id " + id + " already exists.");
@@ -55,13 +57,13 @@ public class ShopRepository implements IShopRepository {
     }
 
     @Override
-    public void updatePurchasePolicy(int shopId, String newPolicy) {
+    public void updatePurchasePolicy(int shopId, PurchasePolicy newPolicy) {
         try {
             Shop shop = shops.get(shopId);
             if (shop == null) {
                 throw new IllegalArgumentException("Shop not found: " + shopId);
             }
-            shop.setPurchasePolicy(newPolicy);
+            shop.addPurchasePolicy(newPolicy);
         } catch (Exception e) {
             throw new RuntimeException("Error updating purchase policy: " + e.getMessage(), e);
         }
@@ -81,6 +83,16 @@ public class ShopRepository implements IShopRepository {
     }
 
     @Override
+    public void removeGlobalDiscount(int shopId) {
+        Shop shop = shops.get(shopId);
+        if (shop == null) {
+            throw new IllegalArgumentException("Shop not found: " + shopId);
+        }
+        // this only affects that one Shop instance
+        shop.removeGlobalDiscount();
+    }
+
+    @Override
     public void setDiscountForItem(int shopId, int itemId, int discount) {
         try {
             Shop shop = shops.get(shopId);
@@ -91,6 +103,15 @@ public class ShopRepository implements IShopRepository {
         } catch (Exception e) {
             throw new RuntimeException("Error setting discount for item: " + e.getMessage(), e);
         }
+    }
+
+    @Override
+    public void removeDiscountForItem(int shopId, int itemId) {
+        Shop shop = shops.get(shopId);
+        if (shop == null) {
+            throw new IllegalArgumentException("Shop not found: " + shopId);
+        }
+        shop.removeDiscountForItem(itemId);
     }
 
     @Override
@@ -165,7 +186,7 @@ public class ShopRepository implements IShopRepository {
             if (shop == null) {
                 throw new IllegalArgumentException("Shop not found: " + shopId);
             }
-            shop.removeItem(itemId, -1);
+            shop.removeItemFromShop(itemId);
         } catch (Exception e) {
             throw new RuntimeException("Error removing item from shop: " + e.getMessage(), e);
         }
@@ -225,7 +246,8 @@ public class ShopRepository implements IShopRepository {
         if (shop != null) {
             int currentQuantity = shop.getItemQuantity(itemId);
             if (currentQuantity >= supply) {
-                shop.removeItem(itemId, supply);
+                // shop.removeItemQuantity(itemId, supply); // Decrease the supply count   ----- האם צריך להוריד את הכמות?
+                // or just return true and let the caller handle the removal  ----------- לבדוק אם זה בסדר
                 return true;
             }
             return false;
@@ -265,7 +287,7 @@ public class ShopRepository implements IShopRepository {
             if (shop == null) {
                 throw new IllegalArgumentException("Shop not found: " + shopId);
             }
-            shop.removeItem(itemId, supply);
+            shop.removeItemQuantity(itemId, supply);
         } catch (Exception e) {
             throw new RuntimeException("Error removing supply: " + e.getMessage(), e);
         }
@@ -282,7 +304,7 @@ public class ShopRepository implements IShopRepository {
                     throw new IllegalArgumentException("Shop not found: " + shopId);
                 }
                 // delegate to the Shop’s own policy checker
-                if (!shop.checkPolicy(itemsInShop)) {
+                if (!shop.checkPolicys(itemsInShop)) {
                     return false;
                 }
             }

@@ -7,19 +7,23 @@ import java.util.List;
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.Item.ItemService;
 import ApplicationLayer.LoggerService;
+import ApplicationLayer.Purchase.ShippingMethod;
 import ApplicationLayer.User.UserService;
 import DomainLayer.Item.Item;
 import DomainLayer.Item.ItemCategory;
 import DomainLayer.Roles.PermissionsEnum;
-import DomainLayer.Shop.IShopRepository;
-import DomainLayer.Shop.Shop;
 import DomainLayer.Roles.Role;
+import DomainLayer.Shop.IShopRepository;
+import DomainLayer.Shop.PurchasePolicy;
+import DomainLayer.Shop.Shop;
 
 public class ShopService {
     private final IShopRepository shopRepository;
     private AuthTokenService authTokenService;
     private ItemService itemService;
     private UserService userService;
+
+    
 
     /**
      * Constructor for ShopService.
@@ -44,12 +48,12 @@ public class ShopService {
      * @param globalDiscount the global discount for all items in the shop.
      * @return the newly created Shop.
      */
-    public Shop createShop(String name, String purchasePolicy, int globalDiscount, String token) {
+    public Shop createShop(String name, PurchasePolicy purchasePolicy, ShippingMethod shippingMethod,  String token) {
         try {
-            LoggerService.logMethodExecution("createShop", name, purchasePolicy, globalDiscount);
+            LoggerService.logMethodExecution("createShop", name, purchasePolicy);
             Integer userId = authTokenService.ValidateToken(token);
             userService.validateMemberId(userId);
-            Shop returnShop = shopRepository.createShop(name, purchasePolicy, globalDiscount);
+            Shop returnShop = shopRepository.createShop(name, purchasePolicy, shippingMethod);
             Role founderRole = new Role(userId, returnShop.getId(), null);
             founderRole.setFoundersPermissions();
             userService.addRole(userId, founderRole);
@@ -57,7 +61,7 @@ public class ShopService {
             return returnShop;
         } catch (Exception e) 
         {
-            LoggerService.logError("createShop", e, name, purchasePolicy, globalDiscount);
+            LoggerService.logError("createShop", e, name, purchasePolicy);
             throw new RuntimeException("Error creating shop: " + e.getMessage(), e);
         }
     }
@@ -106,7 +110,7 @@ public class ShopService {
      * @param shopId    the shop id.
      * @param newPolicy the new purchase policy.
      */
-    public void updatePurchasePolicy(int shopId, String newPolicy, String token) {
+    public void updatePurchasePolicy(int shopId, PurchasePolicy newPolicy, String token) {
         try {
             LoggerService.logMethodExecution("updatePurchasePolicy", shopId, newPolicy);
             Integer userId = authTokenService.ValidateToken(token);
