@@ -1,19 +1,28 @@
 package ApplicationLayerTests.Item;
 
+import java.util.Arrays;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.Item.ItemService;
 import ApplicationLayer.User.UserService;
 import DomainLayer.Item.IItemRepository;
 import DomainLayer.Item.Item;
 import DomainLayer.Roles.PermissionsEnum;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 public class ItemServiceAcceptanceTests {
 
@@ -56,12 +65,12 @@ public class ItemServiceAcceptanceTests {
             verify(itemRepository).addReviewToItem(itemId, rating, text);
         }
     
-        // UC11 – Add Review to Item (negative: invalid)
+        // UC11 – Add Review to Item (negative: invalid rating)
         @Test
-        public void testAddReviewToItemInvalid() {
+        public void testAddReviewToItemInvalidRating() {
             int itemId  = 5;
             int rating  = 0;      // invalid
-            String text = "";     // invalid
+            String text = "abc";
     
             doThrow(new RuntimeException("Invalid review"))
                 .when(itemRepository)
@@ -72,7 +81,23 @@ public class ItemServiceAcceptanceTests {
             );
             assertTrue(ex.getMessage().contains("Error adding review to item"));
         }
-        
+
+        // UC11 – Add Review to Item (negative: invaklid description)
+        @Test
+        public void testAddReviewToItemInvalidDescription() {
+            int itemId  = 5;
+            int rating  = 4;
+            String text = ""; // invalid
+    
+            doThrow(new RuntimeException("Invalid review"))
+                .when(itemRepository)
+                .addReviewToItem(itemId, rating, text);
+    
+            RuntimeException ex = assertThrows(RuntimeException.class, () ->
+                itemService.addReviewToItem(itemId, rating, text, TOKEN)
+            );
+            assertTrue(ex.getMessage().contains("Error adding review to item"));
+        }
 
     // UC16 – Create Item (positive)
     @Test
@@ -98,12 +123,29 @@ public class ItemServiceAcceptanceTests {
         verify(itemRepository).createItem(name, description, category);
     }
 
-    // UC16 – Create Item (invalid data for item)
+    // UC16 – Create Item (invalid no permission)
     @Test
-    public void testCreateItemInvalid() {
+    public void testCreateItemNoPermission() {
+        String name        = "Widget";
+        String description = "A test widget";
+        Integer category   = 0;
+
+        // user does not have permission
+        when(userService.hasPermission(USER_ID, PermissionsEnum.manageItems, SHOP_ID))
+            .thenReturn(false);
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
+            itemService.createItem(SHOP_ID, name, description, category, TOKEN)
+        );
+        assertTrue(ex.getMessage().contains("User does not have permission to add item to shop"));
+    }
+
+    // UC16 – Create Item (invalid name)
+    @Test
+    public void testCreateItemInvalidName() {
         String name      = "";
         String description = "desc";
-        Integer category = 0;
+        Integer category = 1;
 
         when(userService.hasPermission(USER_ID, PermissionsEnum.manageItems, SHOP_ID))
             .thenReturn(true);
@@ -118,7 +160,60 @@ public class ItemServiceAcceptanceTests {
         assertTrue(ex.getMessage().contains("Error creating item"));
     }
 
-    // Optional: Fetch item by ID
+    // UC16 – Create Item (invalid description)
+    @Test
+    public void testCreateItemInvalidDescription() {
+        String name        = "Widget";
+        String description = ""; // invalid
+        Integer category   = 0;
+
+        when(userService.hasPermission(USER_ID, PermissionsEnum.manageItems, SHOP_ID))
+            .thenReturn(true);
+
+        // repository throws
+        when(itemRepository.createItem(name, description, category))
+            .thenThrow(new RuntimeException("Database error"));
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
+            itemService.createItem(SHOP_ID, name, description, category, TOKEN)
+        );
+        assertTrue(ex.getMessage().contains("Error creating item"));
+    }
+
+    // UC16 – Create Item (invalid category)
+    @Test
+    public void testCreateItemInvalidCategory() {
+        String name        = "Widget";
+        String description = "A test widget";
+        Integer category   = -1; // invalid
+
+        when(userService.hasPermission(USER_ID, PermissionsEnum.manageItems, SHOP_ID))
+            .thenReturn(true);
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
+            itemService.createItem(SHOP_ID, name, description, category, TOKEN)
+        );
+        assertTrue(ex.getMessage().contains("Error creating item"));
+    }
+
+    // UC16 – Create Item (invalid shop ID)
+    @Test
+    public void testCreateItemInvalidShopId() {
+        String name        = "Widget";
+        String description = "A test widget";
+        Integer category   = 0;
+        Integer shopId     = -1; // invalid
+
+        when(userService.hasPermission(USER_ID, PermissionsEnum.manageItems, shopId))
+            .thenReturn(true);
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
+            itemService.createItem(shopId, name, description, category, TOKEN)
+        );
+        assertTrue(ex.getMessage().contains("Error creating item"));
+    }
+
+    // Uc5 - search item in the market (positive)
     @Test
     public void testGetItemSuccess() {
         int itemId = 7;
@@ -128,6 +223,30 @@ public class ItemServiceAcceptanceTests {
 
         Item fetched = itemService.getItem(itemId, TOKEN);
         assertEquals(item, fetched);
+    }
+
+    // Uc5 - search item in the market (negative: invalid item ID)
+    @Test
+    public void testGetItemInvalidId() {
+        int itemId = -1; // invalid
+
+        when(itemService.getItem(itemId, TOKEN)).thenThrow(new RuntimeException("Invalid item ID"));
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
+            itemService.getItem(itemId, TOKEN)
+        );
+        assertTrue(ex.getMessage().contains("Invalid item ID"));
+    }
+
+    // Uc5 - search item in the market (negative: item not found)
+    @Test
+    public void testGetItemNotFound() {
+        int itemId = 7;
+
+        // repository returns null
+        when(itemRepository.getItem(itemId)).thenReturn(null);
+
+        assertNull(itemService.getItem(itemId, TOKEN));
     }
 
     // Optional: Fetch all items
