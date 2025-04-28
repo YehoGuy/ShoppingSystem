@@ -1,19 +1,14 @@
 package ApplicationLayerTests.User;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockitoAnnotations;
+import org.mockito.Mockito;
 
 import ApplicationLayer.AuthTokenService;
+import ApplicationLayer.Purchase.PaymentMethod;
 import ApplicationLayer.User.UserService;
 import DomainLayer.Member;
-import DomainLayer.Roles.PermissionsEnum;
-import DomainLayer.Roles.Role;
 import DomainLayer.User;
 import InfrastructureLayer.AuthTokenRepository;
 import InfrastructureLayer.UserRepository;
@@ -118,7 +113,6 @@ public class UserServiceTest {
     @Test
     void testLogoutRemovesToken() throws Exception {
         String token = userService.loginAsGuest();
-        int userId = authTokenRepository.getUserIdByToken(token);
 
         token = userService.logout(token);
         assertNotNull(token); // Might be empty string depending on implementation
@@ -177,5 +171,24 @@ public class UserServiceTest {
         assertTrue(exception.getMessage().contains("Invalid user ID"));
     }
 
+    @Test
+    void testSetPaymentMethod() throws Exception {
+        userService.addMember("john", "snow", "a@b", "000000", "address");
+        String token = userService.loginAsMember("john", "snow", -1);   
+        User user = userService.getUserById(userRepository.isUsernameAndPasswordValid("john", "snow"));
+        PaymentMethod paymentMethod = Mockito.mock(PaymentMethod.class);
+        userService.setPaymentMethod(token, paymentMethod, 1);
+        // Verify that the payment method was set correctly
+        assertEquals(paymentMethod, user.getPaymentMethod());
+    }
 
+    @Test
+    void testPay() throws Exception {
+        userService.addMember("john", "snow", "a@b", "000000", "address");
+        String token = userService.loginAsMember("john", "snow", -1);   
+        PaymentMethod paymentMethod = Mockito.mock(PaymentMethod.class);
+        userService.setPaymentMethod(token, paymentMethod, 1);
+        // Verify that the payment was processed correctly
+        assertTrue(userService.pay(token, 1, 100.0));
+    }
 }

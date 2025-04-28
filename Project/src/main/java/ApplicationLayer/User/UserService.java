@@ -1035,4 +1035,58 @@ public class UserService {
             throw new RuntimeException("Error adding basket for user ID " + token + ": " + e.getMessage(), e);
         }
     }
+
+    /**
+     * Sets the payment method for a user by their token and shop ID.
+     * @param token The token of the user setting the payment method.
+     * @param paymentMethod The PaymentMethod object to be set for the user.
+     * @param shopId The ID of the shop where the payment method is being set.
+     * 
+     * * @throws OurRuntime
+     * * @throws Exception
+     */
+    public void setPaymentMethod(String token, PaymentMethod paymentMethod, int shopId) {
+        try {
+            LoggerService.logMethodExecution("setPaymentMethod", token, paymentMethod);
+            int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            if (paymentMethod == null) {
+                LoggerService.logDebug("setPaymentMethod", new OurRuntime("Payment method cannot be null."));
+                throw new OurRuntime("Payment method cannot be null.");
+            }
+            userRepository.setPaymentMethod(userId, shopId, paymentMethod); // Set the payment method for the user
+            LoggerService.logMethodExecutionEndVoid("setPaymentMethod");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("setPaymentMethod", e);
+            throw e; // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("setPaymentMethod", e, token, paymentMethod);
+            throw new RuntimeException("Error setting payment method for user ID " + token + ": " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Pays for user's order
+     * @param token
+     * @param shopId
+     * @param payment
+     * 
+     * * @return true if the payment was successful
+     * 
+     * * @throws OurRuntime, Exception
+     */
+    public boolean pay(String token, int shopId, double payment){
+        try {
+            LoggerService.logMethodExecution("pay", token, shopId, payment);
+            int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            userRepository.pay(userId, shopId, payment); // Set the payment method for the user
+            LoggerService.logMethodExecutionEnd("pay", true);
+            return true;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("pay", e);
+            throw e; // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("pay", e, token, shopId, payment);
+            throw new RuntimeException("Error setting payment method for user ID " + token + ": " + e.getMessage(), e);
+        }
+    }
 }

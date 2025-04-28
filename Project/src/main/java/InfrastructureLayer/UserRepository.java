@@ -8,6 +8,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import ApplicationLayer.OurRuntime;
+import ApplicationLayer.Purchase.PaymentMethod;
 import DomainLayer.Guest;
 import DomainLayer.IUserRepository;
 import DomainLayer.Member;
@@ -436,5 +437,29 @@ public class UserRepository implements IUserRepository {
             throw new OurRuntime("User with ID " + userId + " does not have a role for this shop.");
         }
         role.removePermissions(permission); // Assuming Role has a method to remove a permission
+    }
+
+    public void setPaymentMethod(int userId, int shopId, PaymentMethod paymentMethod) {
+        User user = userMapping.get(userId);
+        if (user == null) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        user.setPaymentMethod(paymentMethod);
+    }
+
+    public void pay(int userId, int shopId, double payment) {
+        User user = userMapping.get(userId);
+        if (user == null) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        PaymentMethod paymentMethod = user.getPaymentMethod();
+        if (paymentMethod == null) {
+            throw new OurRuntime("Payment method not set for user with ID " + userId);
+        }
+        try {
+            paymentMethod.processPayment(payment); // Assuming PaymentMethod has a method to process payment
+        } catch (Exception e) {
+            throw new OurRuntime("Payment failed: " + e.getMessage());
+        }
     }
 }
