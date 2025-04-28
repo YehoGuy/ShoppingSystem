@@ -3,6 +3,7 @@ package InfrastructureLayer;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import DomainLayer.Purchase.Address;
 import DomainLayer.Purchase.Bid;
@@ -22,7 +23,7 @@ public class PurchaseRepository implements IPurchaseRepository {
     // Singleton instance of PurchaseRepository.
     private static PurchaseRepository instance = null;
      // Counter for generating unique purchase IDs
-    private int purchaseIdCounter = 0;
+    private final AtomicInteger purchaseIdCounter = new AtomicInteger(0);
 
     /**
      * Returns the singleton instance of PurchaseRepository.
@@ -42,13 +43,12 @@ public class PurchaseRepository implements IPurchaseRepository {
 
     /**
      * Generates a new unique purchase ID.
-     * -- a Note about concurrency --
-     *  This method is synchronized to ensure that only one thread can access it at a time.
-     *  This is important to ensure unique pruchase IDs.
+     *
      * @return A new unique purchase ID.
      */
-    private synchronized int getNewPurchaseId() {
-        return purchaseIdCounter++;
+    // no need to be synchronized, as AtomicInteger is thread-safe
+    private int getNewPurchaseId() {
+        return purchaseIdCounter.getAndIncrement();
     }
 
     
