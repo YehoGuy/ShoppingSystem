@@ -1,6 +1,5 @@
 package ApplicationLayer.Purchase;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,43 +62,35 @@ public class PurchaseService {
      */
     public List<Integer> checkoutCart(String authToken, int userId, Address shippingAddress) throws Exception {
         LoggerService.logMethodExecution("checkoutCart", userId, shippingAddress);
-        List<Integer> purchaseIds = new ArrayList<>();
-        HashMap<Integer, HashMap<Integer, Integer>> aqcuired = new HashMap<>();
-        HashMap<Integer, HashMap<Integer, Integer>> cartBackup = null;
+        HashMap<Integer, HashMap<Integer, Integer>> aqcuired = new HashMap<>(); // shopId -> (itemId -> quantity)
+        HashMap<Integer, HashMap<Integer, Integer>> cartBackup = null; // shopId -> (itemId -> quantity)
+        HashMap<Integer,Double> totalPrices = new HashMap<>(); // shopId -> total price
+        HashMap<Integer, Integer> purchaseIds = new HashMap<>(); // purchaseId -> shopId
         try {
             // 1. Validate the authToken and userId
             if(authTokenService.ValidateToken(authToken)==userId){
                 // 2. retrieve user's cart
                 HashMap<Integer, HashMap<Integer, Integer>> cart = userService.getUserShoppingCartItems(userId);
                 cartBackup = cart; // backup the cart (cart is a deep copy of the original cart)
-                // 3. check that all items are available and save them
+                // 3. create a purchase for each store (Repo creates)
                 for(Integer shopId : cart.keySet()){
-                    aqcuired.put(shopId, new HashMap<>());
-                    for(Integer itemId : cart.get(shopId).keySet()){
-                        boolean aqcSuccess = shopService.checkSupplyAvailabilityAndAcquire(shopId, itemId, cart.get(shopId).get(itemId));
-                        if(aqcSuccess)
-                            aqcuired.put(shopId, cart.get(shopId));
-                        else{
-                            cartBackup.get(shopId).remove(itemId);
-                            throw new RuntimeException("Item "+itemId+" not available in shop "+shopId+" in quantity "+cart.get(shopId).get(itemId));
-                        }
-                    }
+                    double totalPrice = shopService.purchaseItems(cart.get(shopId), shopId);
+                    totalPrices.put(shopId, totalPrice);
+                    aqcuired.put(shopId, cart.get(shopId));
+                    int pid = purchaseRepository.addPurchase(userId, shopId, aqcuired.get(shopId), totalPrice, shippingAddress);
+                    purchaseIds.put(pid,shopId);
+                    // 4. handle payment
+                    userService.pay(authToken, shopId, totalPrice);
                 }
-                // 4. create a purchase for each store (Repo creates)
-                for(Integer shopId : aqcuired.keySet()){
-                    int pid = purchaseRepository.addPurchase(userId, shopId, aqcuired.get(shopId), shippingAddress);
-                    purchaseIds.add(pid);
-                    // 5. handle payment
-                    /// userService.getUserPaymentMethod(userId).processPayment(calcedPrice);
-                    // 6. handle shipping
-                    /// userService.getUserShippingMethod(userId).processShipping(shippingAddress);
-                }
-                // 7. remove items from the cart (backup before)
+                // 6. remove items from the cart (backup before)
                 userService.clearUserShoppingCart(userId);
-                // 8. LOG the purchase
+                // 5. handle shipping
+                ////for(Integer purchaseId : purchaseIds.keySet())
+                ////    shopService.shipPurchase(purchaseId, purchaseIds.get(purchaseId), shippingAddress);
+                // 7. LOG the purchase
                 LoggerService.logMethodExecutionEnd("checkoutCart", purchaseIds);
-                // 9. return purchase ID's
-                return purchaseIds;
+                // 8. return purchase ID's
+                return purchaseIds.keySet().stream().toList();
             } else{
                 throw new IllegalArgumentException("Invalid authToken or userId");
             }
@@ -107,13 +98,15 @@ public class PurchaseService {
         } catch (Exception e) {
             // return Items to shop
             for(Integer shopId : aqcuired.keySet()){
-                for(Integer itemId : aqcuired.get(shopId).keySet()){
-                    shopService.addSupply(shopId, itemId, aqcuired.get(shopId).get(itemId));
-                }
+                shopService.rollBackPurchase(aqcuired.get(shopId), shopId);
             }
+            // restore the cart
             if(cartBackup != null){
-                // restore the cart
                 userService.restoreUserShoppingCart(userId, cartBackup);
+            }
+            // restore payment
+            for(Integer shopId : totalPrices.keySet()){
+                ///userService.refundPayment(authToken, shopId, totalPrices.get(shopId));
             }
             throw e;
         }
