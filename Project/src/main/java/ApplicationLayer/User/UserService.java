@@ -3,13 +3,9 @@ package ApplicationLayer.User;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
-
-import org.apache.commons.logging.Log;
 
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.LoggerService;
-import ApplicationLayer.OurArg;
 import ApplicationLayer.OurRuntime;
 import ApplicationLayer.Purchase.PaymentMethod;
 import DomainLayer.IUserRepository;
@@ -274,7 +270,7 @@ public class UserService {
                 throw new IllegalArgumentException("Invalid username or password.");
             }
         } catch (Exception e) {
-            LoggerService.logError("loginAsMember", e, username, password, id_if_guest);
+            LoggerService.logError("loginAsMember", e, username, password, token_if_guest);
             throw new RuntimeException("Error logging in as member: " + e.getMessage(), e);
         }
     }
@@ -1130,6 +1126,8 @@ public class UserService {
 
         if (errorMsg.length() > 0) {
             throw new RuntimeException(errorMsg.toString().trim());
+        }
+    }
 
    /**
      * Sets the payment method for a user by their token and shop ID.
