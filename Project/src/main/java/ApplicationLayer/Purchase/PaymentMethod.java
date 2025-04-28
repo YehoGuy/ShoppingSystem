@@ -24,5 +24,17 @@ public interface PaymentMethod {
      * @return a string containing the payment method's details.
      */
     String getDetails();
+
+    /**
+     * refunds a payment with the specified amount.
+     * <p>Implementations of this method should handle the logic for processing a refund
+     * transaction, including any necessary validations or interactions with external systems.
+     * 
+     * @param amount the amount to be refunded. Must be a positive value.
+     * @param shopId the ID of the shop where the payment was made.
+     * @throws IllegalArgumentException if the amount is negative or zero.
+     * @throws IllegalStateException if the refund cannot be processed (e.g., payment not found).
+     */
+    void refundPayment(double amount, int shopId);
    
 }
