@@ -1,6 +1,6 @@
 package InfrastructureLayer;
 
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -8,6 +8,7 @@ import DomainLayer.Purchase.Address;
 import DomainLayer.Purchase.Bid;
 import DomainLayer.Purchase.IPurchaseRepository;
 import DomainLayer.Purchase.Purchase;
+import DomainLayer.Purchase.Reciept;
 
 public class PurchaseRepository implements IPurchaseRepository {
     /**
@@ -93,12 +94,12 @@ public class PurchaseRepository implements IPurchaseRepository {
      * @return The purchase with the specified ID.
      * @throws IllegalArgumentException if the purchase ID does not exist.
      */
-    public Purchase getPurchaseById(int purchaseId) {
+    public Reciept getPurchaseById(int purchaseId) {
         Purchase p = purchaseStorage.get(purchaseId);
         if (p == null) {
             throw new IllegalArgumentException("Purchase not found, purchaseId: " + purchaseId);
         }
-        return p;
+        return p.generateReciept();
     }
 
     @Override
@@ -118,14 +119,11 @@ public class PurchaseRepository implements IPurchaseRepository {
      * @param userId The ID of the user whose purchases to retrieve.
      * @return A list of purchases made by the specified user.
      */
-    public ArrayList<Purchase> getUserPurchases(int userId) {
-        ArrayList<Purchase> userPurchases = new ArrayList<>();
-        for (Purchase purchase : purchaseStorage.values()) {
-            if (purchase.getUserId() == userId) {
-                userPurchases.add(purchase);
-            }
-        }
-        return userPurchases;
+    public List<Reciept> getUserPurchases(int userId) {
+        return purchaseStorage.values().stream()
+                .filter(purchase -> purchase.getUserId() == userId)
+                .map(Purchase::generateReciept)
+                .toList();
     }
 
     @Override
@@ -135,14 +133,11 @@ public class PurchaseRepository implements IPurchaseRepository {
      * @param storeId The ID of the store whose purchases to retrieve.
      * @return A list of purchases made in the specified store.
      */
-    public ArrayList<Purchase> getStorePurchases(int storeId) {
-        ArrayList<Purchase> storePurchases = new ArrayList<>();
-        for (Purchase purchase : purchaseStorage.values()) {
-            if (purchase.getStoreId() == storeId) {
-                storePurchases.add(purchase);
-            }
-        }
-        return storePurchases;
+    public List<Reciept> getStorePurchases(int storeId) {
+        return purchaseStorage.values().stream()
+                .filter(purchase -> purchase.getStoreId() == storeId)
+                .map(Purchase::generateReciept)
+                .toList();
     }
 
     @Override
@@ -153,14 +148,11 @@ public class PurchaseRepository implements IPurchaseRepository {
      * @param storeId The ID of the store whose purchases to retrieve.
      * @return A list of purchases made by the specified user in the specified store.
      */
-    public ArrayList<Purchase> getUserStorePurchases(int userId, int storeId) {
-        ArrayList<Purchase> userStorePurchases = new ArrayList<>();
-        for (Purchase purchase : purchaseStorage.values()) {
-            if (purchase.getUserId() == userId && purchase.getStoreId() == storeId) {
-                userStorePurchases.add(purchase);
-            }
-        }
-        return userStorePurchases;
+    public List<Reciept> getUserStorePurchases(int userId, int storeId) {
+        return purchaseStorage.values().stream()
+                .filter(purchase -> purchase.getUserId() == userId && purchase.getStoreId() == storeId)
+                .map(Purchase::generateReciept)
+                .toList();
     }   
     
 

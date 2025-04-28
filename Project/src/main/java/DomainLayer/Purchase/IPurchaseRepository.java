@@ -1,6 +1,6 @@
 package DomainLayer.Purchase;
 
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public interface IPurchaseRepository {
@@ -32,10 +32,10 @@ public interface IPurchaseRepository {
      * Retrieves a purchase by its ID.
      *
      * @param purchaseId The ID of the purchase to retrieve.
-     * @return The purchase with the specified ID.
+     * @return Reciept Data Object for purchase with the specified ID.
      * @throws IllegalArgumentException if the purchase ID does not exist.
      */
-    Purchase getPurchaseById(int purchaseId);
+    Reciept getPurchaseById(int purchaseId);
 
     /**
      * Deletes a purchase by its ID.
@@ -48,26 +48,26 @@ public interface IPurchaseRepository {
      * Retrieves all purchases made by a specific user.
      *
      * @param userId The ID of the user whose purchases to retrieve.
-     * @return A list of purchases made by the specified user.
+     * @return A list of Reciept data objects for the purchases made by the specified user.
      */
-    ArrayList<Purchase> getUserPurchases(int userId);
+    List<Reciept> getUserPurchases(int userId);
 
     /**
      * Retrieves all purchases made in a specific store.
      *
      * @param storeId The ID of the store whose purchases to retrieve.
-     * @return A list of purchases made in the specified store.
+     * @return A list of Reciept data objects for the purchases made in the specified store.
      */
-    ArrayList<Purchase> getStorePurchases(int storeId);
+    List<Reciept> getStorePurchases(int storeId);
 
     /**
      * Retrieves all purchases made by a specific user in a specific store.
      *
      * @param userId The ID of the user whose purchases to retrieve.
      * @param storeId The ID of the store whose purchases to retrieve.
-     * @return A list of purchases made by the specified user in the specified store.
+     * @return A list of Reciept data objects for the purchases made by the specified user in the specified store.
      */
-    ArrayList<Purchase> getUserStorePurchases(int userId, int storeId);
+    List<Reciept> getUserStorePurchases(int userId, int storeId);
 
 
 
