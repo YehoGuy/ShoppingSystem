@@ -14,6 +14,7 @@ import DomainLayer.Purchase.Address;
 import DomainLayer.Purchase.Bid;
 import DomainLayer.Purchase.IPurchaseRepository;
 import DomainLayer.Purchase.Purchase;
+import DomainLayer.Purchase.Reciept;
 
 public class PurchaseService {
 
@@ -261,7 +262,7 @@ public class PurchaseService {
      * @return A list of Purchase objects made by the user.
      * @throws RuntimeException If an error occurs while retrieving purchases.
      */
-    public List<Purchase> getUserPurchases(String authToken, int userId) {
+    public List<Reciept> getUserPurchases(String authToken, int userId) {
         try {
             // 1. Validate the userId & authToken
             if(authTokenService.ValidateToken(authToken)==userId){

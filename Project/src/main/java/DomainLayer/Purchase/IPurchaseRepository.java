@@ -35,7 +35,7 @@ public interface IPurchaseRepository {
      * @return Reciept Data Object for purchase with the specified ID.
      * @throws IllegalArgumentException if the purchase ID does not exist.
      */
-    Reciept getPurchaseById(int purchaseId);
+    Purchase getPurchaseById(int purchaseId);
 
     /**
      * Deletes a purchase by its ID.
