@@ -15,7 +15,7 @@ public interface IPurchaseRepository {
      * @return The ID of the newly created purchase.
      * @throws IllegalArgumentException if the purchase ID already exists.
      */
-    int addPurchase(int userId, int storeId, Map<Integer, Integer> items, Address shippingAddresse);
+    int addPurchase(int userId, int storeId, Map<Integer, Integer> items, double price, Address shippingAddresse);
 
     /**
      * Adds a bid to the repository.

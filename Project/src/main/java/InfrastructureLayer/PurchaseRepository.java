@@ -61,9 +61,9 @@ public class PurchaseRepository implements IPurchaseRepository {
      * @param shippingAddresse The shipping address for the purchase.
      * @return The ID of the newly created purchase.
      */
-    public int addPurchase(int userId, int storeId, Map<Integer, Integer> items, Address shippingAddresse) {
+    public int addPurchase(int userId, int storeId, Map<Integer, Integer> items, double price, Address shippingAddresse) {
         int id = getNewPurchaseId();
-        Purchase purchase = new Purchase(id, userId, storeId, items, shippingAddresse);
+        Purchase purchase = new Purchase(id, userId, storeId, items, price, shippingAddresse);
         purchaseStorage.put(id, purchase);
         return id;
     }

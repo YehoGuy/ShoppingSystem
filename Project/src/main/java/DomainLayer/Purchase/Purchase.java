@@ -13,6 +13,8 @@ public class Purchase {
     protected Address shippingAddress;              // shipping address
     protected boolean isCompleted;                 // purchase status   
     protected LocalDateTime timeOfCompletion;     // time of purchase completion
+
+    protected double price = 0; // total price of the purchase
       
 
     /**
@@ -22,13 +24,14 @@ public class Purchase {
      * @param storeId the ID of the store where the purchase is made.
      * @param items a map of item IDs to their quantities.
      */
-    public Purchase(int purchaseId, int userId, int storeId, Map<Integer, Integer> items, Address shippingAddress) {
+    public Purchase(int purchaseId, int userId, int storeId, Map<Integer, Integer> items, double price, Address shippingAddress) {
         this.purchaseId = purchaseId;
         this.userId = userId;
         this.storeId = storeId;
         this.items = new ConcurrentHashMap<>(items);
         this.shippingAddress = shippingAddress;
         this.isCompleted = false;
+        this.price = price;
     }
 
     /**
@@ -46,6 +49,7 @@ public class Purchase {
         this.items = new ConcurrentHashMap<>();
         this.shippingAddress = shippingAddress;
         this.isCompleted = false;
+        this.price = 0;
     }
 
     /**
