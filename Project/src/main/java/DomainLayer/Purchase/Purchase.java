@@ -80,8 +80,8 @@ public class Purchase {
      * 
      * @return a {@code HashMap} containing the items and their quantities.
      */
-    public ConcurrentHashMap<Integer, Integer> getItems() {
-        return items;
+    public Map<Integer, Integer> getItems() {
+        return Map.copyOf(items);
     }
 
     /**
