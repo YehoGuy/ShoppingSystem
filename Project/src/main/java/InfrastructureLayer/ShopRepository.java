@@ -110,6 +110,19 @@ public class ShopRepository implements IShopRepository {
     }
 
     @Override
+    public void addBundleDiscount(int shopId, Map<Integer,Integer> basket, int discount) {
+        try {
+            Shop shop = shops.get(shopId);
+            if (shop == null) {
+                throw new IllegalArgumentException("Shop not found: " + shopId);
+            }
+            shop.addBundleDiscount(basket, discount);
+        } catch (Exception e) {
+            throw new RuntimeException("Error adding bundle discount: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
     public void removeDiscountForItem(int shopId, int itemId) {
         Shop shop = shops.get(shopId);
         if (shop == null) {
