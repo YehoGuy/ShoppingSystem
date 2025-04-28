@@ -7,7 +7,15 @@ import static org.mockito.Mockito.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,6 +27,7 @@ import org.mockito.MockitoAnnotations;
 import DomainLayer.Item.Item;
 import DomainLayer.Item.ItemCategory;
 import DomainLayer.Shop.Shop;
+import InfrastructureLayer.ShopRepository;
 import DomainLayer.Shop.IShopRepository;
 import DomainLayer.Shop.PurchasePolicy;
 import DomainLayer.Roles.PermissionsEnum;
@@ -75,7 +84,7 @@ class ShopServiceAcceptanceTests {
 
     // UC5 – Search Products in Market
     @Test
-    void testSearchItemsInShop_SuccessfulSearch() throws Exception {
+    void testSearchItemsInShop_FullSearch_Success() throws Exception {
         String token = "valid-token";
         int shopId = 1;
         Item item = new Item(42, "Widget", "A fine widget", 0);
@@ -93,7 +102,7 @@ class ShopServiceAcceptanceTests {
 
     // UC5 – Search Products in Market (no matches)
     @Test
-    void testSearchItemsInShop_NoMatches() throws Exception {
+    void testSearchItemsInShop_NoMatches_Failure() throws Exception {
         String token = "valid-token";
         int shopId = 1;
 
@@ -121,7 +130,7 @@ class ShopServiceAcceptanceTests {
 
     // UC10 – Create Shop (name taken)
     @Test
-    void testCreateShop_NameAlreadyTaken() throws Exception {
+    void testCreateShop_NameAlreadyTaken_Failure() throws Exception {
         String token = "t";
 
         when(authTokenService.ValidateToken(token)).thenReturn(1);
@@ -136,7 +145,7 @@ class ShopServiceAcceptanceTests {
 
     // UC10 – Create Shop (missing details)
     @Test
-    void testCreateShop_MissingDetails() throws Exception {
+    void testCreateShop_MissingDetails_Failure() throws Exception {
         String token       = "t";
         int userId         = 1;
         String emptyName   = "";
@@ -174,7 +183,7 @@ class ShopServiceAcceptanceTests {
 
     // UC11 – Rate Shop (invalid rating)
     @Test
-    void testAddReviewToShop_InvalidToken() throws Exception {
+    void testAddReviewToShop_InvalidToken_Failure() throws Exception {
         String token = "bad";
 
         when(authTokenService.ValidateToken(token)).thenThrow(new RuntimeException("Invalid token"));
@@ -200,7 +209,7 @@ class ShopServiceAcceptanceTests {
 
     // UC16 – Add Product to Shop (invalid quantity)
     @Test
-    void testAddItemToShop_InvalidQuantity() throws Exception {
+    void testAddItemToShop_InvalidQuantity_Failure() throws Exception {
         String token = "tok";
         int shopId = 3, itemId = 0;
 
@@ -216,7 +225,7 @@ class ShopServiceAcceptanceTests {
 
     // UC16 – Add Product to Shop (no permission)
     @Test
-    void testAddItemToShop_NoPermission() throws Exception {
+    void testAddItemToShop_NoPermission_Failure() throws Exception {
         String token = "tok";
         int shopId = 3;
 
@@ -226,6 +235,22 @@ class ShopServiceAcceptanceTests {
         RuntimeException ex = assertThrows(RuntimeException.class,
             () -> shopService.addItemToShop(shopId, "item1", "no description", 5, 100, token));
         assertTrue(ex.getMessage().contains("does not have permission"));
+    }
+
+    // UC16 – Add Product to Shop (negative price)
+    @Test
+    void testAddItemToShop_NegativePrice_Failure() throws Exception {
+        String token = "tok";
+        int shopId = 3, itemId = 0;
+
+        when(authTokenService.ValidateToken(token)).thenReturn(8);
+        when(userService.hasPermission(8, PermissionsEnum.manageItems, shopId)).thenReturn(true);
+        doThrow(new IllegalArgumentException("Price must be non-negative"))
+            .when(shopRepository).addItemToShop(shopId, itemId, 5, -100);
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> shopService.addItemToShop(shopId, "item1", "no description", 5, -100, token));
+        assertTrue(ex.getMessage().contains("Error adding item"));
     }
 
     // UC17 – Remove Product from Shop
@@ -244,7 +269,7 @@ class ShopServiceAcceptanceTests {
 
     // UC17 – Remove Product from Shop (item not found)
     @Test
-    void testRemoveItemFromShop_ItemNotFound() throws Exception {
+    void testRemoveItemFromShop_ItemNotFound_Failure() throws Exception {
         String token = "tk";
         int shopId = 4, itemId = 20;
 
@@ -260,7 +285,7 @@ class ShopServiceAcceptanceTests {
 
     // UC17 – Remove Product from Shop (no permission)
     @Test
-    void testRemoveItemFromShop_NoPermission() throws Exception {
+    void testRemoveItemFromShop_NoPermission_Failure() throws Exception {
         String token = "tk";
         int shopId = 4;
 
@@ -288,7 +313,7 @@ class ShopServiceAcceptanceTests {
 
     // UC18 – Update Product Details (invalid price)
     @Test
-    void testUpdateItemPriceInShop_NegativePrice() throws Exception {
+    void testUpdateItemPriceInShop_NegativePrice_Failure() throws Exception {
         String token = "t";
         int shopId = 5;
 
@@ -304,7 +329,7 @@ class ShopServiceAcceptanceTests {
 
     // UC18 – Update Product Details (no permission)
     @Test
-    void testUpdateItemPriceInShop_NoPermission() throws Exception {
+    void testUpdateItemPriceInShop_NoPermission_Failure() throws Exception {
         String token = "t";
         int shopId = 5;
 
@@ -357,7 +382,7 @@ class ShopServiceAcceptanceTests {
 
     // UC19 – Define Purchase/Discount Policy (invalid policy)
     @Test
-    void testUpdatePurchasePolicy_InvalidPolicy() throws Exception {
+    void testUpdatePurchasePolicy_InvalidPolicy_Failure() throws Exception {
         String token = "t";
         int shopId = 7;
 
@@ -373,7 +398,7 @@ class ShopServiceAcceptanceTests {
 
     // UC19 – Define Purchase/Discount Policy (no permission)
     @Test
-    void testUpdatePurchasePolicy_NoPermission() throws Exception {
+    void testUpdatePurchasePolicy_NoPermission_Failure() throws Exception {
         String token = "t";
         int shopId = 7;
 
@@ -401,7 +426,7 @@ class ShopServiceAcceptanceTests {
 
     // UC19 – Define Discount (invalid discount)
     @Test
-    void testSetGlobalDiscount_InvalidDiscount() throws Exception {
+    void testSetGlobalDiscount_InvalidDiscount_Failure() throws Exception {
         String token = "t";
         int shopId = 8;
 
@@ -417,7 +442,7 @@ class ShopServiceAcceptanceTests {
 
     // UC19 – Define Discount (no permission)
     @Test
-    void testSetGlobalDiscount_NoPermission() throws Exception {
+    void testSetGlobalDiscount_NoPermission_Failure() throws Exception {
         String token = "t";
         int shopId = 8;
 
@@ -426,6 +451,103 @@ class ShopServiceAcceptanceTests {
 
         RuntimeException ex = assertThrows(RuntimeException.class,
             () -> shopService.setGlobalDiscount(shopId, 10, token));
+        assertTrue(ex.getMessage().contains("does not have permission"));
+    }
+
+    // UC19 - Define single discount
+    @Test
+    void testSetDiscountForItem_Success() throws Exception {
+        String token = "t";
+        int shopId = 8, itemId = 1, discount = 20;
+
+        when(authTokenService.ValidateToken(token)).thenReturn(14);
+        when(userService.hasPermission(14, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
+        doNothing().when(shopRepository).setDiscountForItem(shopId, itemId, discount);
+
+        shopService.setDiscountForItem(shopId, itemId, discount, token);
+        verify(shopRepository).setDiscountForItem(shopId, itemId, discount);
+    }
+
+    // UC19 - Define single discount (invalid discount)
+    @Test
+    void testSetDiscountForItem_InvalidDiscount_Failure() throws Exception {
+        String token = "t";
+        int shopId = 8, itemId = 1;
+
+        when(authTokenService.ValidateToken(token)).thenReturn(14);
+        when(userService.hasPermission(14, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
+        doThrow(new IllegalArgumentException("Discount must be <=100"))
+            .when(shopRepository).setDiscountForItem(shopId, itemId, 200);
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> shopService.setDiscountForItem(shopId, itemId, 200, token));
+        assertTrue(ex.getMessage().contains("Error setting discount for item"));
+    }
+
+    // UC19 - Define single discount (no permission)
+    @Test
+    void testSetDiscountForItem_NoPermission_Failure() throws Exception {
+        String token = "t";
+        int shopId = 8, itemId = 1;
+
+        when(authTokenService.ValidateToken(token)).thenReturn(14);
+        when(userService.hasPermission(14, PermissionsEnum.setPolicy, shopId)).thenReturn(false);
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> shopService.setDiscountForItem(shopId, itemId, 10, token));
+        assertTrue(ex.getMessage().contains("does not have permission"));
+    }
+
+    // UC19 - Define bundle discount
+    @Test
+    void testAddBundleDiscount_Success() throws Exception {
+        String token = "t";
+        int shopId = 8, discount = 20;
+        Map<Integer, Integer> basket = new HashMap<>();
+        basket.put(1, 2);
+        basket.put(2, 3);
+
+        when(authTokenService.ValidateToken(token)).thenReturn(14);
+        when(userService.hasPermission(14, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
+        doNothing().when(shopRepository).addBundleDiscount(shopId, basket, discount);
+
+        shopService.addBundleDiscount(shopId, basket, discount, token);
+        verify(shopRepository).addBundleDiscount(shopId, basket, discount);
+    }
+
+    // UC19 - Define bundle discount (invalid discount)
+    @Test
+    void testAddBundleDiscount_InvalidDiscount_Failure() throws Exception {
+        String token = "t";
+        int shopId = 8, discount = 200;
+        Map<Integer, Integer> basket = new HashMap<>();
+        basket.put(1, 2);
+        basket.put(2, 3);
+
+        when(authTokenService.ValidateToken(token)).thenReturn(14);
+        when(userService.hasPermission(14, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
+        doThrow(new IllegalArgumentException("Discount must be <=100"))
+            .when(shopRepository).addBundleDiscount(shopId, basket, discount);
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> shopService.addBundleDiscount(shopId, basket, discount, token));
+        assertTrue(ex.getMessage().contains("Error adding bundle discount for item"));
+    }
+
+    // UC19 - Define bundle discount (no permission)
+    @Test
+    void testAddBundleDiscount_NoPermission_Failure() throws Exception {
+        String token = "t";
+        int shopId = 8, discount = 20;
+        Map<Integer, Integer> basket = new HashMap<>();
+        basket.put(1, 2);
+        basket.put(2, 3);
+
+        when(authTokenService.ValidateToken(token)).thenReturn(14);
+        when(userService.hasPermission(14, PermissionsEnum.setPolicy, shopId)).thenReturn(false);
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> shopService.addBundleDiscount(shopId, basket, discount, token));
         assertTrue(ex.getMessage().contains("does not have permission"));
     }
 
@@ -445,7 +567,7 @@ class ShopServiceAcceptanceTests {
 
     // UC24 – Close Shop (already closed)
     @Test
-    void testCloseShop_AlreadyClosed() throws Exception {
+    void testCloseShop_AlreadyClosed_Failure() throws Exception {
         String token = "t";
         int shopId = 9;
 
@@ -461,7 +583,7 @@ class ShopServiceAcceptanceTests {
 
     // UC24 – Close Shop (no permission)
     @Test
-    void testCloseShop_NoPermission() throws Exception {
+    void testCloseShop_NoPermission_Failure() throws Exception {
         String token = "t";
         int shopId = 9;
 
@@ -473,9 +595,14 @@ class ShopServiceAcceptanceTests {
         assertTrue(ex.getMessage().contains("does not have permission"));
     }
 
+    // UC28 – Enforce Actions by Permission
+    void testActionByPermission_Succeess() throws Exception{
+        //TODO
+    }
+
     // UC28 – Enforce Actions by Permission (sample)
     @Test
-    void testActionByPermission_Denied() throws Exception {
+    void testActionByPermission_Denied_Failure() throws Exception {
         String token = "t";
         int shopId = 10;
 
@@ -486,4 +613,87 @@ class ShopServiceAcceptanceTests {
             () -> shopService.addItemToShop(shopId, "item1", "no description", 5, 100, token));
         assertTrue(ex.getMessage().contains("does not have permission"));
     }
+
+    // Search/filter edge cases in ShopService (success)
+    // Verifies search with no filters and with price filter yields correct results.
+    @Test
+    void testSearchFilterEdgeCasesInShopService_Success() throws Exception {
+        String token = "t";
+        when(authTokenService.ValidateToken(token)).thenReturn(1);
+
+        // Prepare a single shop with one item
+        ShippingMethod sm = mock(ShippingMethod.class);
+        Shop shopObj = new Shop(1, "S", sm);
+        when(shopRepository.getAllShops()).thenReturn(List.of(shopObj));
+        when(shopRepository.getShop(1)).thenReturn(shopObj);
+        when(shopRepository.getItemsByShop(1)).thenReturn(List.of(10));
+
+        // Stub item service to return one item priced at 0
+        Item it = new Item(10, "Foo", "Bar", 0);
+        when(itemService.getItemsByIds(List.of(10), token)).thenReturn(List.of(it));
+
+        // no filters → one result
+        List<Item> r1 = shopService.searchItemsInShop(1, null, null, null, null, null, null, token);
+        assertEquals(1, r1.size(), "Should return the single item when no filters are applied");
+
+        // price too high → empty
+        List<Item> r2 = shopService.searchItemsInShop(1, null, null, null, 200, null, null, token);
+        assertTrue(r2.isEmpty(), "Should return no items when minPrice > item price");
+    }
+
+    // Closing & reopening shops (success)
+    // Closes a shop and verifies it cannot be retrieved, then “reopens” by creating another.
+    @Test
+    void testClosingAndReopeningShopsInRepo_Success() {
+        ShopRepository repo = new ShopRepository();
+        PurchasePolicy pp = mock(PurchasePolicy.class);
+        ShippingMethod sm = mock(ShippingMethod.class);
+
+        // Create, close, and verify removal
+        Shop a = repo.createShop("A", pp, sm);
+        repo.closeShop(a.getId());
+        assertThrows(RuntimeException.class,
+            () -> repo.getShop(a.getId()),
+            "Closed shop should no longer be retrievable");
+
+        // “Reopen” = create a new shop under a different name; ID must differ
+        Shop b = repo.createShop("B", pp, sm);
+        assertNotEquals(a.getId(), b.getId(),
+            "Reopened shop should get a new, unique ID");
+    }
+
+    // Concurrent shop creation (success)
+    // Spawns multiple threads creating shops to ensure unique IDs.
+    @Test
+    void testConcurrentShopCreationInRepo_Success() throws Exception {
+        ShopRepository repo = new ShopRepository();
+        PurchasePolicy pp = mock(PurchasePolicy.class);
+        ShippingMethod sm = mock(ShippingMethod.class);
+
+        int threads = 10;
+        ExecutorService exec = Executors.newFixedThreadPool(threads);
+        List<Future<Shop>> futures = new ArrayList<>();
+
+        // Each thread creates a shop with a unique name
+        for (int i = 0; i < threads; i++) {
+            final int idx = i;
+            futures.add(exec.submit(() -> repo.createShop("S" + idx, pp, sm)));
+        }
+
+        // Collect all returned IDs
+        Set<Integer> ids = new HashSet<>();
+        for (Future<Shop> f : futures) {
+            try {
+                ids.add(f.get().getId());
+            } catch (ExecutionException e) {
+                fail("Shop creation failed in thread: " + e.getCause());
+            }
+        }
+        exec.shutdown();
+
+        // Expect exactly `threads` distinct IDs
+        assertEquals(threads, ids.size(),
+            "Each thread must create a shop with a unique ID");
+    }
+
 }

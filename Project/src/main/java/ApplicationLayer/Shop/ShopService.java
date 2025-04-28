@@ -169,6 +169,21 @@ public class ShopService {
         }
     }
 
+    public void addBundleDiscount(int shopId, Map<Integer,Integer> basket, int discount, String token) {
+        try {
+            LoggerService.logMethodExecution("addBundleDiscount", shopId, basket, discount);
+            Integer userId = authTokenService.ValidateToken(token);
+            if(!userService.hasPermission(userId,PermissionsEnum.setPolicy,shopId)){
+                throw new RuntimeException("User does not have permission to update discount for shop " + shopId);
+            }
+            shopRepository.addBundleDiscount(shopId, basket, discount);
+            LoggerService.logMethodExecutionEndVoid("addBundleDiscount");
+        } catch (Exception e) {
+            LoggerService.logError("addBundleDiscount", e, shopId, basket, discount);
+            throw new RuntimeException("Error adding bundle discount for item " + basket + " in shop " + shopId + ": " + e.getMessage(), e);
+        }
+    }
+
     /**
      * Adds a review to the specified shop.
      *

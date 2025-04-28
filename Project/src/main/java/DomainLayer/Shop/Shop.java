@@ -405,7 +405,7 @@ public class Shop {
      * @param bundleItems a map of item IDs to quantities required for the discount.
      */
     public void removeBundleDiscount(Map<Integer, Integer> bundleItems, int percentage) {
-        //TODO: Implement this method to remove the bundle discount from the shop.
+        //TODO-V2: Implement this method to remove the bundle discount from the shop.
     }
     
     // ===== Purchase Method =====
