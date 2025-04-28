@@ -1,8 +1,6 @@
 package DomainLayer.Shop;
 
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -10,28 +8,20 @@ import java.util.concurrent.atomic.AtomicInteger;
  * if all specified bundle item IDs are present in the cart.
  */
 public class BundleDiscount implements Discount {
-    private final int shopId;
     private final Map<Integer, Integer> bundleItems; // itemId -> threshold
     private int percentage;
 
     /**
-     * @param shopId       the shop this discount belongs to
      * @param bundleItems  the set of item IDs that must all be in the cart
      * @param percentage   the discount percentage (0–100)
      */
-    public BundleDiscount(int shopId, Map<Integer, Integer> bundleItems, int percentage) {
+    public BundleDiscount(Map<Integer, Integer> bundleItems, int percentage) {
         if (bundleItems == null || bundleItems.isEmpty()) {
             throw new IllegalArgumentException("Bundle items must not be null or empty");
         }
         validatePercentage(percentage);
-        this.shopId       = shopId;
         this.bundleItems  = Map.copyOf(bundleItems);
         this.percentage   = percentage;
-    }
-
-    @Override
-    public int getShopId() {
-        return shopId;
     }
 
     @Override

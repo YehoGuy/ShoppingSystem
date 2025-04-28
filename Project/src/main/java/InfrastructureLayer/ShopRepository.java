@@ -39,7 +39,11 @@ public class ShopRepository implements IShopRepository {
     @Override
     public Shop getShop(int id) {
         try {
-            return shops.get(id);
+            Shop shop = shops.get(id);
+            if (shop == null) {
+                throw new IllegalArgumentException("Shop not found: " + id);
+            }
+            return shop;
         } catch (Exception e) {
             throw new RuntimeException("Error retrieving shop: " + e.getMessage(), e);
         }

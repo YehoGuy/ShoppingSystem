@@ -115,6 +115,9 @@ public class Shop {
      * @param reviewText the review text.
      */
     public void addReview(int userId, int rating, String reviewText) {
+        if(rating < 1 || rating > 5) {
+            throw new IllegalArgumentException("Rating must be between 1 and 5");
+        }
         reviews.add(new ShopReview(userId, rating, reviewText));
     }
 
@@ -135,7 +138,7 @@ public class Shop {
     public double getAverageRating() {
         int count = reviews.size();
         if (count == 0) {
-            return 0.0;
+            return -1.0;
         }
         int total = 0;
         for (ShopReview r : reviews) {
@@ -238,6 +241,9 @@ public class Shop {
         if (price < 0) {
             throw new IllegalArgumentException("Price must be non-negative");
         }
+        if (!items.containsKey(itemId)) {
+            throw new IllegalArgumentException("Item not found: " + itemId);
+        }
         itemsPrices.compute(itemId, (key, existing) -> {
             if (existing == null) {
                 return new AtomicInteger(price);
@@ -330,13 +336,13 @@ public class Shop {
     public void setGlobalDiscount(int percentage) {
         // try to update existing
         for (Discount d : discounts) {
-            if (d.getShopId() == this.id && d.getItemId() == null) {
+            if (d.getItemId() == null) {
                 d.setPercentage(percentage);
                 return;
             }
         }
         // otherwise add new
-        discounts.add(new DiscountImpl(this.id, null,/* price unused */0, percentage));
+        discounts.add(new SingleDiscount(this.id, null,/* price unused */0, percentage));
     }
 
     /**
@@ -347,7 +353,6 @@ public class Shop {
      */ 
     public void removeGlobalDiscount() {
         discounts.removeIf(d ->
-            d.getShopId() == this.id &&
             d.getItemId() == null
         );
     }
@@ -360,14 +365,13 @@ public class Shop {
      */
     public void setDiscountForItem(int itemId, int percentage) {
         for (Discount d : discounts) {
-            if (d.getShopId() == this.id
-             && d.getItemId() != null
+            if (d.getItemId() != null
              && d.getItemId().equals(itemId)) {
                 d.setPercentage(percentage);
                 return;
             }
         }
-        discounts.add(new DiscountImpl(this.id, itemId, this.getItemPrice(itemId), percentage));
+        discounts.add(new SingleDiscount(this.id, itemId, this.getItemPrice(itemId), percentage));
     }
 
     /**
@@ -377,10 +381,31 @@ public class Shop {
      */
     public void removeDiscountForItem(int itemId) {
         discounts.removeIf(d ->
-            d.getShopId() == this.id &&
             d.getItemId() != null &&
             d.getItemId().equals(itemId)
         );
+    }
+
+    /**
+     * Adds a bundle discount to the shop.
+     * A bundle discount applies a percentage off the entire purchase
+     * if all specified bundle item IDs are present in the cart.
+     *
+     * @param bundleItems  a map of item IDs to quantities required for the discount.
+     * @param percentage   the discount percentage (0–100).
+     */
+    public void addBundleDiscount(Map<Integer, Integer> bundleItems, int percentage){  // bundleItems is a map of itemId to quantity
+        discounts.add(new BundleDiscount(bundleItems, percentage));
+    }
+
+    /**
+     * Removes a bundle discount from the shop.
+     * This method iterates through all discounts and removes the one that matches the given bundle items.
+     *
+     * @param bundleItems a map of item IDs to quantities required for the discount.
+     */
+    public void removeBundleDiscount(Map<Integer, Integer> bundleItems, int percentage) {
+        //TODO: Implement this method to remove the bundle discount from the shop.
     }
     
     // ===== Purchase Method =====
@@ -397,9 +422,9 @@ public class Shop {
      */
     public double purchaseItems(Map<Integer, Integer> purchaseList) {
         // 1) policy check up-front
-        if (!checkPolicys(purchaseList)) {
-            throw new IllegalStateException("Purchase policy violation");
-        }
+        // if (!checkPolicys(purchaseList)) {
+        //     throw new IllegalStateException("Purchase policy violation");
+        // }
 
         // remember for rollback
         Map<Integer, Integer> originalStock = new HashMap<>();
