@@ -155,4 +155,16 @@ public class Purchase {
         this.isCompleted = false;
         this.timeOfCompletion = null;
     }
+
+    /**
+     * Returns a string representation of the purchase.
+     * 
+     * @return a string containing the purchase details.
+     */
+    public Reciept generateReciept() {
+        if (!isCompleted)
+            return new Reciept(purchaseId, userId, storeId, items, shippingAddress);
+        else
+            return new Reciept(purchaseId, userId, storeId, items, shippingAddress, timeOfCompletion);
+    }
 }
