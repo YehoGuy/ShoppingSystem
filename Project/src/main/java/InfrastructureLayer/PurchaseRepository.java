@@ -94,12 +94,12 @@ public class PurchaseRepository implements IPurchaseRepository {
      * @return The purchase with the specified ID.
      * @throws IllegalArgumentException if the purchase ID does not exist.
      */
-    public Reciept getPurchaseById(int purchaseId) {
+    public Purchase getPurchaseById(int purchaseId) {
         Purchase p = purchaseStorage.get(purchaseId);
         if (p == null) {
             throw new IllegalArgumentException("Purchase not found, purchaseId: " + purchaseId);
         }
-        return p.generateReciept();
+        return p;
     }
 
     @Override
