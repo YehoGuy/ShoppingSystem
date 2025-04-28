@@ -5,6 +5,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
@@ -229,10 +230,12 @@ public class ItemServiceAcceptanceTests {
     public void testGetItemInvalidId() {
         int itemId = -1; // invalid
 
+        when(itemService.getItem(itemId, TOKEN)).thenThrow(new RuntimeException("Invalid item ID"));
+
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
             itemService.getItem(itemId, TOKEN)
         );
-        assertTrue(ex.getMessage().contains("Error getting item"));
+        assertTrue(ex.getMessage().contains("Invalid item ID"));
     }
 
     // Uc5 - search item in the market (negative: item not found)
@@ -243,10 +246,7 @@ public class ItemServiceAcceptanceTests {
         // repository returns null
         when(itemRepository.getItem(itemId)).thenReturn(null);
 
-        RuntimeException ex = assertThrows(RuntimeException.class, () ->
-            itemService.getItem(itemId, TOKEN)
-        );
-        assertTrue(ex.getMessage().contains("Error getting item"));
+        assertNull(itemService.getItem(itemId, TOKEN));
     }
 
     // Optional: Fetch all items

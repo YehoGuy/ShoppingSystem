@@ -86,6 +86,9 @@ public class ItemService {
     public Item getItem(int itemId, String token) {
         try {
             LoggerService.logMethodExecution("getItem", itemId);
+            if (itemId < 0) {
+                throw new OurArg("Item ID cannot be negative");
+            }
             authTokenService.ValidateToken(token);
             Item returnItem = itemRepository.getItem(itemId);
             LoggerService.logMethodExecutionEnd("getItem", returnItem);
@@ -138,6 +141,15 @@ public class ItemService {
     public void addReviewToItem(int itemId, int rating, String reviewText, String token) {
         try {
             LoggerService.logMethodExecution("addReviewToItem", itemId, rating, reviewText);
+            if (itemId < 0) {
+                throw new OurArg("Item ID cannot be negative");
+            }
+            if (rating < 1 || rating > 5) {
+                throw new OurArg("Rating must be between 1 and 5");
+            }
+            if (reviewText == null || reviewText.isEmpty()) {
+                throw new OurArg("Review text cannot be null or empty");
+            }
             authTokenService.ValidateToken(token);
             itemRepository.addReviewToItem(itemId, rating, reviewText);
             LoggerService.logMethodExecutionEndVoid("addReviewToItem");
@@ -164,6 +176,9 @@ public class ItemService {
     public List<ItemReview> getItemReviews(int itemId, String token) {
         try {
             LoggerService.logMethodExecution("getItemReviews", itemId);
+            if (itemId < 0) {
+                throw new OurArg("Item ID cannot be negative");
+            }
             authTokenService.ValidateToken(token);
             List<ItemReview> returnItems = itemRepository.getItemReviews(itemId);           
             LoggerService.logMethodExecutionEnd("getItemReviews", returnItems);
@@ -190,6 +205,9 @@ public class ItemService {
     public double getItemAverageRating(int itemId, String token) {
         try {
             LoggerService.logMethodExecution("getItemAverageRating", itemId);
+            if (itemId < 0) {
+                throw new OurArg("Item ID cannot be negative");
+            }
             authTokenService.ValidateToken(token);
             double returnDouble = itemRepository.getItemAverageRating(itemId);
             LoggerService.logMethodExecutionEnd("getItemAverageRating", returnDouble);
@@ -216,6 +234,14 @@ public class ItemService {
     public List<Item> getItemsByIds(List<Integer> itemIds , String token) {
         try {
             LoggerService.logMethodExecution("getItemsByIds", itemIds);
+            if (itemIds == null || itemIds.isEmpty()) {
+                throw new OurArg("Item IDs list cannot be null or empty");
+            }
+            for (Integer itemId : itemIds) {
+                if (itemId < 0) {
+                    throw new OurArg("Item ID cannot be negative");
+                }
+            }
             authTokenService.ValidateToken(token);
             List<Item> result = itemRepository.getItemsByIds(itemIds);
             LoggerService.logMethodExecutionEnd("getItemsByIds", result);
