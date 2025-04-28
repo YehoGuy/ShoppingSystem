@@ -123,19 +123,14 @@ public class PurchaseService {
      * @return The ID of the created bid.
      * @throws Exception If an error occurs during bid creation.
      */
-    public int createBid(String authToken, int userId, int storeId, Map<Integer, Integer> items) throws Exception{
+    public int createBid(String authToken, int userId, int storeId, Map<Integer, Integer> items, int initialPrice) throws Exception{
         LoggerService.logMethodExecution("createBid", userId, storeId, items);
         Map<Integer, Integer> acquired = new HashMap<>();
         try {
             // 1. Validate the authToken & userId & userRole
             if(authTokenService.ValidateToken(authToken)==userId){
                 // 2. check that all items exist in the store and acquire them
-                for(Integer itemId : items.keySet()){
-                    if(!shopService.checkSupplyAvailabilityAndAcquire(storeId, itemId, items.get(itemId))){
-                        throw new RuntimeException("Item "+itemId+" not available in shop "+storeId);
-                    }
-                    acquired.put(itemId, items.get(itemId));
-                }
+                shopService.purchaseItems(items, storeId);
                 // 3. create a bid for the store (Repo creates)
                 int purchaseId = purchaseRepository.addBid(userId, storeId, items);
                 // 4. LOG the bid
@@ -147,9 +142,7 @@ public class PurchaseService {
             }
         } catch (Exception e) {
             // return items to shop
-            for (Map.Entry<Integer,Integer> entry : acquired.entrySet()) {
-                shopService.addSupply(storeId, entry.getKey(), entry.getValue());
-            }
+            shopService.rollBackPurchase(items, storeId);
             throw e;
         }
     }
