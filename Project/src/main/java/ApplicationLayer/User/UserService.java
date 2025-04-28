@@ -43,6 +43,7 @@ public class UserService {
 
     public void makeAdmin(String token, Integer id)
     {
+        // userId is the token's user id. and id is the id of the user to make admin
         LoggerService.logMethodExecution("makeAdmin", token, id);
         try {
             int userId = authTokenService.ValidateToken(token);
@@ -118,6 +119,7 @@ public class UserService {
 
     public void addMember(String username, String password, String email, String phoneNumber, String address) {
         try {
+            isValidDetails(username, password, email, phoneNumber); // Validate the input details
             password = passwordEncoder.encode(password); // Encode the password using the PasswordEncoderUtil
             LoggerService.logMethodExecution("addMember", username, password, email, phoneNumber, address);
             userRepository.addMember(username, password, email, phoneNumber, address);
@@ -126,66 +128,76 @@ public class UserService {
             LoggerService.logError("addMember", e, username, email, phoneNumber, address);
             throw new RuntimeException("Error adding member: " + e.getMessage(), e);
         }
+        
     }
 
-    public void updateMemberUsername(int id, String username) {
+    public void updateMemberUsername(String token, String username) {
         try {
+            int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             LoggerService.logMethodExecution("updateMemberUsername", id, username);
             validateMemberId(id);
+            isValidUsername(username); // Validate the username
             userRepository.updateMemberUsername(id, username);
             LoggerService.logMethodExecutionEndVoid("updateMemberUsername");
         } catch (Exception e) {
-            LoggerService.logError("updateMemberUsername", e, id, username);
-            throw new RuntimeException("Error updating username for user ID " + id + ": " + e.getMessage(), e);
+            LoggerService.logError("updateMemberUsername", e, username);
+            throw new RuntimeException("Error updating username for token" + token + ": " + e.getMessage(), e);
         }
     }
 
-    public void updateMemberPassword(int id, String password) {
+    public void updateMemberPassword(String token, String password) {
         try {
+            int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            isValidPassword(password); // Validate the password
             password = passwordEncoder.encode(password); // Encode the password using the PasswordEncoderUtil
             LoggerService.logMethodExecution("updateMemberPassword", id, password);
             validateMemberId(id);
             userRepository.updateMemberPassword(id, password);
             LoggerService.logMethodExecutionEndVoid("updateMemberPassword");
         } catch (Exception e) {
-            LoggerService.logError("updateMemberPassword", e, id);
-            throw new RuntimeException("Error updating password for user ID " + id + ": " + e.getMessage(), e);
+            LoggerService.logError("updateMemberPassword", e, password);
+            throw new RuntimeException("Error updating password for for token" + token + ": " + e.getMessage(), e);
         }
     }
 
-    public void updateMemberEmail(int id, String email) {
+    public void updateMemberEmail(String token, String email) {
         try {
+            int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             LoggerService.logMethodExecution("updateMemberEmail", id, email);
             validateMemberId(id);
+            isValidEmail(email); // Validate the email
             userRepository.updateMemberEmail(id, email);
             LoggerService.logMethodExecutionEndVoid("updateMemberEmail");
         } catch (Exception e) {
-            LoggerService.logError("updateMemberEmail", e, id, email);
-            throw new RuntimeException("Error updating email for user ID " + id + ": " + e.getMessage(), e);
+            LoggerService.logError("updateMemberEmail", e, email);
+            throw new RuntimeException("Error updating email for token" + token + ": " + e.getMessage(), e);
         }
     }
 
-    public void updateMemberPhoneNumber(int id, String phoneNumber) {
+    public void updateMemberPhoneNumber(String token, String phoneNumber) {
         try {
+            int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             LoggerService.logMethodExecution("updateMemberPhoneNumber", id, phoneNumber);
             validateMemberId(id);
+            isValidPhoneNumber(phoneNumber); // Validate the phone number
             userRepository.updateMemberPhoneNumber(id, phoneNumber);
             LoggerService.logMethodExecutionEndVoid("updateMemberPhoneNumber");
         } catch (Exception e) {
-            LoggerService.logError("updateMemberPhoneNumber", e, id, phoneNumber);
-            throw new RuntimeException("Error updating phone number for user ID " + id + ": " + e.getMessage(), e);
+            LoggerService.logError("updateMemberPhoneNumber", e, phoneNumber);
+            throw new RuntimeException("Error updating phone number for token" + token + ": " + e.getMessage(), e);
         }
     }
 
-    public void updateMemberAddress(int id, String address) {
+    public void updateMemberAddress(String token, String address) {
         try {
+            int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             LoggerService.logMethodExecution("updateMemberAddress", id, address);
             validateMemberId(id);
             userRepository.updateMemberAddress(id, address);
             LoggerService.logMethodExecutionEndVoid("updateMemberAddress");
         } catch (Exception e) {
-            LoggerService.logError("updateMemberAddress", e, id, address);
-            throw new RuntimeException("Error updating address for user ID " + id + ": " + e.getMessage(), e);
+            LoggerService.logError("updateMemberAddress", e, address);
+            throw new RuntimeException("Error updating address for token" + token + ": " + e.getMessage(), e);
         }
     }
 
@@ -225,9 +237,9 @@ public class UserService {
         }
     }
 
-    public String loginAsMember(String username, String password, int id_if_guest) {
+    public String loginAsMember(String username, String password, String token_if_guest) {
         password = passwordEncoder.encode(password); // Encode the password using the PasswordEncoderUtil
-        LoggerService.logMethodExecution("loginAsMember", username, password, id_if_guest);
+        LoggerService.logMethodExecution("loginAsMember", username, password, token_if_guest);
         String token = null;
         try {
             if (username == null || password == null) {
@@ -240,22 +252,22 @@ public class UserService {
             }
             int loginAsMember_id = userRepository.isUsernameAndPasswordValid(username, password);
             if (loginAsMember_id > 0) { // valid login attempt
-                if (id_if_guest == -1) { // if the user is not a guest, it's their initial login
+                if (token_if_guest == "") { // if the user is not a guest, it's their initial login
                     token = authTokenService.Login(username,password,loginAsMember_id); // Generate a token for the member
                     LoggerService.logMethodExecutionEnd("loginAsMember", loginAsMember_id);
                     return token; // Return the ID of the logged-in member    
-                } else if (userRepository.isGuestById(id_if_guest)) { // ensure the given id matches a guest in the data
+                } 
+                else{ 
+                    int id = authTokenService.ValidateToken(token_if_guest); // guest id
                     // merge the guest cart with the member cart
                     User member = userRepository.getUserById(loginAsMember_id);
-                    User guest = userRepository.getUserById(id_if_guest);
+                    User guest = userRepository.getUserById(id);
                     member.mergeShoppingCart(guest.getShoppingCart());
                     // remove the guest user from the data
-                    userRepository.removeUserById(id_if_guest);
+                    userRepository.removeUserById(id);
                     token = authTokenService.Login(username, password, loginAsMember_id); // Generate a token for the member
                     LoggerService.logMethodExecutionEnd("loginAsMember", loginAsMember_id);
                     return token; 
-                } else {
-                    throw new IllegalArgumentException("The given id does not match a guest in the data. Probably it is a member id!");
                 }
             }else{
                 LoggerService.logError("loginAsMember", new IllegalArgumentException("Invalid username or password."));
@@ -308,25 +320,25 @@ public class UserService {
 
     */
 
-    public String signUp(String username, String password, String email, String phoneNumber, String address) {
-        password = passwordEncoder.encode(password); // Encode the password using the PasswordEncoderUtil
-        try {
-            if (userRepository.isUsernameTaken(username)) {
-                LoggerService.logError("signUp", new IllegalArgumentException("Username is already taken."));
-                throw new IllegalArgumentException("Username is already taken.");
-            }
-            if (!email.contains("@")) {
-                throw new IllegalArgumentException("Invalid email format.");
-            }
-            String token = authTokenService.generateAuthToken(username); // Generate a token for the member
-            LoggerService.logMethodExecution("signUp", username, password, email, phoneNumber, address);
-            userRepository.addMember(username, password, email, phoneNumber, address);
-            return token;
-        } catch (Exception e) {
-            LoggerService.logError("signUp", e, username, password, email, phoneNumber, address);
-            throw new RuntimeException("Error signing up: " + e.getMessage(), e);
-        }
-    }
+    // public String signUp(String username, String password, String email, String phoneNumber, String address) {
+    //     password = passwordEncoder.encode(password); // Encode the password using the PasswordEncoderUtil
+    //     try {
+    //         if (userRepository.isUsernameTaken(username)) {
+    //             LoggerService.logError("signUp", new IllegalArgumentException("Username is already taken."));
+    //             throw new IllegalArgumentException("Username is already taken.");
+    //         }
+    //         if (!email.contains("@")) {
+    //             throw new IllegalArgumentException("Invalid email format.");
+    //         }
+    //         String token = authTokenService.generateAuthToken(username); // Generate a token for the member
+    //         LoggerService.logMethodExecution("signUp", username, password, email, phoneNumber, address);
+    //         userRepository.addMember(username, password, email, phoneNumber, address);
+    //         return token;
+    //     } catch (Exception e) {
+    //         LoggerService.logError("signUp", e, username, password, email, phoneNumber, address);
+    //         throw new RuntimeException("Error signing up: " + e.getMessage(), e);
+    //     }
+    // }
 
     public String logout(String token){
         try {
@@ -1036,7 +1048,90 @@ public class UserService {
         }
     }
 
-    /**
+
+    public boolean isValidUsername(String username) {
+        if (username == null || username.isEmpty()) {
+            return false;
+        }
+
+        if (username.length() < 3 || username.length() > 20) {
+            return false;
+        }
+
+        String pattern = "^[a-zA-Z0-9_]+$";
+
+        return username.matches(pattern);
+    }
+    public boolean isValidPassword(String password) {
+        if (password == null || password.isEmpty()) {
+            return false;
+        }
+
+        // Length check
+        if (password.length() < 8) {
+            return false;
+        }
+
+        // Regex for required rules
+        String pattern = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$";
+
+        return password.matches(pattern);
+    }
+    public boolean isValidPhoneNumber(String phoneNumber) {
+        if (phoneNumber == null || phoneNumber.isEmpty()) {
+            return false;
+        }
+
+        // Regex:
+        // ^\+?           → optional + at the start
+        // \d+            → one or more digits
+        // (-\d+)?        → optional single dash followed by digits
+        // $              → end of string
+        // Full length between 9 to 15 characters including dash/+ if present
+
+        String pattern = "^\\+?\\d+(-\\d+)?$";
+
+        if (!phoneNumber.matches(pattern)) {
+            return false;
+        }
+
+        // Check total length (after validating format)
+        if (phoneNumber.length() < 9 || phoneNumber.length() > 15) {
+            return false;
+        }
+
+        return true;
+    }
+    public boolean isValidEmail(String email) {
+        if (email == null || email.isEmpty()) {
+            return false;
+        }
+
+        // Regex for a standard email format
+        String pattern = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
+
+        return email.matches(pattern);
+    }
+    public void isValidDetails(String username, String password, String phoneNumber, String email) {
+        StringBuilder errorMsg = new StringBuilder();
+
+        if (!isValidUsername(username)) {
+            errorMsg.append("Invalid Username.");
+        }
+        if (!isValidPassword(password)) {
+            errorMsg.append("Invalid Password.");
+        }
+        if (!isValidPhoneNumber(phoneNumber)) {
+            errorMsg.append("Invalid Phone Number.");
+        }
+        if (!isValidEmail(email)) {
+            errorMsg.append("Invalid Email.");
+        }
+
+        if (errorMsg.length() > 0) {
+            throw new RuntimeException(errorMsg.toString().trim());
+
+   /**
      * Sets the payment method for a user by their token and shop ID.
      * @param token The token of the user setting the payment method.
      * @param paymentMethod The PaymentMethod object to be set for the user.
