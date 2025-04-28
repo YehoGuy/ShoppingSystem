@@ -167,8 +167,8 @@ public class Purchase {
      */
     public Reciept generateReciept() {
         if (!isCompleted)
-            return new Reciept(purchaseId, userId, storeId, items, shippingAddress);
+            return new Reciept(purchaseId, userId, storeId, items, shippingAddress, null, this.price);
         else
-            return new Reciept(purchaseId, userId, storeId, items, shippingAddress, timeOfCompletion);
+            return new Reciept(purchaseId, userId, storeId, items, shippingAddress, timeOfCompletion, this.price);
     }
 }
