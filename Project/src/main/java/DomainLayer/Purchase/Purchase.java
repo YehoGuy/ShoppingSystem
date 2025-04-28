@@ -49,7 +49,7 @@ public class Purchase {
         this.items = new ConcurrentHashMap<>();
         this.shippingAddress = shippingAddress;
         this.isCompleted = false;
-        this.price = 0;
+        this.price = -1;
     }
 
     /**
