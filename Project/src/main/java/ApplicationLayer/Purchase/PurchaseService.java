@@ -191,6 +191,7 @@ public class PurchaseService {
      * @throws Exception If an error occurs during bid finalization.
      */
     public int finalizeBid(String authToken, int userId, int purchaseId) throws Exception {
+        boolean payed=false;
         try {
             LoggerService.logMethodExecution("finalizeBid", userId, purchaseId);
             // 1. Validate the userId & authToken
@@ -204,18 +205,22 @@ public class PurchaseService {
                     throw new RuntimeException("User "+userId+" is not the owner of the bid "+purchaseId);
                 // 4. finalize the bid (Repo)
                 int highestBidderId = purchase.completePurchase();
+                double finalPrice = ((Bid)purchase).getMaxBidding();
                 // 5. handle payment
-                /// userService.getUserPaymentMethod(highestBidderId).processPayment(calcedPrice);
+                userService.pay(authToken, purchase.getStoreId(), finalPrice);
+                payed=true;
                 // 6. handle shipping
-                /// userService.getUserShippingMethod(highestBidderId).processShipping(purchase.getShippingAddress());
+                ////shopService.shipPurchase(purchaseId, purchase.getShopId(), shippingAddress);
                 // 7. notify the bidders
                 List<Integer> bidders = ((Bid)purchase).getBiddersIds();
-                for(Integer uid : bidders){
-                    if(uid != highestBidderId)
-                        messageService.sendMessageToUser(authToken, uid, "Bid "+purchaseId+" has been finalized. you did'nt win", 0);
-                    else
-                        messageService.sendMessageToUser(authToken, uid, "Congratulations! You have won the bid "+purchaseId+"!", 0);
-                }
+                try{
+                    for(Integer uid : bidders){
+                        if(uid != highestBidderId)
+                            messageService.sendMessageToUser(authToken, uid, "Bid "+purchaseId+" has been finalized. you did'nt win", 0);
+                        else
+                            messageService.sendMessageToUser(authToken, uid, "Congratulations! You have won the bid "+purchaseId+"!", 0);
+                    }
+                } catch (Exception e){}
                 // 8. LOG the purchase
                 LoggerService.logMethodExecutionEnd("finalizeBid", highestBidderId);
                 // 9. return highestBidder ID
@@ -224,9 +229,12 @@ public class PurchaseService {
                 throw new IllegalArgumentException("Invalid authToken or userId");
             }
         } catch (Exception e) {
+            if(payed)
+                // return payment
+                ///userService.refundPayment(authToken, shopId, totalPrices.get(shopId));
+                return -1; // just to satisfy the compiler
             throw e;
         }
-        
     }
 
 
