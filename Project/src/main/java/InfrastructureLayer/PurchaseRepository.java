@@ -79,9 +79,9 @@ public class PurchaseRepository implements IPurchaseRepository {
      * @return The ID of the newly created bid.
      * @throws UnsupportedOperationException if bids are not supported in this repository.
      */
-    public int addBid(int userId, int storeId, Map<Integer, Integer> items) {
+    public int addBid(int userId, int storeId, Map<Integer, Integer> items, double initialPrice) {
         int id = getNewPurchaseId();
-        Bid bid = new Bid(id, userId, storeId, items);
+        Bid bid = new Bid(id, userId, storeId, items, initialPrice);
         purchaseStorage.put(id, bid);
         return id;
     }

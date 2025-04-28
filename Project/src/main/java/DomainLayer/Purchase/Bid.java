@@ -17,8 +17,8 @@ public class Bid extends Purchase{
      * @param storeId the ID of the store where the bid is made.
      * @param items a map of item IDs to their quantities.
      */
-    public Bid(int purchaseId, int userId, int storeId, Map<Integer, Integer> items) {
-        super(purchaseId, userId, storeId, items, null);
+    public Bid(int purchaseId, int userId, int storeId, Map<Integer, Integer> items, double initialPrice) {
+        super(purchaseId, userId, storeId, null);
         this.biddings = new HashMap<>();
     }
 

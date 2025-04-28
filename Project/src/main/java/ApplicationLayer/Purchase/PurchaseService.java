@@ -124,7 +124,7 @@ public class PurchaseService {
      * @return The ID of the created bid.
      * @throws Exception If an error occurs during bid creation.
      */
-    public int createBid(String authToken, int userId, int storeId, Map<Integer, Integer> items, int initialPrice) throws Exception{
+    public int createBid(String authToken, int userId, int storeId, Map<Integer, Integer> items, double initialPrice) throws Exception{
         LoggerService.logMethodExecution("createBid", userId, storeId, items);
         Map<Integer, Integer> acquired = new HashMap<>();
         try {
@@ -133,7 +133,7 @@ public class PurchaseService {
                 // 2. check that all items exist in the store and acquire them
                 shopService.purchaseItems(items, storeId);
                 // 3. create a bid for the store (Repo creates)
-                int purchaseId = purchaseRepository.addBid(userId, storeId, items);
+                int purchaseId = purchaseRepository.addBid(userId, storeId, items, initialPrice);
                 // 4. LOG the bid
                 LoggerService.logMethodExecutionEnd("createBid", purchaseId);
                 // 5. return purchase ID
