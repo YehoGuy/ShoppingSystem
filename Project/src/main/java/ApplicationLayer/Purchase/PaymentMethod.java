@@ -13,7 +13,7 @@ public interface PaymentMethod {
      * @param amount the amount to be processed for payment. Must be a positive value.
      * @throws IllegalArgumentException if the amount is negative or zero.
      */
-    void processPayment(double amount);
+    void processPayment(double amount, int shopId);
 
     /**
      * Retrieves the details of the payment method.

@@ -12,10 +12,10 @@ import ApplicationLayer.Purchase.PaymentMethod;
 import DomainLayer.Guest;
 import DomainLayer.IUserRepository;
 import DomainLayer.Member;
-import DomainLayer.ShoppingCart;
-import DomainLayer.User;
 import DomainLayer.Roles.PermissionsEnum;
 import DomainLayer.Roles.Role;
+import DomainLayer.ShoppingCart;
+import DomainLayer.User;
 
 // Assuming User is a class that has been defined elsewhere in your project
 // and has a method getId() to retrieve the user's ID.
@@ -457,7 +457,7 @@ public class UserRepository implements IUserRepository {
             throw new OurRuntime("Payment method not set for user with ID " + userId);
         }
         try {
-            paymentMethod.processPayment(payment); // Assuming PaymentMethod has a method to process payment
+            paymentMethod.processPayment(payment, shopId); // Assuming PaymentMethod has a method to process payment
         } catch (Exception e) {
             throw new OurRuntime("Payment failed: " + e.getMessage());
         }
