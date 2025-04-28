@@ -3,6 +3,7 @@ package ApplicationLayer.Shop;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.Item.ItemService;
@@ -351,6 +352,29 @@ public class ShopService {
         } catch (Exception e) {
             LoggerService.logError("checkSupplyAvailability", e, shopId, itemId);
             throw new RuntimeException("Error checking supply for item " + itemId + " in shop " + shopId + ": " + e.getMessage(), e);
+        }
+    }
+
+    public double purchaseItems(Map<Integer, Integer> purchaseLists, Integer shopId) {
+        try {
+            LoggerService.logMethodExecution("purchaseItems", purchaseLists, shopId);
+            double totalPrice = shopRepository.purchaseItems(purchaseLists, shopId);
+            LoggerService.logMethodExecutionEnd("purchaseItems", totalPrice);
+            return totalPrice;
+        } catch (Exception e) {
+            LoggerService.logError("purchaseItems", e, purchaseLists, shopId);
+            throw new RuntimeException("Error purchasing items from shop " + shopId + ": " + e.getMessage(), e);
+        }
+    }
+
+    public void rollBackPurchase(Map<Integer, Integer> purchaseLists, Integer shopId) {
+        try{
+            LoggerService.logMethodExecution("rollBackPurchase", purchaseLists, shopId);
+            shopRepository.rollBackPurchase(purchaseLists, shopId);
+            LoggerService.logMethodExecutionEndVoid("rollBackPurchase");
+        } catch (Exception e) {
+            LoggerService.logError("rollBackPurchase", e, purchaseLists, shopId);
+            throw new RuntimeException("Error rolling back purchase from shop " + shopId + ": " + e.getMessage(), e);
         }
     }
 

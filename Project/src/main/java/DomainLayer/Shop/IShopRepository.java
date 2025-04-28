@@ -2,6 +2,7 @@ package DomainLayer.Shop;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import ApplicationLayer.Purchase.ShippingMethod;
 
@@ -210,4 +211,8 @@ public interface IShopRepository {
      * @return a list of all shops.
      */
     void addSupply(Integer shopId, Integer itemId, Integer supply);
+
+    double purchaseItems(Map<Integer, Integer> purchaseLists, Integer shopdId);
+
+    void rollBackPurchase(Map<Integer, Integer> purchaseLists, Integer shopId);
 }

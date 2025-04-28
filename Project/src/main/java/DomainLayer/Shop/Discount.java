@@ -9,12 +9,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 public interface Discount {
 
     /**
-     * The ID of the shop this discount applies to.
-     * @return the shop ID
-     */
-    int getShopId();
-
-    /**
      * The ID of the item this discount applies to, or null if it is a global shop discount.
      * @return the item ID, or null for global discounts
      */

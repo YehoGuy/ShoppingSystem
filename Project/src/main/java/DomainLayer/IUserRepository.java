@@ -3,6 +3,7 @@ package DomainLayer;
 import java.util.List;
 import java.util.Map;
 
+import ApplicationLayer.Purchase.PaymentMethod;
 import DomainLayer.Roles.PermissionsEnum;
 import DomainLayer.Roles.Role;
 import InfrastructureLayer.PasswordEncoderUtil;
@@ -73,6 +74,8 @@ public interface IUserRepository {
     void clearShoppingCart(int userId);
     Map<Integer, Integer> getBasket(int userId, int shopId);
     void createBasket(int userId, int shopId);
+    void setPaymentMethod(int userId, int shopId, PaymentMethod paymentMethod);
+    void pay(int userId, int shopId, double payment);
 
     // Password encoding
     PasswordEncoderUtil passwordEncoderUtil = new PasswordEncoderUtil(); // Use the password encoder utility

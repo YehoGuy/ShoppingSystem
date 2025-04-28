@@ -39,7 +39,11 @@ public class ShopRepository implements IShopRepository {
     @Override
     public Shop getShop(int id) {
         try {
-            return shops.get(id);
+            Shop shop = shops.get(id);
+            if (shop == null) {
+                throw new IllegalArgumentException("Shop not found: " + id);
+            }
+            return shop;
         } catch (Exception e) {
             throw new RuntimeException("Error retrieving shop: " + e.getMessage(), e);
         }
@@ -231,15 +235,36 @@ public class ShopRepository implements IShopRepository {
         }
     }
 
+    @Override
+    public double purchaseItems(Map<Integer, Integer> purchaseLists, Integer shopId) {
+        try {
+            Shop shop = shops.get(shopId);
+            if (shop == null) {
+                throw new IllegalArgumentException("Shop not found: " + shopId);
+            }
+            return shop.purchaseItems(purchaseLists);
+        } catch (Exception e) {
+            throw new RuntimeException("Error purchasing items: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void rollBackPurchase(Map<Integer, Integer> purchaseLists, Integer shopId) {
+        try {
+            Shop shop = shops.get(shopId);
+            if (shop == null) {
+                throw new IllegalArgumentException("Shop not found: " + shopId);
+            }
+            shop.rollBackPurchase(purchaseLists);
+        } catch (Exception e) {
+            throw new RuntimeException("Error rolling back purchase: " + e.getMessage(), e);
+        }
+    }
+
 
     @Override
     /**
-     * Checks if the supply is available for the given item in the specified shop.
-     *
-     * @param shopId the shop id.
-     * @param itemId the item id.
-     * @param supply the supply to check.
-     * @return true if the supply count is greater than or equal to the specified supply, false otherwise.
+     * Should not be used and be deleted after guy chagnes his code
      */
     public boolean checkSupplyAvailabilityAndAqcuire(Integer shopId, Integer itemId, Integer supply) {
         Shop shop = shops.get(shopId);
@@ -293,6 +318,7 @@ public class ShopRepository implements IShopRepository {
         }
     }
 
+    // Should be change to be curd (too much logic)
     @Override
     public boolean checkPolicy(HashMap<Integer, HashMap<Integer,Integer>> cart, String token) {
         try {
@@ -348,4 +374,5 @@ public class ShopRepository implements IShopRepository {
             throw new RuntimeException("Error retrieving closed shops: " + e.getMessage(), e);
         }
     }
+
 }

@@ -6,10 +6,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Single implementation of {@link Discount} for both global and item-specific discounts.
  */
-public class DiscountImpl implements Discount {
+public class SingleDiscount implements Discount {
     private final int shopId;
     private final Integer itemId; // null for global
-    private int priceItem; // item price for item-specific
     private int percentage;
 
     /**
@@ -20,20 +19,13 @@ public class DiscountImpl implements Discount {
      * @param priceItem the price of the item (for item-specific discounts)
      * @param percentage the discount percentage (0-100)
      */
-    public DiscountImpl(int shopId, Integer itemId, int priceItem, int percentage) {
+    public SingleDiscount(int shopId, Integer itemId, int priceItem, int percentage) {
         if (percentage < 0 || percentage > 100) {
             throw new IllegalArgumentException("Discount percentage must be between 0 and 100");
         }
         this.shopId = shopId;
         this.itemId = itemId;
-        this.priceItem = priceItem;
         this.percentage = percentage;
-    }
-
-
-    @Override
-    public int getShopId() {
-        return shopId;
     }
 
     @Override
@@ -70,6 +62,7 @@ public class DiscountImpl implements Discount {
                     }
                 }
             }
+            return itemsDiscountedPrices;
         }
         // item-specific: calculate discount only on that item
         Integer qty = items.get(itemId);
