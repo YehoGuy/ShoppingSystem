@@ -6,6 +6,7 @@ import java.util.Map;
 
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.LoggerService;
+import ApplicationLayer.OurArg;
 import ApplicationLayer.OurRuntime;
 import ApplicationLayer.Purchase.PaymentMethod;
 import DomainLayer.IUserRepository;
@@ -116,6 +117,9 @@ public class UserService {
     public void addMember(String username, String password, String email, String phoneNumber, String address) {
         try {
             isValidDetails(username, password, email, phoneNumber); // Validate the input details
+            if(userRepository.isUsernameAndPasswordValid(username, password) != -1) {
+                throw new OurArg("Username is already taken.");
+            }
             password = passwordEncoder.encode(password); // Encode the password using the PasswordEncoderUtil
             LoggerService.logMethodExecution("addMember", username, password, email, phoneNumber, address);
             userRepository.addMember(username, password, email, phoneNumber, address);
@@ -609,13 +613,34 @@ public class UserService {
             LoggerService.logMethodExecutionEndVoid("acceptRole");
         } catch (OurRuntime e) {
             LoggerService.logDebug("acceptRole", e);
-            throw e; // Rethrow the custom exception
+            throw new OurArg("Error accepting role for member ID " + token + ": " + e.getMessage(), e);
         } catch (Exception e) {
             LoggerService.logError("acceptRole", e, token, shopId);
             throw new RuntimeException("Error accepting role for member ID " + token + ": " + e.getMessage(), e);
         }
     }
-       
+
+    public void declineRole(String token, int shopId) {
+        try {
+            LoggerService.logMethodExecution("declineRole", token, shopId);
+            int memberId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            Member member = userRepository.getMemberById(memberId);
+            Role role = userRepository.getPendingRole(memberId, shopId);
+            if (role == null) {
+                LoggerService.logDebug("declineRole", new OurRuntime("Member ID " + memberId + " has no pending role for shop ID " + shopId));
+                throw new OurRuntime("Member ID " + memberId + " has no pending role for shop ID " + shopId);  
+            }
+            userRepository.declineRole(memberId, role); // Accept the role for the member
+            LoggerService.logMethodExecutionEndVoid("declineRole");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("declineRole", e);
+            throw new OurArg("Error declineing role for member token " + token + ": " +e.getMessage(),e); // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("declineRole", e, token, shopId);
+            throw new RuntimeException("Error declineing role for member token " + token + ": " + e.getMessage(), e);
+        }
+    }
+         
     /**
      * Adds a role to a member.
      * @param memberId The ID of the member to whom the role is being added.
@@ -1062,7 +1087,7 @@ public class UserService {
         if (password == null || password.isEmpty()) {
             return false;
         }
-
+/* 
         // Length check
         if (password.length() < 8) {
             return false;
@@ -1072,6 +1097,8 @@ public class UserService {
         String pattern = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$";
 
         return password.matches(pattern);
+*/
+        return true; // For now, we are not validating the password format
     }
     public boolean isValidPhoneNumber(String phoneNumber) {
         if (phoneNumber == null || phoneNumber.isEmpty()) {
@@ -1084,10 +1111,9 @@ public class UserService {
         // (-\d+)?        → optional single dash followed by digits
         // $              → end of string
         // Full length between 9 to 15 characters including dash/+ if present
-
         String pattern = "^\\+?\\d+(-\\d+)?$";
 
-        if (!phoneNumber.matches(pattern)) {
+        if (!phoneNumber.trim().matches(pattern)) {
             return false;
         }
 
@@ -1104,11 +1130,11 @@ public class UserService {
         }
 
         // Regex for a standard email format
-        String pattern = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
+        String pattern = "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
 
-        return email.matches(pattern);
+        return email.trim().matches(pattern);
     }
-    public void isValidDetails(String username, String password, String phoneNumber, String email) {
+    public void isValidDetails(String username, String password, String email, String phoneNumber) {
         StringBuilder errorMsg = new StringBuilder();
 
         if (!isValidUsername(username)) {
