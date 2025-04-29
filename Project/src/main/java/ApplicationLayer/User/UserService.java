@@ -1209,11 +1209,33 @@ public class UserService {
         }
     }
 
-    public boolean refundPayment(String token, int shopId, double payment){
+    //NO API ENDPOINT!
+    public boolean refundPaymentAuto(String token, int shopId, double payment){
         try {
             LoggerService.logMethodExecution("refundPayment", token, shopId, payment);
             int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
-            userRepository.refund(userId, shopId, payment); 
+            userRepository.refund(userId, shopId, payment); // Set the payment method for the user
+            LoggerService.logMethodExecutionEnd("refundPayment", true);
+            return true;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("refundPayment", e);
+            throw e; // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("refundPayment", e, token, shopId, payment);
+            throw new RuntimeException("Error setting payment method for user ID " + token + ": " + e.getMessage(), e);
+        }
+        
+    }
+
+    public boolean refundPaymentByStoreEmployee(String token, int userId, int shopId, double payment){
+        try {
+            LoggerService.logMethodExecution("refundPaymentByStoreEmployee", token, shopId, payment);
+            int initiatingUserId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            if (userRepository.getRole(initiatingUserId, shopId) == null) {
+                LoggerService.logDebug("refundPaymentByStoreEmployee", new OurRuntime("Member ID " + initiatingUserId + " has no role for shop ID " + shopId));
+                throw new OurRuntime("Member ID " + initiatingUserId + " has no role for shop ID " + shopId);  
+            }
+            userRepository.refund(userId, shopId, payment); // Set the payment method for the user
             LoggerService.logMethodExecutionEnd("refundPayment", true);
             return true;
         } catch (OurRuntime e) {
