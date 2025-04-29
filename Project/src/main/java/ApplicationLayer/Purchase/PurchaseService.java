@@ -12,6 +12,7 @@ import ApplicationLayer.Shop.ShopService;
 import ApplicationLayer.User.UserService;
 import DomainLayer.Purchase.Address;
 import DomainLayer.Purchase.Bid;
+import DomainLayer.Purchase.BidReciept;
 import DomainLayer.Purchase.IPurchaseRepository;
 import DomainLayer.Purchase.Purchase;
 import DomainLayer.Purchase.Reciept;
@@ -124,7 +125,7 @@ public class PurchaseService {
      * @return The ID of the created bid.
      * @throws Exception If an error occurs during bid creation.
      */
-    public int createBid(String authToken, int userId, int storeId, Map<Integer, Integer> items, double initialPrice) throws Exception{
+    public int createBid(String authToken, int userId, int storeId, Map<Integer, Integer> items, int initialPrice) throws Exception{
         LoggerService.logMethodExecution("createBid", userId, storeId, items);
         Map<Integer, Integer> acquired = new HashMap<>();
         try {
@@ -158,7 +159,7 @@ public class PurchaseService {
      * @param bidAmount The amount of the bid.
      * @throws Exception If an error occurs during the bidding process.
      */
-    public void postBidding(String authToken, int userId, int purchaseId, double bidAmount) throws Exception{
+    public void postBidding(String authToken, int userId, int purchaseId, int bidAmount) throws Exception{
         try {
             // 1. Validate the userId
             if(authTokenService.ValidateToken(authToken)==userId){
@@ -205,7 +206,8 @@ public class PurchaseService {
                 if(purchase.getUserId() != userId)
                     throw new RuntimeException("User "+userId+" is not the owner of the bid "+purchaseId);
                 // 4. finalize the bid (Repo)
-                int highestBidderId = purchase.completePurchase();
+                Reciept receipt = purchase.completePurchase();
+                int highestBidderId = ((BidReciept)receipt).getHighestBidderId();
                 double finalPrice = ((Bid)purchase).getMaxBidding();
                 // 5. handle payment
                 userService.pay(authToken, purchase.getStoreId(), finalPrice);
@@ -217,9 +219,9 @@ public class PurchaseService {
                 try{
                     for(Integer uid : bidders){
                         if(uid != highestBidderId)
-                            messageService.sendMessageToUser(authToken, uid, "Bid "+purchaseId+" has been finalized. you did'nt win", 0);
+                            messageService.sendMessageToUser(authToken, uid, "Bid "+purchaseId+" has been finalized. you did'nt win.\n"+receipt.toString(), 0);
                         else
-                            messageService.sendMessageToUser(authToken, uid, "Congratulations! You have won the bid "+purchaseId+"!", 0);
+                            messageService.sendMessageToUser(authToken, uid, "Congratulations! You have won the bid "+purchaseId+"!\n"+receipt.toString(), 0);
                     }
                 } catch (Exception e){}
                 // 8. LOG the purchase
