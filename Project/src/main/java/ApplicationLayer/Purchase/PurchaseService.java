@@ -12,6 +12,7 @@ import ApplicationLayer.Shop.ShopService;
 import ApplicationLayer.User.UserService;
 import DomainLayer.Purchase.Address;
 import DomainLayer.Purchase.Bid;
+import DomainLayer.Purchase.BidReciept;
 import DomainLayer.Purchase.IPurchaseRepository;
 import DomainLayer.Purchase.Purchase;
 import DomainLayer.Purchase.Reciept;
@@ -61,41 +62,38 @@ public class PurchaseService {
      * @return A list of purchase IDs created during the checkout process.
      * @throws Exception If an error occurs during the checkout process.
      */
-    public List<Integer> checkoutCart(String authToken, int userId, Address shippingAddress) throws Exception {
-        LoggerService.logMethodExecution("checkoutCart", userId, shippingAddress);
+    public List<Integer> checkoutCart(String authToken, Address shippingAddress) throws Exception {
+        LoggerService.logMethodExecution("checkoutCart", authToken, shippingAddress);
         HashMap<Integer, HashMap<Integer, Integer>> aqcuired = new HashMap<>(); // shopId -> (itemId -> quantity)
         HashMap<Integer, HashMap<Integer, Integer>> cartBackup = null; // shopId -> (itemId -> quantity)
         HashMap<Integer,Double> totalPrices = new HashMap<>(); // shopId -> total price
         HashMap<Integer, Integer> purchaseIds = new HashMap<>(); // purchaseId -> shopId
+        int userId = -1;
         try {
             // 1. Validate the authToken and userId
-            if(authTokenService.ValidateToken(authToken)==userId){
-                // 2. retrieve user's cart
-                HashMap<Integer, HashMap<Integer, Integer>> cart = userService.getUserShoppingCartItems(userId);
-                cartBackup = cart; // backup the cart (cart is a deep copy of the original cart)
-                // 3. create a purchase for each store (Repo creates)
-                for(Integer shopId : cart.keySet()){
-                    double totalPrice = shopService.purchaseItems(cart.get(shopId), shopId);
-                    totalPrices.put(shopId, totalPrice);
-                    aqcuired.put(shopId, cart.get(shopId));
-                    int pid = purchaseRepository.addPurchase(userId, shopId, aqcuired.get(shopId), totalPrice, shippingAddress);
-                    purchaseIds.put(pid,shopId);
-                    // 4. handle payment
-                    userService.pay(authToken, shopId, totalPrice);
-                }
-                // 6. remove items from the cart (backup before)
-                userService.clearUserShoppingCart(userId);
-                // 5. handle shipping
-                ////for(Integer purchaseId : purchaseIds.keySet())
-                ////    shopService.shipPurchase(purchaseId, purchaseIds.get(purchaseId), shippingAddress);
-                // 7. LOG the purchase
-                LoggerService.logMethodExecutionEnd("checkoutCart", purchaseIds);
-                // 8. return purchase ID's
-                return purchaseIds.keySet().stream().toList();
-            } else{
-                throw new IllegalArgumentException("Invalid authToken or userId");
+            userId = authTokenService.ValidateToken(authToken);
+            // 2. retrieve user's cart
+            HashMap<Integer, HashMap<Integer, Integer>> cart = userService.getUserShoppingCartItems(userId);
+            cartBackup = cart; // backup the cart (cart is a deep copy of the original cart)
+            // 3. create a purchase for each store (Repo creates)
+            for(Integer shopId : cart.keySet()){
+                double totalPrice = shopService.purchaseItems(cart.get(shopId), shopId);
+                totalPrices.put(shopId, totalPrice);
+                aqcuired.put(shopId, cart.get(shopId));
+                int pid = purchaseRepository.addPurchase(userId, shopId, aqcuired.get(shopId), totalPrice, shippingAddress);
+                purchaseIds.put(pid,shopId);
+                // 4. handle payment
+                userService.pay(authToken, shopId, totalPrice);
             }
-            
+            // 6. remove items from the cart (backup before)
+            userService.clearUserShoppingCart(userId);
+            // 5. handle shipping
+            ////for(Integer purchaseId : purchaseIds.keySet())
+            ////    shopService.shipPurchase(purchaseId, purchaseIds.get(purchaseId), shippingAddress);
+            // 7. LOG the purchase
+            LoggerService.logMethodExecutionEnd("checkoutCart", purchaseIds);
+            // 8. return purchase ID's
+            return purchaseIds.keySet().stream().toList();
         } catch (Exception e) {
             // return Items to shop
             for(Integer shopId : aqcuired.keySet()){
@@ -107,7 +105,7 @@ public class PurchaseService {
             }
             // restore payment
             for(Integer shopId : totalPrices.keySet()){
-                ///userService.refundPayment(authToken, shopId, totalPrices.get(shopId));
+                userService.refundPaymentAuto(authToken, shopId, totalPrices.get(shopId));
             }
             throw e;
         }
@@ -124,23 +122,20 @@ public class PurchaseService {
      * @return The ID of the created bid.
      * @throws Exception If an error occurs during bid creation.
      */
-    public int createBid(String authToken, int userId, int storeId, Map<Integer, Integer> items, double initialPrice) throws Exception{
-        LoggerService.logMethodExecution("createBid", userId, storeId, items);
+    public int createBid(String authToken, int storeId, Map<Integer, Integer> items, int initialPrice) throws Exception{
+        LoggerService.logMethodExecution("createBid", authToken, storeId, items);
         Map<Integer, Integer> acquired = new HashMap<>();
         try {
             // 1. Validate the authToken & userId & userRole
-            if(authTokenService.ValidateToken(authToken)==userId){
-                // 2. check that all items exist in the store and acquire them
-                shopService.purchaseItems(items, storeId);
-                // 3. create a bid for the store (Repo creates)
-                int purchaseId = purchaseRepository.addBid(userId, storeId, items, initialPrice);
-                // 4. LOG the bid
-                LoggerService.logMethodExecutionEnd("createBid", purchaseId);
-                // 5. return purchase ID
-                return purchaseId;
-            } else{
-                throw new IllegalArgumentException("Invalid authToken or userId");
-            }
+            int userId = authTokenService.ValidateToken(authToken);
+            // 2. check that all items exist in the store and acquire them
+            shopService.purchaseItems(items, storeId);
+            // 3. create a bid for the store (Repo creates)
+            int purchaseId = purchaseRepository.addBid(userId, storeId, items, initialPrice);
+            // 4. LOG the bid
+            LoggerService.logMethodExecutionEnd("createBid", purchaseId);
+            // 5. return purchase ID
+            return purchaseId;
         } catch (Exception e) {
             // return items to shop
             shopService.rollBackPurchase(items, storeId);
@@ -158,24 +153,21 @@ public class PurchaseService {
      * @param bidAmount The amount of the bid.
      * @throws Exception If an error occurs during the bidding process.
      */
-    public void postBidding(String authToken, int userId, int purchaseId, double bidAmount) throws Exception{
+    public void postBidding(String authToken, int purchaseId, int bidAmount) throws Exception{
         try {
             // 1. Validate the userId
-            if(authTokenService.ValidateToken(authToken)==userId){
-                // 2. check that the purchase is a bid
-                Purchase purchase = purchaseRepository.getPurchaseById(purchaseId);
-                if (!(purchase instanceof Bid)) 
-                    throw new RuntimeException("Purchase "+purchaseId+" is not a bid");
-                // 3. check that the user is not the owner of the bid
-                if(purchase.getUserId() == userId)
-                    throw new RuntimeException("User "+userId+" is the owner of the bid "+purchaseId+". thus Cannot bid on it");
-                // 4. add the bidding to the purchase (Repo)
-                ((Bid)purchase).addBidding(userId, bidAmount);
-                // 5. LOG the bidding
-                LoggerService.logMethodExecutionEnd("postBidding", purchaseId);
-            } else{
-                throw new IllegalArgumentException("Invalid authToken or userId");
-            }
+            int userId = authTokenService.ValidateToken(authToken);
+            // 2. check that the purchase is a bid
+            Purchase purchase = purchaseRepository.getPurchaseById(purchaseId);
+            if (!(purchase instanceof Bid)) 
+                throw new RuntimeException("Purchase "+purchaseId+" is not a bid");
+            // 3. check that the user is not the owner of the bid
+            if(purchase.getUserId() == userId)
+                throw new RuntimeException("User "+userId+" is the owner of the bid "+purchaseId+". thus Cannot bid on it");
+            // 4. add the bidding to the purchase (Repo)
+            ((Bid)purchase).addBidding(userId, bidAmount);
+            // 5. LOG the bidding
+            LoggerService.logMethodExecutionEnd("postBidding", purchaseId);
         } catch (Exception e) {
             throw e;
         }
@@ -191,50 +183,52 @@ public class PurchaseService {
      * @return The ID of the highest bidder.
      * @throws Exception If an error occurs during bid finalization.
      */
-    public int finalizeBid(String authToken, int userId, int purchaseId) throws Exception {
+    public int finalizeBid(String authToken, int purchaseId) throws Exception {
+        int initiatingUserId = -1;
         boolean payed=false;
+        int highestBidderId = -1;
+        int finalPrice = -1;
+        int shopId = -1;
         try {
-            LoggerService.logMethodExecution("finalizeBid", userId, purchaseId);
-            // 1. Validate the userId & authToken
-            if(authTokenService.ValidateToken(authToken)==userId){
-                // 2. check that the purchase is a bid
-                Purchase purchase = purchaseRepository.getPurchaseById(purchaseId);
-                if (!(purchase instanceof Bid)) 
-                    throw new RuntimeException("Purchase "+purchaseId+" is not a bid");
-                // 3. check that the user is the owner of the bid
-                if(purchase.getUserId() != userId)
-                    throw new RuntimeException("User "+userId+" is not the owner of the bid "+purchaseId);
-                // 4. finalize the bid (Repo)
-                int highestBidderId = purchase.completePurchase();
-                double finalPrice = ((Bid)purchase).getMaxBidding();
-                // 5. handle payment
-                userService.pay(authToken, purchase.getStoreId(), finalPrice);
-                payed=true;
-                // 6. handle shipping
-                ////shopService.shipPurchase(purchaseId, purchase.getShopId(), shippingAddress);
-                // 7. notify the bidders
-                List<Integer> bidders = ((Bid)purchase).getBiddersIds();
-                try{
-                    for(Integer uid : bidders){
-                        if(uid != highestBidderId)
-                            messageService.sendMessageToUser(authToken, uid, "Bid "+purchaseId+" has been finalized. you did'nt win", 0);
-                        else
-                            messageService.sendMessageToUser(authToken, uid, "Congratulations! You have won the bid "+purchaseId+"!", 0);
-                    }
-                } catch (Exception e){}
-                // 8. LOG the purchase
-                LoggerService.logMethodExecutionEnd("finalizeBid", highestBidderId);
-                // 9. return highestBidder ID
-                return highestBidderId;
-            } else{
-                throw new IllegalArgumentException("Invalid authToken or userId");
-            }
+            LoggerService.logMethodExecution("finalizeBid", authToken, purchaseId);
+            // 0. check that the purchase is a bid
+            Purchase purchase = purchaseRepository.getPurchaseById(purchaseId);
+            if (!(purchase instanceof Bid)) 
+                throw new RuntimeException("Purchase "+purchaseId+" is not a bid");
+            // 1. Validate the authToken
+            initiatingUserId = authTokenService.ValidateToken(authToken);
+            // 2. check that initiatingUserId is the owner of the bid
+            if(initiatingUserId != purchase.getUserId())
+                throw new RuntimeException("[purchaseService.finalizeBid] User "+initiatingUserId+" is not the owner of the bid "+purchaseId);
+            // 3. finalize the bid (Repo)
+            Reciept receipt = purchase.completePurchase();
+            highestBidderId = ((BidReciept)receipt).getHighestBidderId();
+            finalPrice = ((Bid)purchase).getMaxBidding();
+            shopId = purchase.getStoreId();
+            // 4. handle payment
+            userService.pay(authToken, shopId, finalPrice);
+            payed=true;
+            // 5. handle shipping
+            ////shopService.shipPurchase(purchaseId, purchase.getShopId(), shippingAddress);
+            // 6. notify the bidders
+            List<Integer> bidders = ((Bid)purchase).getBiddersIds();
+            try{
+                for(Integer uid : bidders){
+                    if(uid != highestBidderId)
+                        messageService.sendMessageToUser(authToken, uid, "Bid "+purchaseId+" has been finalized. you did'nt win.\n"+receipt.toString(), 0);
+                    else
+                        messageService.sendMessageToUser(authToken, uid, "Congratulations! You have won the bid "+purchaseId+"!\n"+receipt.toString(), 0);
+                }
+            } catch (Exception e){}
+            // 7. LOG the purchase
+            LoggerService.logMethodExecutionEnd("finalizeBid", highestBidderId);
+            // 8. return highestBidder ID
+            return highestBidderId;
         } catch (Exception e) {
             if(payed)
                 // return payment
-                ///userService.refundPayment(authToken, shopId, totalPrices.get(shopId));
+                userService.refundPaymentByStoreEmployee(authToken, highestBidderId, shopId, finalPrice);
                 return -1; // just to satisfy the compiler
-            throw e;
         }
     }
 

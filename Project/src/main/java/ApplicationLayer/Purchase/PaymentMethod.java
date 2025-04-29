@@ -36,5 +36,19 @@ public interface PaymentMethod {
      * @throws IllegalStateException if the refund cannot be processed (e.g., payment not found).
      */
     void refundPayment(double amount, int shopId);
+
+    /**
+     * Processes a refund with the specified amount.
+     * 
+     * <p>Implementations of this method should handle the logic for completing a refund
+     * transaction, including any necessary validations or interactions with external systems.
+     * 
+     * @param refund the amount to be refunded. Must be a positive value.
+     * @param shopId the ID of the shop where the payment was made.
+     * @throws IllegalArgumentException if the refund amount is negative or zero.
+     */
+    void processRefund(double refund, int shopId);
+
+    
    
 }

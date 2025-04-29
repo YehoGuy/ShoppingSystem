@@ -77,6 +77,7 @@ public interface IUserRepository {
     void createBasket(int userId, int shopId);
     void setPaymentMethod(int userId, int shopId, PaymentMethod paymentMethod);
     void pay(int userId, int shopId, double payment);
+    void refund(int userId, int shopId, double refund);
 
     // Password encoding
     PasswordEncoderUtil passwordEncoderUtil = new PasswordEncoderUtil(); // Use the password encoder utility
