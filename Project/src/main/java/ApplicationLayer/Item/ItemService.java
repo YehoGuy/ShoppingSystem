@@ -258,4 +258,28 @@ public class ItemService {
             throw new OurRuntime("Error fetching items: " + e.getMessage(), e);
         }
     }
+
+    public List<Item> getItemsByCategory(ItemCategory category, String token) {
+        try {
+            LoggerService.logMethodExecution("getItemsByCategory", category);
+            if (category == null) {
+                throw new OurArg("Item category cannot be null");
+            }
+            authTokenService.ValidateToken(token);
+            List<Item> returnItems = itemRepository.getItemsByCategory(category);
+            LoggerService.logMethodExecutionEnd("getItemsByCategory", returnItems);
+            return returnItems;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getItemsByCategory", e);
+            throw new OurArg("Error retrieving items by category " + category + ": " + e.getMessage(), e);
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getItemsByCategory", e);
+            throw new OurRuntime("Error retrieving items by category " + category + ": " + e.getMessage(), e);
+        }
+        catch (Exception e) {
+            LoggerService.logError("getItemsByCategory", e, category);
+            throw new OurRuntime("Error retrieving items by category " + category + ": " + e.getMessage(), e);
+        }
+    }
+
 }

@@ -169,6 +169,13 @@ public class ShopService {
         }
     }
 
+    /**
+     * Adds a bundle discount for a specific item in the specified shop.
+     *
+     * @param shopId   the shop id.
+     * @param basket   the items in the basket with their quantities.
+     * @param discount the discount value.
+     */
     public void addBundleDiscount(int shopId, Map<Integer,Integer> basket, int discount, String token) {
         try {
             LoggerService.logMethodExecution("addBundleDiscount", shopId, basket, discount);
@@ -183,6 +190,30 @@ public class ShopService {
             throw new RuntimeException("Error adding bundle discount for item " + basket + " in shop " + shopId + ": " + e.getMessage(), e);
         }
     }
+
+    public void setCategoryDiscount(int shopId, ItemCategory category, int discount, String token) {
+        try {
+            LoggerService.logMethodExecution("setCategoryDiscount", shopId, category, discount);
+            Integer userId = authTokenService.ValidateToken(token);
+            if(!userService.hasPermission(userId,PermissionsEnum.setPolicy,shopId)){
+                throw new RuntimeException("User does not have permission to update discount for shop " + shopId);
+            }
+            List<Item> items = itemService.getItemsByCategory(category, token);
+            Map<Integer, Integer> itemsMap = new HashMap<>();
+            for (Item item : items) {
+                itemsMap.put(item.getId(), 1);
+            }
+            shopRepository.addBundleDiscount(shopId, itemsMap, discount);
+            // shopRepository.setCategoryDiscount(shopId, category, discount);
+            LoggerService.logMethodExecutionEndVoid("setCategoryDiscount");
+        } catch (Exception e) {
+            LoggerService.logError("setCategoryDiscount", e, shopId, category, discount);
+            throw new RuntimeException("Error setting category discount for item " + category + " in shop " + shopId + ": " + e.getMessage(), e);
+        }
+    }
+
+    
+    
 
     /**
      * Adds a review to the specified shop.

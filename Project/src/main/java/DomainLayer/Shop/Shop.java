@@ -10,6 +10,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import ApplicationLayer.Purchase.ShippingMethod;
+import DomainLayer.Shop.Discount.BundleDiscount;
+import DomainLayer.Shop.Discount.Discount;
+import DomainLayer.Shop.Discount.SingleDiscount;
 
 /**
  * The Shop class representing a shop entity in your system.
@@ -315,7 +318,7 @@ public class Shop {
         for(Discount discount : discounts){
             itemsDiscountedPrices = discount.applyDiscounts(items, itemsPrices, itemsDiscountedPrices);
         }
-        
+
         // calculate the total price after applying discounts
         double totalPrice = 0;
         for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
@@ -407,7 +410,10 @@ public class Shop {
     public void removeBundleDiscount(Map<Integer, Integer> bundleItems, int percentage) {
         //TODO-V2: Implement this method to remove the bundle discount from the shop.
     }
-    
+
+    public void setCategoryDiscount(int categoryId, int discount) {
+        //TODO-V2: Implement this method to set a category discount.
+    }
     // ===== Purchase Method =====
      
     /**

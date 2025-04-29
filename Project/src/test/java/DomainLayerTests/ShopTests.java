@@ -7,9 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,15 +21,12 @@ import ApplicationLayer.Item.ItemService;
 import ApplicationLayer.Purchase.ShippingMethod;
 import ApplicationLayer.Shop.ShopService;
 import ApplicationLayer.User.UserService;
-import DomainLayer.Item.Item;
 import DomainLayer.Roles.PermissionsEnum;
 import DomainLayer.Shop.Discount;
 import DomainLayer.Shop.IShopRepository;
 import DomainLayer.Shop.PurchasePolicy;
 import DomainLayer.Shop.Shop;
 import DomainLayer.Shop.ShopReview;
-import InfrastructureLayer.ShopRepository;
-
 
 public class ShopTests {
 

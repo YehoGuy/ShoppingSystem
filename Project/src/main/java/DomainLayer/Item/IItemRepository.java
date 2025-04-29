@@ -70,4 +70,12 @@ public interface IItemRepository {
      * @return an unmodifiable list of corresponding Item instances
      */
     List<Item> getItemsByIds(List<Integer> itemIds);
+
+    /**
+     * Retrieves a list of all items in the specified category.
+     *
+     * @param categoryId the category ID
+     * @return an unmodifiable list of Item instances in the category
+     */
+    List<Item> getItemsByCategory(ItemCategory category);
 }

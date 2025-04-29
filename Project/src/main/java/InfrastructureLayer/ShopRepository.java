@@ -110,6 +110,15 @@ public class ShopRepository implements IShopRepository {
     }
 
     @Override
+    public void removeDiscountForItem(int shopId, int itemId) {
+        Shop shop = shops.get(shopId);
+        if (shop == null) {
+            throw new IllegalArgumentException("Shop not found: " + shopId);
+        }
+        shop.removeDiscountForItem(itemId);
+    }
+    
+    @Override
     public void addBundleDiscount(int shopId, Map<Integer,Integer> basket, int discount) {
         try {
             Shop shop = shops.get(shopId);
@@ -123,12 +132,16 @@ public class ShopRepository implements IShopRepository {
     }
 
     @Override
-    public void removeDiscountForItem(int shopId, int itemId) {
-        Shop shop = shops.get(shopId);
-        if (shop == null) {
-            throw new IllegalArgumentException("Shop not found: " + shopId);
+    public void setCategoryDiscount(int shopId, int categoryId, int discount) {
+        try {
+            Shop shop = shops.get(shopId);
+            if (shop == null) {
+                throw new IllegalArgumentException("Shop not found: " + shopId);
+            }
+            shop.setCategoryDiscount(categoryId, discount);
+        } catch (Exception e) {
+            throw new RuntimeException("Error setting category discount: " + e.getMessage(), e);
         }
-        shop.removeDiscountForItem(itemId);
     }
 
     @Override

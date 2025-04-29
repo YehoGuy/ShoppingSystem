@@ -75,12 +75,13 @@ public interface IShopRepository {
     void addBundleDiscount(int shopId, Map<Integer,Integer> basket, int discount);
 
     /**
-     * Adds a review to the specified shop.
+     * Sets a discount for a specific category in the specified shop.
      *
-     * @param shopId     the shop id.
-     * @param rating     the review rating.
-     * @param reviewText the review text.
+     * @param shopId      the shop id.
+     * @param categoryId  the category id.
+     * @param discount    the discount value.
      */
+    void setCategoryDiscount(int shopId, int categoryId, int discount);
 
     /**
      * removes the discount for a specific item in the specified shop.

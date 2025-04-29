@@ -29,7 +29,6 @@ public class MessageServiceTests {
     private UserRepository userRepository;
     private ShopRepository shopRepository;
     private String token1;
-    private String token2;
 
     @Mock
     private ShippingMethod shippingMethodMock;

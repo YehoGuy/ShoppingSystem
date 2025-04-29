@@ -1,4 +1,4 @@
-package DomainLayer.Shop;
+package DomainLayer.Shop.Discount;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;

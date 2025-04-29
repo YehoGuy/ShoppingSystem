@@ -1,4 +1,4 @@
-package DomainLayer.Shop;
+package DomainLayer.Shop.Discount;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -15,7 +15,7 @@ public class BundleDiscount implements Discount {
      * @param bundleItems  the set of item IDs that must all be in the cart
      * @param percentage   the discount percentage (0–100)
      */
-    public BundleDiscount(Map<Integer, Integer> bundleItems, int percentage) {
+    public BundleDiscount(Map<Integer, Integer> bundleItems, int percentage) { // itemId , threshold
         if (bundleItems == null || bundleItems.isEmpty()) {
             throw new IllegalArgumentException("Bundle items must not be null or empty");
         }
@@ -41,7 +41,7 @@ public class BundleDiscount implements Discount {
     }
 
     @Override
-    public Map<Integer, Integer> applyDiscounts(Map<Integer, Integer> items, Map<Integer, AtomicInteger> prices, Map<Integer, Integer> itemsDiscountedPrices) {
+    public Map<Integer, Integer> applyDiscounts(Map<Integer, Integer>/*ItemId, quntity */ items, Map<Integer, AtomicInteger> prices, Map<Integer, Integer> /*itemId, price */ itemsDiscountedPrices) {
         // 1) Verify bundle completeness
         for (Map.Entry<Integer, Integer> req : bundleItems.entrySet()) {
             int itemId      = req.getKey();
