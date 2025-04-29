@@ -146,18 +146,19 @@ public class Purchase {
     /**
      * Marks the purchase as completed.
      */
-    public int completePurchase() {
+    public Reciept completePurchase() {
         this.isCompleted = true;
         this.timeOfCompletion = LocalDateTime.now();
-        return 1;
+        return generateReciept();
     }
 
     /**
      * Cancels the purchase by marking it as incomplete.
      */
-    public void cancelPurchase() {
+    public Reciept cancelPurchase() {
         this.isCompleted = false;
         this.timeOfCompletion = null;
+        return generateReciept();
     }
 
     /**
