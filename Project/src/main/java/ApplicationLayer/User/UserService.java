@@ -6,6 +6,7 @@ import java.util.Map;
 
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.LoggerService;
+import ApplicationLayer.OurArg;
 import ApplicationLayer.OurRuntime;
 import ApplicationLayer.Purchase.PaymentMethod;
 import DomainLayer.IUserRepository;
@@ -117,7 +118,7 @@ public class UserService {
         try {
             isValidDetails(username, password, email, phoneNumber); // Validate the input details
             if(userRepository.isUsernameAndPasswordValid(username, password) != -1) {
-                throw new IllegalArgumentException("Username is already taken.");
+                throw new OurArg("Username is already taken.");
             }
             password = passwordEncoder.encode(password); // Encode the password using the PasswordEncoderUtil
             LoggerService.logMethodExecution("addMember", username, password, email, phoneNumber, address);
@@ -612,7 +613,7 @@ public class UserService {
             LoggerService.logMethodExecutionEndVoid("acceptRole");
         } catch (OurRuntime e) {
             LoggerService.logDebug("acceptRole", e);
-            throw e; // Rethrow the custom exception
+            throw new OurArg("Error accepting role for member ID " + token + ": " + e.getMessage(), e);
         } catch (Exception e) {
             LoggerService.logError("acceptRole", e, token, shopId);
             throw new RuntimeException("Error accepting role for member ID " + token + ": " + e.getMessage(), e);
@@ -633,13 +634,13 @@ public class UserService {
             LoggerService.logMethodExecutionEndVoid("declineRole");
         } catch (OurRuntime e) {
             LoggerService.logDebug("declineRole", e);
-            throw e; // Rethrow the custom exception
+            throw new OurArg("Error declineing role for member token " + token + ": " +e.getMessage(),e); // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("declineRole", e, token, shopId);
-            throw new RuntimeException("Error accepting role for member ID " + token + ": " + e.getMessage(), e);
+            throw new RuntimeException("Error declineing role for member token " + token + ": " + e.getMessage(), e);
         }
     }
-       
+         
     /**
      * Adds a role to a member.
      * @param memberId The ID of the member to whom the role is being added.
