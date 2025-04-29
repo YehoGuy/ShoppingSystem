@@ -15,6 +15,7 @@ public class Reciept {
     protected final Address shippingAddress;              // shipping address
     protected final boolean isCompleted;                 // purchase status   
     protected final LocalDateTime timeOfCompletion;     // time of purchase completion
+    protected final double price; // total price of the purchase
 
     // very important to make sure a reciept is concurrent עכשווית
     protected final LocalDateTime timestampOfRecieptGeneration; // time of receipt generation!!
@@ -29,7 +30,7 @@ public class Reciept {
      * @param items a map of item IDs to their quantities.
      * @param shippingAddress the shipping address for the purchase.
      */
-    public Reciept(int purchaseId, int userId, int storeId, Map<Integer, Integer> items, Address shippingAddress) {
+    public Reciept(int purchaseId, int userId, int storeId, Map<Integer, Integer> items, Address shippingAddress, double price) {
         this.purchaseId = purchaseId;
         this.userId = userId;
         this.storeId = storeId;
@@ -38,6 +39,7 @@ public class Reciept {
         this.isCompleted = false;
         this.timeOfCompletion = null;
         this.timestampOfRecieptGeneration = LocalDateTime.now();
+        this.price = price;
     }
 
     
@@ -51,7 +53,7 @@ public class Reciept {
      * @param items a map of item IDs to their quantities.
      * @param shippingAddress the shipping address for the purchase.
      */
-    public Reciept(int purchaseId, int userId, int storeId, Map<Integer, Integer> items, Address shippingAddress, LocalDateTime timeOfCompletion) {
+    public Reciept(int purchaseId, int userId, int storeId, Map<Integer, Integer> items, Address shippingAddress, LocalDateTime timeOfCompletion, double price) {
         this.purchaseId = purchaseId;
         this.userId = userId;
         this.storeId = storeId;
@@ -60,6 +62,7 @@ public class Reciept {
         this.isCompleted = true;
         this.timeOfCompletion = timeOfCompletion;
         this.timestampOfRecieptGeneration = LocalDateTime.now();
+        this.price = price;
     }
 
     /**
