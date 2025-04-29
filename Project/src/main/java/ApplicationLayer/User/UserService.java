@@ -1208,4 +1208,21 @@ public class UserService {
             throw new RuntimeException("Error setting payment method for user ID " + token + ": " + e.getMessage(), e);
         }
     }
+
+    public boolean refundPayment(String token, int shopId, double payment){
+        try {
+            LoggerService.logMethodExecution("refundPayment", token, shopId, payment);
+            int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            userRepository.refund(userId, shopId, payment); 
+            LoggerService.logMethodExecutionEnd("refundPayment", true);
+            return true;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("refundPayment", e);
+            throw e; // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("refundPayment", e, token, shopId, payment);
+            throw new RuntimeException("Error setting payment method for user ID " + token + ": " + e.getMessage(), e);
+        }
+        
+    }
 }

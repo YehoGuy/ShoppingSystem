@@ -473,4 +473,21 @@ public class UserRepository implements IUserRepository {
             throw new OurRuntime("Payment failed: " + e.getMessage());
         }
     }
+
+    @Override
+    public void refund(int userId, int shopId, double refund) {
+        User user = userMapping.get(userId);
+        if (user == null) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        PaymentMethod paymentMethod = user.getPaymentMethod();
+        if (paymentMethod == null) {
+            throw new OurRuntime("Payment method not set for user with ID " + userId);
+        }
+        try {
+            paymentMethod.refundPayment(refund, shopId); // Assuming PaymentMethod has a method to process refund
+        } catch (Exception e) {
+            throw new OurRuntime("Refund failed: " + e.getMessage());
+        }
+    }
 }
