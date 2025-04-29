@@ -2,6 +2,7 @@ package DomainLayer.Purchase;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This Data Object class represents a receipt for a purchase.
@@ -13,7 +14,7 @@ public class Reciept {
     protected final int storeId;                      // store ID
     protected final Map<Integer, Integer> items; // itemId -> quantity
     protected final Address shippingAddress;              // shipping address
-    protected final boolean isCompleted;                 // purchase status   
+    protected final AtomicBoolean isCompleted;                 // purchase status   
     protected final LocalDateTime timeOfCompletion;     // time of purchase completion
     protected final double price; // total price of the purchase
 
@@ -36,7 +37,7 @@ public class Reciept {
         this.storeId = storeId;
         this.items = Map.copyOf(items);
         this.shippingAddress = shippingAddress;
-        this.isCompleted = false;
+        this.isCompleted = new AtomicBoolean(false);
         this.timeOfCompletion = null;
         this.timestampOfRecieptGeneration = LocalDateTime.now();
         this.price = price;
@@ -59,7 +60,7 @@ public class Reciept {
         this.storeId = storeId;
         this.items = Map.copyOf(items);
         this.shippingAddress = shippingAddress;
-        this.isCompleted = true;
+        this.isCompleted = new AtomicBoolean(true);
         this.timeOfCompletion = timeOfCompletion;
         this.timestampOfRecieptGeneration = LocalDateTime.now();
         this.price = price;
@@ -114,7 +115,7 @@ public class Reciept {
      * @return {@code true} if the purchase is completed, {@code false} otherwise.
      */
     public boolean isCompleted() {
-        return isCompleted;
+        return isCompleted.get();
     }
 
     /**
