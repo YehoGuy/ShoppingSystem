@@ -82,7 +82,7 @@ public class UserRepository implements IUserRepository {
         Guest guest = new Guest(id); // Assuming Guest is a subclass of User
         userMapping.put(id, guest); // Add the guest to the mapping
         if(!userMapping.containsKey(id) || userMapping.get(id) == null) {
-            throw new IllegalArgumentException("Failed to create guest with ID " + id);
+            throw new OurArg("Failed to create guest with ID " + id);
         }
         return id; // Return the ID of the newly created guest
     }

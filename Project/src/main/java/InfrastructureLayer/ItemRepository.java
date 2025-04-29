@@ -7,9 +7,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import ApplicationLayer.OurArg;
 import DomainLayer.Item.IItemRepository;
 import DomainLayer.Item.Item;
 import DomainLayer.Item.ItemReview;
+
 
 public class ItemRepository implements IItemRepository {
 
@@ -49,7 +51,7 @@ public class ItemRepository implements IItemRepository {
     public void addReviewToItem(int itemId, int rating, String reviewText) {
         Item item = items.get(itemId);
         if (item == null) {
-            throw new IllegalArgumentException("Item not found: " + itemId);
+            throw new OurArg("Item not found: " + itemId);
         }
         item.addReview(rating, reviewText);
     }
@@ -58,7 +60,7 @@ public class ItemRepository implements IItemRepository {
     public List<ItemReview> getItemReviews(int itemId) {
         Item item = items.get(itemId);
         if (item == null) {
-            throw new IllegalArgumentException("Item not found: " + itemId);
+            throw new OurArg("Item not found: " + itemId);
         }
         return item.getReviews();
     }
@@ -67,7 +69,7 @@ public class ItemRepository implements IItemRepository {
     public double getItemAverageRating(int itemId) {
         Item item = items.get(itemId);
         if (item == null) {
-            throw new IllegalArgumentException("Item not found: " + itemId);
+            throw new OurArg("Item not found: " + itemId);
         }
         return item.getAverageRating();
     }
@@ -76,7 +78,7 @@ public class ItemRepository implements IItemRepository {
     public void deleteItem(int itemId) {
         Item removed = items.remove(itemId);
         if (removed == null) {
-            throw new IllegalArgumentException("Item not found: " + itemId);
+            throw new OurArg("Item not found: " + itemId);
         }
     }
 

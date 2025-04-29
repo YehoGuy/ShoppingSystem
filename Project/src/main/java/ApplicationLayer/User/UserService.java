@@ -48,7 +48,7 @@ public class UserService {
                 if(id >= 0)
                     userRepository.addAdmin(id);
                 else
-                    throw new IllegalArgumentException("the id of the user to make admin is illegal");
+                    throw new OurArg("the id of the user to make admin is illegal");
             }
             else 
                 throw new RuntimeException("only admins can make admins");
@@ -68,7 +68,7 @@ public class UserService {
                 if(id >= 0)
                     userRepository.removeAdmin(id);
                 else
-                    throw new IllegalArgumentException("the id of the user to make admin is illegal");
+                    throw new OurArg("the id of the user to make admin is illegal");
             }
             else 
                 throw new RuntimeException("only admins can remove admins");
@@ -204,14 +204,14 @@ public class UserService {
     public void validateMemberId(int id) {
 
         if (id <= 0) {
-            throw new IllegalArgumentException("Invalid user ID: " + id);
+            throw new OurArg("Invalid user ID: " + id);
         }
         if (!userRepository.getUserMapping().containsKey(id)) {
-            throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            throw new OurArg("User with ID " + id + " doesn't exist.");
         }
         User user = userRepository.getUserById(id);
         if (!(user instanceof Member)) {
-            throw new IllegalArgumentException("User with ID " + id + " is not a member.");
+            throw new OurArg("User with ID " + id + " is not a member.");
 
         }
     }
@@ -225,7 +225,7 @@ public class UserService {
             LoggerService.logMethodExecution("loginAsGuest");
             int id = userRepository.addGuest(); // Assuming this method returns the ID of the new guest user
             if (id < 0) {
-                throw new IllegalArgumentException("Failed to create a guest user.");
+                throw new OurArg("Failed to create a guest user.");
             }
             String token = authTokenService.AuthenticateGuest(id);
             LoggerService.logMethodExecutionEnd("loginAsGuest", token);
@@ -243,12 +243,12 @@ public class UserService {
         String token = null;
         try {
             if (username == null || password == null) {
-                LoggerService.logError("loginAsMember", new IllegalArgumentException("Username and password cannot be null."));
-                throw new IllegalArgumentException("Username and password cannot be null.");
+                LoggerService.logError("loginAsMember", new OurArg("Username and password cannot be null."));
+                throw new OurArg("Username and password cannot be null.");
             }
             if (username.isEmpty() || password.isEmpty()) {
-                LoggerService.logError("loginAsMember", new IllegalArgumentException("Username and password cannot be empty."));
-                throw new IllegalArgumentException("Username and password cannot be empty.");
+                LoggerService.logError("loginAsMember", new OurArg("Username and password cannot be empty."));
+                throw new OurArg("Username and password cannot be empty.");
             }
             int loginAsMember_id = userRepository.isUsernameAndPasswordValid(username, password);
             if (loginAsMember_id > 0) { // valid login attempt
@@ -270,8 +270,8 @@ public class UserService {
                     return token; 
                 }
             }else{
-                LoggerService.logError("loginAsMember", new IllegalArgumentException("Invalid username or password."));
-                throw new IllegalArgumentException("Invalid username or password.");
+                LoggerService.logError("loginAsMember", new OurArg("Invalid username or password."));
+                throw new OurArg("Invalid username or password.");
             }
         } catch (Exception e) {
             LoggerService.logError("loginAsMember", e, username, password, token_if_guest);
@@ -283,10 +283,10 @@ public class UserService {
     public int loginAsMember(String username, String password, int id_if_guest) {
         try {
             if (username == null || password == null) {
-                throw new IllegalArgumentException("Username and password cannot be null.");
+                throw new OurArg("Username and password cannot be null.");
             }
             if (username.isEmpty() || password.isEmpty()) {
-                throw new IllegalArgumentException("Username and password cannot be empty.");
+                throw new OurArg("Username and password cannot be empty.");
             }
             int loginAsMember_id = userRepository.isUsernameAndPasswordValid(username, password);
             if (loginAsMember_id>0)//valid login attempt 
@@ -306,7 +306,7 @@ public class UserService {
 
                 }
                 else {
-                    throw new IllegalArgumentException("The given id does not match a guest in the data. probably it is a member id!");
+                    throw new OurArg("The given id does not match a guest in the data. probably it is a member id!");
                 }
                 
             }
@@ -324,11 +324,11 @@ public class UserService {
     //     password = passwordEncoder.encode(password); // Encode the password using the PasswordEncoderUtil
     //     try {
     //         if (userRepository.isUsernameTaken(username)) {
-    //             LoggerService.logError("signUp", new IllegalArgumentException("Username is already taken."));
-    //             throw new IllegalArgumentException("Username is already taken.");
+    //             LoggerService.logError("signUp", new OurArg("Username is already taken."));
+    //             throw new OurArg("Username is already taken.");
     //         }
     //         if (!email.contains("@")) {
-    //             throw new IllegalArgumentException("Invalid email format.");
+    //             throw new OurArg("Invalid email format.");
     //         }
     //         String token = authTokenService.generateAuthToken(username); // Generate a token for the member
     //         LoggerService.logMethodExecution("signUp", username, password, email, phoneNumber, address);
@@ -364,7 +364,7 @@ public class UserService {
             LoggerService.logMethodExecution("getPermitionsByShop", shopId);
             int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             if (!userRepository.isOwner(id, shopId)) {
-                throw new IllegalArgumentException("Member ID " + token + " is not an owner of shop ID " + shopId);  
+                throw new OurArg("Member ID " + token + " is not an owner of shop ID " + shopId);  
             }
             
             HashMap<Integer, PermissionsEnum[]> permissions = new HashMap<>();
@@ -829,7 +829,7 @@ public class UserService {
                 validateMemberId(id);
                 return ((Member)user).hasPermission(permission,shopId); // Check if the user has the specified permission
             } else {
-                throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+                throw new OurArg("User with ID " + id + " doesn't exist.");
             }
         } catch (Exception e) {
             return false; // Indicate failure to check permission
@@ -852,7 +852,7 @@ public class UserService {
             throw e; // Rethrow the custom exception
         } catch (IllegalArgumentException e) {
             LoggerService.logError("getUserShoppingCart", e, userId);
-            throw new IllegalArgumentException("Invalid user ID: " + userId, e);
+            throw new OurArg("Invalid user ID: " + userId, e);
         } catch (Exception e) {
             LoggerService.logError("getUserShoppingCart", e, userId);
             throw new RuntimeException("Error fetching shopping cart for user ID " + userId + ": " + e.getMessage(), e);

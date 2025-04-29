@@ -17,7 +17,7 @@ public class BundleDiscount implements Discount {
      */
     public BundleDiscount(Map<Integer, Integer> bundleItems, int percentage) {
         if (bundleItems == null || bundleItems.isEmpty()) {
-            throw new IllegalArgumentException("Bundle items must not be null or empty");
+            throw new OurArg("Bundle items must not be null or empty");
         }
         validatePercentage(percentage);
         this.bundleItems  = Map.copyOf(bundleItems);
@@ -78,7 +78,7 @@ public class BundleDiscount implements Discount {
 
     private void validatePercentage(int p) {
         if (p < 0 || p > 100) {
-            throw new IllegalArgumentException("Discount percentage must be between 0 and 100");
+            throw new OurArg("Discount percentage must be between 0 and 100");
         }
     }
 }

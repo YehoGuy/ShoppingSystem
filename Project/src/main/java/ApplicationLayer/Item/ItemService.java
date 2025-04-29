@@ -19,14 +19,8 @@ public class ItemService {
     private AuthTokenService authTokenService;
     private UserService userService;
 
-    /**
-     * Constructor for ItemService.
-     *
-     * @param itemRepository an instance of IItemRepository that handles storage of Item instances.
-     */
     public ItemService(IItemRepository itemRepository) {
         this.itemRepository = itemRepository;
-      
     }
 
     public void setServices(AuthTokenService authTokenService, UserService userService) {
@@ -34,16 +28,10 @@ public class ItemService {
         this.userService = userService;
     }
 
-    /**
-     * Creates a new item with the specified parameters.
-     *
-     * @param name        the item name.
-     * @param description the item description.
-     * @return the newly created Item.
-     */
     public Integer createItem(int shopId, String name, String description, Integer category, String token) {
         try {
             LoggerService.logMethodExecution("createItem", name, description, category);
+
             if (name == null || name.isEmpty()) {
                 throw new OurArg("Item name cannot be null or empty");
             }
@@ -51,38 +39,30 @@ public class ItemService {
                 throw new OurArg("Item description cannot be null or empty");
             }
             if (category == null || category < 0 || category >= ItemCategory.values().length) {
-                throw new OurArg("Item category cannot be null");
+                throw new OurArg("Item category is invalid");
             }
             if (shopId < 0) {
                 throw new OurArg("Shop ID cannot be negative");
             }
+
             Integer userId = authTokenService.ValidateToken(token);
-            if(!userService.hasPermission(userId,PermissionsEnum.manageItems,shopId)){
-                throw new OurRuntime("User does not have permission to add item to shop " + shopId);
+            if (!userService.hasPermission(userId, PermissionsEnum.manageItems, shopId)) {
+                throw new OurArg("User does not have permission to add item to shop " + shopId);
             }
+
             Integer returnItemId = itemRepository.createItem(name, description, category);
             LoggerService.logMethodExecutionEnd("createItem", itemRepository.getItem(returnItemId));
             return returnItemId;
+
         } catch (OurArg e) {
             LoggerService.logDebug("createItem", e);
-            throw new OurArg("Error creating item: " + e.getMessage(), e);
-        }
-        catch (OurRuntime e) {
-            LoggerService.logDebug("createItem", e);
-            throw new OurRuntime("Error creating item: " + e.getMessage(), e);
-        }
-        catch (Exception e) {
+            return null; // we will change to return DTO with appropriate error message
+        } catch (Exception e) {
             LoggerService.logError("createItem", e, name, description, category);
             throw new OurRuntime("Error creating item: " + e.getMessage(), e);
         }
     }
 
-    /**
-     * Retrieves an item by its identifier.
-     *
-     * @param itemId the item id.
-     * @return the Item instance.
-     */
     public Item getItem(int itemId, String token) {
         try {
             LoggerService.logMethodExecution("getItem", itemId);
@@ -95,22 +75,13 @@ public class ItemService {
             return returnItem;
         } catch (OurArg e) {
             LoggerService.logDebug("getItem", e);
-            throw new OurArg("Error retrieving item with id " + itemId + ": " + e.getMessage(), e);
-        } catch (OurRuntime e) {
-            LoggerService.logDebug("getItem", e);
-            throw new OurRuntime("Error retrieving item with id " + itemId + ": " + e.getMessage(), e);
-        } 
-        catch (Exception e) {
+            return null; // we will change to return DTO with appropriate error message
+        } catch (Exception e) {
             LoggerService.logError("getItem", e, itemId);
             throw new OurRuntime("Error retrieving item with id " + itemId + ": " + e.getMessage(), e);
         }
     }
 
-    /**
-     * Returns a list of all items.
-     *
-     * @return an unmodifiable list of Item instances.
-     */
     public List<Item> getAllItems(String token) {
         try {
             LoggerService.logMethodExecution("getAllItems");
@@ -120,24 +91,13 @@ public class ItemService {
             return returnItems;
         } catch (OurArg e) {
             LoggerService.logDebug("getAllItems", e);
-            throw new OurArg("Error retrieving all items: " + e.getMessage(), e);
-        } catch (OurRuntime e) {
-            LoggerService.logDebug("getAllItems", e);
-            throw new OurRuntime("Error retrieving all items: " + e.getMessage(), e);
-        }
-        catch (Exception e) {
+            return null; // we will change to return DTO with appropriate error message
+        } catch (Exception e) {
             LoggerService.logError("getAllItems", e);
             throw new OurRuntime("Error retrieving all items: " + e.getMessage(), e);
         }
     }
 
-    /**
-     * Adds a review to the specified item.
-     *
-     * @param itemId     the item id.
-     * @param rating     the review rating.
-     * @param reviewText the review text.
-     */
     public void addReviewToItem(int itemId, int rating, String reviewText, String token) {
         try {
             LoggerService.logMethodExecution("addReviewToItem", itemId, rating, reviewText);
@@ -153,26 +113,15 @@ public class ItemService {
             authTokenService.ValidateToken(token);
             itemRepository.addReviewToItem(itemId, rating, reviewText);
             LoggerService.logMethodExecutionEndVoid("addReviewToItem");
-            
         } catch (OurArg e) {
             LoggerService.logDebug("addReviewToItem", e);
-            throw new OurArg("Error adding review to item " + itemId + ": " + e.getMessage(), e);
-        } catch (OurRuntime e) {
-            LoggerService.logDebug("addReviewToItem", e);
-            throw new OurRuntime("Error adding review to item " + itemId + ": " + e.getMessage(), e);
-        } 
-        catch (Exception e) {
+            // we will change to return DTO with appropriate error message
+        } catch (Exception e) {
             LoggerService.logError("addReviewToItem", e, itemId, rating, reviewText);
             throw new OurRuntime("Error adding review to item " + itemId + ": " + e.getMessage(), e);
         }
     }
 
-    /**
-     * Retrieves the reviews for the specified item.
-     *
-     * @param itemId the item id.
-     * @return a list of ItemReview instances.
-     */
     public List<ItemReview> getItemReviews(int itemId, String token) {
         try {
             LoggerService.logMethodExecution("getItemReviews", itemId);
@@ -180,28 +129,18 @@ public class ItemService {
                 throw new OurArg("Item ID cannot be negative");
             }
             authTokenService.ValidateToken(token);
-            List<ItemReview> returnItems = itemRepository.getItemReviews(itemId);           
+            List<ItemReview> returnItems = itemRepository.getItemReviews(itemId);
             LoggerService.logMethodExecutionEnd("getItemReviews", returnItems);
             return returnItems;
         } catch (OurArg e) {
             LoggerService.logDebug("getItemReviews", e);
-            throw new OurArg("Error retrieving reviews for item " + itemId + ": " + e.getMessage(), e);
-        } catch (OurRuntime e) {
-            LoggerService.logDebug("getItemReviews", e);
-            throw new OurRuntime("Error retrieving reviews for item " + itemId + ": " + e.getMessage(), e);
-        }
-        catch (Exception e) {
+            return null; // we will change to return DTO with appropriate error message
+        } catch (Exception e) {
             LoggerService.logError("getItemReviews", e, itemId);
             throw new OurRuntime("Error retrieving reviews for item " + itemId + ": " + e.getMessage(), e);
         }
     }
 
-    /**
-     * Retrieves the average rating for the specified item.
-     *
-     * @param itemId the item id.
-     * @return the average rating, or -1.0 if no reviews.
-     */
     public double getItemAverageRating(int itemId, String token) {
         try {
             LoggerService.logMethodExecution("getItemAverageRating", itemId);
@@ -214,24 +153,14 @@ public class ItemService {
             return returnDouble;
         } catch (OurArg e) {
             LoggerService.logDebug("getItemAverageRating", e);
-            throw new OurArg("Error retrieving average rating for item " + itemId + ": " + e.getMessage(), e);
-        } catch (OurRuntime e) {
-            LoggerService.logDebug("getItemAverageRating", e);
-            throw new OurRuntime("Error retrieving average rating for item " + itemId + ": " + e.getMessage(), e);
-        }
-        catch (Exception e) {
+            return -1.0; // we will change to return DTO with appropriate error message
+        } catch (Exception e) {
             LoggerService.logError("getItemAverageRating", e, itemId);
             throw new OurRuntime("Error retrieving average rating for item " + itemId + ": " + e.getMessage(), e);
         }
     }
 
-    /**
-     * Retrieves a list of Item objects for the given list of item IDs.
-     *
-     * @param itemIds the list of item IDs to fetch
-     * @return an unmodifiable list of corresponding Item instances
-     */
-    public List<Item> getItemsByIds(List<Integer> itemIds , String token) {
+    public List<Item> getItemsByIds(List<Integer> itemIds, String token) {
         try {
             LoggerService.logMethodExecution("getItemsByIds", itemIds);
             if (itemIds == null || itemIds.isEmpty()) {
@@ -248,12 +177,8 @@ public class ItemService {
             return result;
         } catch (OurArg e) {
             LoggerService.logDebug("getItemsByIds", e);
-            throw new OurArg("Error fetching items: " + e.getMessage(), e);
-        } catch (OurRuntime e) {
-            LoggerService.logDebug("getItemsByIds", e);
-            throw new OurRuntime("Error fetching items: " + e.getMessage(), e);
-        }
-        catch (Exception e) {
+            return null; // we will change to return DTO with appropriate error message
+        } catch (Exception e) {
             LoggerService.logError("getItemsByIds", e, itemIds);
             throw new OurRuntime("Error fetching items: " + e.getMessage(), e);
         }

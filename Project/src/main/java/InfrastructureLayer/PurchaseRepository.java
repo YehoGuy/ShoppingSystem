@@ -97,7 +97,7 @@ public class PurchaseRepository implements IPurchaseRepository {
     public Purchase getPurchaseById(int purchaseId) {
         Purchase p = purchaseStorage.get(purchaseId);
         if (p == null) {
-            throw new IllegalArgumentException("Purchase not found, purchaseId: " + purchaseId);
+            throw new OurArg("Purchase not found, purchaseId: " + purchaseId);
         }
         return p;
     }
