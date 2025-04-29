@@ -415,6 +415,17 @@ public class UserRepository implements IUserRepository {
         member.acceptRole(role); // Assuming Member has a method to accept a role
     }
 
+    public void declineRole(int id, Role role) {
+        if (role == null) {
+            throw new OurRuntime("Role cannot be null.");
+        }
+        Member member = getMemberById(id);
+        if (member == null) {
+            throw new OurRuntime("User with ID " + id + " doesn't exist.");
+        }
+        member.declineRole(role); // Assuming Member has a method to accept a role
+    }
+
     public void addPermission(int userId, PermissionsEnum permission, int shopId) {
         Member member = getMemberById(userId);
         if (member == null) {

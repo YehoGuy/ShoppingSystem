@@ -63,6 +63,7 @@ public interface IUserRepository {
     void removeRole(int memberId, int shopId);
     Role getPendingRole(int memberId, int shopId);
     void acceptRole(int id, Role role);
+    void declineRole(int id, Role role);
     void addPermission(int id, PermissionsEnum permission, int shopId);
     void removePermission(int id, PermissionsEnum permission, int shopId);
 

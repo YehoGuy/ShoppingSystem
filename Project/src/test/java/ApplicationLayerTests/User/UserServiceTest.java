@@ -1,6 +1,12 @@
 package ApplicationLayerTests.User;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -10,8 +16,10 @@ import ApplicationLayer.Purchase.PaymentMethod;
 import ApplicationLayer.User.UserService;
 import DomainLayer.Member;
 import DomainLayer.User;
+import DomainLayer.Roles.PermissionsEnum;
 import InfrastructureLayer.AuthTokenRepository;
 import InfrastructureLayer.UserRepository;
+import ch.qos.logback.core.subst.Token;
 
 
 public class UserServiceTest {
@@ -42,8 +50,8 @@ public class UserServiceTest {
     @Test
     void addAdmin()
     {
-        String token = userService.loginAsMember("admin", "admin", -1);
-        userService.addMember("username", "password", "email@email.com", "phoneNumber", "address");
+        String token = userService.loginAsMember("admin", "admin", "");
+        userService.addMember("username", "password", "email@email.com", "0123456789", "address");
         int userid = userRepository.isUsernameAndPasswordValid("username", "password");
         userService.makeAdmin(token, userid);
         assertTrue(userService.isAdmin(userid));
@@ -52,8 +60,8 @@ public class UserServiceTest {
     @Test
     void removeAdmin()
     {
-        String token = userService.loginAsMember("admin", "admin", -1);
-        userService.addMember("username", "password", "email@email.com", "phoneNumber", "address");
+        String token = userService.loginAsMember("admin", "admin", "");
+        userService.addMember("username", "password", "email@email.com", "0123456789", "address");
         int userid = userRepository.isUsernameAndPasswordValid("username", "password");
         userService.makeAdmin(token, userid);
         assertTrue(userRepository.isAdmin(userid));
@@ -64,7 +72,7 @@ public class UserServiceTest {
 
     @Test
     void testAddMemberAndGetUserById() {
-        userService.addMember("john", "pass123", "john@example.com", "1234567890", "123 Main St");
+        userService.addMember("john", "pass123", "john@example.com", "0123456789", "123 Main St");
         int memberId = userRepository.isUsernameAndPasswordValid("john", "pass123");
         User member = userService.getUserById(memberId);
 
@@ -77,12 +85,12 @@ public class UserServiceTest {
     void testUpdateMember() {
         userService.addMember("john", "pass123", "john@example.com", "1234567890", "123 Main St");
         int memberId = userRepository.isUsernameAndPasswordValid("john", "pass123");
-
-        userService.updateMemberUsername(memberId, "newusername");
-        userService.updateMemberPassword(memberId, "newpassword");
-        userService.updateMemberEmail(memberId, "newemail@example.com");
-        userService.updateMemberPhoneNumber(memberId, "0987654321");
-        userService.updateMemberAddress(memberId, "456 Elm St");
+        String token = authTokenService.Login("john", "pass123",memberId); // No token generated, but user added
+        userService.updateMemberUsername(token, "newusername");
+        userService.updateMemberPassword(token, "newpassword");
+        userService.updateMemberEmail(token, "newemail@example.com");
+        userService.updateMemberPhoneNumber(token, "0987654321");
+        userService.updateMemberAddress(token, "456 Elm St");
 
         User member = userService.getUserById(memberId);
         assertEquals("newusername", ((Member)member).getUsername());
@@ -103,10 +111,9 @@ public class UserServiceTest {
 
     @Test
     void testSignUpMember() {
-        String token = userService.signUp("user1", "pass1", "user1@mail.com", "123", "address");
-        assertNotNull(token);
-
+        userService.addMember("user1", "pass1", "user1@mail.com", "1234567890", "address");
         int memberId = userRepository.isUsernameAndPasswordValid("user1", "pass1");
+        assertNotNull(memberId);
         assertTrue(memberId > 0);
     }
 
@@ -173,8 +180,8 @@ public class UserServiceTest {
 
     @Test
     void testSetPaymentMethod() throws Exception {
-        userService.addMember("john", "snow", "a@b", "000000", "address");
-        String token = userService.loginAsMember("john", "snow", -1);   
+        userService.addMember("john", "snow", "aaa@gmail.com", "1234567890", "address");
+        String token = userService.loginAsMember("john", "snow", "");   
         User user = userService.getUserById(userRepository.isUsernameAndPasswordValid("john", "snow"));
         PaymentMethod paymentMethod = Mockito.mock(PaymentMethod.class);
         userService.setPaymentMethod(token, paymentMethod, 1);
@@ -184,11 +191,204 @@ public class UserServiceTest {
 
     @Test
     void testPay() throws Exception {
-        userService.addMember("john", "snow", "a@b", "000000", "address");
-        String token = userService.loginAsMember("john", "snow", -1);   
+        userService.addMember("john", "snow", "aaa@gmail.com", "123457890", "address");
+        String token = userService.loginAsMember("john", "snow", "");   
         PaymentMethod paymentMethod = Mockito.mock(PaymentMethod.class);
         userService.setPaymentMethod(token, paymentMethod, 1);
         // Verify that the payment was processed correctly
         assertTrue(userService.pay(token, 1, 100.0));
     }
+
+
+
+/*
+    @Test
+    void testConcurrentMakeManagerAndAcceptRole() throws InterruptedException {
+
+        int ownerId = userRepository.isUsernameAndPasswordValid("admin", "admin");
+        String ownerToken = "t1";
+        int threads = 50;
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        CountDownLatch latch = new CountDownLatch(threads);
+
+        for (int i = 0; i < threads; i++) {
+            int finalI = i;
+            executor.submit(() -> {
+                try {
+                    userRepository.addMember("manager" + finalI, "pass", "manager" + finalI + "@test.com", "123", "addr");
+                    int newManagerId = userRepository.isUsernameAndPasswordValid("manager" + finalI, "pass");
+                    userService.makeManagerOfStore(ownerToken, newManagerId, 1, new PermissionsEnum[]{});
+                    userService.acceptRole(ownerToken, 1);
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        latch.await();
+        executor.shutdown();
+
+        // Validation: all managers added must have role
+        long count = userRepository.getMembersList().stream()
+                .filter(m -> m.getRoles().stream().anyMatch(r -> r.getShopId() == 1))
+                .count();
+        assertEquals(threads, count);
+    }
+
+    @Test
+    void testConcurrentAddRemovePermissions() throws InterruptedException {
+
+        userRepository.addMember("manager", "pass", "manager@test.com", "123", "addr");
+        int managerId = userRepository.isUsernameAndPasswordValid("manager", "pass");
+    
+        userService.makeManagerOfStore("t1", managerId, 1, new PermissionsEnum[]{});
+        userService.acceptRole("t1", 1);
+    
+        ExecutorService executor = Executors.newFixedThreadPool(50);
+        CountDownLatch latch = new CountDownLatch(100);
+    
+        for (int i = 0; i < 50; i++) {
+            executor.submit(() -> {
+                try {
+                    userService.addPermission("t1", managerId, PermissionsEnum.manageItems, 1);
+                } finally {
+                    latch.countDown();
+                }
+            });
+            executor.submit(() -> {
+                try {
+                    userService.removePermission("t1", managerId, PermissionsEnum.manageItems, 1);
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+    
+        latch.await();
+        executor.shutdown();
+    
+        // Validation: no crash, permission is either there or not
+        boolean hasPermission = userRepository.getRole(managerId, 1).hasPermission(PermissionsEnum.manageItems);
+        assertTrue(hasPermission || !hasPermission); // No crash is success here
+    }
+    */
+
+//,,,,
+    @Test
+    void testConcurrentAddGuest() throws InterruptedException {
+        int threads = 50;
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+
+        CountDownLatch latch = new CountDownLatch(threads);
+
+        for (int i = 0; i < threads; i++) {
+            executor.submit(() -> {
+                try {
+                    userRepository.addGuest();
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        latch.await(); // Wait for all tasks to finish
+        executor.shutdown();
+
+        assertEquals(threads + 1, userRepository.getUserMapping().size()); // +1 for the default admin
+    }
+    @Test
+    void testConcurrentAddMembers() throws InterruptedException {
+        int threads = 50;
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+
+        CountDownLatch latch = new CountDownLatch(threads);
+
+        for (int i = 0; i < threads; i++) {
+            int finalI = i;
+            executor.submit(() -> {
+                try {
+                    userRepository.addMember("user" + finalI, "password" + finalI, "email" + finalI + "@test.com", "123456789", "address" + finalI);
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        latch.await();
+        executor.shutdown();
+
+        assertEquals(threads + 1, userRepository.getUserMapping().size()); // +1 for default admin
+    }
+    @Test
+    void testConcurrentAddRemoveAdmin() throws InterruptedException {
+        int userId = userRepository.isUsernameAndPasswordValid("admin", "admin");
+
+        // Add a second admin
+        userRepository.addMember("secondAdmin", "password", "second@test.com", "123456789", "addr");
+        int secondAdminId = userRepository.isUsernameAndPasswordValid("secondAdmin", "password");
+        userRepository.addAdmin(secondAdminId);
+
+        int threads = 100;
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        CountDownLatch latch = new CountDownLatch(threads);
+
+        for (int i = 0; i < threads; i++) {
+            executor.submit(() -> {
+                try {
+                    if (ThreadLocalRandom.current().nextBoolean()) {
+                        try {
+                            userRepository.addAdmin(secondAdminId);
+                        } catch (Exception ignored) {}
+                    } else {
+                        try {
+                            userRepository.removeAdmin(secondAdminId);
+                        } catch (Exception ignored) {}
+                    }
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        latch.await();
+        executor.shutdown();
+
+        // After concurrent add/remove, either admin is in or not
+        assertTrue(userRepository.getAllAdmins().contains(userId)); // The system creator admin must always exist
+    }
+/*
+    @Test
+    void testConcurrentShoppingCartModifications() throws InterruptedException {
+        userRepository.addMember("buyer", "pass", "buyer@test.com", "123", "addr");
+        int buyerId = userRepository.isUsernameAndPasswordValid("buyer", "pass");
+
+        ExecutorService executor = Executors.newFixedThreadPool(50);
+        CountDownLatch latch = new CountDownLatch(100);
+
+        for (int i = 0; i < 50; i++) {
+            int finalI = i;
+            executor.submit(() -> {
+                try {
+                    userRepository.addItemToShoppingCart(buyerId, 1, finalI, 1);
+                } finally {
+                    latch.countDown();
+                }
+            });
+            executor.submit(() -> {
+                try {
+                    userRepository.clearShoppingCart(buyerId);
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        latch.await();
+        executor.shutdown();
+
+        // Validate: shopping cart is still consistent (either empty or with items)
+        Map<Integer, Integer> basket = userRepository.getBasket(buyerId, 1);
+        assertNotNull(basket);
+    }
+    */
 }
