@@ -169,28 +169,6 @@ public class ShopService {
         }
     }
 
-    /**
-     * Adds a bundle discount for a specific item in the specified shop.
-     *
-     * @param shopId   the shop id.
-     * @param basket   the items in the basket with their quantities.
-     * @param discount the discount value.
-     */
-    public void addBundleDiscount(int shopId, Map<Integer,Integer> basket, int discount, String token) {
-        try {
-            LoggerService.logMethodExecution("addBundleDiscount", shopId, basket, discount);
-            Integer userId = authTokenService.ValidateToken(token);
-            if(!userService.hasPermission(userId,PermissionsEnum.setPolicy,shopId)){
-                throw new RuntimeException("User does not have permission to update discount for shop " + shopId);
-            }
-            shopRepository.addBundleDiscount(shopId, basket, discount);
-            LoggerService.logMethodExecutionEndVoid("addBundleDiscount");
-        } catch (Exception e) {
-            LoggerService.logError("addBundleDiscount", e, shopId, basket, discount);
-            throw new RuntimeException("Error adding bundle discount for item " + basket + " in shop " + shopId + ": " + e.getMessage(), e);
-        }
-    }
-
     public void setCategoryDiscount(int shopId, ItemCategory category, int discount, String token) {
         try {
             LoggerService.logMethodExecution("setCategoryDiscount", shopId, category, discount);
@@ -203,7 +181,7 @@ public class ShopService {
             for (Item item : items) {
                 itemsMap.put(item.getId(), 1);
             }
-            shopRepository.addBundleDiscount(shopId, itemsMap, discount);
+            //shopRepository.addBundleDiscount(shopId, itemsMap, discount);
             // shopRepository.setCategoryDiscount(shopId, category, discount);
             LoggerService.logMethodExecutionEndVoid("setCategoryDiscount");
         } catch (Exception e) {
@@ -404,7 +382,8 @@ public class ShopService {
     public double purchaseItems(Map<Integer, Integer> purchaseLists, Integer shopId) {
         try {
             LoggerService.logMethodExecution("purchaseItems", purchaseLists, shopId);
-            double totalPrice = shopRepository.purchaseItems(purchaseLists, shopId);
+            Map<Integer, ItemCategory> itemsCategory = itemService.getItemdId2Cat();
+            double totalPrice = shopRepository.purchaseItems(purchaseLists,itemsCategory, shopId);
             LoggerService.logMethodExecutionEnd("purchaseItems", totalPrice);
             return totalPrice;
         } catch (Exception e) {

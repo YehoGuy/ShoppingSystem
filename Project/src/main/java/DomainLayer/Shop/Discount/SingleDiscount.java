@@ -11,6 +11,8 @@ import DomainLayer.Item.ItemCategory;
 public class SingleDiscount implements Discount {
     private final Integer itemId; // null for global
     private int percentage;
+    private Policy policyHead;
+    private boolean isDouble;
 
     /**
      * Constructor for a global discount.
@@ -18,27 +20,51 @@ public class SingleDiscount implements Discount {
      * @param itemId   null for global discount
      * @param percentage the discount percentage (0-100)
      */
-    public SingleDiscount(Integer itemId, int percentage) {
+    public SingleDiscount(Integer itemId, int percentage, Policy policyHead, boolean isDouble) {
         validatePercentage(percentage);
         this.itemId = itemId;
         this.percentage = percentage;
+        this.policyHead = policyHead;
+        this.isDouble = isDouble;
     }
 
 
     @Override
-    public Map<Integer, Integer> applyDiscounts(Map<Integer, Integer> items, Map<Integer, Integer> prices, Map<Integer, ItemCategory> itemsCategory) {
-        Map<Integer, Integer> itemsDiscountedPrices = new java.util.HashMap<>();
+    public Map<Integer, Integer> applyDiscounts(Map<Integer, Integer> items, Map<Integer, AtomicInteger> prices, Map<Integer, Integer> itemsDiscountedPrices, Map<Integer, ItemCategory> itemsCategory) {
         // item-specific: calculate discount only on that item
         Integer qty = items.get(itemId);
         if (qty == null || qty <= 0) {
             return itemsDiscountedPrices;
         }
 
-        int itemPrice = prices.get(itemId);
-        int discountedPrice = itemPrice * (100 - percentage) / 100;
-        itemsDiscountedPrices.put(itemId, discountedPrice);
+        if(!isDouble){
+            int itemPrice = prices.get(itemId).get();
+            int discountedPrice = itemPrice * (100 - percentage) / 100;
+            itemsDiscountedPrices.put(itemId,Math.min(itemsDiscountedPrices.get(itemId), discountedPrice));
+        }else{
+            int itemPrice = itemsDiscountedPrices.get(itemId);
+            int discountedPrice = itemPrice * (100 - percentage) / 100;
+            itemsDiscountedPrices.put(itemId, discountedPrice);
+        }
           
         return itemsDiscountedPrices;
+    }
+
+    @Override
+    public boolean checkPolicies(Map<Integer,Integer> items, Map<Integer,Integer> prices, Map<Integer,ItemCategory> itemsCategory) {
+        if(policyHead == null) {
+            return true; // No policies to check
+        }
+        return policyHead.test(items, prices, itemsCategory);
+    }
+
+    public Integer getItemId() {
+        return itemId;
+    }
+
+    @Override
+    public boolean isDouble() {
+        return isDouble;
     }
 
     private void validatePercentage(int p) {

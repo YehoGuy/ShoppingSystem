@@ -9,9 +9,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
+
 import ApplicationLayer.Purchase.ShippingMethod;
+import DomainLayer.Item.ItemCategory;
+import DomainLayer.Shop.Discount.CategoryDiscount;
 import DomainLayer.Shop.Discount.Discount;
+import DomainLayer.Shop.Discount.GlobalDiscount;
+import DomainLayer.Shop.Discount.Policy;
+import DomainLayer.Shop.Discount.PolicyComposite;
+import DomainLayer.Shop.Discount.PolicyLeaf;
 import DomainLayer.Shop.Discount.SingleDiscount;
+import DomainLayer.Shop.Discount.TriPredicate;
 
 /**
  * The Shop class representing a shop entity in your system.
@@ -23,13 +31,7 @@ public class Shop {
     private final int id;
     private final String name;
 
-    private final List<PurchasePolicy> purchasePolicies;
-
-    /**
-     * Thread-safe list of discounts. CopyOnWriteArrayList allows
-     * lock-free iteration even while another thread is adding/removing discounts.
-     */
-    private final CopyOnWriteArrayList<Discount> discounts;
+    private final List<Discount> discounts;
 
     // A thread-safe list to manage shop reviews.
     private final List<ShopReview> reviews;
@@ -44,6 +46,9 @@ public class Shop {
 
     private ShippingMethod shippingMethod;
 
+    private Policy policytemp;
+    private PolicyComposite policyComposite;
+
     /**
      * Constructor to initialize the shop.
      * The provided discount value will be used as a global discount (mapped with key 0).
@@ -51,12 +56,10 @@ public class Shop {
      * @param id             the shop identifier.
      * @param name           the name of the shop.
      * @param purchasePolicy the shop's purchase policy.
-     * @param discount       the global discount for all items in the shop.
      */
     public Shop(int id, String name, ShippingMethod shippingMethod) {
         this.id = id;
         this.name = name;
-        this.purchasePolicies = new ArrayList<>();
         this.discounts = new CopyOnWriteArrayList<>();
         this.reviews = new CopyOnWriteArrayList<>();
         this.items = new ConcurrentHashMap<>();
@@ -81,12 +84,59 @@ public class Shop {
         this.shippingMethod = shippingMethod;
     }
 
-    public void addPurchasePolicy(PurchasePolicy purchasePolicy) {
-        purchasePolicies.add(purchasePolicy);
-    }
-
-    public void removePurchasePolicy(PurchasePolicy purchasePolicy) {
-        purchasePolicies.remove(purchasePolicy);
+    public void addPolicy(Integer threshold, Integer itemId, ItemCategory itemCategory, double basketValue , Operator operator) {
+        TriPredicate<Map<Integer,Integer>,Map<Integer,Integer>,Map<Integer,ItemCategory>> predicate;
+        if(threshold != null && itemCategory == null){ //UC1
+            predicate = new TriPredicate<Map<Integer,Integer>,Map<Integer,Integer>,Map<Integer,ItemCategory>>() {
+                @Override
+                public boolean test(Map<Integer, Integer> items, Map<Integer, Integer> prices, Map<Integer, ItemCategory> itemsCategory) {
+                    Integer qty = items.get(itemId);
+                    if (qty == null || qty <= 0 || qty < threshold) {
+                        return false;
+                    }
+                    return true;
+                }
+            };
+        }else if(threshold != null && itemCategory != null){ //UC2
+            predicate = new TriPredicate<Map<Integer,Integer>,Map<Integer,Integer>,Map<Integer,ItemCategory>>() {
+                @Override
+                public boolean test(Map<Integer, Integer> items, Map<Integer, Integer> prices, Map<Integer, ItemCategory> itemsCategory) {
+                    Integer qty = 0;
+                    for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
+                        Integer itemId = entry.getKey();
+                        if (itemsCategory.get(itemId) == itemCategory) {
+                            qty += entry.getValue();
+                        }
+                    }
+                    if (qty == null || qty <= 0 || qty < threshold) {
+                        return false;
+                    }
+                    return true;
+                }
+            };
+        }else{ //UC3
+            predicate = new TriPredicate<Map<Integer,Integer>,Map<Integer,Integer>,Map<Integer,ItemCategory>>() {
+                @Override
+                public boolean test(Map<Integer, Integer> items, Map<Integer, Integer> prices, Map<Integer, ItemCategory> itemsCategory) {
+                    Integer totalPrice = 0;
+                    for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
+                        Integer itemId = entry.getKey();
+                        Integer qty = entry.getValue();
+                        totalPrice += prices.get(itemId) * qty;
+                    }
+                    return totalPrice >= basketValue;
+                }
+            };
+        }
+        PolicyLeaf newPolicy = new PolicyLeaf(predicate);
+        if (policytemp == null) {
+            policytemp = newPolicy;
+        } else if(policyComposite == null) {
+            policyComposite = new PolicyComposite(policytemp, newPolicy, operator);
+        }else{
+            PolicyComposite tempCimposite = new PolicyComposite(policyComposite, newPolicy, operator);
+            policyComposite = tempCimposite;
+        }
     }
 
     // ===== Getters =====
@@ -96,7 +146,7 @@ public class Shop {
      * @return the list of purchase policies.
      */
     public List<PurchasePolicy> getPurchasePolicies() {
-        return Collections.unmodifiableList(purchasePolicies);
+        return null;
     }
 
     // ===== Methods for Reviews =====
@@ -289,33 +339,25 @@ public class Shop {
         return total;
     }
 
-    /**
-     * Checks if the purchase is valid according to the shop's purchase policies.
-     * This method iterates through all purchase policies and checks if the purchase is valid.
-     *
-     * @param items a map where the key is the item ID and the value is the quantity.
-     * @return {@code true} if the purchase is valid, {@code false} otherwise.
-     */
-    public boolean checkPolicys(Map<Integer,Integer> items){
-        for (PurchasePolicy purchasePolicy : purchasePolicies) {
-            if (!purchasePolicy.isValidPurchase(items, getTotalPrice(items))) {
-                return false;
-            }
-        }
-        return true;
-    }
 
-
-    private double applyDiscount(Map<Integer,Integer> items){
+    private double applyDiscount(Map<Integer,Integer> items, Map<Integer,ItemCategory> itemsCat){
         Map<Integer, Integer> itemsDiscountedPrices = new HashMap<>();
-        for(Map.Entry<Integer, Integer> entry : items.entrySet()){
+        for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
             int itemId = entry.getKey();
-            int price = getItemPrice(itemId);
+            int price = itemsPrices.get(itemId).get();
             itemsDiscountedPrices.put(itemId, price);
         }
+        
+        for (Discount discount : discounts) {
+            if(discount.isDouble()){
+                itemsDiscountedPrices = discount.applyDiscounts(items, itemsPrices, itemsDiscountedPrices, itemsCat);
+            }
+        }
 
-        for(Discount discount : discounts){
-            itemsDiscountedPrices = discount.applyDiscounts(items, itemsPrices, itemsDiscountedPrices);
+        for (Discount discount : discounts) {
+            if(!discount.isDouble()){
+                itemsDiscountedPrices = discount.applyDiscounts(items, itemsPrices, itemsDiscountedPrices, itemsCat);
+            }
         }
 
         // calculate the total price after applying discounts
@@ -335,16 +377,16 @@ public class Shop {
      *
      * @param percentage the discount percentage (0–100)
      */
-    public void setGlobalDiscount(int percentage) {
-        // try to update existing
-        for (Discount d : discounts) {
-            if (d.getItemId() == null) {
-                d.setPercentage(percentage);
-                return;
-            }
-        }
-        // otherwise add new
-        discounts.add(new SingleDiscount(this.id, null,/* price unused */0, percentage));
+    public void setGlobalDiscount(int percentage, boolean isDouble) {
+        GlobalDiscount discount;
+        if(policyComposite == null)
+            discount = new GlobalDiscount(percentage, policytemp, isDouble);
+        else
+            discount = new GlobalDiscount(percentage, policyComposite, isDouble);
+
+        this.policyComposite= null;
+        this.policytemp = null;
+        discounts.add(discount);
     }
 
     /**
@@ -354,26 +396,25 @@ public class Shop {
      * @param percentage the discount percentage to remove (0–100).
      */ 
     public void removeGlobalDiscount() {
-        discounts.removeIf(d ->
-            d.getItemId() == null
-        );
+        //TODO-V2: Implement this method to remove the global discount.
     }
     
-        /**
+    /**
      * Applies a percentage discount to a single item.
      *
      * @param itemId     the ID of the item to discount.
      * @param percentage the discount percentage (0–100).
      */
-    public void setDiscountForItem(int itemId, int percentage) {
-        for (Discount d : discounts) {
-            if (d.getItemId() != null
-             && d.getItemId().equals(itemId)) {
-                d.setPercentage(percentage);
-                return;
-            }
-        }
-        discounts.add(new SingleDiscount(this.id, itemId, this.getItemPrice(itemId), percentage));
+    public void setDiscountForItem(int itemId, int percentage, int qty, boolean isDouble) {
+        SingleDiscount discount;
+        if(policyComposite == null)
+            discount = new SingleDiscount(itemId, percentage, policytemp, isDouble);
+        else
+            discount = new SingleDiscount(itemId, percentage, policyComposite, isDouble);
+
+        this.policyComposite= null;
+        this.policytemp = null;
+        discounts.add(discount);
     }
 
     /**
@@ -382,37 +423,25 @@ public class Shop {
      * @param itemId the ID of the item to remove the discount from.
      */
     public void removeDiscountForItem(int itemId) {
-        discounts.removeIf(d ->
-            d.getItemId() != null &&
-            d.getItemId().equals(itemId)
-        );
+        //TODO-V2: Implement this method to remove a discount for a single item.
     }
 
-    /**
-     * Adds a bundle discount to the shop.
-     * A bundle discount applies a percentage off the entire purchase
-     * if all specified bundle item IDs are present in the cart.
-     *
-     * @param bundleItems  a map of item IDs to quantities required for the discount.
-     * @param percentage   the discount percentage (0–100).
-     */
-    public void addBundleDiscount(Map<Integer, Integer> bundleItems, int percentage){  // bundleItems is a map of itemId to quantity
-        discounts.add(new BundleDiscount(bundleItems, percentage));
+    public void setCategoryDiscount(ItemCategory category, int percentage, boolean isDouble) {
+        CategoryDiscount discount;
+        if(policyComposite == null)
+            discount = new CategoryDiscount(category, percentage, policytemp, isDouble);
+        else
+            discount = new CategoryDiscount(category, percentage, policyComposite, isDouble);
+
+        this.policyComposite= null;
+        this.policytemp = null;
+        discounts.add(discount);
     }
 
-    /**
-     * Removes a bundle discount from the shop.
-     * This method iterates through all discounts and removes the one that matches the given bundle items.
-     *
-     * @param bundleItems a map of item IDs to quantities required for the discount.
-     */
-    public void removeBundleDiscount(Map<Integer, Integer> bundleItems, int percentage) {
-        //TODO-V2: Implement this method to remove the bundle discount from the shop.
+    public void removeCategoryDiscount(int categoryId) {
+        //TODO-V2: Implement this method to remove a category discount.
     }
 
-    public void setCategoryDiscount(int categoryId, int discount) {
-        //TODO-V2: Implement this method to set a category discount.
-    }
     // ===== Purchase Method =====
      
     /**
@@ -425,7 +454,7 @@ public class Shop {
      * @param purchaseList map of itemId→quantity to purchase
      * @return the total price after discounts
      */
-    public double purchaseItems(Map<Integer, Integer> purchaseList) {
+    public double purchaseItems(Map<Integer, Integer> purchaseList,Map<Integer, ItemCategory> itemsCategory) {
         // 1) policy check up-front
         // if (!checkPolicys(purchaseList)) {
         //     throw new IllegalStateException("Purchase policy violation");
@@ -453,7 +482,7 @@ public class Shop {
             }
 
             // 3) compute total + apply discounts
-            double finalTotal = applyDiscount(purchaseList);
+            double finalTotal = applyDiscount(purchaseList, itemsCategory);
 
             return finalTotal;
 

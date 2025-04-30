@@ -498,59 +498,6 @@ class ShopServiceAcceptanceTests {
         assertTrue(ex.getMessage().contains("does not have permission"));
     }
 
-    // UC19 - Define bundle discount
-    @Test
-    void testAddBundleDiscount_Success() throws Exception {
-        String token = "t";
-        int shopId = 8, discount = 20;
-        Map<Integer, Integer> basket = new HashMap<>();
-        basket.put(1, 2);
-        basket.put(2, 3);
-
-        when(authTokenService.ValidateToken(token)).thenReturn(14);
-        when(userService.hasPermission(14, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
-        doNothing().when(shopRepository).addBundleDiscount(shopId, basket, discount);
-
-        shopService.addBundleDiscount(shopId, basket, discount, token);
-        verify(shopRepository).addBundleDiscount(shopId, basket, discount);
-    }
-
-    // UC19 - Define bundle discount (invalid discount)
-    @Test
-    void testAddBundleDiscount_InvalidDiscount_Failure() throws Exception {
-        String token = "t";
-        int shopId = 8, discount = 200;
-        Map<Integer, Integer> basket = new HashMap<>();
-        basket.put(1, 2);
-        basket.put(2, 3);
-
-        when(authTokenService.ValidateToken(token)).thenReturn(14);
-        when(userService.hasPermission(14, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
-        doThrow(new IllegalArgumentException("Discount must be <=100"))
-            .when(shopRepository).addBundleDiscount(shopId, basket, discount);
-
-        RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.addBundleDiscount(shopId, basket, discount, token));
-        assertTrue(ex.getMessage().contains("Error adding bundle discount for item"));
-    }
-
-    // UC19 - Define bundle discount (no permission)
-    @Test
-    void testAddBundleDiscount_NoPermission_Failure() throws Exception {
-        String token = "t";
-        int shopId = 8, discount = 20;
-        Map<Integer, Integer> basket = new HashMap<>();
-        basket.put(1, 2);
-        basket.put(2, 3);
-
-        when(authTokenService.ValidateToken(token)).thenReturn(14);
-        when(userService.hasPermission(14, PermissionsEnum.setPolicy, shopId)).thenReturn(false);
-
-        RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.addBundleDiscount(shopId, basket, discount, token));
-        assertTrue(ex.getMessage().contains("does not have permission"));
-    }
-
     // UC24 – Close Shop
     @Test
     void testCloseShop_Success() throws Exception {

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import ApplicationLayer.Purchase.ShippingMethod;
+import DomainLayer.Item.ItemCategory;
 
 public interface IShopRepository {
 
@@ -64,15 +65,6 @@ public interface IShopRepository {
      * @param discount the discount value.
      */
     void setDiscountForItem(int shopId, int itemId, int discount);
-
-    /**
-     * Sets a discount for a specific item in the specified shop.
-     *
-     * @param shopId   the shop id.
-     * @param basket   the bsket.
-     * @param discount the discount value.
-     */
-    void addBundleDiscount(int shopId, Map<Integer,Integer> basket, int discount);
 
     /**
      * Sets a discount for a specific category in the specified shop.
@@ -222,7 +214,7 @@ public interface IShopRepository {
      */
     void addSupply(Integer shopId, Integer itemId, Integer supply);
 
-    double purchaseItems(Map<Integer, Integer> purchaseLists, Integer shopdId);
+    double purchaseItems(Map<Integer, Integer> purchaseLists, Map<Integer, ItemCategory> itemsCategory, Integer shopdId);
 
     void rollBackPurchase(Map<Integer, Integer> purchaseLists, Integer shopId);
 }

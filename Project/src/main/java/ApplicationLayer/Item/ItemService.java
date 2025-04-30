@@ -1,6 +1,8 @@
 package ApplicationLayer.Item;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.LoggerService;
@@ -104,6 +106,11 @@ public class ItemService {
             LoggerService.logError("getItem", e, itemId);
             throw new OurRuntime("Error retrieving item with id " + itemId + ": " + e.getMessage(), e);
         }
+    }
+
+    public Map<Integer,ItemCategory> getItemdId2Cat(){
+        //TODO should return all items with their categories
+        return new HashMap<>();
     }
 
     /**

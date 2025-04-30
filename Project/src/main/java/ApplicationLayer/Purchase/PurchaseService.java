@@ -77,7 +77,7 @@ public class PurchaseService {
             cartBackup = cart; // backup the cart (cart is a deep copy of the original cart)
             // 3. create a purchase for each store (Repo creates)
             for(Integer shopId : cart.keySet()){
-                double totalPrice = shopService.purchaseItems(cart.get(shopId), shopId);
+                double totalPrice = shopService.purchaseItems(cart.get(shopId), shopId); 
                 totalPrices.put(shopId, totalPrice);
                 aqcuired.put(shopId, cart.get(shopId));
                 int pid = purchaseRepository.addPurchase(userId, shopId, aqcuired.get(shopId), totalPrice, shippingAddress);
