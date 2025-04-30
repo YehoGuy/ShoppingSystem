@@ -1,13 +1,21 @@
 package DomainLayer;
 
 import ApplicationLayer.Purchase.PaymentMethod;
+import DomainLayer.Purchase.Address;
+
 
 public abstract class User {
     private ShoppingCart shoppingCart; // Shopping cart associated with the user
     private PaymentMethod paymentMethod; // Payment method associated with the user
+    private Address address; // Shipping address associated with the user
 
     public User(int cartId) {
         this.shoppingCart = new ShoppingCart(); // Initialize the shopping cart
+    }
+
+    public User(int cartId, Address address) {
+        this.shoppingCart = new ShoppingCart(); // Initialize the shopping cart
+        this.address = address; // Set the user's shipping address
     }
 
     public ShoppingCart getShoppingCart() {
@@ -32,5 +40,20 @@ public abstract class User {
         this.paymentMethod = paymentMethod; // Set a new payment method for the user
     }
 
+    public Address getAddress() {
+        return this.address; // Return the user's shipping address
+    }
+
+    public void setAddress(Address Address) {
+        this.address = Address; // Set a new shipping address for the user
+    }
+
+    public void setAddress(String country, String city, String street, int aparmentNum, String postalCode) {
+        this.address = new Address().withCountry(country)
+                                    .withCity(city)
+                                    .withStreet(street)
+                                    .withApartmentNumber(aparmentNum)
+                                    .withZipCode(postalCode); 
+    }
 
 }

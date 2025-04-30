@@ -1,6 +1,5 @@
 package DomainLayer;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -55,10 +54,6 @@ public class Member extends User {
 
     public String getPhoneNumber() {
         return phoneNumber; // Return the phone number
-    }
-
-    public String getAddress() {
-        return address; // Return the address
     }
 
     public synchronized void setUsername(String username) {
