@@ -10,6 +10,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDate;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -71,7 +73,7 @@ public class MessageServiceAcceptanceTests {
         when(messageRepository.isMessagePrevious(previousMessageId, userId, shopId)).thenReturn(true);
 
         doThrow(new OurRuntime("unable to send - message is empty."))
-                .when(messageRepository).addMessage(1, 2, "", "", false, 0);
+                .when(messageRepository).addMessage(1, 2, "", LocalDate.now().toString(), false, 0);
 
         String result = messageService.sendMessageToShop(token, shopId, "", previousMessageId);
         assertEquals(result,
