@@ -21,12 +21,13 @@ public class MessageRepository implements IMessageRepository {
     }
 
     @Override
-    public void addMessage(int senderId, int receiverId, String content, String timestamp, boolean userToUser, int previousMessageId) {
+    public void addMessage(int senderId, int receiverId, String content, String timestamp, boolean userToUser,
+            int previousMessageId) {
         if (content == null || content.isEmpty()) {
             throw new OurRuntime("unable to send - message is empty."); // Validate message content
         }
         int id = nextId.getAndIncrement(); // Get the next unique ID
-        Message message = new Message(id, senderId, receiverId, content, timestamp, userToUser, previousMessageId); // Create a new message object
+        Message message = new Message(id, senderId, receiverId, content, timestamp, userToUser, previousMessageId);
         messages.put(id, message); // Add the message to the map with a unique ID
     }
 
@@ -37,10 +38,11 @@ public class MessageRepository implements IMessageRepository {
 
     @Override
     public Message getMessageById(int id) {
-        try{
+        try {
             return messages.get(id); // Return the message with the specified ID, or null if not found
         } catch (IndexOutOfBoundsException e) {
-            throw new IndexOutOfBoundsException("Message with ID " + id + " not found."); // Handle case where message ID is not found
+            throw new IndexOutOfBoundsException("Message with ID " + id + " not found."); // Handle case where message
+                                                                                          // ID is not found
         }
     }
 
@@ -50,7 +52,8 @@ public class MessageRepository implements IMessageRepository {
         if (message == null) {
             throw new OurRuntime("Message with ID " + id + " not found."); // Handle case where message ID is not found
         } else if (message.getSenderId() != senderId) {
-            throw new OurRuntime("You are not authorized to delete this message."); // Handle case where user is not authorized to delete the message
+            throw new OurRuntime("You are not authorized to delete this message."); // Handle case where user is not
+                                                                                    // authorized to delete the message
         } else {
             message.delete(); // Mark the message as deleted
         }
@@ -58,15 +61,19 @@ public class MessageRepository implements IMessageRepository {
 
     @Override
     public void updateMessage(int id, String content, String timestamp) {
-        try{
+        try {
             Message message = messages.get(id); // Get the message with the specified ID
             if (message == null) {
-                throw new IndexOutOfBoundsException("Message with ID " + id + " not found."); // Handle case where message ID is not found
+                throw new IndexOutOfBoundsException("Message with ID " + id + " not found."); // Handle case where
+                                                                                              // message ID is not found
             }
-            message = new Message(id, message.getSenderId(), message.getReceiverId(), content, timestamp, message.isUserToUser(), message.getPreviousMessageId()); // Create a new message object with updated content
+            message = new Message(id, message.getSenderId(), message.getReceiverId(), content, timestamp,
+                    message.isUserToUser(), message.getPreviousMessageId()); // Create a new message object with updated
+                                                                             // content
             messages.put(message.getMessageId(), message); // Update the message in the map
         } catch (IndexOutOfBoundsException e) {
-            throw new IndexOutOfBoundsException("Message with ID " + id + " not found."); // Handle case where message ID is not found
+            throw new IndexOutOfBoundsException("Message with ID " + id + " not found."); // Handle case where message
+                                                                                          // ID is not found
         }
     }
 
@@ -96,7 +103,7 @@ public class MessageRepository implements IMessageRepository {
     public Message getPreviousMessage(int messageId) {
         Message message = messages.get(messageId); // Get the message with the specified ID
         if (message != null) {
-            if(message.getPreviousMessageId() == -1) {
+            if (message.getPreviousMessageId() == -1) {
                 return null; // Return null if there is no previous message
             }
             message = messages.get(message.getPreviousMessageId()); // Get the previous message
@@ -111,7 +118,7 @@ public class MessageRepository implements IMessageRepository {
     private Message getPreviousMessageNotMatterWhat(int messageId) {
         Message message = messages.get(messageId); // Get the message with the specified ID
         if (message != null) {
-            if(message.getPreviousMessageId() == -1) {
+            if (message.getPreviousMessageId() == -1) {
                 return null; // Return null if there is no previous message
             }
             message = messages.get(message.getPreviousMessageId()); // Get the previous message
@@ -139,10 +146,12 @@ public class MessageRepository implements IMessageRepository {
     }
 
     public boolean isMessagePrevious(int previousMessageId, int senderId, int receiverId) {
-        if (previousMessageId == 0) return true;
+        if (previousMessageId == 0)
+            return true;
         Message message = messages.get(previousMessageId); // Get the message with the specified ID
         if (message != null) {
-            if ((message.getSenderId() == senderId && message.getReceiverId() == receiverId) || (message.getSenderId() == receiverId && message.getReceiverId() == senderId)) {
+            if ((message.getSenderId() == senderId && message.getReceiverId() == receiverId)
+                    || (message.getSenderId() == receiverId && message.getReceiverId() == senderId)) {
                 return true; // Return true if the message matches the sender and receiver IDs
             }
         }
