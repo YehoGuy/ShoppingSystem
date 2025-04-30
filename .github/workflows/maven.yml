@@ -1,9 +1,9 @@
 name: Java CI with Maven
 on:
   push:
-    branches: [ "main", "V*" ]
+    branches: [ "main", "developement", "V*" ]
   pull_request:
-    branches: [ "main", "V*" ]
+    branches: [ "main", "developement", "V*" ]
 jobs:
   build:
     timeout-minutes: 30  # increases the timeout to 30 minutes
