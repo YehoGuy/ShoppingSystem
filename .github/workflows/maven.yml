@@ -6,6 +6,7 @@ on:
     branches: [ "main", "V*" ]
 jobs:
   build:
+    timeout-minutes: 30  # increases the timeout to 30 minutes
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -21,6 +22,7 @@ jobs:
       
   tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 30  # increases the timeout to 30 minutes
     needs: build
     steps:
     - uses: actions/checkout@v4
@@ -35,6 +37,7 @@ jobs:
       working-directory: ./Project
       
   package:
+    timeout-minutes: 30  # increases the timeout to 30 minutes
     runs-on: ubuntu-latest
     needs: tests
     steps:
