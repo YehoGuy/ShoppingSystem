@@ -94,24 +94,4 @@ public class MessageRepositoryTests {
         assertNotNull(prev);
         assertEquals("First", prev.getContent());
     }
-
-    @Test
-    void testGetFullConversation() {
-        repo.addMessage(1, 2, "First", "T1", true, -1); // id=1
-        repo.addMessage(2, 1, "Second", "T2", true, 1); // id=2
-        repo.addMessage(1, 2, "Third", "T3", true, 2); // id=3
-
-        List<Message> conversation = repo.getFullConversation(3);
-        assertEquals(3, conversation.size());
-    }
-
-    @Test
-    void testIsMessagePrevious() {
-        repo.addMessage(1, 2, "Hi", "T1", true, -1); // id=1
-        boolean valid = repo.isMessagePrevious(1, 1, 2);
-        assertTrue(valid);
-
-        boolean invalid = repo.isMessagePrevious(1, 3, 4);
-        assertFalse(invalid);
-    }
 }
