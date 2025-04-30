@@ -24,7 +24,6 @@ public class PurchaseService {
     private final IPurchaseRepository purchaseRepository;
     private AuthTokenService authTokenService;
     private UserService userService;
-    private ItemService itemService;
     private ShopService shopService;
     private MessageService messageService;
 
@@ -32,10 +31,9 @@ public class PurchaseService {
         this.purchaseRepository = purchaseRepository;
     }
 
-    public void setServices(AuthTokenService authTokenService, UserService userService, ItemService itemService, ShopService shopService, MessageService messageService) {
+    public void setServices(AuthTokenService authTokenService, UserService userService, ShopService shopService, MessageService messageService) {
         this.authTokenService = authTokenService;
         this.userService = userService;
-        this.itemService = itemService;
         this.shopService = shopService;
         this.messageService = messageService;
     }
@@ -64,7 +62,10 @@ public class PurchaseService {
             return purchaseIds.keySet().stream().toList();
         } catch (OurArg e) {
             LoggerService.logDebug("checkoutCart", e);
-            return null; // we will change to return DTO with appropriate error message
+            throw new OurArg("checkoutCart" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("checkoutCart", e);
+            throw new OurRuntime("checkoutCart" + e.getMessage());
         } catch (Exception e) {
             for (Integer shopId : aqcuired.keySet()) {
                 shopService.rollBackPurchase(aqcuired.get(shopId), shopId);
@@ -90,7 +91,10 @@ public class PurchaseService {
             return purchaseId;
         } catch (OurArg e) {
             LoggerService.logDebug("createBid", e);
-            return null; // we will change to return DTO with appropriate error message
+            throw new OurArg("createBid" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("createBid", e);
+            throw new OurRuntime("createBid" + e.getMessage());
         } catch (Exception e) {
             shopService.rollBackPurchase(items, storeId);
             LoggerService.logError("createBid", e, authToken, storeId, items, initialPrice);
@@ -113,6 +117,10 @@ public class PurchaseService {
             LoggerService.logMethodExecutionEndVoid("postBidding");
         } catch (OurArg e) {
             LoggerService.logDebug("postBidding", e);
+            throw new OurArg("postBidding" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("postBidding", e);
+            throw new OurRuntime("postBidding" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("postBidding", e, authToken, purchaseId, bidAmount);
             throw new OurRuntime("Error posting bidding: " + e.getMessage(), e);
@@ -154,7 +162,10 @@ public class PurchaseService {
             return highestBidderId;
         } catch (OurArg e) {
             LoggerService.logDebug("finalizeBid", e);
-            return null; // we will change to return DTO with appropriate error message
+            throw new OurArg("finalizeBid" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("finalizeBid", e);
+            throw new OurRuntime("finalizeBid" + e.getMessage());
         } catch (Exception e) {
             if (payed) {
                 userService.refundPaymentByStoreEmployee(authToken, highestBidderId, shopId, finalPrice);
@@ -172,7 +183,10 @@ public class PurchaseService {
             return purchase;
         } catch (OurArg e) {
             LoggerService.logDebug("getPurchaseById", e);
-            return null; // we will change to return DTO with appropriate error message
+            throw new OurArg("getPurchaseById" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getPurchaseById", e);
+            throw new OurRuntime("getPurchaseById" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("getPurchaseById", e, purchaseId);
             throw new OurRuntime("Invalid purchase ID: " + e.getMessage(), e);
@@ -187,11 +201,14 @@ public class PurchaseService {
                 LoggerService.logMethodExecutionEnd("getUserPurchases", purchases);
                 return purchases;
             } else {
-                throw new OurArg("Unauthorized access");
+                throw new OurRuntime("Unauthorized access");
             }
         } catch (OurArg e) {
             LoggerService.logDebug("getUserPurchases", e);
-            return null;
+            throw new OurArg("getUserPurchases" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getUserPurchases", e);
+            throw new OurRuntime("getUserPurchases" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("getUserPurchases", e, authToken, userId);
             throw new OurRuntime("Error retrieving user purchases: " + e.getMessage(), e);

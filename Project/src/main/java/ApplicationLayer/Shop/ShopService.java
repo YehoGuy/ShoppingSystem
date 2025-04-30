@@ -46,13 +46,16 @@ public class ShopService {
             return shop;
         } catch (OurArg e) {
             LoggerService.logDebug("createShop", e);
-            return null; // we will change to return DTO with appropriate error message
+            throw new OurArg("createShop" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("createShop", e);
+            throw new OurRuntime("createShop" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("createShop", e, name, policy);
             throw new OurRuntime("Error creating shop: " + e.getMessage(), e);
         }
     }
-
+    
     public Shop getShop(int shopId, String token) {
         try {
             LoggerService.logMethodExecution("getShop", shopId);
@@ -62,13 +65,16 @@ public class ShopService {
             return shop;
         } catch (OurArg e) {
             LoggerService.logDebug("getShop", e);
-            return null; // we will change to return DTO with appropriate error message
+            throw new OurArg("getShop" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getShop", e);
+            throw new OurRuntime("getShop" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("getShop", e, shopId);
             throw new OurRuntime("Error retrieving shop with id " + shopId + ": " + e.getMessage(), e);
         }
     }
-
+    
     public List<Shop> getAllShops(String token) {
         try {
             LoggerService.logMethodExecution("getAllShops");
@@ -78,12 +84,16 @@ public class ShopService {
             return returnShops;
         } catch (OurArg e) {
             LoggerService.logDebug("getAllShops", e);
-            return null; // we will change to return DTO with appropriate error message
+            throw new OurArg("getAllShops" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getAllShops", e);
+            throw new OurRuntime("getAllShops" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("getAllShops", e);
             throw new OurRuntime("Error retrieving all shops: " + e.getMessage(), e);
         }
     }
+    
 
     public void updatePurchasePolicy(int shopId, PurchasePolicy newPolicy, String token) {
         try {
@@ -96,19 +106,16 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("updatePurchasePolicy");
         } catch (OurArg e) {
             LoggerService.logDebug("updatePurchasePolicy", e);
+            throw new OurArg("updatePurchasePolicy" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("updatePurchasePolicy", e);
+            throw new OurRuntime("updatePurchasePolicy" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("updatePurchasePolicy", e, shopId, newPolicy);
             throw new OurRuntime("Error updating purchase policy for shop " + shopId + ": " + e.getMessage(), e);
         }
     }
-
-
-    /**
-     * Sets the global discount for the specified shop.
-     *
-     * @param shopId   the shop id.
-     * @param discount the global discount value.
-     */
+    
     public void setGlobalDiscount(int shopId, int discount, String token) {
         try {
             LoggerService.logMethodExecution("setGlobalDiscount", shopId, discount);
@@ -120,6 +127,10 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("setGlobalDiscount");
         } catch (OurArg e) {
             LoggerService.logDebug("setGlobalDiscount", e);
+            throw new OurArg("setGlobalDiscount" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("setGlobalDiscount", e);
+            throw new OurRuntime("setGlobalDiscount" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("setGlobalDiscount", e, shopId, discount);
             throw new OurRuntime("Error setting global discount for shop " + shopId + ": " + e.getMessage(), e);
@@ -137,6 +148,10 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("setDiscountForItem");
         } catch (OurArg e) {
             LoggerService.logDebug("setDiscountForItem", e);
+            throw new OurArg("setDiscountForItem" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("setDiscountForItem", e);
+            throw new OurRuntime("setDiscountForItem" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("setDiscountForItem", e, shopId, itemId, discount);
             throw new OurRuntime("Error setting discount for item " + itemId + " in shop " + shopId + ": " + e.getMessage(), e);
@@ -154,6 +169,10 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("addBundleDiscount");
         } catch (OurArg e) {
             LoggerService.logDebug("addBundleDiscount", e);
+            throw new OurArg("addBundleDiscount" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("addBundleDiscount", e);
+            throw new OurRuntime("addBundleDiscount" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("addBundleDiscount", e, shopId, basket, discount);
             throw new OurRuntime("Error adding bundle discount to shop " + shopId + ": " + e.getMessage(), e);
@@ -169,6 +188,10 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("addReviewToShop");
         } catch (OurArg e) {
             LoggerService.logDebug("addReviewToShop", e);
+            throw new OurArg("addReviewToShop" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("addReviewToShop", e);
+            throw new OurRuntime("addReviewToShop" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("addReviewToShop", e, shopId, rating, reviewText);
             throw new OurRuntime("Error adding review to shop " + shopId + ": " + e.getMessage(), e);
@@ -184,7 +207,10 @@ public class ShopService {
             return rating;
         } catch (OurArg e) {
             LoggerService.logDebug("getShopAverageRating", e);
-            return null; // we will change to return DTO with appropriate error message
+            throw new OurArg("getShopAverageRating" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getShopAverageRating", e);
+            throw new OurRuntime("getShopAverageRating" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("getShopAverageRating", e, shopId);
             throw new OurRuntime("Error retrieving average rating for shop " + shopId + ": " + e.getMessage(), e);
@@ -203,20 +229,16 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("addItemToShop");
         } catch (OurArg e) {
             LoggerService.logDebug("addItemToShop", e);
+            throw new OurArg("addItemToShop" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("addItemToShop", e);
+            throw new OurRuntime("addItemToShop" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("addItemToShop", e, shopId, name, quantity, price);
             throw new OurRuntime("Error adding item to shop " + shopId + ": " + e.getMessage(), e);
         }
     }
     
-
-    /**
-     * Adds a given quantity of an item to the specified shop.
-     *
-     * @param shopId   the shop id.
-     * @param itemId   the item id.
-     * @param quantity the quantity to add.
-     */
     public void addSupplyToItem(int shopId, int itemId, int quantity, String token) {
         try {
             LoggerService.logMethodExecution("addSupplyToItem", shopId, itemId, quantity);
@@ -225,47 +247,53 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("addSupplyToItem");
         } catch (OurArg e) {
             LoggerService.logDebug("addSupplyToItem", e);
+            throw new OurArg("addSupplyToItem" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("addSupplyToItem", e);
+            throw new OurRuntime("addSupplyToItem" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("addSupplyToItem", e, shopId, itemId, quantity);
             throw new OurRuntime("Error adding supply for item " + itemId + " in shop " + shopId + ": " + e.getMessage(), e);
         }
     }
     
+    
     public void updateItemPriceInShop(int shopId, int itemId, int price, String token) {
         try {
             LoggerService.logMethodExecution("updateItemPriceInShop", shopId, itemId, price);
             Integer userId = authTokenService.ValidateToken(token);
             if (!userService.hasPermission(userId, PermissionsEnum.manageItems, shopId)) {
-                throw new OurArg("User does not have permission to update price for item " + itemId + " in shop " + shopId);
+                throw new OurRuntime("User does not have permission to update price for item " + itemId + " in shop " + shopId);
             }
             shopRepository.updateItemPriceInShop(shopId, itemId, price);
             LoggerService.logMethodExecutionEndVoid("updateItemPriceInShop");
         } catch (OurArg e) {
             LoggerService.logDebug("updateItemPriceInShop", e);
+            throw new OurArg("updateItemPriceInShop" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("updateItemPriceInShop", e);
+            throw new OurRuntime("updateItemPriceInShop" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("updateItemPriceInShop", e, shopId, itemId, price);
             throw new OurRuntime("Error updating price for item " + itemId + " in shop " + shopId + ": " + e.getMessage(), e);
         }
     }
     
-
-    /**
-     * Removes an item from the specified shop.
-     *
-     * @param shopId the shop id.
-     * @param itemId the item id.
-     */
     public void removeItemFromShop(int shopId, int itemId, String token) {
         try {
             LoggerService.logMethodExecution("removeItemFromShop", shopId, itemId);
             int userId = authTokenService.ValidateToken(token);
             if (!userService.hasPermission(userId, PermissionsEnum.manageItems, shopId)) {
-                throw new OurArg("User does not have permission to remove item " + itemId + " from shop " + shopId);
+                throw new OurRuntime("User does not have permission to remove item " + itemId + " from shop " + shopId);
             }
             shopRepository.removeItemFromShop(shopId, itemId);
             LoggerService.logMethodExecutionEndVoid("removeItemFromShop");
         } catch (OurArg e) {
             LoggerService.logDebug("removeItemFromShop", e);
+            throw new OurArg("removeItemFromShop" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("removeItemFromShop", e);
+            throw new OurRuntime("removeItemFromShop" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("removeItemFromShop", e, shopId, itemId);
             throw new OurRuntime("Error removing item from shop: " + e.getMessage(), e);
@@ -281,7 +309,10 @@ public class ShopService {
             return quantity;
         } catch (OurArg e) {
             LoggerService.logDebug("getItemQuantityFromShop", e);
-            return null; // we will change to return DTO with appropriate error message
+            throw new OurArg("getItemQuantityFromShop" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getItemQuantityFromShop", e);
+            throw new OurRuntime("getItemQuantityFromShop" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("getItemQuantityFromShop", e, shopId, itemId);
             throw new OurRuntime("Error retrieving item quantity: " + e.getMessage(), e);
@@ -293,14 +324,16 @@ public class ShopService {
             LoggerService.logMethodExecution("closeShop", shopId);
             int userId = authTokenService.ValidateToken(token);
             if (!userService.hasPermission(userId, PermissionsEnum.closeShop, shopId)) {
-                OurArg e = new OurArg("User does not have permission to close shop " + shopId);
-                LoggerService.logDebug("closeShop", e);
-                throw e;
+                throw new OurRuntime("User does not have permission to close shop " + shopId);
             }
             shopRepository.closeShop(shopId);
             LoggerService.logMethodExecutionEndVoid("closeShop");
         } catch (OurArg e) {
             LoggerService.logDebug("closeShop", e);
+            throw new OurArg("closeShop" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("closeShop", e);
+            throw new OurRuntime("closeShop" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("closeShop", e, shopId);
             throw new OurRuntime("Error closing shop: " + e.getMessage(), e);
@@ -316,7 +349,10 @@ public class ShopService {
             return available;
         } catch (OurArg e) {
             LoggerService.logDebug("checkSupplyAvailability", e);
-            return false;
+            throw new OurArg("checkSupplyAvailability" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("checkSupplyAvailability", e);
+            throw new OurRuntime("checkSupplyAvailability" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("checkSupplyAvailability", e, shopId, itemId);
             throw new OurRuntime("Error checking supply availability: " + e.getMessage(), e);
@@ -331,7 +367,10 @@ public class ShopService {
             return totalPrice;
         } catch (OurArg e) {
             LoggerService.logDebug("purchaseItems", e);
-            return null; // we will change to return DTO with appropriate error message
+            throw new OurArg("purchaseItems" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("purchaseItems", e);
+            throw new OurRuntime("purchaseItems" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("purchaseItems", e, purchaseLists, shopId);
             throw new OurRuntime("Error purchasing items from shop " + shopId + ": " + e.getMessage(), e);
@@ -345,6 +384,10 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("rollBackPurchase");
         } catch (OurArg e) {
             LoggerService.logDebug("rollBackPurchase", e);
+            throw new OurArg("rollBackPurchase" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("rollBackPurchase", e);
+            throw new OurRuntime("rollBackPurchase" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("rollBackPurchase", e, purchaseLists, shopId);
             throw new OurRuntime("Error rolling back purchase from shop " + shopId + ": " + e.getMessage(), e);
@@ -359,14 +402,16 @@ public class ShopService {
             return available;
         } catch (OurArg e) {
             LoggerService.logDebug("checkSupplyAvailabilityAndAcquire", e);
-            return false; // we will change to return DTO with appropriate error message
+            throw new OurArg("checkSupplyAvailabilityAndAcquire" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("checkSupplyAvailabilityAndAcquire", e);
+            throw new OurRuntime("checkSupplyAvailabilityAndAcquire" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("checkSupplyAvailabilityAndAcquire", e, shopId, itemId, supply);
             throw new OurRuntime("Error acquiring supply for item " + itemId + ": " + e.getMessage(), e);
-    
         }
     }
-
+    
     public void addSupply(Integer shopId, Integer itemId, Integer supply) {
         try {
             LoggerService.logMethodExecution("addSupply", shopId, itemId, supply);
@@ -374,6 +419,10 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("addSupply");
         } catch (OurArg e) {
             LoggerService.logDebug("addSupply", e);
+            throw new OurArg("addSupply" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("addSupply", e);
+            throw new OurRuntime("addSupply" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("addSupply", e, shopId, itemId, supply);
             throw new OurRuntime("Error adding supply for item " + itemId + " in shop " + shopId + ": " + e.getMessage(), e);
@@ -388,13 +437,16 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("removeSupply");
         } catch (OurArg e) {
             LoggerService.logDebug("removeSupply", e);
+            throw new OurArg("removeSupply" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("removeSupply", e);
+            throw new OurRuntime("removeSupply" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("removeSupply", e, shopId, itemId, supply);
             throw new OurRuntime("Error removing supply for item " + itemId + " in shop " + shopId + ": " + e.getMessage(), e);
         }
     }
     
-
     public boolean checkPolicy(HashMap<Integer, HashMap<Integer, Integer>> cart, String token) {
         try {
             LoggerService.logMethodExecution("checkPolicy", cart);
@@ -404,12 +456,16 @@ public class ShopService {
             return result;
         } catch (OurArg e) {
             LoggerService.logDebug("checkPolicy", e);
-            return false;
+            throw new OurArg("checkPolicy" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("checkPolicy", e);
+            throw new OurRuntime("checkPolicy" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("checkPolicy", e, cart);
             throw new OurRuntime("Error checking policy: " + e.getMessage(), e);
         }
     }
+    
     
 
     /**
@@ -429,19 +485,16 @@ public class ShopService {
             return items;
         } catch (OurArg e) {
             LoggerService.logDebug("getItemsByShop", e);
-            return null; // we will change to return DTO with appropriate error message
+            throw new OurArg("getItemsByShop" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getItemsByShop", e);
+            throw new OurRuntime("getItemsByShop" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("getItemsByShop", e, shopId);
             throw new OurRuntime("Error retrieving items for shop " + shopId + ": " + e.getMessage(), e);
         }
     }
     
-
-    /**
-     * Retrieves a list of all items available in all shops.
-     *
-     * @return a list of Item instances.
-     */
     public List<Item> getItems(String token) {
         try {
             LoggerService.logMethodExecution("getItems");
@@ -453,21 +506,19 @@ public class ShopService {
             return items;
         } catch (OurArg e) {
             LoggerService.logDebug("getItems", e);
-            return null;
+            throw new OurArg("getItems" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getItems", e);
+            throw new OurRuntime("getItems" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("getItems", e);
             throw new OurRuntime("Error retrieving all items: " + e.getMessage(), e);
         }
     }
     
-
-    /**
-     * Search across all shops (no single‑shop focus) for items matching any
-     * combination of these optional criteria.
-     */
     public List<Item> searchItems(String name, ItemCategory category, List<String> keywords,
-                              Integer minPrice, Integer maxPrice,
-                              Double minProductRating, Double minShopRating, String token) {
+                                  Integer minPrice, Integer maxPrice,
+                                  Double minProductRating, Double minShopRating, String token) {
         try {
             LoggerService.logMethodExecution("searchItems", name, category, keywords, minPrice, maxPrice, minProductRating, minShopRating);
             authTokenService.ValidateToken(token);
@@ -480,73 +531,73 @@ public class ShopService {
             return results;
         } catch (OurArg e) {
             LoggerService.logDebug("searchItems", e);
-            return null;
+            throw new OurArg("searchItems" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("searchItems", e);
+            throw new OurRuntime("searchItems" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("searchItems", e, name, category, keywords, minPrice, maxPrice, minProductRating, minShopRating);
             throw new OurRuntime("Error searching items: " + e.getMessage(), e);
         }
     }
-
-
-    /**
-     * Search within a specific shop for items matching any combination of these optional criteria.
-     */
+    
     public List<Item> searchItemsInShop(Integer shopId, String name, ItemCategory category, List<String> keywords,
-                                    Integer minPrice, Integer maxPrice, Double minProductRating, String token) {
-    try {
-        LoggerService.logMethodExecution("searchItemsInShop", shopId, name, category, keywords, minPrice, maxPrice, minProductRating);
-        authTokenService.ValidateToken(token);
-        Shop shop = getShop(shopId, token);
-        List<Item> results = filterItemsInShop(shop, name, category, keywords, minPrice, maxPrice, minProductRating, token);
-        LoggerService.logMethodExecutionEnd("searchItemsInShop", results);
-        return results;
-    } catch (OurArg e) {
-        LoggerService.logDebug("searchItemsInShop", e);
-        return null; // we will change to return DTO with appropriate error message
-    } catch (Exception e) {
-        LoggerService.logError("searchItemsInShop", e, shopId, name, category, keywords, minPrice, maxPrice, minProductRating);
-        throw new OurRuntime("Error searching items in shop: " + e.getMessage(), e);
-    }
-}
-
-
-    /**
-     * Private helper: apply all item‑level filters within one shop.
-     * if a filter is null, it is ignored.
-     */
-    private List<Item> filterItemsInShop(Shop shop, String name, ItemCategory category, List<String> keywords,
-                                     Integer minPrice, Integer maxPrice, Double minProductRating, String token) {
-    try {
-        LoggerService.logMethodExecution("filterItemsInShop", shop, name, category, keywords, minPrice, maxPrice, minProductRating);
-
-        List<Item> results = new ArrayList<>();
-        List<Item> shopItems = getItemsByShop(shop.getId(), token);
-        for (Item item : shopItems) {
-            if (name != null && !item.getName().toLowerCase().contains(name.toLowerCase())) continue;
-            if (category != null && item.getCategory() != category) continue;
-            if (keywords != null && !keywords.isEmpty()) {
-                String ln = item.getName().toLowerCase();
-                String ld = item.getDescription().toLowerCase();
-                boolean match = keywords.stream().map(String::toLowerCase).anyMatch(kw -> ln.contains(kw) || ld.contains(kw));
-                if (!match) continue;
-            }
-            int price = shop.getItemPrice(item.getId());
-            if (minPrice != null && price < minPrice) continue;
-            if (maxPrice != null && price > maxPrice) continue;
-            double rating = item.getAverageRating();
-            if (minProductRating != null && rating < minProductRating) continue;
-            results.add(item);
+                                        Integer minPrice, Integer maxPrice, Double minProductRating, String token) {
+        try {
+            LoggerService.logMethodExecution("searchItemsInShop", shopId, name, category, keywords, minPrice, maxPrice, minProductRating);
+            authTokenService.ValidateToken(token);
+            Shop shop = getShop(shopId, token);
+            List<Item> results = filterItemsInShop(shop, name, category, keywords, minPrice, maxPrice, minProductRating, token);
+            LoggerService.logMethodExecutionEnd("searchItemsInShop", results);
+            return results;
+        } catch (OurArg e) {
+            LoggerService.logDebug("searchItemsInShop", e);
+            throw new OurArg("searchItemsInShop" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("searchItemsInShop", e);
+            throw new OurRuntime("searchItemsInShop" + e.getMessage());
+        } catch (Exception e) {
+            LoggerService.logError("searchItemsInShop", e, shopId, name, category, keywords, minPrice, maxPrice, minProductRating);
+            throw new OurRuntime("Error searching items in shop: " + e.getMessage(), e);
         }
-        LoggerService.logMethodExecutionEnd("filterItemsInShop", results);
-        return results;
-    } catch (OurArg e) {
-        LoggerService.logDebug("filterItemsInShop", e);
-        return null; // we will change to return DTO with appropriate error message
-    } catch (Exception e) {
-        LoggerService.logError("filterItemsInShop", e, shop, name, category, keywords, minPrice, maxPrice, minProductRating);
-        throw new OurRuntime("Error filtering items in shop " + shop.getId() + ": " + e.getMessage(), e);
     }
-}
+    
+    private List<Item> filterItemsInShop(Shop shop, String name, ItemCategory category, List<String> keywords,
+                                         Integer minPrice, Integer maxPrice, Double minProductRating, String token) {
+        try {
+            LoggerService.logMethodExecution("filterItemsInShop", shop, name, category, keywords, minPrice, maxPrice, minProductRating);
+            List<Item> results = new ArrayList<>();
+            List<Item> shopItems = getItemsByShop(shop.getId(), token);
+            for (Item item : shopItems) {
+                if (name != null && !item.getName().toLowerCase().contains(name.toLowerCase())) continue;
+                if (category != null && item.getCategory() != category) continue;
+                if (keywords != null && !keywords.isEmpty()) {
+                    String ln = item.getName().toLowerCase();
+                    String ld = item.getDescription().toLowerCase();
+                    boolean match = keywords.stream().map(String::toLowerCase).anyMatch(kw -> ln.contains(kw) || ld.contains(kw));
+                    if (!match) continue;
+                }
+                int price = shop.getItemPrice(item.getId());
+                if (minPrice != null && price < minPrice) continue;
+                if (maxPrice != null && price > maxPrice) continue;
+                double rating = item.getAverageRating();
+                if (minProductRating != null && rating < minProductRating) continue;
+                results.add(item);
+            }
+            LoggerService.logMethodExecutionEnd("filterItemsInShop", results);
+            return results;
+        } catch (OurArg e) {
+            LoggerService.logDebug("filterItemsInShop", e);
+            throw new OurArg("filterItemsInShop" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("filterItemsInShop", e);
+            throw new OurRuntime("filterItemsInShop" + e.getMessage());
+        } catch (Exception e) {
+            LoggerService.logError("filterItemsInShop", e, shop, name, category, keywords, minPrice, maxPrice, minProductRating);
+            throw new OurRuntime("Error filtering items in shop " + shop.getId() + ": " + e.getMessage(), e);
+        }
+    }
+    
 
 }
 

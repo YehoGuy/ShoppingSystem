@@ -40,11 +40,15 @@ public class MessageService {
                 throw new OurArg("Previous message with ID " + previousMessageId + " isn't proper previous message.");
             }
             messageRepository.addMessage(senderId, receiverId, content, LocalDate.now().toString(), true, previousMessageId);
-            LoggerService.logMethodExecutionEnd("sendMessageToUser", "Message sent successfully!");
+            LoggerService.logMethodExecutionEnd("sendMessageToUser", true);
+            
             return true;
         } catch (OurArg e) {
             LoggerService.logDebug("sendMessageToUser", e);
-            return false; // we will change to return DTO with appropriate error message
+            throw new OurArg("sendMessageToUser" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("sendMessageToUser", e);
+            throw new OurRuntime("sendMessageToUser" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("sendMessageToUser", e, token, receiverId, content, previousMessageId);
             throw new OurRuntime("Error sending message to user: " + e.getMessage(), e);
@@ -58,17 +62,20 @@ public class MessageService {
             userService.validateMemberId(userId);
             Shop s = shopService.getShop(receiverId, token);
             if (s == null) {
-                throw new OurArg("Shop with ID " + receiverId + " doesn't exist.");
+                throw new OurRuntime("Shop with ID " + receiverId + " doesn't exist.");
             }
             if (!messageRepository.isMessagePrevious(previousMessageId, userId, receiverId)) {
                 throw new OurArg("Previous message with ID " + previousMessageId + " isn't proper previous message.");
             }
             messageRepository.addMessage(userId, receiverId, content, LocalDate.now().toString(), false, previousMessageId);
-            LoggerService.logMethodExecutionEnd("sendMessageToShop", "Message sent successfully!");
+            LoggerService.logMethodExecutionEnd("sendMessageToShop", true);
             return true;
         } catch (OurArg e) {
             LoggerService.logDebug("sendMessageToShop", e);
-            return false; // we will change to return DTO with appropriate error message
+            throw new OurArg("sendMessageToShop" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("sendMessageToShop", e);
+            throw new OurRuntime("sendMessageToShop" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("sendMessageToShop", e, token, receiverId, content, previousMessageId);
             throw new OurRuntime("Error sending message to shop: " + e.getMessage(), e);
@@ -81,11 +88,14 @@ public class MessageService {
             int senderId = authTokenService.ValidateToken(token);
             userService.validateMemberId(senderId);
             messageRepository.deleteMessage(messageId, senderId);
-            LoggerService.logMethodExecutionEnd("deleteMessage", "Message deleted successfully!");
+            LoggerService.logMethodExecutionEnd("deleteMessage", true);
             return true;
         } catch (OurArg e) {
             LoggerService.logDebug("deleteMessage", e);
-            return false; // we will change to return DTO with appropriate error message
+            throw new OurArg("deleteMessage" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("deleteMessage", e);
+            throw new OurRuntime("deleteMessage" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("deleteMessage", e, token, messageId);
             throw new OurRuntime("Error deleting message: " + e.getMessage(), e);
@@ -96,11 +106,14 @@ public class MessageService {
         try {
             LoggerService.logMethodExecution("updateMessage", token, messageId, content);
             messageRepository.updateMessage(messageId, content, LocalDate.now().toString());
-            LoggerService.logMethodExecutionEndVoid("updateMessage");
+            LoggerService.logMethodExecutionEnd("updateMessage", true);
             return true;
         } catch (OurArg e) {
             LoggerService.logDebug("updateMessage", e);
-            return false; // we will change to return DTO with appropriate error message
+            throw new OurArg("updateMessage" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("updateMessage", e);
+            throw new OurRuntime("updateMessage" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("updateMessage", e, token, messageId, content);
             throw new OurRuntime("Error updating message: " + e.getMessage(), e);
@@ -123,7 +136,10 @@ public class MessageService {
             return output;
         } catch (OurArg e) {
             LoggerService.logDebug("getFullConversation", e);
-            return null; // we will change to return DTO with appropriate error message
+            throw new OurArg("getFullConversation" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getFullConversation", e);
+            throw new OurRuntime("getFullConversation" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("getFullConversation", e, token, messageId);
             throw new OurRuntime("Error getting full conversation: " + e.getMessage(), e);
@@ -138,10 +154,14 @@ public class MessageService {
             for (Message message : messages) {
                 output += message.toString() + "\n";
             }
+            LoggerService.logMethodExecutionEnd("getMessagesBySenderId", output);
             return output;
         } catch (OurArg e) {
             LoggerService.logDebug("getMessagesBySenderId", e);
-            return null; // we will change to return DTO with appropriate error message
+            throw new OurArg("getMessagesBySenderId" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getMessagesBySenderId", e);
+            throw new OurRuntime("getMessagesBySenderId" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("getMessagesBySenderId", e, token, senderId);
             throw new OurRuntime("Error getting messages by sender ID: " + e.getMessage(), e);
@@ -156,10 +176,14 @@ public class MessageService {
             for (Message message : messages) {
                 output += message.toString() + "\n";
             }
+            LoggerService.logMethodExecutionEnd("getMessagesByReceiverId", output);
             return output;
         } catch (OurArg e) {
             LoggerService.logDebug("getMessagesByReceiverId", e);
-            return null; // we will change to return DTO with appropriate error message
+            throw new OurArg("getMessagesByReceiverId" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getMessagesByReceiverId", e);
+            throw new OurRuntime("getMessagesByReceiverId" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("getMessagesByReceiverId", e, token, receiverId);
             throw new OurRuntime("Error getting messages by receiver ID: " + e.getMessage(), e);
@@ -168,17 +192,19 @@ public class MessageService {
 
     public String getMessageById(String token, int messageId) {
         try {
-        
             LoggerService.logMethodExecution("getMessageById", token, messageId);
             Message message = messageRepository.getMessageById(messageId);
             if (message == null) {
-                return "Message not found!";
+                throw new OurArg("Message with ID " + messageId + " not found.");
             }
             LoggerService.logMethodExecutionEnd("getMessageById", message.toString());
             return message.toString();
         } catch (OurArg e) {
             LoggerService.logDebug("getMessageById", e);
-            return null; // we will change to return DTO with appropriate error message
+            throw new OurArg("getMessageById" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getMessageById", e);
+            throw new OurRuntime("getMessageById" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("getMessageById", e, token, messageId);
             throw new OurRuntime("Error getting message by ID: " + e.getMessage(), e);
@@ -196,11 +222,13 @@ public class MessageService {
             return message.toString();
         } catch (OurArg e) {
             LoggerService.logDebug("getPreviousMessage", e);
-            return null; // we will change to return DTO with appropriate error message
+            throw new OurArg("getPreviousMessage" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getPreviousMessage", e);
+            throw new OurRuntime("getPreviousMessage" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("getPreviousMessage", e, token, messageId);
             throw new OurRuntime("Error getting previous message: " + e.getMessage(), e);
         }
     }
-
 }

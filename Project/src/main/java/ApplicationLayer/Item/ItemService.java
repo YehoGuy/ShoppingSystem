@@ -56,7 +56,10 @@ public class ItemService {
 
         } catch (OurArg e) {
             LoggerService.logDebug("createItem", e);
-            return null; // we will change to return DTO with appropriate error message
+            throw new OurArg("createItem" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("createItem", e);
+            throw new OurRuntime("createItem" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("createItem", e, name, description, category);
             throw new OurRuntime("Error creating item: " + e.getMessage(), e);
@@ -75,7 +78,10 @@ public class ItemService {
             return returnItem;
         } catch (OurArg e) {
             LoggerService.logDebug("getItem", e);
-            return null; // we will change to return DTO with appropriate error message
+            throw new OurArg("getItem" + e.getMessage()); 
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getItem", e);
+            throw new OurRuntime("getItem" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("getItem", e, itemId);
             throw new OurRuntime("Error retrieving item with id " + itemId + ": " + e.getMessage(), e);
@@ -91,7 +97,10 @@ public class ItemService {
             return returnItems;
         } catch (OurArg e) {
             LoggerService.logDebug("getAllItems", e);
-            return null; // we will change to return DTO with appropriate error message
+            throw new OurArg("getAllItems" + e.getMessage()); 
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getAllItems", e);
+            throw new OurRuntime("getAllItems" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("getAllItems", e);
             throw new OurRuntime("Error retrieving all items: " + e.getMessage(), e);
@@ -105,7 +114,7 @@ public class ItemService {
                 throw new OurArg("Item ID cannot be negative");
             }
             if (rating < 1 || rating > 5) {
-                throw new OurArg("Rating must be between 1 and 5");
+                throw new OurRuntime("Rating must be between 1 and 5");
             }
             if (reviewText == null || reviewText.isEmpty()) {
                 throw new OurArg("Review text cannot be null or empty");
@@ -115,7 +124,10 @@ public class ItemService {
             LoggerService.logMethodExecutionEndVoid("addReviewToItem");
         } catch (OurArg e) {
             LoggerService.logDebug("addReviewToItem", e);
-            // we will change to return DTO with appropriate error message
+            throw new OurArg("addReviewToItem" + e.getMessage()); 
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("addReviewToItem", e);
+            throw new OurRuntime("addReviewToItem" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("addReviewToItem", e, itemId, rating, reviewText);
             throw new OurRuntime("Error adding review to item " + itemId + ": " + e.getMessage(), e);
@@ -134,7 +146,10 @@ public class ItemService {
             return returnItems;
         } catch (OurArg e) {
             LoggerService.logDebug("getItemReviews", e);
-            return null; // we will change to return DTO with appropriate error message
+            throw new OurArg("getItemReviews" + e.getMessage()); 
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getItemReviews", e);
+            throw new OurRuntime("getItemReviews" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("getItemReviews", e, itemId);
             throw new OurRuntime("Error retrieving reviews for item " + itemId + ": " + e.getMessage(), e);
@@ -153,7 +168,11 @@ public class ItemService {
             return returnDouble;
         } catch (OurArg e) {
             LoggerService.logDebug("getItemAverageRating", e);
-            return -1.0; // we will change to return DTO with appropriate error message
+            throw new OurArg("getItemAverageRating" + e.getMessage()); 
+        }catch (OurRuntime e) {
+            LoggerService.logDebug("getItemAverageRating", e);
+            throw new OurRuntime("getItemAverageRating" + e.getMessage());
+
         } catch (Exception e) {
             LoggerService.logError("getItemAverageRating", e, itemId);
             throw new OurRuntime("Error retrieving average rating for item " + itemId + ": " + e.getMessage(), e);
@@ -177,7 +196,7 @@ public class ItemService {
             return result;
         } catch (OurArg e) {
             LoggerService.logDebug("getItemsByIds", e);
-            return null; // we will change to return DTO with appropriate error message
+            throw new OurArg("getItemsByIds" + e.getMessage()); // we will change to return DTO with appropriate error message
         } catch (Exception e) {
             LoggerService.logError("getItemsByIds", e, itemIds);
             throw new OurRuntime("Error fetching items: " + e.getMessage(), e);
