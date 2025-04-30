@@ -189,15 +189,15 @@ public class UserService {
         }
     }
 
-    public void updateMemberAddress(String token, String address) {
+    public void updateMemberAddress(String token, String city, String street, int apartmentNumber, String postalCode) {
         try {
             int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
-            LoggerService.logMethodExecution("updateMemberAddress", id, address);
+            LoggerService.logMethodExecution("updateMemberAddress", id, city, street, apartmentNumber, postalCode);
             validateMemberId(id);
-            userRepository.updateMemberAddress(id, address);
+            userRepository.updateMemberAddress(id, city, street, apartmentNumber, postalCode);
             LoggerService.logMethodExecutionEndVoid("updateMemberAddress");
         } catch (Exception e) {
-            LoggerService.logError("updateMemberAddress", e, address);
+            LoggerService.logError("updateMemberAddress", e, token, city, street, apartmentNumber, postalCode);
             throw new RuntimeException("Error updating address for token" + token + ": " + e.getMessage(), e);
         }
     }

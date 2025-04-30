@@ -3,6 +3,7 @@ package DomainLayer;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import DomainLayer.Purchase.Address;
 import DomainLayer.Roles.PermissionsEnum;
 import DomainLayer.Roles.Role;
 
@@ -12,7 +13,6 @@ public class Member extends User {
     private volatile String password; // Password of the user
     private volatile String email; // Email address of the user
     private volatile String phoneNumber; // Phone number of the user
-    private volatile String address; // Address of the user
     
     private final List<Role> roles; // List of roles associated with the user
     private final List<Integer> orderHistory;// List of order IDs
@@ -22,17 +22,30 @@ public class Member extends User {
     private final Object pendingRolesLock = new Object();
     private final Object orderHistoryLock = new Object();
 
-    public Member(int memberId, String username, String password, String email, String phoneNumber, String address) {
+    public Member(int memberId, String username, String password, String email, String phoneNumber, String addressToRemove) {
         super(memberId); // Call the User class constructor
         this.memberId = memberId; // Initialize member ID
         this.username = username; // Initialize username
         this.password = password; // Initialize password
         this.email = email; // Initialize email address
         this.phoneNumber = phoneNumber; // Initialize phone number
-        this.address = address; // Initialize address
         this.orderHistory = new CopyOnWriteArrayList<>(); // Initialize order history
         this.roles = new CopyOnWriteArrayList<>(); // Initialize roles
         this.pending_roles = new CopyOnWriteArrayList<>(); // Initialize pending roles
+
+    }
+
+    public Member(int memberId, String username, String password, String email, String phoneNumber, Address address) {
+        super(memberId); // Call the User class constructor
+        this.memberId = memberId; // Initialize member ID
+        this.username = username; // Initialize username
+        this.password = password; // Initialize password
+        this.email = email; // Initialize email address
+        this.phoneNumber = phoneNumber; // Initialize phone number
+        this.orderHistory = new CopyOnWriteArrayList<>(); // Initialize order history
+        this.roles = new CopyOnWriteArrayList<>(); // Initialize roles
+        this.pending_roles = new CopyOnWriteArrayList<>(); // Initialize pending roles
+        this.address = address;
 
     }
 
@@ -70,10 +83,6 @@ public class Member extends User {
 
     public synchronized void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber; // Set the phone number
-    }
-
-    public synchronized void setAddress(String address) {
-        this.address = address; // Set the address
     }
 
     public List<Integer> getOrderHistory() {

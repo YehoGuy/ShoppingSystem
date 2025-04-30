@@ -36,7 +36,7 @@ public interface IUserRepository {
     void updateMemberPassword(int id, String password);
     void updateMemberEmail(int id, String email);
     void updateMemberPhoneNumber(int id, String phoneNumber);
-    void updateMemberAddress(int id, String address);
+    void updateMemberAddress(int id, String city, String street, int apartmentNum, String postalCode);
 
     // Credentials & existence checks
     int isUsernameAndPasswordValid(String username, String password);
