@@ -2,90 +2,111 @@ package DomainLayer.Shop.Discount;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import DomainLayer.Item.ItemCategory;
 
 public class CompositeDiscount implements Discount {
     public enum Operator { AND, OR, XOR }
 
     private final Operator operator;
-    private final List<Discount> children = new ArrayList<>();
+    private final boolean doubleDiscount;
+    private final List<Policy> policies;
+    private final List<Discount> children;
 
-    public CompositeDiscount(Operator operator) {
+    /**
+     * @param operator       logical operator to combine policies
+     * @param doubleDiscount if true, child discounts stack sequentially; if false, uses the most generous (lowest price)
+     * @param policies       list of conditions that must be satisfied
+     * @param discounts      list of child discounts to apply if policies pass
+     */
+    public CompositeDiscount(Operator operator,
+                             boolean doubleDiscount,
+                             List<Policy> policies,
+                             List<Discount> discounts) {
         this.operator = operator;
+        this.doubleDiscount = doubleDiscount;
+        this.policies = new ArrayList<>(policies);
+        this.children = discounts == null ? new ArrayList<>() : new ArrayList<>(discounts);
     }
 
-    public void add(Discount d){ 
-        children.add(d); 
-    }
-    public void remove(Discount d){ 
-        children.remove(d); 
+    public void add(Discount d) {
+        children.add(d);
     }
 
+    public void remove(Discount d) {
+        children.remove(d);
+    }
+
+    /**
+     * Applies child discounts only if combined policy predicate holds.
+     * If doubleDiscount is true, applies each child in sequence to the current best price;
+     * otherwise selects the single best discount (lowest resulting price).
+     */
     @Override
-    public Integer getItemId() {
-        return null;
-    }
+    public Map<Integer, Integer> applyDiscounts(
+            Map<Integer, Integer> items,
+            Map<Integer, Integer> prices,
+            Map<Integer, ItemCategory> itemsCategory) {
+        // Evaluate policy combination
+        boolean condition;
+        if(policies.isEmpty()) {
+            // No policies: always true
+            condition = true;
+        } else if (policies.size() == 1) {
+            // Single policy: just evaluate it
+            condition = policies.get(0).test(items, prices, itemsCategory);
+        } else {
+            switch (operator) {
+                case AND:
+                    condition = policies.stream()
+                        .allMatch(p -> p.test(items, prices, itemsCategory));
+                    break;
+                case OR:
+                    condition = policies.stream()
+                        .anyMatch(p -> p.test(items, prices, itemsCategory));
+                    break;
+                case XOR:
+                    long trueCount = policies.stream()
+                        .filter(p -> p.test(items, prices, itemsCategory))
+                        .count();
+                    condition = (trueCount == 1);
+                    break;
+                default:
+                    condition = false; // should never happen
+            }
+        }
+        Map<Integer, Integer> currentDiscounts;
 
-    @Override
-    public int getPercentage() {
-        throw new UnsupportedOperationException("CompositeDiscount אין לו אחוז יחיד");
-    }
-
-    @Override
-    public void setPercentage(int percentage) {
-        throw new UnsupportedOperationException("אין תמיכה ב־setPercentage עבור קומפוזיט");
-    }
-
-    @Override
-    public Map<Integer,Integer> applyDiscounts(Map<Integer,Integer> items, Map<Integer,AtomicInteger> prices, Map<Integer,Integer> itemsDiscountedPrices) {
-        List<Map<Integer,Integer>> results = new ArrayList<>();
-        for (Discount d : children) {
-            Map<Integer,Integer> copy = new HashMap<>(itemsDiscountedPrices);
-            results.add(d.applyDiscounts(items, prices, copy));
+        if (!condition) {
+            currentDiscounts = new HashMap<>();
+            for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
+                int id = entry.getKey();
+                currentDiscounts.put(id, prices.get(id));
+            }
+            return currentDiscounts;
         }
 
-        switch (operator) {
-            case AND:
-                return results.stream()
-                    .reduce((m1, m2) -> {
-                        Map<Integer,Integer> merged = new HashMap<>();
-                        for (Integer id : m1.keySet()) {
-                            // קיבלנו לכל פריט את המחיר המינימלי מבין שתי המפות
-                            merged.put(id, Math.min(m1.get(id), m2.get(id)));
-                        }
-                        return merged;
-                    })
-                    .orElse(itemsDiscountedPrices);
-
-            case OR:
-                // apply only *הנחה אחת*: בוחרים את המפה שמנמיכה הכי הרבה
-                return results.stream()
-                    .max(Comparator.comparingDouble(m -> total(m, items)))
-                    .orElse(itemsDiscountedPrices);
-
-            case XOR:
-                // בדיוק *אחת* מהילדים צריכה לחול: אם 0 או >1, מחזירים ללא שינוי
-                int countApplied = 0;
-                Map<Integer,Integer> last = null;
-                for (Map<Integer,Integer> r : results) {
-                    if (!r.equals(itemsDiscountedPrices)) {
-                        countApplied++;
-                        last = r;
-                    }
+        // Initialize working map: full prices or empty
+        if (doubleDiscount) {
+            currentDiscounts = new HashMap<>();
+            for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
+                int id = entry.getKey();
+                currentDiscounts.put(id, prices.get(id));
+            }
+            // Sequentially apply each child discount
+            for (Discount child : children) {
+                currentDiscounts = child.applyDiscounts(items, currentDiscounts, itemsCategory);
+            }
+        } else {
+            // Compute each child's result, take the lowest price per item
+            Map<Integer, Integer> best = new HashMap<>();
+            for (Discount child : children) {
+                Map<Integer, Integer> result = child.applyDiscounts(items, prices, itemsCategory);
+                for (Map.Entry<Integer, Integer> e : result.entrySet()) {
+                    best.merge(e.getKey(), e.getValue(), Math::min);
                 }
-                return (countApplied == 1) ? last : itemsDiscountedPrices;
-
-            default:
-                return itemsDiscountedPrices;
+            }
+            currentDiscounts = best;
         }
-    }
-
-    // עזר לחישוב סכום כולל מתוך מפה של discountedPrices
-    private double total(Map<Integer,Integer> discounted, Map<Integer,Integer> items) {
-        double sum = 0;
-        for (Map.Entry<Integer,Integer> e : items.entrySet()) {
-            int id = e.getKey(), qty = e.getValue();
-            sum += discounted.get(id) * qty;
-        }
-        return sum;
+        return currentDiscounts;
     }
 }
