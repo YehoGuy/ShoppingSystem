@@ -1,14 +1,17 @@
 package DomainLayerTests;
 
-import DomainLayer.Member;
-import DomainLayer.Roles.PermissionsEnum;
-import DomainLayer.Roles.Role;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
+import DomainLayer.Member;
+import DomainLayer.Roles.PermissionsEnum;
+import DomainLayer.Roles.Role;
 
 public class MemberTest {
 
@@ -26,7 +29,6 @@ public class MemberTest {
         assertEquals("pass1", member.getPassword());
         assertEquals("user1@mail.com", member.getEmail());
         assertEquals("1234567890", member.getPhoneNumber());
-        assertEquals("Address 1", member.getAddress());
     }
 
     @Test
@@ -35,13 +37,11 @@ public class MemberTest {
         member.setPassword("newPass");
         member.setEmail("new@mail.com");
         member.setPhoneNumber("999");
-        member.setAddress("New Address");
 
         assertEquals("newUser", member.getUsername());
         assertEquals("newPass", member.getPassword());
         assertEquals("new@mail.com", member.getEmail());
         assertEquals("999", member.getPhoneNumber());
-        assertEquals("New Address", member.getAddress());
     }
 
     @Test

@@ -3,15 +3,10 @@ package InfrastructureLayerTests;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -77,7 +72,6 @@ public class UserRepositoryTests {
         assertEquals("password", ((Member)member).getPassword());
         assertEquals("email@example.com", ((Member)member).getEmail());
         assertEquals("111", ((Member)member).getPhoneNumber());
-        assertEquals("address", ((Member)member).getAddress());
     }
 
 
@@ -104,12 +98,6 @@ public class UserRepositoryTests {
         repo.updateMemberPhoneNumber(memberId, "123456789");
         assertEquals("123456789", ((Member)member).getPhoneNumber());
     }   
-
-    @Test
-    public void testUpdateMemberAddress() {
-        repo.updateMemberAddress(memberId, "newAddress");
-        assertEquals("newAddress", ((Member)member).getAddress());
-    }
 
 
        

@@ -5,9 +5,9 @@ import DomainLayer.Purchase.Address;
 
 
 public abstract class User {
-    private ShoppingCart shoppingCart; // Shopping cart associated with the user
-    private PaymentMethod paymentMethod; // Payment method associated with the user
-    private Address address; // Shipping address associated with the user
+    protected ShoppingCart shoppingCart; // Shopping cart associated with the user
+    protected PaymentMethod paymentMethod; // Payment method associated with the user
+    protected Address address; // Shipping address associated with the user
 
     public User(int cartId) {
         this.shoppingCart = new ShoppingCart(); // Initialize the shopping cart
