@@ -17,7 +17,7 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Install dependencies
-      run: mvn install --no-transfer-progress
+      run: mvn install -DskipTests --no-transfer-progress
       working-directory: ./Project
       
   tests:
