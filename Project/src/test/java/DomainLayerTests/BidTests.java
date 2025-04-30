@@ -179,9 +179,9 @@ class BidTests {
     @Test
     @Timeout(10)
     @DisplayName(
-        "afterOneThreadWinsWithHigherBid_allSubsequentLowerConcurrentBidsShouldLeaveWinnerAndHighestBidUnchanged"
+        "lowerConcurrentBidsSubmittedAfterAWinningBid_mustNotAlterHighestBidOrWinner_andMustNotRecordAdditionalBidders"
     )
-    void lowerConcurrentBidsAfterWinner_doNotChangeState() throws Exception {
+    void lowerConcurrentBidsSubmittedAfterAWinningBid_mustNotAlterHighestBidOrWinner_andMustNotRecordAdditionalBidders() throws Exception {
         int base = 100;
         Bid bid  = new Bid(1, 10, 20, Map.of(), base);
 
@@ -210,9 +210,9 @@ class BidTests {
     @Test
     @Timeout(10)
     @DisplayName(
-        "getBiddersIds_polledConcurrentlyWhileBidsArrive_shouldNeverThrowAndEventuallyReturnSizeOne"
+        "getBiddersIdsInvokedConcurrentlyWhileMultipleBidsArrive_shouldNeverThrowConcurrentModification_andShouldEventuallyReportExactlyOneBidder"
     )
-    void concurrentReadersDuringBidding_neverThrow() throws Exception {
+    void getBiddersIdsInvokedConcurrentlyWhileMultipleBidsArrive_shouldNeverThrowConcurrentModification_andShouldEventuallyReportExactlyOneBidder() throws Exception {
         int base = 100;
         Bid bid  = new Bid(1, 10, 20, Map.of(), base);
 
@@ -241,9 +241,9 @@ class BidTests {
     @Test
     @Timeout(10)
     @DisplayName(
-        "completePurchase_calledConcurrentlyFromManyThreads_shouldSucceedExactlyOnceAndAllOtherCallsThrow"
+        "completePurchaseInvokedConcurrentlyByManyThreads_shouldSucceedExactlyOnce_andAllOtherThreadsMustReceiveIllegalStateException"
     )
-    void concurrentCompletePurchase_onlyOneSuccess() {
+    void completePurchaseInvokedConcurrentlyByManyThreads_shouldSucceedExactlyOnce_andAllOtherThreadsMustReceiveIllegalStateException() {
         Bid bid = new Bid(1, 10, 20, Map.of(), 120);
 
         int threads = 30;
