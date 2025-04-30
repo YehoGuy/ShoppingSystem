@@ -13,7 +13,7 @@ class MessageTest {
 
     @BeforeEach
     void setUp() {
-        message = new Message(1, 100, 200, "Hello!", "2025-04-29 12:00:00", true, -1);
+        message = new Message(1, 100, 200, "Hello!", "2025-04-29 12:00:00", true, 0);
     }
 
     @Test
@@ -24,7 +24,7 @@ class MessageTest {
         assertEquals("Hello!", message.getContent());
         assertEquals("2025-04-29 12:00:00", message.getTimestamp());
         assertTrue(message.isUserToUser());
-        assertEquals(-1, message.getPreviousMessageId());
+        assertEquals(0, message.getPreviousMessageId());
         assertFalse(message.isDeleted());
     }
 
