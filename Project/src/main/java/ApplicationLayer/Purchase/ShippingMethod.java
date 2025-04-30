@@ -10,6 +10,7 @@ public interface ShippingMethod {
     /**
      * Processes a shipment to the specified address.
      *
+     * @param purchaseId The ID of the purchase associated with the shipment.
      * @param country    The country where the shipment is to be delivered.
      * @param city       The city where the shipment is to be delivered.
      * @param street     The street address where the shipment is to be delivered.
@@ -17,7 +18,7 @@ public interface ShippingMethod {
      * 
      * @throws IllegalArgumentException if any of the address parameters are null or invalid.
      */
-    void processShipment(String country, String city, String street, String postalCode);
+    void processShipment(int purchaseId, String country, String city, String street, String postalCode);
 
     /**
      * Retrieves the details of the shipping method.

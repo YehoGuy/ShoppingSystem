@@ -11,6 +11,7 @@ import ApplicationLayer.OurRuntime;
 import ApplicationLayer.Purchase.PaymentMethod;
 import DomainLayer.IUserRepository;
 import DomainLayer.Member;
+import DomainLayer.Purchase.Address;
 import DomainLayer.Roles.PermissionsEnum;
 import DomainLayer.Roles.Role;
 import DomainLayer.User;
@@ -1246,5 +1247,21 @@ public class UserService {
             throw new RuntimeException("Error setting payment method for user ID " + token + ": " + e.getMessage(), e);
         }
         
+    }
+
+    // no API endpoint!
+    public Address getUserShippingAddress(int userId){
+        try {
+            LoggerService.logMethodExecution("getUserShippingAddress", userId);
+            Address shippingAddress = userRepository.getUserById(userId).getAddress();
+            LoggerService.logMethodExecutionEnd("getUserShippingAddress", shippingAddress);
+            return shippingAddress;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getUserShippingAddress", e);
+            throw e; // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("getUserShippingAddress", e, userId);
+            throw new RuntimeException("Error fetching shipping address for user ID " + userId + ": " + e.getMessage(), e);
+        }
     }
 }
