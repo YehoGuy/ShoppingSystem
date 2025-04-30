@@ -80,6 +80,24 @@ public class Purchase {
     }
 
     /**
+     * Returns the total price of the purchase.
+     * 
+     * @return the total price.
+     */
+    public Address getAddress() {
+        return shippingAddress;
+    }
+
+    /**
+     * Sets the shipping address for the purchase.
+     * 
+     * @param address the new shipping address.
+     */
+    public void setAddress(Address address) {
+        this.shippingAddress = address;
+    }
+
+    /**
      * Returns a map of item IDs to their quantities in the purchase.
      * 
      * @return a {@code HashMap} containing the items and their quantities.

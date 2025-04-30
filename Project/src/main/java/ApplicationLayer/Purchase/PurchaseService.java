@@ -88,8 +88,8 @@ public class PurchaseService {
             // 6. remove items from the cart (backup before)
             userService.clearUserShoppingCart(userId);
             // 5. handle shipping
-            ////for(Integer purchaseId : purchaseIds.keySet())
-            ////    shopService.shipPurchase(purchaseId, purchaseIds.get(purchaseId), shippingAddress);
+            for(Integer purchaseId : purchaseIds.keySet())
+                shopService.shipPurchase(authToken, purchaseId, purchaseIds.get(purchaseId), shippingAddress.getCountry(), shippingAddress.getCity(), shippingAddress.getStreet(), shippingAddress.getZipCode());
             // 7. LOG the purchase
             LoggerService.logMethodExecutionEnd("checkoutCart", purchaseIds);
             // 8. return purchase ID's
@@ -209,7 +209,9 @@ public class PurchaseService {
             userService.pay(authToken, shopId, finalPrice);
             payed=true;
             // 5. handle shipping
-            ////shopService.shipPurchase(purchaseId, purchase.getShopId(), shippingAddress);
+            Address shippingAddress = userService.getUserShippingAddress(initiatingUserId);
+            purchase.setAddress(shippingAddress);
+            shopService.shipPurchase(authToken, purchaseId, purchase.getStoreId(), shippingAddress.getCountry(), shippingAddress.getCity(), shippingAddress.getStreet(), shippingAddress.getZipCode());
             // 6. notify the bidders
             List<Integer> bidders = ((Bid)purchase).getBiddersIds();
             try{
