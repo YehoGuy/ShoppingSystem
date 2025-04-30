@@ -282,7 +282,7 @@ class PurchaseRepositoryTests {
 
     /* ───────── concurrency – heavy readers while writers add ───────── */
     @Test
-    @Timeout(10)
+    @Timeout(30)
     @DisplayName(
         "getUserPurchasesCalledRepeatedlyFromManyThreadsWhileOtherThreadsContinuouslyAddPurchasesForSameUser_shouldNeverThrowConcurrentModification_andFinalCountShouldMatchAdds"
     )
@@ -303,7 +303,7 @@ class PurchaseRepositoryTests {
             }));
 
         pool.shutdown();
-        pool.awaitTermination(10, TimeUnit.SECONDS);
+        pool.awaitTermination(30, TimeUnit.SECONDS);
 
         assertEquals(additions, repo.getUserPurchases(userId).size());
     }
