@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import ApplicationLayer.OurArg;
 import DomainLayer.Purchase.Address;
 import DomainLayer.Purchase.Bid;
 import DomainLayer.Purchase.IPurchaseRepository;

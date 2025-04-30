@@ -53,50 +53,56 @@ public class UserService {
             else 
                 throw new RuntimeException("only admins can make admins");
             LoggerService.logMethodExecutionEndVoid("makeAdmin");
-        } catch (Exception e) {
+        }catch (OurArg e) {
+            LoggerService.logDebug("makeAdmin", e);
+            throw e; // Rethrow the custom exception
+        } 
+        catch (Exception e) {
             LoggerService.logError("makeAdmin", e, token, id);
             throw new RuntimeException("Error making the user " + id + " an admin: " + e);
         }
     }
-
-    public void removeAdmin(String token, Integer id)
-    {
-        LoggerService.logMethodExecution("removeAdmin", token, id);
+    public void removeAdmin(String token, Integer id) {
         try {
+            LoggerService.logMethodExecution("removeAdmin", token, id);
             int userId = authTokenService.ValidateToken(token);
-            if(isAdmin(userId)){
-                if(id >= 0)
-                    userRepository.removeAdmin(id);
-                else
-                    throw new OurArg("the id of the user to make admin is illegal");
+            if (!isAdmin(userId)) {
+                throw new OurArg("Only admins can remove admins.");
             }
-            else 
-                throw new RuntimeException("only admins can remove admins");
+            if (id == null || id < 0) {
+                throw new OurArg("The ID of the user to remove as admin is illegal.");
+            }
+            userRepository.removeAdmin(id);
             LoggerService.logMethodExecutionEndVoid("removeAdmin");
+        } catch (OurArg e) {
+            LoggerService.logDebug("removeAdmin", e);
         } catch (Exception e) {
             LoggerService.logError("removeAdmin", e, token, id);
-            throw new RuntimeException("Error removing the user " + id + " from being an admin: " + e);
+            throw new OurRuntime("Error removing the user " + id + " from being an admin: " + e.getMessage(), e);
         }
     }
+    
 
-    public List<Integer> getAllAdmins(String token)
-    {
-        LoggerService.logMethodExecution("getAllAdmins", token);
+    public List<Integer> getAllAdmins(String token) {
         try {
-            List<Integer> lst;
+            LoggerService.logMethodExecution("getAllAdmins", token);
             int userId = authTokenService.ValidateToken(token);
-            if(isAdmin(userId)){
-                lst = userRepository.getAllAdmins();
+            if (!isAdmin(userId)) {
+                throw new OurArg("Only admins can get the IDs of all admins.");
             }
-            else 
-                throw new RuntimeException("only admins can get ids of all admins");
-            LoggerService.logMethodExecutionEndVoid("getAllAdmins");
-            return lst;
+            List<Integer> admins = userRepository.getAllAdmins();
+            LoggerService.logMethodExecutionEnd("getAllAdmins", admins);
+            return admins;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getAllAdmins", e);
+            return null;
         } catch (Exception e) {
             LoggerService.logError("getAllAdmins", e, token);
-            throw new RuntimeException("Error getting ids of all admins: " + e);
+            throw new OurRuntime("Error getting IDs of all admins: " + e.getMessage(), e);
         }
     }
+    
+    
 
     public void setServices(AuthTokenService authTokenService) {
         this.authTokenService = authTokenService;

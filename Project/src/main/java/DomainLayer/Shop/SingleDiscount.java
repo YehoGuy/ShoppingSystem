@@ -3,6 +3,8 @@ package DomainLayer.Shop;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import ApplicationLayer.OurArg;
+
 /**
  * Single implementation of {@link Discount} for both global and item-specific discounts.
  */
