@@ -108,9 +108,21 @@ public class ItemService {
         }
     }
 
-    public Map<Integer,ItemCategory> getItemdId2Cat(){
-        //TODO should return all items with their categories
-        return new HashMap<>();
+    /** 
+     * Retrieves a map of item IDs to their corresponding categories.
+     * 
+     * * @param itemIds the list of item IDs to fetch categories for, <itemId, quantity (not used)> 
+     * @return a map where the keys are item IDs and the values are ItemCategory instances.
+     */
+    public Map<Integer,ItemCategory> getItemdId2Cat(Map<Integer, Integer> itemIds){ 
+        Map<Integer, ItemCategory> itemId2Cat = new HashMap<>();
+        for (Integer itemId : itemIds.keySet()) {
+            Item item = itemRepository.getItem(itemId);
+            if (item != null) {
+                itemId2Cat.put(itemId, item.getCategory());
+            }
+        }
+        return itemId2Cat;
     }
 
     /**
@@ -266,14 +278,14 @@ public class ItemService {
         }
     }
 
-    public List<Item> getItemsByCategory(ItemCategory category, String token) {
+    public List<Integer> getItemsByCategory(ItemCategory category, String token) {
         try {
             LoggerService.logMethodExecution("getItemsByCategory", category);
             if (category == null) {
                 throw new OurArg("Item category cannot be null");
             }
             authTokenService.ValidateToken(token);
-            List<Item> returnItems = itemRepository.getItemsByCategory(category);
+            List<Integer> returnItems = itemRepository.getItemsByCategory(category);
             LoggerService.logMethodExecutionEnd("getItemsByCategory", returnItems);
             return returnItems;
         } catch (OurArg e) {

@@ -23,6 +23,9 @@ public class CategoryDiscount implements Discount {
 
     @Override
     public Map<Integer, Integer> applyDiscounts(Map<Integer, Integer> items, Map<Integer, AtomicInteger> prices, Map<Integer, Integer> itemsDiscountedPrices, Map<Integer, ItemCategory> itemsCategory) {
+        if (!(checkPolicies(items, itemsDiscountedPrices, itemsCategory))) {
+            return itemsDiscountedPrices;
+        }
         for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
             Integer itemId = entry.getKey();
             Integer qty = entry.getValue();
@@ -56,6 +59,10 @@ public class CategoryDiscount implements Discount {
         if (p < 0 || p > 100) {
             throw new IllegalArgumentException("Discount percentage must be between 0 and 100");
         }
+    }
+
+    public ItemCategory getCategory() {
+        return itemCategory;
     }
 
 }

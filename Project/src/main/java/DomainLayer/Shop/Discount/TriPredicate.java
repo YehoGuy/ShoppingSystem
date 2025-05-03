@@ -1,9 +1,5 @@
 package DomainLayer.Shop.Discount;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
-import DomainLayer.Item.ItemCategory;
 
 /**
  * Functional interface for testing a cart against three inputs:

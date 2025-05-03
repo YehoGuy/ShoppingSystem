@@ -24,8 +24,6 @@ public class ShopService {
     private ItemService itemService;
     private UserService userService;
 
-    
-
     /**
      * Constructor for ShopService.
      *
@@ -132,18 +130,38 @@ public class ShopService {
      * @param shopId   the shop id.
      * @param discount the global discount value.
      */
-    public void setGlobalDiscount(int shopId, int discount,String token) {
+    public void setGlobalDiscount(int shopId, int discount, boolean isDouble, String token) {
         try {
             LoggerService.logMethodExecution("setGlobalDiscount", shopId, discount);
             Integer userId = authTokenService.ValidateToken(token);
             if(!userService.hasPermission(userId,PermissionsEnum.setPolicy,shopId)){
                 throw new RuntimeException("User does not have permission to update discount for shop " + shopId);
             }
-            shopRepository.setGlobalDiscount(shopId, discount);
+            shopRepository.setGlobalDiscount(shopId, discount, isDouble);
             LoggerService.logMethodExecutionEndVoid("setGlobalDiscount");
         } catch (Exception e) {
             LoggerService.logError("setGlobalDiscount", e, shopId, discount);
             throw new RuntimeException("Error setting global discount for shop " + shopId + ": " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Removes the global discount for the specified shop.
+     *
+     * @param shopId the shop id.
+     */
+    public void removeGlobalDiscount(int shopId, String token) {
+        try {
+            LoggerService.logMethodExecution("removeGlobalDiscount", shopId);
+            Integer userId = authTokenService.ValidateToken(token);
+            if(!userService.hasPermission(userId,PermissionsEnum.setPolicy,shopId)){
+                throw new RuntimeException("User does not have permission to remove discount for shop " + shopId);
+            }
+            shopRepository.removeGlobalDiscount(shopId);
+            LoggerService.logMethodExecutionEndVoid("removeGlobalDiscount");
+        } catch (Exception e) {
+            LoggerService.logError("removeGlobalDiscount", e, shopId);
+            throw new RuntimeException("Error removing global discount for shop " + shopId + ": " + e.getMessage(), e);
         }
     }
 
@@ -154,14 +172,14 @@ public class ShopService {
      * @param itemId   the item id.
      * @param discount the discount value.
      */
-    public void setDiscountForItem(int shopId, int itemId, int discount,String token) {
+    public void setDiscountForItem(int shopId, int itemId, int discount, boolean isDouble, String token) {
         try {
             LoggerService.logMethodExecution("setDiscountForItem", shopId, itemId, discount);
             Integer userId = authTokenService.ValidateToken(token);
             if(!userService.hasPermission(userId,PermissionsEnum.setPolicy,shopId)){
                 throw new RuntimeException("User does not have permission to update discount for shop " + shopId);
             }
-            shopRepository.setDiscountForItem(shopId, itemId, discount);
+            shopRepository.setDiscountForItem(shopId, itemId, discount, isDouble);
             LoggerService.logMethodExecutionEndVoid("setDiscountForItem");
         } catch (Exception e) {
             LoggerService.logError("setDiscountForItem", e, shopId, itemId, discount);
@@ -169,20 +187,43 @@ public class ShopService {
         }
     }
 
-    public void setCategoryDiscount(int shopId, ItemCategory category, int discount, String token) {
+    /**
+     * Removes the discount for a specific item in the specified shop.
+     *
+     * @param shopId the shop id.
+     * @param itemId the item id.
+     */
+    public void removeDiscountForItem(int shopId, int itemId, String token) {
+        try {
+            LoggerService.logMethodExecution("removeDiscountForItem", shopId, itemId);
+            Integer userId = authTokenService.ValidateToken(token);
+            if(!userService.hasPermission(userId,PermissionsEnum.setPolicy,shopId)){
+                throw new RuntimeException("User does not have permission to remove discount for item " + itemId + " in shop " + shopId);
+            }
+            shopRepository.removeDiscountForItem(shopId, itemId);
+            LoggerService.logMethodExecutionEndVoid("removeDiscountForItem");
+        } catch (Exception e) {
+            LoggerService.logError("removeDiscountForItem", e, shopId, itemId);
+            throw new RuntimeException("Error removing discount for item " + itemId + " in shop " + shopId + ": " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * set a discount for category in the specified shop.
+     * 
+     * @param shopId   the shop id.
+     * @param category the item category.
+     * @param discount the discount value.
+     * @param isDouble whether to apply the discount as a double discount.
+     */
+    public void setCategoryDiscount(int shopId, ItemCategory category, int discount, boolean isDouble, String token) {
         try {
             LoggerService.logMethodExecution("setCategoryDiscount", shopId, category, discount);
             Integer userId = authTokenService.ValidateToken(token);
             if(!userService.hasPermission(userId,PermissionsEnum.setPolicy,shopId)){
                 throw new RuntimeException("User does not have permission to update discount for shop " + shopId);
             }
-            List<Item> items = itemService.getItemsByCategory(category, token);
-            Map<Integer, Integer> itemsMap = new HashMap<>();
-            for (Item item : items) {
-                itemsMap.put(item.getId(), 1);
-            }
-            //shopRepository.addBundleDiscount(shopId, itemsMap, discount);
-            // shopRepository.setCategoryDiscount(shopId, category, discount);
+            shopRepository.setCategoryDiscount(shopId, category, discount, isDouble);
             LoggerService.logMethodExecutionEndVoid("setCategoryDiscount");
         } catch (Exception e) {
             LoggerService.logError("setCategoryDiscount", e, shopId, category, discount);
@@ -190,8 +231,26 @@ public class ShopService {
         }
     }
 
-    
-    
+    /**
+     * Removes the discount for a specific item category in the specified shop.
+     *
+     * @param shopId   the shop id.
+     * @param category the item category.
+     */
+    public void removeCategoryDiscount(int shopId, ItemCategory category, String token) {
+        try {
+            LoggerService.logMethodExecution("removeCategoryDiscount", shopId, category);
+            Integer userId = authTokenService.ValidateToken(token);
+            if(!userService.hasPermission(userId,PermissionsEnum.setPolicy,shopId)){
+                throw new RuntimeException("User does not have permission to remove discount for item " + category + " in shop " + shopId);
+            }
+            shopRepository.removeCategoryDiscount(shopId, category);
+            LoggerService.logMethodExecutionEndVoid("removeCategoryDiscount");
+        } catch (Exception e) {
+            LoggerService.logError("removeCategoryDiscount", e, shopId, category);
+            throw new RuntimeException("Error removing category discount for item " + category + " in shop " + shopId + ": " + e.getMessage(), e);
+        }
+    }
 
     /**
      * Adds a review to the specified shop.
@@ -382,7 +441,7 @@ public class ShopService {
     public double purchaseItems(Map<Integer, Integer> purchaseLists, Integer shopId) {
         try {
             LoggerService.logMethodExecution("purchaseItems", purchaseLists, shopId);
-            Map<Integer, ItemCategory> itemsCategory = itemService.getItemdId2Cat();
+            Map<Integer, ItemCategory> itemsCategory = itemService.getItemdId2Cat(purchaseLists);
             double totalPrice = shopRepository.purchaseItems(purchaseLists,itemsCategory, shopId);
             LoggerService.logMethodExecutionEnd("purchaseItems", totalPrice);
             return totalPrice;

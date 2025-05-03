@@ -21,6 +21,9 @@ public class GlobalDiscount implements Discount {
 
     @Override
     public Map<Integer, Integer> applyDiscounts(Map<Integer, Integer> items, Map<Integer, AtomicInteger> prices, Map<Integer, Integer> itemsDiscountedPrices, Map<Integer, ItemCategory> itemsCategory) {
+        if(!(checkPolicies(items, itemsDiscountedPrices, itemsCategory))) {
+            return itemsDiscountedPrices;
+        }
         for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
             Integer itemId = entry.getKey();
             Integer qty = entry.getValue();

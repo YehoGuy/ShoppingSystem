@@ -94,12 +94,13 @@ public class ItemRepository implements IItemRepository {
     }
 
     @Override
-    public List<Item> getItemsByCategory(ItemCategory category) {
+    public List<Integer> getItemsByCategory(ItemCategory category) {
         if (category == null) {
             return Collections.emptyList();
         }
-        List<Item> result = items.values().stream()
+        List<Integer> result = items.values().stream()
                 .filter(item -> item.getCategory() == category)
+                .map(Item::getId)
                 .collect(Collectors.toList());
         return Collections.unmodifiableList(result);
     }

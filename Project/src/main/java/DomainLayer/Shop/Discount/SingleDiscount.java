@@ -37,6 +37,11 @@ public class SingleDiscount implements Discount {
             return itemsDiscountedPrices;
         }
 
+        // check policies   
+        if (!(checkPolicies(items, itemsDiscountedPrices, itemsCategory))) {
+            return itemsDiscountedPrices;
+        }
+
         if(!isDouble){
             int itemPrice = prices.get(itemId).get();
             int discountedPrice = itemPrice * (100 - percentage) / 100;

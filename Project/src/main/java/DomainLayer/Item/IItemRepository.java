@@ -2,7 +2,6 @@ package DomainLayer.Item;
 
 import java.util.List;
 
-
 public interface IItemRepository {
 
     /**
@@ -75,7 +74,8 @@ public interface IItemRepository {
      * Retrieves a list of all items in the specified category.
      *
      * @param categoryId the category ID
-     * @return an unmodifiable list of Item instances in the category
+     * @return an unmodifiable list of ItemsId in the category
      */
-    List<Item> getItemsByCategory(ItemCategory category);
+    List<Integer> getItemsByCategory(ItemCategory category);
+
 }

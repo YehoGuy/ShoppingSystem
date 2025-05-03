@@ -46,6 +46,7 @@ public class Shop {
 
     private ShippingMethod shippingMethod;
 
+    // ===== Fields for Purchase Policy =====
     private Policy policytemp;
     private PolicyComposite policyComposite;
 
@@ -66,9 +67,10 @@ public class Shop {
         this.itemsPrices = new ConcurrentHashMap<>();
         this.itemAcquireLocks = new ConcurrentHashMap<>();
         this.shippingMethod = shippingMethod;
+        this.policytemp = null;
+        this.policyComposite = null;
     }
-
-    // ===== Immutable Field Getters =====
+  
 
     public int getId() {
         return id;
@@ -78,15 +80,13 @@ public class Shop {
         return name;
     }
 
-    // ===== setters =====
-
     public void setShippingMethod(ShippingMethod shippingMethod) {
         this.shippingMethod = shippingMethod;
     }
 
-    public void addPolicy(Integer threshold, Integer itemId, ItemCategory itemCategory, double basketValue , Operator operator) {
+    public synchronized void addPolicy(Integer threshold, Integer itemId, ItemCategory itemCategory, double basketValue , Operator operator) {     
         TriPredicate<Map<Integer,Integer>,Map<Integer,Integer>,Map<Integer,ItemCategory>> predicate;
-        if(threshold != null && itemCategory == null){ //UC1
+        if(threshold != null && itemCategory == null){ //UC1 -- Threshold policy of a single item
             predicate = new TriPredicate<Map<Integer,Integer>,Map<Integer,Integer>,Map<Integer,ItemCategory>>() {
                 @Override
                 public boolean test(Map<Integer, Integer> items, Map<Integer, Integer> prices, Map<Integer, ItemCategory> itemsCategory) {
@@ -97,7 +97,7 @@ public class Shop {
                     return true;
                 }
             };
-        }else if(threshold != null && itemCategory != null){ //UC2
+        }else if(threshold != null && itemCategory != null){ //UC2 -- amount of items in category
             predicate = new TriPredicate<Map<Integer,Integer>,Map<Integer,Integer>,Map<Integer,ItemCategory>>() {
                 @Override
                 public boolean test(Map<Integer, Integer> items, Map<Integer, Integer> prices, Map<Integer, ItemCategory> itemsCategory) {
@@ -114,7 +114,7 @@ public class Shop {
                     return true;
                 }
             };
-        }else{ //UC3
+        }else{ //UC3 -- shopping cart value is bigger than certain value
             predicate = new TriPredicate<Map<Integer,Integer>,Map<Integer,Integer>,Map<Integer,ItemCategory>>() {
                 @Override
                 public boolean test(Map<Integer, Integer> items, Map<Integer, Integer> prices, Map<Integer, ItemCategory> itemsCategory) {
@@ -130,8 +130,14 @@ public class Shop {
         }
         PolicyLeaf newPolicy = new PolicyLeaf(predicate);
         if (policytemp == null) {
+            if(operator == null) {
+                throw new IllegalArgumentException("Operator cannot be null when policytemp is null");
+            }
             policytemp = newPolicy;
         } else if(policyComposite == null) {
+            if(operator == null) {
+                throw new IllegalArgumentException("Operator cannot be null when policyComposite is null");
+            }
             policyComposite = new PolicyComposite(policytemp, newPolicy, operator);
         }else{
             PolicyComposite tempCimposite = new PolicyComposite(policyComposite, newPolicy, operator);
@@ -354,6 +360,7 @@ public class Shop {
             }
         }
 
+        // is not double discount
         for (Discount discount : discounts) {
             if(!discount.isDouble()){
                 itemsDiscountedPrices = discount.applyDiscounts(items, itemsPrices, itemsDiscountedPrices, itemsCat);
@@ -377,7 +384,7 @@ public class Shop {
      *
      * @param percentage the discount percentage (0–100)
      */
-    public void setGlobalDiscount(int percentage, boolean isDouble) {
+    public synchronized void setGlobalDiscount(int percentage, boolean isDouble) {
         GlobalDiscount discount;
         if(policyComposite == null)
             discount = new GlobalDiscount(percentage, policytemp, isDouble);
@@ -386,6 +393,8 @@ public class Shop {
 
         this.policyComposite= null;
         this.policytemp = null;
+        //delete previous global discount - if exists
+        removeGlobalDiscount();
         discounts.add(discount);
     }
 
@@ -396,7 +405,12 @@ public class Shop {
      * @param percentage the discount percentage to remove (0–100).
      */ 
     public void removeGlobalDiscount() {
-        //TODO-V2: Implement this method to remove the global discount.
+        for (int i = 0; i < discounts.size(); i++) {
+            if (discounts.get(i) instanceof GlobalDiscount) {
+                discounts.remove(i);
+                return;
+            }
+        }
     }
     
     /**
@@ -405,7 +419,7 @@ public class Shop {
      * @param itemId     the ID of the item to discount.
      * @param percentage the discount percentage (0–100).
      */
-    public void setDiscountForItem(int itemId, int percentage, int qty, boolean isDouble) {
+    public synchronized void setDiscountForItem(int itemId, int percentage, boolean isDouble) {
         SingleDiscount discount;
         if(policyComposite == null)
             discount = new SingleDiscount(itemId, percentage, policytemp, isDouble);
@@ -414,6 +428,8 @@ public class Shop {
 
         this.policyComposite= null;
         this.policytemp = null;
+        //delete previous discount for this item - if exists
+        removeDiscountForItem(itemId);
         discounts.add(discount);
     }
 
@@ -423,10 +439,15 @@ public class Shop {
      * @param itemId the ID of the item to remove the discount from.
      */
     public void removeDiscountForItem(int itemId) {
-        //TODO-V2: Implement this method to remove a discount for a single item.
+        for (int i = 0; i < discounts.size(); i++) {
+            if (discounts.get(i) instanceof SingleDiscount && ((SingleDiscount) discounts.get(i)).getItemId() == itemId) {
+                discounts.remove(i);
+                return;
+            }
+        }
     }
 
-    public void setCategoryDiscount(ItemCategory category, int percentage, boolean isDouble) {
+    public synchronized void setCategoryDiscount(ItemCategory category, int percentage, boolean isDouble) {
         CategoryDiscount discount;
         if(policyComposite == null)
             discount = new CategoryDiscount(category, percentage, policytemp, isDouble);
@@ -435,11 +456,18 @@ public class Shop {
 
         this.policyComposite= null;
         this.policytemp = null;
+        //delete previous discount for this category - if exists
+        removeCategoryDiscount(category);
         discounts.add(discount);
     }
 
-    public void removeCategoryDiscount(int categoryId) {
-        //TODO-V2: Implement this method to remove a category discount.
+    public void removeCategoryDiscount(ItemCategory category) {
+        for (int i = 0; i < discounts.size(); i++) {
+            if (discounts.get(i) instanceof CategoryDiscount && ((CategoryDiscount) discounts.get(i)).getCategory() == category) {
+                discounts.remove(i);
+                return;
+            }
+        }
     }
 
     // ===== Purchase Method =====
