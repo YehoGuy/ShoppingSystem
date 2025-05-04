@@ -3,8 +3,6 @@ package DomainLayer.Shop;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import ApplicationLayer.OurArg;
-
 /**
  * Single implementation of {@link Discount} for both global and item-specific discounts.
  */
@@ -23,7 +21,7 @@ public class SingleDiscount implements Discount {
      */
     public SingleDiscount(int shopId, Integer itemId, int priceItem, int percentage) {
         if (percentage < 0 || percentage > 100) {
-            throw new OurArg("Discount percentage must be between 0 and 100");
+            throw new IllegalArgumentException("Discount percentage must be between 0 and 100");
         }
         this.shopId = shopId;
         this.itemId = itemId;
@@ -43,7 +41,7 @@ public class SingleDiscount implements Discount {
     @Override
     public void setPercentage(int percentage) {
         if (percentage < 0 || percentage > 100) {
-            throw new OurArg("Discount percentage must be between 0 and 100");
+            throw new IllegalArgumentException("Discount percentage must be between 0 and 100");
         }
         this.percentage = percentage;
     }

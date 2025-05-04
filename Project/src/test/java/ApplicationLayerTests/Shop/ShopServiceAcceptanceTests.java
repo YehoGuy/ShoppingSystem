@@ -31,6 +31,18 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import static org.mockito.Mockito.*;
 import org.mockito.MockitoAnnotations;
+import DomainLayer.Item.Item;
+import DomainLayer.Item.ItemCategory;
+import DomainLayer.Shop.Shop;
+import InfrastructureLayer.ShopRepository;
+import DomainLayer.Shop.IShopRepository;
+import DomainLayer.Shop.PurchasePolicy;
+import DomainLayer.Roles.PermissionsEnum;
+import ApplicationLayer.AuthTokenService;
+import ApplicationLayer.Item.ItemService;
+import ApplicationLayer.Purchase.ShippingMethod;
+import ApplicationLayer.Shop.ShopService;
+import ApplicationLayer.User.UserService;
 
 class ShopServiceAcceptanceTests {
 
@@ -151,7 +163,7 @@ class ShopServiceAcceptanceTests {
 
         // simulate repository rejecting missing name
         when(shopRepository.createShop(emptyName, purchasePolicy, shippingMethod))
-            .thenThrow(new OurArg("Shop name is required"));
+            .thenThrow(new IllegalArgumentException("Shop name is required"));
 
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
             shopService.createShop(emptyName, purchasePolicy, shippingMethod, token)
@@ -210,7 +222,7 @@ class ShopServiceAcceptanceTests {
 
         when(authTokenService.ValidateToken(token)).thenReturn(8);
         when(userService.hasPermission(8, PermissionsEnum.manageItems, shopId)).thenReturn(true);
-        doThrow(new OurArg("Quantity must be positive"))
+        doThrow(new IllegalArgumentException("Quantity must be positive"))
             .when(shopRepository).addItemToShop(shopId, itemId, -1, 5);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
@@ -240,7 +252,7 @@ class ShopServiceAcceptanceTests {
 
         when(authTokenService.ValidateToken(token)).thenReturn(8);
         when(userService.hasPermission(8, PermissionsEnum.manageItems, shopId)).thenReturn(true);
-        doThrow(new OurArg("Price must be non-negative"))
+        doThrow(new IllegalArgumentException("Price must be non-negative"))
             .when(shopRepository).addItemToShop(shopId, itemId, 5, -100);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
@@ -270,7 +282,7 @@ class ShopServiceAcceptanceTests {
 
         when(authTokenService.ValidateToken(token)).thenReturn(9);
         when(userService.hasPermission(9, PermissionsEnum.manageItems, shopId)).thenReturn(true);
-        doThrow(new OurArg("Item does not exist"))
+        doThrow(new IllegalArgumentException("Item does not exist"))
             .when(shopRepository).removeItemFromShop(shopId, itemId);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
@@ -314,7 +326,7 @@ class ShopServiceAcceptanceTests {
 
         when(authTokenService.ValidateToken(token)).thenReturn(11);
         when(userService.hasPermission(11, PermissionsEnum.manageItems, shopId)).thenReturn(true);
-        doThrow(new OurArg("Price must be non-negative"))
+        doThrow(new IllegalArgumentException("Price must be non-negative"))
             .when(shopRepository).updateItemPriceInShop(shopId, 1, -10);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
@@ -383,7 +395,7 @@ class ShopServiceAcceptanceTests {
 
         when(authTokenService.ValidateToken(token)).thenReturn(13);
         when(userService.hasPermission(13, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
-        doThrow(new OurArg("Invalid policy"))
+        doThrow(new IllegalArgumentException("Invalid policy"))
             .when(shopRepository).updatePurchasePolicy(shopId, purchasePolicy);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
@@ -490,6 +502,58 @@ class ShopServiceAcceptanceTests {
 
         RuntimeException ex = assertThrows(RuntimeException.class,
             () -> shopService.setDiscountForItem(shopId, itemId, 10, true, token));
+    }
+
+    // UC19 - Define bundle discount
+    @Test
+    void testAddBundleDiscount_Success() throws Exception {
+        String token = "t";
+        int shopId = 8, discount = 20;
+        Map<Integer, Integer> basket = new HashMap<>();
+        basket.put(1, 2);
+        basket.put(2, 3);
+
+        when(authTokenService.ValidateToken(token)).thenReturn(14);
+        when(userService.hasPermission(14, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
+        doNothing().when(shopRepository).addBundleDiscount(shopId, basket, discount);
+
+        shopService.addBundleDiscount(shopId, basket, discount, token);
+        verify(shopRepository).addBundleDiscount(shopId, basket, discount);
+    }
+
+    // UC19 - Define bundle discount (invalid discount)
+    @Test
+    void testAddBundleDiscount_InvalidDiscount_Failure() throws Exception {
+        String token = "t";
+        int shopId = 8, discount = 200;
+        Map<Integer, Integer> basket = new HashMap<>();
+        basket.put(1, 2);
+        basket.put(2, 3);
+
+        when(authTokenService.ValidateToken(token)).thenReturn(14);
+        when(userService.hasPermission(14, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
+        doThrow(new IllegalArgumentException("Discount must be <=100"))
+            .when(shopRepository).addBundleDiscount(shopId, basket, discount);
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> shopService.addBundleDiscount(shopId, basket, discount, token));
+        assertTrue(ex.getMessage().contains("Error adding bundle discount for item"));
+    }
+
+    // UC19 - Define bundle discount (no permission)
+    @Test
+    void testAddBundleDiscount_NoPermission_Failure() throws Exception {
+        String token = "t";
+        int shopId = 8, discount = 20;
+        Map<Integer, Integer> basket = new HashMap<>();
+        basket.put(1, 2);
+        basket.put(2, 3);
+
+        when(authTokenService.ValidateToken(token)).thenReturn(14);
+        when(userService.hasPermission(14, PermissionsEnum.setPolicy, shopId)).thenReturn(false);
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> shopService.addBundleDiscount(shopId, basket, discount, token));
         assertTrue(ex.getMessage().contains("does not have permission"));
     }
 
@@ -515,7 +579,7 @@ class ShopServiceAcceptanceTests {
 
         when(authTokenService.ValidateToken(token)).thenReturn(15);
         when(userService.hasPermission(15, PermissionsEnum.closeShop, shopId)).thenReturn(true);
-        doThrow(new OurArg("Shop already closed"))
+        doThrow(new IllegalArgumentException("Shop already closed"))
             .when(shopRepository).closeShop(shopId);
 
         RuntimeException ex = assertThrows(RuntimeException.class,

@@ -19,7 +19,6 @@ import static org.mockito.Mockito.when;
 import org.mockito.MockitoAnnotations;
 
 import ApplicationLayer.AuthTokenService;
-import ApplicationLayer.OurArg;
 import ApplicationLayer.OurRuntime;
 import ApplicationLayer.User.UserService;
 import DomainLayer.Roles.PermissionsEnum;
@@ -560,7 +559,7 @@ public class UserServiceAcceptanceTests {
         doNothing().when(userService).makeManagerOfStore(ownerToken, managerId, shopId, new PermissionsEnum[]{});
         doNothing().when(userService).acceptRole(managerToken, shopId);
 
-        doThrow(new OurArg("Manager can't have such permissions"))
+        doThrow(new IllegalArgumentException("Manager can't have such permissions"))
             .when(userService).addPermission(ownerToken, managerId, invalidPermission, shopId);
 
         userService.makeManagerOfStore(ownerToken, managerId, shopId, new PermissionsEnum[]{});
