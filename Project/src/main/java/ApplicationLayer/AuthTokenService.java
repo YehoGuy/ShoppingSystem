@@ -123,11 +123,11 @@ public class AuthTokenService {
         catch (OurArg e)
         {
             LoggerService.logDebug("ValidateToken", e);
-            throw new OurArg("problem with args in token validation" + e.getMessage());
+            throw new OurArg("problem with args in token validation");
         }
         catch (OurRuntime e) {
             LoggerService.logDebug("ValidateToken", e);
-            throw new OurRuntime("problem with runtime in token validation" + e.getMessage());
+            throw new OurRuntime("problem with runtime in token validation");
         }
         catch (ExpiredJwtException e) {
 

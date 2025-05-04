@@ -9,7 +9,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import ApplicationLayer.OurArg;
 import ApplicationLayer.Purchase.ShippingMethod;
 
 /**
@@ -117,7 +116,7 @@ public class Shop {
      */
     public void addReview(int userId, int rating, String reviewText) {
         if(rating < 1 || rating > 5) {
-            throw new OurArg("Rating must be between 1 and 5");
+            throw new IllegalArgumentException("Rating must be between 1 and 5");
         }
         reviews.add(new ShopReview(userId, rating, reviewText));
     }
@@ -159,7 +158,7 @@ public class Shop {
      */
     public void addItem(int itemId, int quantity) {
         if (quantity <= 0) {
-            throw new OurArg("Quantity must be positive");
+            throw new IllegalArgumentException("Quantity must be positive");
         }
         items.merge(itemId, new AtomicInteger(quantity), (existing, value) -> {
             existing.addAndGet(quantity);
@@ -177,7 +176,7 @@ public class Shop {
     public void removeItemFromShop(int itemId) {
         // 1) Ensure item exists
         if (!items.containsKey(itemId)) {
-            throw new OurArg("Item not found: " + itemId);
+            throw new IllegalArgumentException("Item not found: " + itemId);
         }
 
         // 2) Grab (or create) the per‐item lock object
@@ -195,7 +194,7 @@ public class Shop {
 
     public void removeItemQuantity(int itemId, int quantity) {
         if (quantity <= 0) {
-            throw new OurArg("Quantity must be positive");
+            throw new IllegalArgumentException("Quantity must be positive");
         }
         AtomicInteger currentQty = items.get(itemId);
         if (currentQty != null) {
@@ -204,7 +203,7 @@ public class Shop {
                 items.remove(itemId);
             }
         } else {
-            throw new OurArg("Item not found: " + itemId);
+            throw new IllegalArgumentException("Item not found: " + itemId);
         }
     }
 
@@ -240,10 +239,10 @@ public class Shop {
      */
     public void updateItemPrice(int itemId, int price) {
         if (price < 0) {
-            throw new OurArg("Price must be non-negative");
+            throw new IllegalArgumentException("Price must be non-negative");
         }
         if (!items.containsKey(itemId)) {
-            throw new OurArg("Item not found: " + itemId);
+            throw new IllegalArgumentException("Item not found: " + itemId);
         }
         itemsPrices.compute(itemId, (key, existing) -> {
             if (existing == null) {
@@ -441,7 +440,7 @@ public class Shop {
                     AtomicInteger availAtom = items.get(itemId);
                     int avail = availAtom != null ? availAtom.get() : 0;
                     if (avail < qty) {
-                        throw new OurArg("Insufficient stock for item " + itemId);
+                        throw new IllegalArgumentException("Insufficient stock for item " + itemId);
                     }
                     originalStock.put(itemId, avail);
                     availAtom.addAndGet(-qty);

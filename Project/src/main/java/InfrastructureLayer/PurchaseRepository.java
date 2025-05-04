@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import ApplicationLayer.OurArg;
 import DomainLayer.Purchase.Address;
 import DomainLayer.Purchase.Bid;
 import DomainLayer.Purchase.IPurchaseRepository;
@@ -98,7 +97,7 @@ public class PurchaseRepository implements IPurchaseRepository {
     public Purchase getPurchaseById(int purchaseId) {
         Purchase p = purchaseStorage.get(purchaseId);
         if (p == null) {
-            throw new OurArg("Purchase not found, purchaseId: " + purchaseId);
+            throw new IllegalArgumentException("Purchase not found, purchaseId: " + purchaseId);
         }
         return p;
     }
