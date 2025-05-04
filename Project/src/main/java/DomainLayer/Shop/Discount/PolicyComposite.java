@@ -43,7 +43,7 @@ public class PolicyComposite implements Policy{
     }
 
     @Override
-    public boolean test(Map<Integer,Integer> items, Map<Integer,Integer> prices, Map<Integer,ItemCategory> itemsCategory) {
+    public boolean test(Map<Integer,Integer> items, Map<Integer,Double> prices, Map<Integer,ItemCategory> itemsCategory) {
         if (policy1 == null && policy2 == null) {
             return true;
         }

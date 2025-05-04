@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
@@ -26,10 +26,10 @@ import ApplicationLayer.User.UserService;
 import DomainLayer.Item.ItemCategory;
 import DomainLayer.Roles.PermissionsEnum;
 import DomainLayer.Shop.IShopRepository;
+import DomainLayer.Shop.Operator;
 import DomainLayer.Shop.PurchasePolicy;
 import DomainLayer.Shop.Shop;
 import DomainLayer.Shop.ShopReview;
-import DomainLayer.Shop.Discount.Discount;
 
 public class ShopTests {
 
@@ -200,6 +200,45 @@ public class ShopTests {
         double total = shop.purchaseItems(list, Collections.emptyMap());
         assertEquals(30.0, total);
     }
+
+    // SingleDiscount tests
+@Test
+public void testSingleDiscount_Success() {
+    // Arrange: one item, price 20, quantity 3 → total 60
+    shop.addItem(1, 3);
+    shop.updateItemPrice(1, 20);
+    // Act: apply 50% discount to item 1 (not double)
+    shop.setDiscountForItem(1, 50, false);
+    double total = shop.purchaseItems(
+        Map.of(1, 3),
+        Collections.emptyMap()
+    );
+    // Assert: pay 50% of 60 = 30.0
+    assertEquals(30.0, total, 1e-6);
+}
+
+@Test
+public void testSingleDiscount_InvalidPercentageLow_Failure() {
+    // Arrange: item exists so that setDiscountForItem reaches validation
+    shop.addItem(2, 1);
+    shop.updateItemPrice(2, 10);
+    // Act & Assert: negative percentage should throw
+    assertThrows(IllegalArgumentException.class, () ->
+        shop.setDiscountForItem(2, -10, false)
+    );
+}
+
+@Test
+public void testSingleDiscount_InvalidPercentageHigh_Failure() {
+    // Arrange: item exists so that setDiscountForItem reaches validation
+    shop.addItem(3, 1);
+    shop.updateItemPrice(3, 10);
+    // Act & Assert: percentage >100 should throw
+    assertThrows(IllegalArgumentException.class, () ->
+        shop.setDiscountForItem(3, 150, false)
+    );
+}
+
 
     @Test
     public void testItemSpecificDiscount_Success() {
@@ -577,34 +616,42 @@ public void testRollbackOnDiscountFailure_Success() throws Exception {
     shop.addItem(900, 5);
     shop.updateItemPrice(900, 50);
 
-    // inject a faulty discount
-    var field = Shop.class.getDeclaredField("discounts");
-    field.setAccessible(true);
+    // reflectively grab the private discounts list
+    var f = Shop.class.getDeclaredField("discounts");
+    f.setAccessible(true);
     @SuppressWarnings("unchecked")
-    var discounts = (CopyOnWriteArrayList<DomainLayer.Shop.Discount.Discount>) field.get(shop);
+    CopyOnWriteArrayList<DomainLayer.Shop.Discount.Discount> discounts =
+        (CopyOnWriteArrayList<DomainLayer.Shop.Discount.Discount>) f.get(shop);
 
+    // inject a “faulty” discount that always throws
     discounts.add(new DomainLayer.Shop.Discount.Discount() {
-        @Override public Map<Integer, Integer> applyDiscounts(
-                Map<Integer, Integer> items,
-                Map<Integer, AtomicInteger> prices,
-                Map<Integer, Integer> current,
-                Map<Integer, ItemCategory> categories) {
+        @Override
+        public Map<Integer, Double> applyDiscounts(
+            Map<Integer, Integer> items,
+            Map<Integer, AtomicInteger> prices,
+            Map<Integer, Double> current,
+            Map<Integer, ItemCategory> categories) {
             throw new RuntimeException("Bad discount");
         }
-        @Override public boolean isDouble()           { return false; }
-        @Override public Integer getItemId()         { return null; }
-        @Override public void setPercentage(int p)    { /* no-op */ }
-        @Override public int getPercentage()         { return 0; }
+        @Override public boolean isDouble() { return false; }
+        @Override
+        public boolean checkPolicies(
+            Map<Integer, Integer> items,
+            Map<Integer, Double> prices,
+            Map<Integer, ItemCategory> categories) {
+            return true;
+        }
     });
 
-    // attempt purchase with empty category map → should rollback on exception
+    // a purchase of 2 should throw, and rollback to 5
     assertThrows(RuntimeException.class,
-        () -> shop.purchaseItems(Map.of(900, 2), Collections.emptyMap()));
-
-    // stock must be unchanged
+        () -> shop.purchaseItems(Map.of(900,2), Collections.emptyMap()));
     assertEquals(5, shop.getItemQuantity(900),
         "Stock should be restored after discount failure");
 }
+
+
+
 
     // UC5 – Concurrent reviews vs. average rating (success)
     // Starts multiple threads adding reviews while one reads average.
@@ -673,28 +720,247 @@ public void testRollbackOnDiscountFailure_Success() throws Exception {
         ShopService ss = new ShopService(repo);
         ss.setServices(ats, is, us);
 
+        // invalid token should be rejected
         when(ats.ValidateToken("bad")).thenThrow(new RuntimeException("Invalid token"));
         assertThrows(RuntimeException.class,
             () -> ss.createShop("X", mock(PurchasePolicy.class), mock(ShippingMethod.class), "bad"));
 
+        // valid token but no permission to set policy → failure
         when(ats.ValidateToken("tok")).thenReturn(1);
         when(us.hasPermission(1, PermissionsEnum.setPolicy, 2)).thenReturn(false);
         assertThrows(RuntimeException.class,
-            () -> ss.setGlobalDiscount(2, 10, "tok"));
+            () -> ss.setGlobalDiscount(2, 10, true, "tok"));
     }
+
 
     // UC8 – Bulk purchase of multiple items (success)
     // Purchases more than one SKU in one call and checks stock adjustment.
     @Test
     public void testBulkPurchaseOfMultipleItems_Success() {
-        shop.addItem(1000, 3); shop.updateItemPrice(1000, 10);
-        shop.addItem(1001, 2); shop.updateItemPrice(1001, 20);
+        shop.addItem(1000, 3);
+        shop.updateItemPrice(1000, 10);
+        shop.addItem(1001, 2);
+        shop.updateItemPrice(1001, 20);
 
-        double total = shop.purchaseItems(Map.of(1000,2, 1001,1));
-        assertEquals(2*10 + 1*20, total);
+        // no per-item categories, so pass empty map
+        double total = shop.purchaseItems(
+            Map.of(1000, 2, 1001, 1),
+            Collections.emptyMap()
+        );
+        assertEquals(2 * 10 + 1 * 20, total);
         assertEquals(1, shop.getItemQuantity(1000));
         assertEquals(1, shop.getItemQuantity(1001));
     }
 
+    /**
+    * Verifies that a per‐item discount only applies when its purchase policy is satisfied.
+    * Here we create a policy requiring at least 3 units of item 42 in the cart,
+    * then attach a 50% discount to item 42 under that policy.
+    * The test checks that the discount is not applied when the policy is not met.
+    */
+    @Test
+    public void testPolicyDrivenSingleItemDiscount_NoDiscount() {
+        // Arrange: add item 42, price 10
+        shop.addItem(42, 5);
+        shop.updateItemPrice(42, 10);
+
+        // 1) Define a policy: require at least 3 of item 42
+        // threshold = 3, itemId = 42, no category, basketValue unused, for first no opearator
+        shop.addPolicy(3, 42, null, 0.0, null);
+
+        // 2) Create a 50% discount on item 42 under that policy (not double)
+        shop.setDiscountForItem(42, 50, false);
+
+        // Act & Assert #1: buy only 2 units → policy not met → no discount
+        double total2 = shop.purchaseItems(
+            Map.of(42, 2),
+            Collections.emptyMap()
+        );
+        // pay full price 2×10 = 20.0
+        assertEquals(20.0, total2, 1e-6, "Policy not met → no discount should apply");
+    }
+
+     /**
+    * Verifies that a per‐item discount only applies when its purchase policy is satisfied.
+    * Here we create a policy requiring at least 3 units of item 42 in the cart,
+    * then attach a 50% discount to item 42 under that policy.
+    * The test checks that the discount is applied when the policy is met.
+    */
+    @Test
+    public void testPolicyDrivenSingleItemDiscount_Success() {
+        // Arrange: add item 42, price 10
+        shop.addItem(42, 5);
+        shop.updateItemPrice(42, 10);
+
+        // 1) Define a policy: require at least 3 of item 42
+        // threshold = 3, itemId = 42, no category, basketValue unused, for first no opearator
+        shop.addPolicy(3, 42, null, 0.0, null);
+
+        // 2) Create a 50% discount on item 42 under that policy (not double)
+        shop.setDiscountForItem(42, 50, false);
+
+        // Act & Assert #2: buy 3 units → policy met → 50% discount applies
+        double total3 = shop.purchaseItems(
+            Map.of(42, 3),
+            Collections.emptyMap()
+        );
+        // pay 50% of 3×10 = 15.0
+        assertEquals(15.0, total3, 1e-6, "Policy met → 50% discount should apply");
+    }
+
+
+     /**
+     * Verifies that the same SingleDiscount does NOT apply when one of the
+     * AND‐combined policies is not satisfied.
+     * Here the basket threshold is raised so that basketValue=40 fails.
+     */
+    @Test
+    public void testCompositePolicySingleDiscount_AND_Failure() {
+        // Arrange: item 42, price 10
+        shop.addItem(42, 5);
+        shop.updateItemPrice(42, 10);
+
+        // Policy1: require ≥2 units of item 42
+        shop.addPolicy(2, 42, null, 0.0, null);
+        // Policy2: require basket total ≥40 (3×10=30 < 40)
+        shop.addPolicy(null, null, null, 40.0, Operator.AND);
+
+        // Attach 50% discount under the composite policy
+        shop.setDiscountForItem(42, 50, false);
+
+        // Act: purchase 3 units → first policy OK, second fails
+        double total = shop.purchaseItems(
+            Map.of(42, 3),
+            Collections.emptyMap()
+        );
+
+        // Assert: no discount → pay full 3×10 = 30.0
+        assertEquals(30.0, total, 1e-6,
+            "Second policy not met → discount should NOT apply");
+    }
+
+    /**
+     * Verifies that a SingleDiscount with two policies combined by OR
+     * applies if at least one policy is satisfied, and is skipped only if both fail.
+     */
+    @Test
+    public void testCompositePolicySingleDiscount_OR_Success() {
+        // Arrange: item 42, price 10
+        shop.addItem(42, 5);
+        shop.updateItemPrice(42, 10);
+
+        // Policy1: require ≥4 units of item 42
+        shop.addPolicy(4, 42, null, 0.0, null);
+        // Policy2: require basket total ≥20
+        shop.addPolicy(null, null, null, 20.0, Operator.OR);
+
+        // Attach 25% discount under the composite (OR) policy
+        shop.setDiscountForItem(42, 25, false);
+
+        // Act & Assert #1: purchase 2 units → total=20, second policy met → discount applies
+        double total2 = shop.purchaseItems(
+            Map.of(42, 2),
+            Collections.emptyMap()
+        );
+        assertEquals(15.0, total2, 1e-6,
+            "BasketValue policy met (OR) → discount should apply (2×10=20→25% off=15)");
+
+        // Act & Assert #2: purchase 1 unit → total=10, both policies fail → no discount
+        double total1 = shop.purchaseItems(
+            Map.of(42, 1),
+            Collections.emptyMap()
+        );
+        assertEquals(10.0, total1, 1e-6,
+            "Neither policy met → discount should NOT apply");
+    }
+
+    /**
+     * Verifies that a SingleDiscount with two policies combined by XOR
+     * applies if exactly one policy is satisfied, and is skipped if both are met or both fail.
+     */
+    @Test
+    public void testCompositePolicySingleDiscount_XOR_Success() {
+        // Arrange: item 42, price 10
+        shop.addItem(42, 5);
+        shop.updateItemPrice(42, 10);
+
+        // Policy1: require ≥4 units of item 42
+        shop.addPolicy(4, 42, null, 0.0, null);
+        // Policy2: require basket total ≥20
+        shop.addPolicy(null, null, null, 20.0, Operator.XOR);
+
+        // Attach 25% discount under the composite (XOR) policy
+        shop.setDiscountForItem(42, 25, false);
+
+        // Act & Assert #1: purchase 2 units → total=20, second policy met → discount applies
+        double total2 = shop.purchaseItems(
+            Map.of(42, 2),
+            Collections.emptyMap()
+        );
+        assertEquals(15.0, total2, 1e-6,
+            "BasketValue policy met (XOR) → discount should apply (2×10=20→25% off=15)");
+
+        // Act & Assert #2: purchase 1 unit → total=10, both policies fail → no discount
+        double total1 = shop.purchaseItems(
+            Map.of(42, 1),
+            Collections.emptyMap()
+        );
+        assertEquals(10.0, total1, 1e-6,
+            "Neither policy met → discount should NOT apply");
+    }
+
+    @Test
+    public void testConcurrentAddPolicy_OneSucceedsOneFails() throws Exception {
+        ExecutorService exec = Executors.newFixedThreadPool(2);
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch go = new CountDownLatch(1);
+
+        AtomicReference<Exception> exA = new AtomicReference<>();
+        AtomicReference<Exception> exB = new AtomicReference<>();
+
+        // Thread A: valid operator → should succeed
+        Future<?> fa = exec.submit(() -> {
+            ready.countDown();
+            try {
+                go.await();
+                shop.addPolicy(3, 42, null, 0.0, null);
+            } catch (Exception e) {
+                exA.set(e);
+            }
+        });
+
+        // Thread B: null operator → should throw immediately
+        Future<?> fb = exec.submit(() -> {
+            ready.countDown();
+            try {
+                go.await();
+                shop.addPolicy(2, 43, null, 0.0, null);
+            } catch (Exception e) {
+                exB.set(e);
+            }
+        });
+
+        // start both
+        ready.await();
+        go.countDown();
+
+        // wait for both to finish
+        fa.get();
+        fb.get();
+        exec.shutdown();
+
+        // Thread A: no exception
+        assertNull(exA.get(), "Thread A should succeed adding its policy");
+
+        // Thread B: IllegalArgumentException due to null operator
+        assertNotNull(exB.get(), "Thread B should have thrown");
+        assertTrue(exB.get() instanceof IllegalArgumentException);
+        assertTrue(
+            exB.get().getMessage().contains("Operator cannot be null"),
+            "Expected message to indicate null-operator, but was: " + exB.get().getMessage()
+        );
+    }
+
+
 }
-    
+        

@@ -17,9 +17,9 @@ public interface Discount {
      * @param itemsCategory a map of item IDs to their category
      * @return the new total price after applying this discount
      */
-    Map<Integer, Integer> applyDiscounts(Map<Integer, Integer> items, Map<Integer, AtomicInteger> prices, Map<Integer, Integer> itemsDiscountedPrices, Map<Integer, ItemCategory> itemsCategory);
+    Map<Integer, Double> applyDiscounts(Map<Integer, Integer> items, Map<Integer, AtomicInteger> prices, Map<Integer, Double> itemsDiscountedPrices, Map<Integer, ItemCategory> itemsCategory);
 
-    boolean checkPolicies(Map<Integer,Integer> items, Map<Integer,Integer> prices, Map<Integer,ItemCategory> itemsCategory);
+    boolean checkPolicies(Map<Integer,Integer> items, Map<Integer,Double> prices, Map<Integer,ItemCategory> itemsCategory);
 
     boolean isDouble();
 }

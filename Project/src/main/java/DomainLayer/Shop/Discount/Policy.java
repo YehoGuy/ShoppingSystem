@@ -6,5 +6,5 @@ import DomainLayer.Item.ItemCategory;
 
 public interface Policy {
 
-    boolean test(Map<Integer,Integer> items, Map<Integer,Integer> prices, Map<Integer,ItemCategory> itemsCategory);
+    boolean test(Map<Integer,Integer> items, Map<Integer,Double> prices, Map<Integer,ItemCategory> itemsCategory);
 }

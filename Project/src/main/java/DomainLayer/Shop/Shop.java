@@ -85,11 +85,11 @@ public class Shop {
     }
 
     public synchronized void addPolicy(Integer threshold, Integer itemId, ItemCategory itemCategory, double basketValue , Operator operator) {     
-        TriPredicate<Map<Integer,Integer>,Map<Integer,Integer>,Map<Integer,ItemCategory>> predicate;
+        TriPredicate<Map<Integer,Integer>,Map<Integer,Double>,Map<Integer,ItemCategory>> predicate;
         if(threshold != null && itemCategory == null){ //UC1 -- Threshold policy of a single item
-            predicate = new TriPredicate<Map<Integer,Integer>,Map<Integer,Integer>,Map<Integer,ItemCategory>>() {
+            predicate = new TriPredicate<Map<Integer,Integer>,Map<Integer,Double>,Map<Integer,ItemCategory>>() {
                 @Override
-                public boolean test(Map<Integer, Integer> items, Map<Integer, Integer> prices, Map<Integer, ItemCategory> itemsCategory) {
+                public boolean test(Map<Integer, Integer> items, Map<Integer, Double> prices, Map<Integer, ItemCategory> itemsCategory) {
                     Integer qty = items.get(itemId);
                     if (qty == null || qty <= 0 || qty < threshold) {
                         return false;
@@ -98,9 +98,9 @@ public class Shop {
                 }
             };
         }else if(threshold != null && itemCategory != null){ //UC2 -- amount of items in category
-            predicate = new TriPredicate<Map<Integer,Integer>,Map<Integer,Integer>,Map<Integer,ItemCategory>>() {
+            predicate = new TriPredicate<Map<Integer,Integer>,Map<Integer,Double>,Map<Integer,ItemCategory>>() {
                 @Override
-                public boolean test(Map<Integer, Integer> items, Map<Integer, Integer> prices, Map<Integer, ItemCategory> itemsCategory) {
+                public boolean test(Map<Integer, Integer> items, Map<Integer, Double> prices, Map<Integer, ItemCategory> itemsCategory) {
                     Integer qty = 0;
                     for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
                         Integer itemId = entry.getKey();
@@ -115,10 +115,10 @@ public class Shop {
                 }
             };
         }else{ //UC3 -- shopping cart value is bigger than certain value
-            predicate = new TriPredicate<Map<Integer,Integer>,Map<Integer,Integer>,Map<Integer,ItemCategory>>() {
+            predicate = new TriPredicate<Map<Integer,Integer>,Map<Integer,Double>,Map<Integer,ItemCategory>>() {
                 @Override
-                public boolean test(Map<Integer, Integer> items, Map<Integer, Integer> prices, Map<Integer, ItemCategory> itemsCategory) {
-                    Integer totalPrice = 0;
+                public boolean test(Map<Integer, Integer> items, Map<Integer, Double> prices, Map<Integer, ItemCategory> itemsCategory) {
+                    Double totalPrice = 0.0;
                     for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
                         Integer itemId = entry.getKey();
                         Integer qty = entry.getValue();
@@ -130,16 +130,16 @@ public class Shop {
         }
         PolicyLeaf newPolicy = new PolicyLeaf(predicate);
         if (policytemp == null) {
-            if(operator == null) {
-                throw new IllegalArgumentException("Operator cannot be null when policytemp is null");
-            }
             policytemp = newPolicy;
         } else if(policyComposite == null) {
             if(operator == null) {
-                throw new IllegalArgumentException("Operator cannot be null when policyComposite is null");
+                throw new IllegalArgumentException("Operator cannot be null when policyComposite is null ==  adding discount+policy in progress by other user");
             }
             policyComposite = new PolicyComposite(policytemp, newPolicy, operator);
         }else{
+            if(operator == null) {
+                throw new IllegalArgumentException("Operator cannot be null when policyComposite is not null ==  adding discount+policy in progress by other user");
+            }
             PolicyComposite tempCimposite = new PolicyComposite(policyComposite, newPolicy, operator);
             policyComposite = tempCimposite;
         }
@@ -347,10 +347,10 @@ public class Shop {
 
 
     private double applyDiscount(Map<Integer,Integer> items, Map<Integer,ItemCategory> itemsCat){
-        Map<Integer, Integer> itemsDiscountedPrices = new HashMap<>();
+        Map<Integer, Double> itemsDiscountedPrices = new HashMap<>();
         for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
             int itemId = entry.getKey();
-            int price = itemsPrices.get(itemId).get();
+            double price = itemsPrices.get(itemId).get();
             itemsDiscountedPrices.put(itemId, price);
         }
         
@@ -372,7 +372,7 @@ public class Shop {
         for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
             int itemId = entry.getKey();
             int quantity = entry.getValue();
-            int discountedPrice = itemsDiscountedPrices.get(itemId);
+            double discountedPrice = itemsDiscountedPrices.get(itemId);
             totalPrice += discountedPrice * quantity;
         }
 

@@ -20,7 +20,7 @@ public class GlobalDiscount implements Discount {
 
 
     @Override
-    public Map<Integer, Integer> applyDiscounts(Map<Integer, Integer> items, Map<Integer, AtomicInteger> prices, Map<Integer, Integer> itemsDiscountedPrices, Map<Integer, ItemCategory> itemsCategory) {
+    public Map<Integer, Double> applyDiscounts(Map<Integer, Integer> items, Map<Integer, AtomicInteger> prices, Map<Integer, Double> itemsDiscountedPrices, Map<Integer, ItemCategory> itemsCategory) {
         if(!(checkPolicies(items, itemsDiscountedPrices, itemsCategory))) {
             return itemsDiscountedPrices;
         }
@@ -30,12 +30,12 @@ public class GlobalDiscount implements Discount {
             if (qty != null && qty > 0) {
                 // determine full price of that item (requires external price lookup)
                 if(!isDouble){
-                    int itemPrice = prices.get(itemId).get();
-                    int discountedPrice = itemPrice * (100 - percentage) / 100;
+                    double itemPrice = prices.get(itemId).get();
+                    double discountedPrice = itemPrice * (100 - percentage) / 100;
                     itemsDiscountedPrices.put(itemId,Math.min(itemsDiscountedPrices.get(itemId), discountedPrice));
                 }else{
-                    int itemPrice = itemsDiscountedPrices.get(itemId);
-                    int discountedPrice = itemPrice * (100 - percentage) / 100;
+                    double itemPrice = itemsDiscountedPrices.get(itemId);
+                    double discountedPrice = itemPrice * (100 - percentage) / 100;
                     itemsDiscountedPrices.put(itemId, discountedPrice);
                 }
             }
@@ -44,7 +44,10 @@ public class GlobalDiscount implements Discount {
     }
 
     @Override
-    public boolean checkPolicies(Map<Integer,Integer> items, Map<Integer,Integer> prices, Map<Integer,ItemCategory> itemsCategory) {
+    public boolean checkPolicies(Map<Integer,Integer> items, Map<Integer,Double> prices, Map<Integer,ItemCategory> itemsCategory) {
+        if(policyHead == null) {
+            return true;
+        }
         return policyHead.test(items, prices, itemsCategory);
     }
 
