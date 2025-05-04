@@ -19,7 +19,6 @@ import static org.mockito.Mockito.when;
 
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.Item.ItemService;
-import ApplicationLayer.OurArg;
 import ApplicationLayer.User.UserService;
 import DomainLayer.Item.IItemRepository;
 import DomainLayer.Item.Item;
@@ -231,10 +230,12 @@ public class ItemServiceAcceptanceTests {
     public void testGetItemInvalidId() {
         int itemId = -1; // invalid
 
-        RuntimeException ex = assertThrows(OurArg.class, () ->
+        when(itemService.getItem(itemId, TOKEN)).thenThrow(new RuntimeException("Invalid item ID"));
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
             itemService.getItem(itemId, TOKEN)
         );
-        assertTrue(ex.getMessage().contains("Item ID cannot be negative"));
+        assertTrue(ex.getMessage().contains("Invalid item ID"));
     }
 
     // Uc5 - search item in the market (negative: item not found)

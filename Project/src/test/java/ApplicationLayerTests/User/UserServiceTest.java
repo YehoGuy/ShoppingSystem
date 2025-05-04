@@ -1,14 +1,12 @@
 package ApplicationLayerTests.User;
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -18,8 +16,10 @@ import ApplicationLayer.Purchase.PaymentMethod;
 import ApplicationLayer.User.UserService;
 import DomainLayer.Member;
 import DomainLayer.User;
+import DomainLayer.Roles.PermissionsEnum;
 import InfrastructureLayer.AuthTokenRepository;
 import InfrastructureLayer.UserRepository;
+import ch.qos.logback.core.subst.Token;
 
 
 public class UserServiceTest {
@@ -90,11 +90,13 @@ public class UserServiceTest {
         userService.updateMemberPassword(token, "newpassword");
         userService.updateMemberEmail(token, "newemail@example.com");
         userService.updateMemberPhoneNumber(token, "0987654321");
+        userService.updateMemberAddress(token, "456 Elm St");
 
         User member = userService.getUserById(memberId);
         assertEquals("newusername", ((Member)member).getUsername());
         assertEquals("newemail@example.com", ((Member)member).getEmail());
         assertEquals("0987654321", ((Member)member).getPhoneNumber());
+        assertEquals("456 Elm St", ((Member)member).getAddress());
 
     }
 

@@ -39,7 +39,7 @@ public class Bid extends Purchase{
                 timeOfCompletion = LocalDateTime.now();
                 highestBid.set(bidAmount);
                 highestBidderId.set(userId);
-                biddersIds.put(userId, Boolean.TRUE);   // ← ALWAYS non-null, thread-safe marker
+                biddersIds.put(userId, null);
             }
         }
     }

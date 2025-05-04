@@ -1,36 +1,41 @@
 package ApplicationLayerTests.Shop;
 
-import ApplicationLayer.AuthTokenService;
-import ApplicationLayer.Item.ItemService;
-import ApplicationLayer.OurArg;
-import ApplicationLayer.Purchase.ShippingMethod;
-import ApplicationLayer.Shop.ShopService;
-import ApplicationLayer.User.UserService;
-import DomainLayer.Item.Item;
-import DomainLayer.Item.ItemCategory;
-import DomainLayer.Roles.PermissionsEnum;
-import DomainLayer.Shop.IShopRepository;
-import DomainLayer.Shop.PurchasePolicy;
-import DomainLayer.Shop.Shop;
-import InfrastructureLayer.ShopRepository;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
 import org.junit.jupiter.api.AfterEach;
-import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import static org.mockito.Mockito.*;
 import org.mockito.MockitoAnnotations;
+
+import DomainLayer.Item.Item;
+import DomainLayer.Item.ItemCategory;
+import DomainLayer.Shop.Shop;
+import InfrastructureLayer.ShopRepository;
+import DomainLayer.Shop.IShopRepository;
+import DomainLayer.Shop.PurchasePolicy;
+import DomainLayer.Roles.PermissionsEnum;
+import ApplicationLayer.AuthTokenService;
+import ApplicationLayer.Item.ItemService;
+import ApplicationLayer.Purchase.ShippingMethod;
+import ApplicationLayer.Shop.ShopService;
+import ApplicationLayer.User.UserService;
 
 class ShopServiceAcceptanceTests {
 
@@ -151,7 +156,7 @@ class ShopServiceAcceptanceTests {
 
         // simulate repository rejecting missing name
         when(shopRepository.createShop(emptyName, purchasePolicy, shippingMethod))
-            .thenThrow(new OurArg("Shop name is required"));
+            .thenThrow(new IllegalArgumentException("Shop name is required"));
 
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
             shopService.createShop(emptyName, purchasePolicy, shippingMethod, token)
@@ -210,7 +215,7 @@ class ShopServiceAcceptanceTests {
 
         when(authTokenService.ValidateToken(token)).thenReturn(8);
         when(userService.hasPermission(8, PermissionsEnum.manageItems, shopId)).thenReturn(true);
-        doThrow(new OurArg("Quantity must be positive"))
+        doThrow(new IllegalArgumentException("Quantity must be positive"))
             .when(shopRepository).addItemToShop(shopId, itemId, -1, 5);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
@@ -240,7 +245,7 @@ class ShopServiceAcceptanceTests {
 
         when(authTokenService.ValidateToken(token)).thenReturn(8);
         when(userService.hasPermission(8, PermissionsEnum.manageItems, shopId)).thenReturn(true);
-        doThrow(new OurArg("Price must be non-negative"))
+        doThrow(new IllegalArgumentException("Price must be non-negative"))
             .when(shopRepository).addItemToShop(shopId, itemId, 5, -100);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
@@ -270,7 +275,7 @@ class ShopServiceAcceptanceTests {
 
         when(authTokenService.ValidateToken(token)).thenReturn(9);
         when(userService.hasPermission(9, PermissionsEnum.manageItems, shopId)).thenReturn(true);
-        doThrow(new OurArg("Item does not exist"))
+        doThrow(new IllegalArgumentException("Item does not exist"))
             .when(shopRepository).removeItemFromShop(shopId, itemId);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
@@ -314,7 +319,7 @@ class ShopServiceAcceptanceTests {
 
         when(authTokenService.ValidateToken(token)).thenReturn(11);
         when(userService.hasPermission(11, PermissionsEnum.manageItems, shopId)).thenReturn(true);
-        doThrow(new OurArg("Price must be non-negative"))
+        doThrow(new IllegalArgumentException("Price must be non-negative"))
             .when(shopRepository).updateItemPriceInShop(shopId, 1, -10);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
@@ -383,7 +388,7 @@ class ShopServiceAcceptanceTests {
 
         when(authTokenService.ValidateToken(token)).thenReturn(13);
         when(userService.hasPermission(13, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
-        doThrow(new OurArg("Invalid policy"))
+        doThrow(new IllegalArgumentException("Invalid policy"))
             .when(shopRepository).updatePurchasePolicy(shopId, purchasePolicy);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
@@ -515,7 +520,7 @@ class ShopServiceAcceptanceTests {
 
         when(authTokenService.ValidateToken(token)).thenReturn(15);
         when(userService.hasPermission(15, PermissionsEnum.closeShop, shopId)).thenReturn(true);
-        doThrow(new OurArg("Shop already closed"))
+        doThrow(new IllegalArgumentException("Shop already closed"))
             .when(shopRepository).closeShop(shopId);
 
         RuntimeException ex = assertThrows(RuntimeException.class,

@@ -103,8 +103,8 @@ public class Address {
      * @param apartmentNumber the apartment number to set.
      * @return the current {@code Address} instance for method chaining.
      */
-    public Address withApartmentNumber(int apartmentNumber) {
-        this.ApartmentNumber = ""+apartmentNumber;
+    public Address withApartmentNumber(String apartmentNumber) {
+        this.ApartmentNumber = apartmentNumber;
         return this;
     }
 
