@@ -3,6 +3,7 @@ package DomainLayer;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import ApplicationLayer.OurArg;
 import DomainLayer.Purchase.Address;
 import DomainLayer.Roles.PermissionsEnum;
 import DomainLayer.Roles.Role;
@@ -143,7 +144,7 @@ public class Member extends User {
                     roles.add(role);
                 }
             } else {
-                throw new IllegalArgumentException("Role not found in pending roles.");
+                throw new OurArg("Role not found in pending roles.");
             }
         }
     }
@@ -152,7 +153,7 @@ public class Member extends User {
             if (pending_roles.contains(role)) {
                 pending_roles.remove(role);
             } else {
-                throw new IllegalArgumentException("Role not found in pending roles.");
+                throw new OurArg("Role not found in pending roles.");
             }
         }
     }
