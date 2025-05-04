@@ -1,22 +1,34 @@
 package DomainLayerTests;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Map;
+import java.util.stream.IntStream;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import org.mockito.MockitoAnnotations;
-import java.util.Collections;
-
-
-import java.util.stream.IntStream;
 
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.Item.ItemService;
@@ -934,6 +946,7 @@ public void testRollbackOnDiscountFailure_Success() throws Exception {
             ready.countDown();
             try {
                 go.await();
+                Thread.sleep(100); // ensure A runs first
                 shop.addPolicy(2, 43, null, 0.0, null);
             } catch (Exception e) {
                 exB.set(e);
