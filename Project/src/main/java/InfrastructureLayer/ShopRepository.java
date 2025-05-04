@@ -9,6 +9,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import ApplicationLayer.OurArg;
 import ApplicationLayer.Purchase.ShippingMethod;
 import DomainLayer.Shop.IShopRepository;
 import DomainLayer.Shop.PurchasePolicy;
@@ -41,7 +42,7 @@ public class ShopRepository implements IShopRepository {
         try {
             Shop shop = shops.get(id);
             if (shop == null) {
-                throw new IllegalArgumentException("Shop not found: " + id);
+                throw new OurArg("Shop not found: " + id);
             }
             return shop;
         } catch (Exception e) {
@@ -65,7 +66,7 @@ public class ShopRepository implements IShopRepository {
         try {
             Shop shop = shops.get(shopId);
             if (shop == null) {
-                throw new IllegalArgumentException("Shop not found: " + shopId);
+                throw new OurArg("Shop not found: " + shopId);
             }
             shop.addPurchasePolicy(newPolicy);
         } catch (Exception e) {
@@ -78,7 +79,7 @@ public class ShopRepository implements IShopRepository {
         try {
             Shop shop = shops.get(shopId);
             if (shop == null) {
-                throw new IllegalArgumentException("Shop not found: " + shopId);
+                throw new OurArg("Shop not found: " + shopId);
             }
             shop.setGlobalDiscount(discount);
         } catch (Exception e) {
@@ -90,7 +91,7 @@ public class ShopRepository implements IShopRepository {
     public void removeGlobalDiscount(int shopId) {
         Shop shop = shops.get(shopId);
         if (shop == null) {
-            throw new IllegalArgumentException("Shop not found: " + shopId);
+            throw new OurArg("Shop not found: " + shopId);
         }
         // this only affects that one Shop instance
         shop.removeGlobalDiscount();
@@ -101,7 +102,7 @@ public class ShopRepository implements IShopRepository {
         try {
             Shop shop = shops.get(shopId);
             if (shop == null) {
-                throw new IllegalArgumentException("Shop not found: " + shopId);
+                throw new OurArg("Shop not found: " + shopId);
             }
             shop.setDiscountForItem(itemId, discount);
         } catch (Exception e) {
@@ -114,7 +115,7 @@ public class ShopRepository implements IShopRepository {
         try {
             Shop shop = shops.get(shopId);
             if (shop == null) {
-                throw new IllegalArgumentException("Shop not found: " + shopId);
+                throw new OurArg("Shop not found: " + shopId);
             }
             shop.addBundleDiscount(basket, discount);
         } catch (Exception e) {
@@ -126,7 +127,7 @@ public class ShopRepository implements IShopRepository {
     public void removeDiscountForItem(int shopId, int itemId) {
         Shop shop = shops.get(shopId);
         if (shop == null) {
-            throw new IllegalArgumentException("Shop not found: " + shopId);
+            throw new OurArg("Shop not found: " + shopId);
         }
         shop.removeDiscountForItem(itemId);
     }
@@ -136,7 +137,7 @@ public class ShopRepository implements IShopRepository {
         try {
             Shop shop = shops.get(shopId);
             if (shop == null) {
-                throw new IllegalArgumentException("Shop not found: " + shopId);
+                throw new OurArg("Shop not found: " + shopId);
             }
             shop.addReview(userId, rating, reviewText);
         } catch (Exception e) {
@@ -149,7 +150,7 @@ public class ShopRepository implements IShopRepository {
         try {
             Shop shop = shops.get(shopId);
             if (shop == null) {
-                throw new IllegalArgumentException("Shop not found: " + shopId);
+                throw new OurArg("Shop not found: " + shopId);
             }
             return shop.getAverageRating();
         } catch (Exception e) {
@@ -162,7 +163,7 @@ public class ShopRepository implements IShopRepository {
         try {
             Shop shop = shops.get(shopId);
             if (shop == null) {
-                throw new IllegalArgumentException("Shop not found: " + shopId);
+                throw new OurArg("Shop not found: " + shopId);
             }
             shop.addItem(itemId, quantity);
             shop.updateItemPrice(itemId, price);
@@ -175,7 +176,7 @@ public class ShopRepository implements IShopRepository {
         try {
             Shop shop = shops.get(shopId);
             if (shop == null) {
-                throw new IllegalArgumentException("Shop not found: " + shopId);
+                throw new OurArg("Shop not found: " + shopId);
             }
             shop.addItem(itemId, quantity);
         } catch (Exception e) {
@@ -188,7 +189,7 @@ public class ShopRepository implements IShopRepository {
         try {
             Shop shop = shops.get(shopId);
             if (shop == null) {
-                throw new IllegalArgumentException("Shop not found: " + shopId);
+                throw new OurArg("Shop not found: " + shopId);
             }
             shop.updateItemPrice(itemId, price);
         } catch (Exception e) {
@@ -201,7 +202,7 @@ public class ShopRepository implements IShopRepository {
         try {
             Shop shop = shops.get(shopId);
             if (shop == null) {
-                throw new IllegalArgumentException("Shop not found: " + shopId);
+                throw new OurArg("Shop not found: " + shopId);
             }
             shop.removeItemFromShop(itemId);
         } catch (Exception e) {
@@ -214,7 +215,7 @@ public class ShopRepository implements IShopRepository {
         try {
             Shop shop = shops.get(shopId);
             if (shop == null) {
-                throw new IllegalArgumentException("Shop not found: " + shopId);
+                throw new OurArg("Shop not found: " + shopId);
             }
             return shop.getItemQuantity(itemId);
         } catch (Exception e) {
@@ -227,7 +228,7 @@ public class ShopRepository implements IShopRepository {
         try {
             Shop removed = shops.remove(shopId);
             if (removed == null) {
-                throw new IllegalArgumentException("Shop not found: " + shopId);
+                throw new OurArg("Shop not found: " + shopId);
             }
             closedShops.add(removed);
         } catch (Exception e) {
@@ -240,7 +241,7 @@ public class ShopRepository implements IShopRepository {
         try {
             Shop shop = shops.get(shopId);
             if (shop == null) {
-                throw new IllegalArgumentException("Shop not found: " + shopId);
+                throw new OurArg("Shop not found: " + shopId);
             }
             return shop.getItemQuantity(itemId) > 0;
         } catch (Exception e) {
@@ -253,7 +254,7 @@ public class ShopRepository implements IShopRepository {
         try {
             Shop shop = shops.get(shopId);
             if (shop == null) {
-                throw new IllegalArgumentException("Shop not found: " + shopId);
+                throw new OurArg("Shop not found: " + shopId);
             }
             return shop.purchaseItems(purchaseLists);
         } catch (Exception e) {
@@ -266,7 +267,7 @@ public class ShopRepository implements IShopRepository {
         try {
             Shop shop = shops.get(shopId);
             if (shop == null) {
-                throw new IllegalArgumentException("Shop not found: " + shopId);
+                throw new OurArg("Shop not found: " + shopId);
             }
             shop.rollBackPurchase(purchaseLists);
         } catch (Exception e) {
@@ -290,7 +291,7 @@ public class ShopRepository implements IShopRepository {
             }
             return false;
         } else {
-            throw new IllegalArgumentException("Shop not found: " + shopId);
+            throw new OurArg("Shop not found: " + shopId);
         }
     }
     
@@ -307,7 +308,7 @@ public class ShopRepository implements IShopRepository {
         if (shop != null) {
             shop.addItem(itemId, supply);
         } else {
-            throw new IllegalArgumentException("Shop not found: " + shopId);
+            throw new OurArg("Shop not found: " + shopId);
         }
     }
 
@@ -323,7 +324,7 @@ public class ShopRepository implements IShopRepository {
         try {
             Shop shop = shops.get(shopId);
             if (shop == null) {
-                throw new IllegalArgumentException("Shop not found: " + shopId);
+                throw new OurArg("Shop not found: " + shopId);
             }
             shop.removeItemQuantity(itemId, supply);
         } catch (Exception e) {
@@ -340,7 +341,7 @@ public class ShopRepository implements IShopRepository {
                 HashMap<Integer,Integer> itemsInShop = entry.getValue();
                 Shop shop = shops.get(shopId);
                 if (shop == null) {
-                    throw new IllegalArgumentException("Shop not found: " + shopId);
+                    throw new OurArg("Shop not found: " + shopId);
                 }
                 // delegate to the Shop’s own policy checker
                 if (!shop.checkPolicys(itemsInShop)) {
@@ -359,7 +360,7 @@ public class ShopRepository implements IShopRepository {
         try {
             Shop shop = shops.get(shopId);
             if (shop == null) {
-                throw new IllegalArgumentException("Shop not found: " + shopId);
+                throw new OurArg("Shop not found: " + shopId);
             }
             return shop.getItemIds();
         } catch (Exception e) {
