@@ -597,7 +597,17 @@ public class ShopService {
             throw new OurRuntime("Error filtering items in shop " + shop.getId() + ": " + e.getMessage(), e);
         }
     }
-    
 
+    public void shipPurchase(String token, int purchaseId, int shopId, String country, String city, String street, String postalCode) {
+        try {
+            LoggerService.logMethodExecution("shipPurchase", purchaseId, country, city, street, postalCode);
+            authTokenService.ValidateToken(token);
+            shopRepository.shipPurchase(purchaseId, shopId,  country, city, street, postalCode);
+            LoggerService.logMethodExecutionEndVoid("shipPurchase");
+        } catch (Exception e) {
+            LoggerService.logError("shipPurchase", e, purchaseId, country, city, street, postalCode);
+            throw new RuntimeException("Error shipping purchase " + purchaseId + ": " + e.getMessage(), e);
+        }
+    }
 }
 

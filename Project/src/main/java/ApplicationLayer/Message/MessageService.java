@@ -17,7 +17,7 @@ public class MessageService {
 
     public IMessageRepository messageRepository;
     private AuthTokenService authTokenService;
-    private UserService userService; 
+    private UserService userService;
     private ShopService shopService;
 
     public MessageService(IMessageRepository messageRepository) {
@@ -26,7 +26,7 @@ public class MessageService {
 
     public void setService(AuthTokenService authTokenService, UserService userService, ShopService shopService) {
         this.authTokenService = authTokenService;
-        this.userService = userService; 
+        this.userService = userService;
         this.shopService = shopService;
     }
 
@@ -83,6 +83,8 @@ public class MessageService {
     }
 
     public Boolean deleteMessage(String token, int messageId) {
+    // from here the functions are not necessary for the project, so they aren't
+    // implemented correctly.
         try {
             LoggerService.logMethodExecution("deleteMessage", token, messageId);
             int senderId = authTokenService.ValidateToken(token);
@@ -121,6 +123,10 @@ public class MessageService {
     }
 
     public String getFullConversation(String token, int messageId) {
+        // need to validate the token and get the senderId from it
+        // need to check if the senderId is the same as the one in the message
+        // can make it prettier: get username of the sender of each message (for this i
+        // need userService)
         try {
             LoggerService.logMethodExecution("getFullConversation", token, messageId);
             String output = "Full conversation:\n";

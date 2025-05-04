@@ -11,6 +11,7 @@ import ApplicationLayer.OurRuntime;
 import ApplicationLayer.Purchase.PaymentMethod;
 import DomainLayer.IUserRepository;
 import DomainLayer.Member;
+import DomainLayer.Purchase.Address;
 import DomainLayer.Roles.PermissionsEnum;
 import DomainLayer.Roles.Role;
 import DomainLayer.User;
@@ -207,19 +208,19 @@ public class UserService {
             throw new OurRuntime("Error updating phone number: " + e.getMessage(), e);
         }
     }
-    
-    public void updateMemberAddress(String token, String address) {
+
+    public void updateMemberAddress(String token, String city, String street, int apartmentNumber, String postalCode) {
         try {
-            int id = authTokenService.ValidateToken(token);
-            LoggerService.logMethodExecution("updateMemberAddress", id, address);
+            int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            LoggerService.logMethodExecution("updateMemberAddress", id, city, street, apartmentNumber, postalCode);
             validateMemberId(id);
-            userRepository.updateMemberAddress(id, address);
+            userRepository.updateMemberAddress(id, city, street, apartmentNumber, postalCode);
             LoggerService.logMethodExecutionEndVoid("updateMemberAddress");
         } catch (OurArg e) {
             LoggerService.logDebug("updateMemberAddress", e);
             throw new OurArg("updateMemberAddress: " + e.getMessage(), e);
         } catch (Exception e) {
-            LoggerService.logError("updateMemberAddress", e, address);
+            LoggerService.logError("updateMemberAddress", e, token, city, street, apartmentNumber, postalCode);
             throw new OurRuntime("Error updating address: " + e.getMessage(), e);
         }
     }
@@ -1173,5 +1174,21 @@ public class UserService {
             throw new OurRuntime("refundPaymentByStoreEmployee: " + e.getMessage(), e);
         }
     }
-    
+
+
+    // no API endpoint!
+    public Address getUserShippingAddress(int userId){
+        try {
+            LoggerService.logMethodExecution("getUserShippingAddress", userId);
+            Address shippingAddress = userRepository.getUserById(userId).getAddress();
+            LoggerService.logMethodExecutionEnd("getUserShippingAddress", shippingAddress);
+            return shippingAddress;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getUserShippingAddress", e);
+            throw e; // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("getUserShippingAddress", e, userId);
+            throw new RuntimeException("Error fetching shipping address for user ID " + userId + ": " + e.getMessage(), e);
+        }
+    }
 }

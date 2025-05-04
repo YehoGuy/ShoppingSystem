@@ -389,4 +389,17 @@ public class ShopRepository implements IShopRepository {
         }
     }
 
+    public void shipPurchase(int purchaseId, int shopId, String country, String city, String street, String postalCode) {
+        try {
+            Shop shop = shops.get(shopId);
+            if (shop == null) 
+                throw new IllegalArgumentException("Shop not found: " + shopId);
+            
+            shop.getShippingMethod().processShipment(purchaseId, country, city, street, postalCode);
+            
+        } catch (Exception e) {
+            throw new RuntimeException("Error shipping purchase: " + e.getMessage(), e);
+        }
+    }
+
 }

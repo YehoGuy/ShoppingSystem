@@ -58,6 +58,10 @@ public class PurchaseService {
                 userService.pay(authToken, shopId, totalPrice);
             }
             userService.clearUserShoppingCart(userId);
+            // 5. handle shipping
+            for(Integer purchaseId : purchaseIds.keySet())
+                shopService.shipPurchase(authToken, purchaseId, purchaseIds.get(purchaseId), shippingAddress.getCountry(), shippingAddress.getCity(), shippingAddress.getStreet(), shippingAddress.getZipCode());
+            // 7. LOG the purchase
             LoggerService.logMethodExecutionEnd("checkoutCart", purchaseIds);
             return purchaseIds.keySet().stream().toList();
         } catch (OurArg e) {
@@ -148,16 +152,22 @@ public class PurchaseService {
             finalPrice = ((Bid) purchase).getMaxBidding();
             shopId = purchase.getStoreId();
             userService.pay(authToken, shopId, finalPrice);
-            payed = true;
-            List<Integer> bidders = ((Bid) purchase).getBiddersIds();
-            for (Integer uid : bidders) {
-                try {
-                    String messageContent = (uid != highestBidderId) ?
-                            "Bid " + purchaseId + " finalized. You didn't win." :
-                            "Congratulations! You won bid " + purchaseId + "!";
-                    messageService.sendMessageToUser(authToken, uid, messageContent, 0);
-                } catch (Exception ignored) {}
-            }
+            payed=true;
+            // 5. handle shipping
+            Address shippingAddress = userService.getUserShippingAddress(initiatingUserId);
+            purchase.setAddress(shippingAddress);
+            shopService.shipPurchase(authToken, purchaseId, purchase.getStoreId(), shippingAddress.getCountry(), shippingAddress.getCity(), shippingAddress.getStreet(), shippingAddress.getZipCode());
+            // 6. notify the bidders
+            List<Integer> bidders = ((Bid)purchase).getBiddersIds();
+            try{
+                for(Integer uid : bidders){
+                    if(uid != highestBidderId)
+                        messageService.sendMessageToUser(authToken, uid, "Bid "+purchaseId+" has been finalized. you did'nt win.\n"+receipt.toString(), 0);
+                    else
+                        messageService.sendMessageToUser(authToken, uid, "Congratulations! You have won the bid "+purchaseId+"!\n"+receipt.toString(), 0);
+                }
+            } catch (Exception e){}
+            // 7. LOG the purchase
             LoggerService.logMethodExecutionEnd("finalizeBid", highestBidderId);
             return highestBidderId;
         } catch (OurArg e) {
