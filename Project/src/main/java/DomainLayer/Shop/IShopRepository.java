@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import ApplicationLayer.Purchase.ShippingMethod;
+import DomainLayer.Item.ItemCategory;
 
 public interface IShopRepository {
 
@@ -47,7 +48,7 @@ public interface IShopRepository {
      * @param shopId   the shop id.
      * @param discount the global discount value.
      */
-    void setGlobalDiscount(int shopId, int discount);
+    void setGlobalDiscount(int shopId, int discount, boolean isDouble);
 
     /**
      * Remove the global discount for the specified shop.
@@ -62,25 +63,27 @@ public interface IShopRepository {
      * @param shopId   the shop id.
      * @param itemId   the item id.
      * @param discount the discount value.
+     * @param isDouble whether to apply the discount as a double discount.
      */
-    void setDiscountForItem(int shopId, int itemId, int discount);
+    void setDiscountForItem(int shopId, int itemId, int discount, boolean isDouble);
 
     /**
-     * Sets a discount for a specific item in the specified shop.
+     * Sets a discount for a specific item category in the specified shop.
+     *
+     * @param shopId    the shop id.
+     * @param category  the item category.
+     * @param percentage the discount percentage.
+     * @param isDouble   whether to apply the discount as a double discount.
+     */
+    void setCategoryDiscount(int shopId, ItemCategory category, int percentage, boolean isDouble);
+
+    /**
+     * Removes the discount for a specific item category in the specified shop.
      *
      * @param shopId   the shop id.
-     * @param basket   the bsket.
-     * @param discount the discount value.
+     * @param category the item category.
      */
-    void addBundleDiscount(int shopId, Map<Integer,Integer> basket, int discount);
-
-    /**
-     * Adds a review to the specified shop.
-     *
-     * @param shopId     the shop id.
-     * @param rating     the review rating.
-     * @param reviewText the review text.
-     */
+    void removeCategoryDiscount(int shopId, ItemCategory category);
 
     /**
      * removes the discount for a specific item in the specified shop.
@@ -221,7 +224,7 @@ public interface IShopRepository {
      */
     void addSupply(Integer shopId, Integer itemId, Integer supply);
 
-    double purchaseItems(Map<Integer, Integer> purchaseLists, Integer shopdId);
+    double purchaseItems(Map<Integer, Integer> purchaseLists, Map<Integer, ItemCategory> itemsCategory, Integer shopdId);
 
     void rollBackPurchase(Map<Integer, Integer> purchaseLists, Integer shopId);
 

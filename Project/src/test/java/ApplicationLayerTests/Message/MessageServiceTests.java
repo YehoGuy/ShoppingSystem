@@ -12,8 +12,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import ApplicationLayer.AuthTokenService;
-import ApplicationLayer.LoggerService;
-import ApplicationLayer.OurRuntime;
 import ApplicationLayer.Message.MessageService;
 import ApplicationLayer.Shop.ShopService;
 import ApplicationLayer.User.UserService;

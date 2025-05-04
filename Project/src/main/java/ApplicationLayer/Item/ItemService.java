@@ -1,6 +1,8 @@
 package ApplicationLayer.Item;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.LoggerService;
@@ -104,6 +106,23 @@ public class ItemService {
             LoggerService.logError("getItem", e, itemId);
             throw new OurRuntime("Error retrieving item with id " + itemId + ": " + e.getMessage(), e);
         }
+    }
+
+    /** 
+     * Retrieves a map of item IDs to their corresponding categories.
+     * 
+     * * @param itemIds the list of item IDs to fetch categories for, <itemId, quantity (not used)> 
+     * @return a map where the keys are item IDs and the values are ItemCategory instances.
+     */
+    public Map<Integer,ItemCategory> getItemdId2Cat(Map<Integer, Integer> itemIds){ 
+        Map<Integer, ItemCategory> itemId2Cat = new HashMap<>();
+        for (Integer itemId : itemIds.keySet()) {
+            Item item = itemRepository.getItem(itemId);
+            if (item != null) {
+                itemId2Cat.put(itemId, item.getCategory());
+            }
+        }
+        return itemId2Cat;
     }
 
     /**
@@ -258,4 +277,28 @@ public class ItemService {
             throw new OurRuntime("Error fetching items: " + e.getMessage(), e);
         }
     }
+
+    public List<Integer> getItemsByCategory(ItemCategory category, String token) {
+        try {
+            LoggerService.logMethodExecution("getItemsByCategory", category);
+            if (category == null) {
+                throw new OurArg("Item category cannot be null");
+            }
+            authTokenService.ValidateToken(token);
+            List<Integer> returnItems = itemRepository.getItemsByCategory(category);
+            LoggerService.logMethodExecutionEnd("getItemsByCategory", returnItems);
+            return returnItems;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getItemsByCategory", e);
+            throw new OurArg("Error retrieving items by category " + category + ": " + e.getMessage(), e);
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getItemsByCategory", e);
+            throw new OurRuntime("Error retrieving items by category " + category + ": " + e.getMessage(), e);
+        }
+        catch (Exception e) {
+            LoggerService.logError("getItemsByCategory", e, category);
+            throw new OurRuntime("Error retrieving items by category " + category + ": " + e.getMessage(), e);
+        }
+    }
+
 }

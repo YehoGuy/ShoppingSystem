@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import DomainLayer.Item.IItemRepository;
 import DomainLayer.Item.Item;
+import DomainLayer.Item.ItemCategory;
 import DomainLayer.Item.ItemReview;
 
 public class ItemRepository implements IItemRepository {
@@ -88,6 +89,18 @@ public class ItemRepository implements IItemRepository {
         List<Item> result = itemIds.stream()
                 .map(items::get)
                 .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        return Collections.unmodifiableList(result);
+    }
+
+    @Override
+    public List<Integer> getItemsByCategory(ItemCategory category) {
+        if (category == null) {
+            return Collections.emptyList();
+        }
+        List<Integer> result = items.values().stream()
+                .filter(item -> item.getCategory() == category)
+                .map(Item::getId)
                 .collect(Collectors.toList());
         return Collections.unmodifiableList(result);
     }

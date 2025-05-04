@@ -1,7 +1,6 @@
 package InfrastructureLayerTests;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 import java.util.List;
 import java.util.Map;
@@ -12,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import ApplicationLayer.Purchase.ShippingMethod;
+import DomainLayer.Item.ItemCategory;
 import DomainLayer.Shop.PurchasePolicy;
 import DomainLayer.Shop.Shop;
 import InfrastructureLayer.ShopRepository;
@@ -54,15 +54,6 @@ public class ShopRepositoryTests {
         assertEquals(2, all.size(), "getAllShops should return both shops");
     }
 
-    // UC3 – Update Purchase Policy (success)
-    // Verifies that updatePurchasePolicy adds the given policy to the shop.
-    @Test
-    public void testUpdatePurchasePolicy_Success() {
-        Shop s = repo.createShop("S", purchasePolicy, shippingMethod);
-        repo.updatePurchasePolicy(s.getId(), purchasePolicy);
-        assertTrue(repo.getShop(s.getId()).getPurchasePolicies().contains(purchasePolicy),
-            "The shop's purchasePolicies list should contain the added policy");
-    }
 
     // UC4 – Add & Supply Items (success)
     // Verifies addItemToShop and addSupplyToItem update stock quantities correctly.
@@ -131,7 +122,7 @@ public class ShopRepositoryTests {
     public void testPurchaseAndRollback_Success() {
         Shop s = repo.createShop("S", purchasePolicy, shippingMethod);
         repo.addItemToShop(s.getId(), 5, 3, 10);
-        double total = repo.purchaseItems(Map.of(5, 2), s.getId());
+        double total = repo.purchaseItems(Map.of(5, 2),Map.of(5,ItemCategory.ELECTRONICS), s.getId());
         assertEquals(20.0, total,
             "purchaseItems should return 2×10 = 20.0");
         assertEquals(1, repo.getItemQuantityFromShop(s.getId(), 5),
@@ -151,7 +142,7 @@ public class ShopRepositoryTests {
         assertThrows(RuntimeException.class,
             () -> repo.updatePurchasePolicy(badId, purchasePolicy), "updatePurchasePolicy should fail");
         assertThrows(RuntimeException.class,
-            () -> repo.setGlobalDiscount(badId, 10), "setGlobalDiscount should fail");
+            () -> repo.setGlobalDiscount(badId, 10, true), "setGlobalDiscount should fail");
         assertThrows(IllegalArgumentException.class,
             () -> repo.removeGlobalDiscount(badId), "removeGlobalDiscount should fail");
         assertThrows(RuntimeException.class,

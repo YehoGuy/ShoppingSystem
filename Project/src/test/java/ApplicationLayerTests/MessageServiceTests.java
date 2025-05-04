@@ -29,7 +29,6 @@ public class MessageServiceTests {
     private UserRepository userRepository;
     private ShopRepository shopRepository;
     private String token1;
-    private String token2;
 
     @Mock
     private ShippingMethod shippingMethodMock;
@@ -53,7 +52,6 @@ public class MessageServiceTests {
         // Add a test user and shop to the repositories
         userRepository.addMember("testUser", "password", "a@a", "b", "c");
         userRepository.addMember("testUser2", "password", "a@a", "b", "c");
-        token2 = authTokenService.Login("testUser2", "password2", 2);
         token1 = authTokenService.Login("testUser", "password", 1);
         shopService.createShop("shop1", purchasePolicyMock, shippingMethodMock, token1);
     }
