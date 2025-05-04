@@ -7,10 +7,8 @@ import static org.mockito.Mockito.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -418,10 +416,10 @@ class ShopServiceAcceptanceTests {
 
         when(authTokenService.ValidateToken(token)).thenReturn(14);
         when(userService.hasPermission(14, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
-        doNothing().when(shopRepository).setGlobalDiscount(shopId, discount);
+        doNothing().when(shopRepository).setGlobalDiscount(shopId, discount, true);
 
-        shopService.setGlobalDiscount(shopId, discount, token);
-        verify(shopRepository).setGlobalDiscount(shopId, discount);
+        shopService.setGlobalDiscount(shopId, discount, true, token);
+        verify(shopRepository).setGlobalDiscount(shopId, discount, true);
     }
 
     // UC19 – Define Discount (invalid discount)
@@ -433,10 +431,10 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken(token)).thenReturn(14);
         when(userService.hasPermission(14, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
         doThrow(new IllegalArgumentException("Discount must be <=100"))
-            .when(shopRepository).setGlobalDiscount(shopId, 200);
+            .when(shopRepository).setGlobalDiscount(shopId, 200, true);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.setGlobalDiscount(shopId, 200, token));
+            () -> shopService.setGlobalDiscount(shopId, 200, true, token));
         assertTrue(ex.getMessage().contains("Error setting global discount"));
     }
 
@@ -450,7 +448,7 @@ class ShopServiceAcceptanceTests {
         when(userService.hasPermission(14, PermissionsEnum.setPolicy, shopId)).thenReturn(false);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.setGlobalDiscount(shopId, 10, token));
+            () -> shopService.setGlobalDiscount(shopId, 10, true, token));
         assertTrue(ex.getMessage().contains("does not have permission"));
     }
 
@@ -462,10 +460,10 @@ class ShopServiceAcceptanceTests {
 
         when(authTokenService.ValidateToken(token)).thenReturn(14);
         when(userService.hasPermission(14, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
-        doNothing().when(shopRepository).setDiscountForItem(shopId, itemId, discount);
+        doNothing().when(shopRepository).setDiscountForItem(shopId, itemId, discount, true);
 
-        shopService.setDiscountForItem(shopId, itemId, discount, token);
-        verify(shopRepository).setDiscountForItem(shopId, itemId, discount);
+        shopService.setDiscountForItem(shopId, itemId, discount, true, token);
+        verify(shopRepository).setDiscountForItem(shopId, itemId, discount, true);
     }
 
     // UC19 - Define single discount (invalid discount)
@@ -477,10 +475,10 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken(token)).thenReturn(14);
         when(userService.hasPermission(14, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
         doThrow(new IllegalArgumentException("Discount must be <=100"))
-            .when(shopRepository).setDiscountForItem(shopId, itemId, 200);
+            .when(shopRepository).setDiscountForItem(shopId, itemId, 200, true);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.setDiscountForItem(shopId, itemId, 200, token));
+            () -> shopService.setDiscountForItem(shopId, itemId, 200, true, token));
         assertTrue(ex.getMessage().contains("Error setting discount for item"));
     }
 
@@ -494,60 +492,7 @@ class ShopServiceAcceptanceTests {
         when(userService.hasPermission(14, PermissionsEnum.setPolicy, shopId)).thenReturn(false);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.setDiscountForItem(shopId, itemId, 10, token));
-        assertTrue(ex.getMessage().contains("does not have permission"));
-    }
-
-    // UC19 - Define bundle discount
-    @Test
-    void testAddBundleDiscount_Success() throws Exception {
-        String token = "t";
-        int shopId = 8, discount = 20;
-        Map<Integer, Integer> basket = new HashMap<>();
-        basket.put(1, 2);
-        basket.put(2, 3);
-
-        when(authTokenService.ValidateToken(token)).thenReturn(14);
-        when(userService.hasPermission(14, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
-        doNothing().when(shopRepository).addBundleDiscount(shopId, basket, discount);
-
-        shopService.addBundleDiscount(shopId, basket, discount, token);
-        verify(shopRepository).addBundleDiscount(shopId, basket, discount);
-    }
-
-    // UC19 - Define bundle discount (invalid discount)
-    @Test
-    void testAddBundleDiscount_InvalidDiscount_Failure() throws Exception {
-        String token = "t";
-        int shopId = 8, discount = 200;
-        Map<Integer, Integer> basket = new HashMap<>();
-        basket.put(1, 2);
-        basket.put(2, 3);
-
-        when(authTokenService.ValidateToken(token)).thenReturn(14);
-        when(userService.hasPermission(14, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
-        doThrow(new IllegalArgumentException("Discount must be <=100"))
-            .when(shopRepository).addBundleDiscount(shopId, basket, discount);
-
-        RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.addBundleDiscount(shopId, basket, discount, token));
-        assertTrue(ex.getMessage().contains("Error adding bundle discount for item"));
-    }
-
-    // UC19 - Define bundle discount (no permission)
-    @Test
-    void testAddBundleDiscount_NoPermission_Failure() throws Exception {
-        String token = "t";
-        int shopId = 8, discount = 20;
-        Map<Integer, Integer> basket = new HashMap<>();
-        basket.put(1, 2);
-        basket.put(2, 3);
-
-        when(authTokenService.ValidateToken(token)).thenReturn(14);
-        when(userService.hasPermission(14, PermissionsEnum.setPolicy, shopId)).thenReturn(false);
-
-        RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.addBundleDiscount(shopId, basket, discount, token));
+            () -> shopService.setDiscountForItem(shopId, itemId, 10, true, token));
         assertTrue(ex.getMessage().contains("does not have permission"));
     }
 
@@ -695,5 +640,4 @@ class ShopServiceAcceptanceTests {
         assertEquals(threads, ids.size(),
             "Each thread must create a shop with a unique ID");
     }
-
 }
