@@ -7,11 +7,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import ApplicationLayer.OurArg;
 import ApplicationLayer.OurRuntime;
 import ApplicationLayer.Purchase.PaymentMethod;
 import DomainLayer.Guest;
 import DomainLayer.IUserRepository;
 import DomainLayer.Member;
+import DomainLayer.Purchase.Address;
 import DomainLayer.Roles.PermissionsEnum;
 import DomainLayer.Roles.Role;
 import DomainLayer.ShoppingCart;
@@ -82,7 +84,7 @@ public class UserRepository implements IUserRepository {
         Guest guest = new Guest(id); // Assuming Guest is a subclass of User
         userMapping.put(id, guest); // Add the guest to the mapping
         if(!userMapping.containsKey(id) || userMapping.get(id) == null) {
-            throw new IllegalArgumentException("Failed to create guest with ID " + id);
+            throw new OurArg("Failed to create guest with ID " + id);
         }
         return id; // Return the ID of the newly created guest
     }
@@ -145,12 +147,17 @@ public class UserRepository implements IUserRepository {
         }
     }
 
-    public void updateMemberAddress(int id, String address) {
+    public void updateMemberAddress(int id, String city, String street, int apartmentNum, String postalCode) {
         if (!userMapping.containsKey(id)) {
             throw new OurRuntime("User with ID " + id + " doesn't exist.");
         }
         User user = userMapping.get(id);
         if (user instanceof Member) {
+            Address address = new Address()
+                    .withCity(city)
+                    .withStreet(street)
+                    .withApartmentNumber(apartmentNum)
+                    .withZipCode(postalCode);
             ((Member) user).setAddress(address);
         } else {
             throw new OurRuntime("User with ID " + id + " is not a Member.");
