@@ -573,6 +573,7 @@ public class ShopService {
             throw new RuntimeException("Error retrieving all items: " + e.getMessage(), e);
         }
     }
+    
 
     /**
      * Search across all shops (no single‑shop focus) for items matching any

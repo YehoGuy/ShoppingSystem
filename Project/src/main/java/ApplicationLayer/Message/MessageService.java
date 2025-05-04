@@ -83,11 +83,7 @@ public class MessageService {
         }
     }
 
-    // from here the functions are not necessary for the project, so they aren't implemented correctly.
-
-    public String deleteMessage(String token, int messageId) {
-        // need to validate the token and get the senderId from it
-        // need to check if the senderId is the same as the one in the message
+    public Boolean deleteMessage(String token, int messageId) {
         try {
             LoggerService.logMethodExecution("deleteMessage", token, messageId); // Log the method execution
             int senderId = authTokenService.ValidateToken(token); // get the senderId from the token
@@ -114,9 +110,6 @@ public class MessageService {
     }
 
     public String getFullConversation(String token, int messageId) {
-        // need to validate the token and get the senderId from it
-        // need to check if the senderId is the same as the one in the message
-        // can make it prettier: get username of the sender of each message (for this i need userService)
         try {
             String output = "Full conversation:\n";
             List<Message> messages = messageRepository.getFullConversation(messageId);

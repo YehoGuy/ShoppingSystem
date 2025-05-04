@@ -197,7 +197,7 @@ public class UserService {
             LoggerService.logMethodExecutionEndVoid("updateMemberAddress");
         } catch (Exception e) {
             LoggerService.logError("updateMemberAddress", e, address);
-            throw new RuntimeException("Error updating address for token" + token + ": " + e.getMessage(), e);
+            throw new OurRuntime("Error updating address: " + e.getMessage(), e);
         }
     }
 
@@ -1202,49 +1202,58 @@ public class UserService {
             return true;
         } catch (OurRuntime e) {
             LoggerService.logDebug("pay", e);
-            throw e; // Rethrow the custom exception
+            throw new OurRuntime("pay: " + e.getMessage(), e);
         } catch (Exception e) {
             LoggerService.logError("pay", e, token, shopId, payment);
-            throw new RuntimeException("Error setting payment method for user ID " + token + ": " + e.getMessage(), e);
+            throw new OurRuntime("pay: " + e.getMessage(), e);
         }
     }
+    
 
     //NO API ENDPOINT!
-    public boolean refundPaymentAuto(String token, int shopId, double payment){
+    public boolean refundPaymentAuto(String token, int shopId, double payment) {
         try {
-            LoggerService.logMethodExecution("refundPayment", token, shopId, payment);
-            int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
-            userRepository.refund(userId, shopId, payment); // Set the payment method for the user
-            LoggerService.logMethodExecutionEnd("refundPayment", true);
+            LoggerService.logMethodExecution("refundPaymentAuto", token, shopId, payment);
+            int userId = authTokenService.ValidateToken(token);
+            userRepository.refund(userId, shopId, payment);
+            LoggerService.logMethodExecutionEnd("refundPaymentAuto", true);
             return true;
+        } catch (OurArg e) {
+            LoggerService.logDebug("refundPaymentAuto", e);
+            throw new OurArg("refundPaymentAuto: " + e.getMessage(), e);
         } catch (OurRuntime e) {
-            LoggerService.logDebug("refundPayment", e);
-            throw e; // Rethrow the custom exception
+            LoggerService.logDebug("refundPaymentAuto", e);
+            throw new OurRuntime("refundPaymentAuto: " + e.getMessage(), e);
         } catch (Exception e) {
-            LoggerService.logError("refundPayment", e, token, shopId, payment);
-            throw new RuntimeException("Error setting payment method for user ID " + token + ": " + e.getMessage(), e);
+            LoggerService.logError("refundPaymentAuto", e, token, shopId, payment);
+            throw new OurRuntime("refundPaymentAuto: " + e.getMessage(), e);
         }
-        
     }
+    
 
-    public boolean refundPaymentByStoreEmployee(String token, int userId, int shopId, double payment){
+    public boolean refundPaymentByStoreEmployee(String token, int userId, int shopId, double payment) {
         try {
             LoggerService.logMethodExecution("refundPaymentByStoreEmployee", token, shopId, payment);
-            int initiatingUserId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            int initiatingUserId = authTokenService.ValidateToken(token);
+            
             if (userRepository.getRole(initiatingUserId, shopId) == null) {
-                LoggerService.logDebug("refundPaymentByStoreEmployee", new OurRuntime("Member ID " + initiatingUserId + " has no role for shop ID " + shopId));
-                throw new OurRuntime("Member ID " + initiatingUserId + " has no role for shop ID " + shopId);  
+                throw new OurRuntime("Member ID " + initiatingUserId + " has no role for shop ID " + shopId);
             }
-            userRepository.refund(userId, shopId, payment); // Set the payment method for the user
-            LoggerService.logMethodExecutionEnd("refundPayment", true);
+    
+            userRepository.refund(userId, shopId, payment);
+            LoggerService.logMethodExecutionEnd("refundPaymentByStoreEmployee", true);
             return true;
+            
+        } catch (OurArg e) {
+            LoggerService.logDebug("refundPaymentByStoreEmployee", e);
+            throw new OurArg("refundPaymentByStoreEmployee: " + e.getMessage(), e);
         } catch (OurRuntime e) {
-            LoggerService.logDebug("refundPayment", e);
-            throw e; // Rethrow the custom exception
+            LoggerService.logDebug("refundPaymentByStoreEmployee", e);
+            throw new OurRuntime("refundPaymentByStoreEmployee: " + e.getMessage(), e);
         } catch (Exception e) {
-            LoggerService.logError("refundPayment", e, token, shopId, payment);
-            throw new RuntimeException("Error setting payment method for user ID " + token + ": " + e.getMessage(), e);
+            LoggerService.logError("refundPaymentByStoreEmployee", e, token, shopId, payment);
+            throw new OurRuntime("refundPaymentByStoreEmployee: " + e.getMessage(), e);
         }
-        
     }
+    
 }
