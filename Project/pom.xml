@@ -12,6 +12,8 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>
+    <Java.version>21</Java.version>
+    <Vaadin.version>24.3.4</Vaadin.version>
   </properties>
 
   <dependencyManagement>
@@ -101,6 +103,29 @@
       <artifactId>logback-classic</artifactId>
       <version>1.4.11</version>
     </dependency>
+
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-bom</artifactId>
+      <version>24.3.4</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-spring-boot-starter</artifactId>
+      <version>24.3.4</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter</artifactId>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -123,6 +148,26 @@
         <configuration>
           <useModulePath>false</useModulePath>
         </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>com.vaadin</groupId>
+        <artifactId>vaadin-maven-plugin</artifactId>
+        <version>24.3.4</version>
+        <executions>
+            <execution>
+                <goals>
+                    <goal>prepare-frontend</goal>
+                    <goal>build-frontend</goal>
+                </goals>
+            </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-maven-plugin</artifactId>
+          <version>3.2.1</version> <!-- Replace with latest if needed -->
       </plugin>
     </plugins>
   </build>
