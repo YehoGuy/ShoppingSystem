@@ -92,7 +92,9 @@ public class PurchaseService {
                 shopService.shipPurchase(authToken, purchaseId, purchaseIds.get(purchaseId), shippingAddress.getCountry(), shippingAddress.getCity(), shippingAddress.getStreet(), shippingAddress.getZipCode());
             // 7. LOG the purchase
             LoggerService.logMethodExecutionEnd("checkoutCart", purchaseIds);
-            // 8. return purchase ID's
+            // 8. notify the user
+            userService.purchaseNotification(cart);
+            // 9. return purchase ID's
             return purchaseIds.keySet().stream().toList();
         } catch (Exception e) {
             // return Items to shop

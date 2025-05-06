@@ -12,6 +12,7 @@ import ApplicationLayer.Purchase.PaymentMethod;
 import DomainLayer.Guest;
 import DomainLayer.IUserRepository;
 import DomainLayer.Member;
+import DomainLayer.Notification;
 import DomainLayer.Purchase.Address;
 import DomainLayer.Roles.PermissionsEnum;
 import DomainLayer.Roles.Role;
@@ -496,4 +497,37 @@ public class UserRepository implements IUserRepository {
             throw new OurRuntime("Refund failed: " + e.getMessage());
         }
     }
+
+    @Override
+    public void addNotification(int userId, String title, String message) {
+        Member member = getMemberById(userId);
+        if (member == null) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        member.addNotification(new Notification(title, message)); // Assuming User has a method to add a notification
+    }
+
+    @Override
+    public List<Notification> getNotificationsAndClear(int userId) {
+        Member member = getMemberById(userId);
+        if (member == null) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        return member.getNotificationsAndClear(); // Assuming User has a method to get notifications
+    }
+
+    @Override
+    public List<Member> getOwners(int shopId) {
+        List<Member> owners = new ArrayList<>();
+        for (User user : userMapping.values()) {
+            if (user instanceof Member) {
+                Member member = (Member) user;
+                if (member.getRoles().stream().anyMatch(role -> role.isOwner() && role.getShopId() == shopId)) {
+                    owners.add(member);
+                }
+            }
+        }
+        return owners;
+    }
+
 }
