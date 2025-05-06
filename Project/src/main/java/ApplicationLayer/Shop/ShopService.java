@@ -417,6 +417,7 @@ public class ShopService {
                 throw new RuntimeException("User does not have permission to close shop " + shopId);
             }
             shopRepository.closeShop(shopId);
+            userService.closeShopNotification(shopId);
             LoggerService.logMethodExecutionEndVoid("closeShop");
         } catch (Exception e) {
             LoggerService.logError("closeShop", e, shopId);

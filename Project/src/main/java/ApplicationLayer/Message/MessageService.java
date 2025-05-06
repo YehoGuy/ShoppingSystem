@@ -44,6 +44,7 @@ public class MessageService {
             }
             messageRepository.addMessage(senderId, receiverId, content, LocalDate.now().toString(), true,
                     previousMessageId);
+            userService.messageNotification(receiverId, senderId, true);
             LoggerService.logMethodExecutionEnd("sendMessageToUser", "Message send successfully!"); // Log the success
             return "Message sent successfully!";
         } catch (OurRuntime e) {
@@ -76,6 +77,7 @@ public class MessageService {
             }
             messageRepository.addMessage(userId, receiverId, content, LocalDate.now().toString(), false,
                     previousMessageId);
+            userService.messageNotification(userId, receiverId, false);
             LoggerService.logMethodExecutionEnd("sendMessageToShop", "Message send successfully!"); // Log the success
             return "Message sent successfully!";
         } catch (OurRuntime e) {

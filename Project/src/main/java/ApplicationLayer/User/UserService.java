@@ -73,8 +73,10 @@ public class UserService {
                 throw new RuntimeException("the user is suspended");
             }
             if(isAdmin(userId)){
-                if(id >= 0)
+                if(id >= 0){
                     userRepository.removeAdmin(id);
+                    removedAppointment(id, "Admin", null);
+                }
                 else
                     throw new IllegalArgumentException("the id of the user to make admin is illegal");
             }
@@ -523,6 +525,7 @@ public class UserService {
                 throw new OurRuntime("Member ID " + assigneeId + " is not the assignee of member ID " + managerId + " in shop ID " + shopId);
             }
             userRepository.removeRole(managerId, shopId);
+            removedAppointment(managerId, "Manager", shopId);
             LoggerService.logMethodExecutionEndVoid("removeManagerOfStore");
         } catch (OurRuntime e) {
             LoggerService.logDebug("removeManagerOfStore", e);
@@ -560,6 +563,7 @@ public class UserService {
             }
             userRepository.removeRole(memberId, shopId);
             removeAllAssigned(memberId, shopId); // Remove all assigned roles for the member
+            removedAppointment(memberId, "Owner", shopId);
             LoggerService.logMethodExecutionEndVoid("removeOwnerFromStore");
         } catch (OurRuntime e) {
             LoggerService.logDebug("removeOwnerFromStore", e);
@@ -741,7 +745,10 @@ public class UserService {
                 LoggerService.logDebug("removeRole", new OurRuntime("Member ID " + id + " is not the assignee of the role for shop ID " + role.getShopId()));
                 throw new OurRuntime("Member ID " + id + " is not the assignee of the role for shop ID " + role.getShopId());  
             }
-            userRepository.removeRole(id, role.getShopId()); // Remove the role from the member
+            int shopId = role.getShopId();
+            String notification = role.toNotification();
+            userRepository.removeRole(id, shopId); // Remove the role from the member
+            removedAppointment(id, notification, shopId);
             return true;
         } catch (OurRuntime e) {
             LoggerService.logDebug("removeRole", e);
@@ -868,6 +875,7 @@ public class UserService {
                 throw new OurRuntime("Member ID " + assigneeId + " is not the assignee of member ID " + id + " in shop ID " + shopId);
             }
             userRepository.removePermission(id, permission, shopId); // Add the permission to the member
+            removedAppointment(id, permission.toString(), shopId);
             LoggerService.logMethodExecutionEnd("removePermission", true);
             return true; // Permission added successfully
         } catch (OurRuntime e) {
@@ -1336,6 +1344,113 @@ public class UserService {
             LoggerService.logError("getUserShippingAddress", e, userId);
             throw new RuntimeException("Error fetching shipping address for user ID " + userId + ": " + e.getMessage(), e);
         }
+    }
+
+    // Call it after login or when getting notifiactions when user is logged in
+    public void getNotificationsAndClear(String token){
+        try {
+            LoggerService.logMethodExecution("getNotificationsAndClear", token);
+            int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            userRepository.getNotificationsAndClear(userId);
+            LoggerService.logMethodExecutionEndVoid("getNotificationsAndClear");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getNotificationsAndClear", e);
+            throw e; // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("getNotificationsAndClear", e, token);
+            throw new RuntimeException("Error fetching notifications for user ID " + token + ": " + e.getMessage(), e);
+        }
+    }
+
+    public void purchaseNotification(HashMap<Integer, HashMap<Integer, Integer>> cart){
+        try {
+            LoggerService.logMethodExecution("purchaseNotification", cart);
+            for (Map.Entry<Integer, HashMap<Integer, Integer>> entry : cart.entrySet()) {
+                int shopId = entry.getKey();
+                HashMap<Integer, Integer> items = entry.getValue();
+                List<Member> owners = userRepository.getOwners(shopId);
+                for (Member owner : owners) {
+                    for(Map.Entry<Integer, Integer> itemEntry : items.entrySet()) {
+                        int itemId = itemEntry.getKey();
+                        int quantity = itemEntry.getValue();
+                        userRepository.addNotification(owner.getMemberId(), "Item " + itemId + " Purchased" , "Quantity: " + quantity + " purchased from your shop ID: " + shopId);
+                    }
+                }
+            }
+            LoggerService.logMethodExecutionEndVoid("purchaseNotification");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("purchaseNotification", e);
+            throw e; // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("purchaseNotification", e, cart);
+            throw new RuntimeException("Error sending purchase notification: " + e.getMessage(), e);
+        }
+    }
+
+    public void closeShopNotification(Integer shopId){
+        try {
+            LoggerService.logMethodExecution("closeShopNotification", shopId);
+            List<Member> owners = userRepository.getOwners(shopId);
+            for (Member owner : owners) {
+                userRepository.addNotification(owner.getMemberId(), "Shop Closed" , "Your shop ID: " + shopId + " has been closed.");
+            }
+            LoggerService.logMethodExecutionEndVoid("closeShopNotification");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("closeShopNotification", e);
+            throw e; // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("closeShopNotification", e, shopId);
+            throw new RuntimeException("Error sending close shop notification: " + e.getMessage(), e);
+        }
+    }
+
+    public void removedAppointment(Integer memberId, String appointment, Integer shopId){
+        try{
+            LoggerService.logMethodExecution("removedAppointment", memberId, appointment);
+            if(shopId == null){
+                userRepository.addNotification(memberId, "Appointment Removed" , "Your appointment to: " + appointment + " has been removed.");
+            }else{
+                userRepository.addNotification(memberId, "Appointment Removed" , "Your appointment to: " + appointment + " in the shop " + shopId + " has been removed.");
+            }
+            LoggerService.logMethodExecutionEndVoid("removedAppointment");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("removedAppointment", e);
+            throw e; // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("removedAppointment", e, memberId, appointment);
+            throw new RuntimeException("Error sending remove appointment notification: " + e.getMessage(), e);
+        }
+    }
+
+    // if isFromShop is true, then the message is from the shop to the user
+    // if isFromShop is false, then the message is from the user to the shop
+    public void messageNotification(Integer memberId , Integer shopId, boolean isFromShop){
+        if(isFromShop){
+            try {
+                LoggerService.logMethodExecution("messageUserNotification", memberId);
+                userRepository.addNotification(memberId, "Message Received" , "You have received a new message from the shop (id=" + shopId + ").");
+                LoggerService.logMethodExecutionEndVoid("messageUserNotification");
+            } catch (OurRuntime e) {
+                LoggerService.logDebug("messageUserNotification", e);
+                throw e; // Rethrow the custom exception
+            } catch (Exception e) {
+                LoggerService.logError("messageUserNotification", e, memberId);
+                throw new RuntimeException("Error sending message user notification: " + e.getMessage(), e);
+            }
+        }else{
+            try {
+                LoggerService.logMethodExecution("messageUserNotification", memberId);
+                userRepository.addNotification(memberId, "Message Received" , "You have received a new message from the user (id=" + memberId + ").");
+                LoggerService.logMethodExecutionEndVoid("messageUserNotification");
+            } catch (OurRuntime e) {
+                LoggerService.logDebug("messageUserNotification", e);
+                throw e; // Rethrow the custom exception
+            } catch (Exception e) {
+                LoggerService.logError("messageUserNotification", e, memberId);
+                throw new RuntimeException("Error sending message user notification: " + e.getMessage(), e);
+            }
+        }
+        
     }
 
     // LocalDateTime is used to represent the date and time of suspension
