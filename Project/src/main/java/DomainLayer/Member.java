@@ -1,6 +1,9 @@
 package DomainLayer;
 
 import java.util.ArrayList;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -14,6 +17,7 @@ public class Member extends User {
     private volatile String password; // Password of the user
     private volatile String email; // Email address of the user
     private volatile String phoneNumber; // Phone number of the user
+    private volatile LocalDateTime suspended; // Suspension status of the user
     
     private final List<Role> roles; // List of roles associated with the user
     private final List<Integer> orderHistory;// List of order IDs
@@ -32,6 +36,7 @@ public class Member extends User {
         this.password = password; // Initialize password
         this.email = email; // Initialize email address
         this.phoneNumber = phoneNumber; // Initialize phone number
+        this.suspended = LocalDateTime.now(); // Initialize suspension status (not suspended)
         this.orderHistory = new CopyOnWriteArrayList<>(); // Initialize order history
         this.roles = new CopyOnWriteArrayList<>(); // Initialize roles
         this.pending_roles = new CopyOnWriteArrayList<>(); // Initialize pending roles
@@ -46,6 +51,7 @@ public class Member extends User {
         this.password = password; // Initialize password
         this.email = email; // Initialize email address
         this.phoneNumber = phoneNumber; // Initialize phone number
+        this.suspended = LocalDateTime.now(); // Initialize suspension status (not suspended)
         this.orderHistory = new CopyOnWriteArrayList<>(); // Initialize order history
         this.roles = new CopyOnWriteArrayList<>(); // Initialize roles
         this.pending_roles = new CopyOnWriteArrayList<>(); // Initialize pending roles
@@ -71,6 +77,14 @@ public class Member extends User {
 
     public String getPhoneNumber() {
         return phoneNumber; // Return the phone number
+    }
+
+    public Boolean isSuspended() {
+        return suspended.isAfter(LocalDateTime.now()); // Check if the user is suspended
+    }
+
+    public void setSuspended(LocalDateTime suspended) {
+        this.suspended = suspended; // Set the suspension status
     }
 
     public synchronized void setUsername(String username) {
@@ -151,6 +165,7 @@ public class Member extends User {
             }
         }
     }
+
     public void declineRole(Role role) {
         synchronized (pendingRolesLock) {
             if (pending_roles.contains(role)) {
