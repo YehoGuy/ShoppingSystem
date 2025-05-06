@@ -1,5 +1,6 @@
 package ApplicationLayer.User;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,9 @@ public class UserService {
         LoggerService.logMethodExecution("makeAdmin", token, id);
         try {
             int userId = authTokenService.ValidateToken(token);
+            if(isSuspended(userId)){
+                throw new RuntimeException("the user is suspended");
+            }
             if(isAdmin(userId)){
                 if(id >= 0)
                     userRepository.addAdmin(id);
@@ -65,6 +69,9 @@ public class UserService {
         LoggerService.logMethodExecution("removeAdmin", token, id);
         try {
             int userId = authTokenService.ValidateToken(token);
+            if(isSuspended(userId)){
+                throw new RuntimeException("the user is suspended");
+            }
             if(isAdmin(userId)){
                 if(id >= 0)
                     userRepository.removeAdmin(id);
@@ -136,6 +143,9 @@ public class UserService {
         try {
             int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             LoggerService.logMethodExecution("updateMemberUsername", id, username);
+            if (isSuspended(id)) {
+                throw new RuntimeException("the user is suspended");
+            }
             validateMemberId(id);
             isValidUsername(username); // Validate the username
             userRepository.updateMemberUsername(id, username);
@@ -149,9 +159,12 @@ public class UserService {
     public void updateMemberPassword(String token, String password) {
         try {
             int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            LoggerService.logMethodExecution("updateMemberPassword", id, password);
+            if (isSuspended(id)) {
+                throw new RuntimeException("the user is suspended");
+            }
             isValidPassword(password); // Validate the password
             password = passwordEncoder.encode(password); // Encode the password using the PasswordEncoderUtil
-            LoggerService.logMethodExecution("updateMemberPassword", id, password);
             validateMemberId(id);
             userRepository.updateMemberPassword(id, password);
             LoggerService.logMethodExecutionEndVoid("updateMemberPassword");
@@ -166,6 +179,9 @@ public class UserService {
             int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             LoggerService.logMethodExecution("updateMemberEmail", id, email);
             validateMemberId(id);
+            if (isSuspended(id)) {
+                throw new RuntimeException("the user is suspended");
+            }
             isValidEmail(email); // Validate the email
             userRepository.updateMemberEmail(id, email);
             LoggerService.logMethodExecutionEndVoid("updateMemberEmail");
@@ -180,6 +196,9 @@ public class UserService {
             int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             LoggerService.logMethodExecution("updateMemberPhoneNumber", id, phoneNumber);
             validateMemberId(id);
+            if (isSuspended(id)) {
+                throw new RuntimeException("the user is suspended");
+            }
             isValidPhoneNumber(phoneNumber); // Validate the phone number
             userRepository.updateMemberPhoneNumber(id, phoneNumber);
             LoggerService.logMethodExecutionEndVoid("updateMemberPhoneNumber");
@@ -194,6 +213,9 @@ public class UserService {
             int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             LoggerService.logMethodExecution("updateMemberAddress", id, city, street, apartmentNumber, postalCode);
             validateMemberId(id);
+            if (isSuspended(id)) {
+                throw new RuntimeException("the user is suspended");
+            }
             userRepository.updateMemberAddress(id, city, street, apartmentNumber, postalCode);
             LoggerService.logMethodExecutionEndVoid("updateMemberAddress");
         } catch (Exception e) {
@@ -203,7 +225,6 @@ public class UserService {
     }
 
     public void validateMemberId(int id) {
-
         if (id <= 0) {
             throw new IllegalArgumentException("Invalid user ID: " + id);
         }
@@ -404,6 +425,9 @@ public class UserService {
         try {
             LoggerService.logMethodExecution("changePermissions", token, memberId, shopId, permissions);
             int assigneeId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            if (isSuspended(assigneeId)) {
+                throw new RuntimeException("the user is suspended");
+            }
             if (!userRepository.isOwner(assigneeId, shopId)) {
                 LoggerService.logDebug("changePermissions", new OurRuntime("Member ID " + assigneeId + " is not an owner of shop ID " + shopId));
                 throw new OurRuntime("Member ID " + assigneeId + " is not an owner of shop ID " + shopId);  
@@ -454,6 +478,9 @@ public class UserService {
         try {
             LoggerService.logMethodExecution("makeManagerOfStore", token, shopId, permissions);
             int assignee = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            if (isSuspended(assignee)) {
+                throw new RuntimeException("the user is suspended");
+            }
             if (!userRepository.isOwner(assignee, shopId)) {
                 LoggerService.logDebug("makeManagerOfStore", new OurRuntime("Member ID " + assignee + " is not an owner of shop ID " + shopId));
                 throw new OurRuntime("Member ID " + assignee + " is not an owner of shop ID " + shopId);  
@@ -483,6 +510,9 @@ public class UserService {
         try {
             LoggerService.logMethodExecution("removeManagerOfStore", token, shopId);
             int assigneeId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            if (isSuspended(assigneeId)) {
+                throw new RuntimeException("the user is suspended");
+            }
             Role role = userRepository.getRole(managerId, shopId);
             if (role == null) {
                 LoggerService.logDebug("removeManagerOfStore", new OurRuntime("Member ID " + managerId + " is not a manager of shop ID " + shopId));
@@ -521,6 +551,9 @@ public class UserService {
                 throw new OurRuntime("Member ID " + memberId + " is not an owner of shop ID " + shopId);  
             }
             int assigneeId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            if (isSuspended(assigneeId)) {
+                throw new RuntimeException("the user is suspended");
+            }
             if (role.getAssigneeId() != assigneeId) {
                 LoggerService.logDebug("removeOwnerFromStore", new OurRuntime("Member ID " + assigneeId + " is not the assignee of member ID " + memberId + " in shop ID " + shopId));
                 throw new OurRuntime("Member ID " + assigneeId + " is not the assignee of member ID " + memberId + " in shop ID " + shopId);
@@ -571,6 +604,9 @@ public class UserService {
         try {
             LoggerService.logMethodExecution("makeStoreOwner", token, shopId);
             int assigneeId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            if (isSuspended(assigneeId)) {
+                throw new RuntimeException("the user is suspended");
+            }
             if(!userRepository.isOwner(assigneeId, shopId)) {
                 LoggerService.logDebug("makeStoreOwner", new OurRuntime("Member ID " + assigneeId + " is not an owner of shop ID " + shopId));
                 throw new OurRuntime("Member ID " + assigneeId + " is not an owner of shop ID " + shopId);  
@@ -604,7 +640,9 @@ public class UserService {
         try {
             LoggerService.logMethodExecution("acceptRole", token, shopId);
             int memberId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
-            Member member = userRepository.getMemberById(memberId);
+            if (isSuspended(memberId)) {
+                throw new RuntimeException("the user is suspended");
+            }
             Role role = userRepository.getPendingRole(memberId, shopId);
             if (role == null) {
                 LoggerService.logDebug("acceptRole", new OurRuntime("Member ID " + memberId + " has no pending role for shop ID " + shopId));
@@ -625,7 +663,9 @@ public class UserService {
         try {
             LoggerService.logMethodExecution("declineRole", token, shopId);
             int memberId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
-            Member member = userRepository.getMemberById(memberId);
+            if (isSuspended(memberId)) {
+                throw new RuntimeException("the user is suspended");
+            }
             Role role = userRepository.getPendingRole(memberId, shopId);
             if (role == null) {
                 LoggerService.logDebug("declineRole", new OurRuntime("Member ID " + memberId + " has no pending role for shop ID " + shopId));
@@ -656,6 +696,9 @@ public class UserService {
         try {
             LoggerService.logMethodExecution("addRole", memberId, role);
             validateMemberId(memberId);
+            if (isSuspended(memberId)) {
+                throw new RuntimeException("the user is suspended");
+            }
             userRepository.addRoleToPending(memberId, role); // Add the role to the member
             LoggerService.logMethodExecutionEnd("addRole", true);
             return true;
@@ -686,6 +729,9 @@ public class UserService {
                 throw new OurRuntime("Role cannot be null.");
             }
             validateMemberId(id);
+            if (isSuspended(id)) {
+                throw new RuntimeException("the user is suspended");
+            }
             Role existingRole = userRepository.getRole(id, role.getShopId());
             if (existingRole == null) {
                 LoggerService.logDebug("removeRole", new OurRuntime("Member ID " + id + " has no role for shop ID " + role.getShopId()));
@@ -724,6 +770,9 @@ public class UserService {
                 throw new OurRuntime("Role cannot be null.");
             }
             validateMemberId(id);
+            if (isSuspended(id)) {
+                return false;
+            }
             Role existingRole = userRepository.getRole(id, role.getShopId());
             if (existingRole == null) {
                 LoggerService.logDebug("hasRole", new OurRuntime("Member ID " + id + " has no role for shop ID " + role.getShopId()));
@@ -758,6 +807,9 @@ public class UserService {
         try {
             LoggerService.logMethodExecution("addPermission", token, id, permission, shopId);
             int assigneeId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            if (isSuspended(assigneeId)) {
+                throw new RuntimeException("the user is suspended");
+            }
             if (permission == null) {
                 LoggerService.logDebug("addPermission", new OurRuntime("Permission cannot be null."));
                 throw new OurRuntime("Permission cannot be null.");
@@ -799,6 +851,9 @@ public class UserService {
         try {
             LoggerService.logMethodExecution("removePermission", token, id, permission, shopId);
             int assigneeId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            if (isSuspended(assigneeId)) {
+                throw new RuntimeException("the user is suspended");
+            }
             if (permission == null) {
                 LoggerService.logDebug("removePermission", new OurRuntime("Permission cannot be null."));
                 throw new OurRuntime("Permission cannot be null.");
@@ -827,7 +882,13 @@ public class UserService {
         try {
             if (userRepository.getUserMapping().containsKey(id)) {
                 User user = userRepository.getUserById(id);
+                if (userRepository.isSuspended(id)) {
+                    return false; // User is suspended, no permissions granted
+                }
                 validateMemberId(id);
+                if (isSuspended(id)) {
+                    return false; // User is suspended, no permissions granted
+                }
                 return ((Member)user).hasPermission(permission,shopId); // Check if the user has the specified permission
             } else {
                 throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
@@ -940,6 +1001,9 @@ public class UserService {
         try {
             LoggerService.logMethodExecution("addItemToShoppingCart", token, shopId, itemId, quantity);
             int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            if (isSuspended(userId)) {
+                throw new RuntimeException("the user is suspended");
+            }
             userRepository.addItemToShoppingCart(userId, shopId, itemId, quantity);
             LoggerService.logMethodExecutionEndVoid("addItemToShoppingCart");
         } catch (OurRuntime e) {
@@ -964,6 +1028,9 @@ public class UserService {
         try {
             LoggerService.logMethodExecution("removeItemFromShoppingCart", token, shopId, itemId);
             int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            if (isSuspended(userId)) {
+                throw new RuntimeException("the user is suspended");
+            }
             userRepository.removeItemFromShoppingCart(userId, shopId, itemId);
             LoggerService.logMethodExecutionEndVoid("removeItemFromShoppingCart");
         } catch (OurRuntime e) {
@@ -989,6 +1056,9 @@ public class UserService {
         try {
             LoggerService.logMethodExecution("updateItemQuantityInShoppingCart", token, shopId, itemId, quantity);
             int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            if (isSuspended(userId)) {
+                throw new RuntimeException("the user is suspended");
+            }
             userRepository.updateItemQuantityInShoppingCart(userId, shopId, itemId, quantity);
             LoggerService.logMethodExecutionEndVoid("updateItemQuantityInShoppingCart");
         } catch (OurRuntime e) {
@@ -1198,6 +1268,9 @@ public class UserService {
         try {
             LoggerService.logMethodExecution("pay", token, shopId, payment);
             int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            if (isSuspended(userId)) {
+                throw new RuntimeException("the user is suspended");
+            }
             userRepository.pay(userId, shopId, payment); // Set the payment method for the user
             LoggerService.logMethodExecutionEnd("pay", true);
             return true;
@@ -1262,6 +1335,55 @@ public class UserService {
         } catch (Exception e) {
             LoggerService.logError("getUserShippingAddress", e, userId);
             throw new RuntimeException("Error fetching shipping address for user ID " + userId + ": " + e.getMessage(), e);
+        }
+    }
+
+    // LocalDateTime is used to represent the date and time of suspension
+    // LocalDateTime.max is used to represent a suspended user for an indefinite period
+    // LocalDateTime.now is used to represent a user who is not suspended
+    // other LocalDateTime values are used to represent a user who is suspended for a specific period
+    public void setSuspended(int userId, LocalDateTime suspended) {
+        try {
+            LoggerService.logMethodExecution("setSuspended", userId, suspended);
+            userRepository.setSuspended(userId, suspended);
+            LoggerService.logMethodExecutionEndVoid("setSuspended");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("setSuspended", e);
+            throw e; // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("setSuspended", e, userId, suspended);
+            throw new RuntimeException("Error setting suspension for user ID " + userId + ": " + e.getMessage(), e);
+        }
+    }
+
+
+    public boolean isSuspended(int userId) {
+        try {
+            LoggerService.logMethodExecution("isSuspended", userId);
+            boolean isSuspended = userRepository.isSuspended(userId);
+            LoggerService.logMethodExecutionEnd("isSuspended", isSuspended);
+            return isSuspended;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("isSuspended", e);
+            throw e; // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("isSuspended", e, userId);
+            throw new RuntimeException("Error checking suspension status for user ID " + userId + ": " + e.getMessage(), e);
+        }
+    }
+
+    public List<Integer> getSuspendedUsers(){
+        try {
+            LoggerService.logMethodExecution("getSuspendedUsers");
+            List<Integer> suspendedUsers = userRepository.getSuspendedUsers();
+            LoggerService.logMethodExecutionEnd("getSuspendedUsers", suspendedUsers);
+            return suspendedUsers;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getSuspendedUsers", e);
+            throw e; // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("getSuspendedUsers", e);
+            throw new RuntimeException("Error fetching suspended users: " + e.getMessage(), e);
         }
     }
 }

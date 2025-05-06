@@ -77,7 +77,7 @@ public class PurchaseService {
             cartBackup = cart; // backup the cart (cart is a deep copy of the original cart)
             // 3. create a purchase for each store (Repo creates)
             for(Integer shopId : cart.keySet()){
-                double totalPrice = shopService.purchaseItems(cart.get(shopId), shopId);
+                double totalPrice = shopService.purchaseItems(cart.get(shopId), shopId, authToken);
                 totalPrices.put(shopId, totalPrice);
                 aqcuired.put(shopId, cart.get(shopId));
                 int pid = purchaseRepository.addPurchase(userId, shopId, aqcuired.get(shopId), totalPrice, shippingAddress);
@@ -129,7 +129,7 @@ public class PurchaseService {
             // 1. Validate the authToken & userId & userRole
             int userId = authTokenService.ValidateToken(authToken);
             // 2. check that all items exist in the store and acquire them
-            shopService.purchaseItems(items, storeId);
+            shopService.purchaseItems(items, storeId, authToken);
             // 3. create a bid for the store (Repo creates)
             int purchaseId = purchaseRepository.addBid(userId, storeId, items, initialPrice);
             // 4. LOG the bid

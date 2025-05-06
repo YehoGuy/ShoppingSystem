@@ -1,5 +1,6 @@
 package InfrastructureLayer;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -495,5 +496,43 @@ public class UserRepository implements IUserRepository {
         } catch (Exception e) {
             throw new OurRuntime("Refund failed: " + e.getMessage());
         }
+    }
+
+    @Override
+    public void setSuspended(int userId, LocalDateTime suspended) {
+        Member member = getMemberById(userId);
+        if (member == null) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        member.setSuspended(suspended); 
+    }
+
+    @Override
+    public boolean isSuspended(int userId) {
+        Member member;
+        try{
+            member = getMemberById(userId);
+        } catch (Exception e) {
+            return false;
+        }
+        member = getMemberById(userId);
+        if (member == null) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        return member.isSuspended(); 
+    }
+
+    @Override
+    public List<Integer> getSuspendedUsers(){
+        List<Integer> suspendedUsers = new ArrayList<>();
+        for (User user : userMapping.values()) {
+            if (user instanceof Member) {
+                Member member = (Member) user;
+                if (member.isSuspended()) {
+                    suspendedUsers.add(member.getMemberId());
+                }
+            }
+        }
+        return suspendedUsers;
     }
 }

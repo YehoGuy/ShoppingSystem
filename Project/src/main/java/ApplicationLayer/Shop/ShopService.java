@@ -264,6 +264,9 @@ public class ShopService {
             LoggerService.logMethodExecution("addReviewToShop", shopId, rating, reviewText);
             Integer userId = authTokenService.ValidateToken(token);
             userService.validateMemberId(userId);
+            if(userService.isSuspended(userId)){
+                throw new RuntimeException("User is suspended and cannot add a review.");
+            }
             shopRepository.addReviewToShop(shopId, userId, rating, reviewText);
             LoggerService.logMethodExecutionEndVoid("addReviewToShop");
         } catch (Exception e) {
@@ -325,7 +328,10 @@ public class ShopService {
     public void addSupplyToItem(int shopId, int itemId, int quantity, String token) {
         try {
             LoggerService.logMethodExecution("addSupplyToItem", shopId, itemId, quantity);
-            authTokenService.ValidateToken(token);
+            Integer userId = authTokenService.ValidateToken(token);
+            if(!userService.hasPermission(userId,PermissionsEnum.manageItems,shopId)){
+                throw new RuntimeException("User does not have permission to add supply for item " + itemId + " in shop " + shopId);
+            }
             shopRepository.addSupplyToItem(shopId, itemId, quantity);
             LoggerService.logMethodExecutionEndVoid("addSupplyToItem");
         } catch (Exception e) {
@@ -438,9 +444,13 @@ public class ShopService {
         }
     }
 
-    public double purchaseItems(Map<Integer, Integer> purchaseLists, Integer shopId) {
+    public double purchaseItems(Map<Integer, Integer> purchaseLists, Integer shopId, String token) {
         try {
             LoggerService.logMethodExecution("purchaseItems", purchaseLists, shopId);
+            Integer userId = authTokenService.ValidateToken(token);
+            if(userService.isSuspended(userId)){
+                throw new RuntimeException("User is suspended and cannot purchase items.");
+            }
             Map<Integer, ItemCategory> itemsCategory = itemService.getItemdId2Cat(purchaseLists);
             double totalPrice = shopRepository.purchaseItems(purchaseLists,itemsCategory, shopId);
             LoggerService.logMethodExecutionEnd("purchaseItems", totalPrice);
@@ -491,9 +501,13 @@ public class ShopService {
      * @param itemId the item id.
      * @param supply the supply to add.
      */
-    public void addSupply(Integer shopId, Integer itemId, Integer supply) {
+    public void addSupply(Integer shopId, Integer itemId, Integer supply, String token) {
         try {
             LoggerService.logMethodExecution("addSupply", shopId, itemId, supply);
+            Integer userId = authTokenService.ValidateToken(token);
+            if(!userService.hasPermission(userId,PermissionsEnum.manageItems,shopId)){
+                throw new RuntimeException("User does not have permission to add supply for item " + itemId + " in shop " + shopId);
+            }
             shopRepository.addSupply(shopId, itemId, supply);
             LoggerService.logMethodExecutionEndVoid("addSupply");
         } catch (Exception e) {
@@ -512,7 +526,10 @@ public class ShopService {
     public void removeSupply(Integer shopId, Integer itemId, Integer supply, String token) {
         try {
             LoggerService.logMethodExecution("removeSupply", shopId, itemId, supply);
-            authTokenService.ValidateToken(token);
+            Integer userId = authTokenService.ValidateToken(token);
+            if(!userService.hasPermission(userId,PermissionsEnum.manageItems,shopId)){
+                throw new RuntimeException("User does not have permission to remove supply for item " + itemId + " in shop " + shopId);
+            }
             shopRepository.removeSupply(shopId, itemId, supply);
             LoggerService.logMethodExecutionEndVoid("removeSupply");
         } catch (Exception e) {

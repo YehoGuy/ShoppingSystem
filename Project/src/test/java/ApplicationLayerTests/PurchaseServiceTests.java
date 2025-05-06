@@ -87,8 +87,8 @@ class PurchaseServiceAcceptanceTest {
 
         when(auth.ValidateToken(token)).thenReturn(uid);
         when(users.getUserShoppingCartItems(uid)).thenReturn(new HashMap<>(cart));
-        when(shops.purchaseItems(cartShopA, shopA)).thenReturn(100.0);
-        when(shops.purchaseItems(cartShopB, shopB)).thenReturn(50.0);
+        when(shops.purchaseItems(cartShopA, shopA, token)).thenReturn(100.0);
+        when(shops.purchaseItems(cartShopB, shopB, token)).thenReturn(50.0);
         when(repo.addPurchase(eq(uid), eq(shopA), eq(cartShopA), eq(100.0), any())).thenReturn(1);
         when(repo.addPurchase(eq(uid), eq(shopB), eq(cartShopB), eq(50.0),  any())).thenReturn(2);
 
@@ -114,7 +114,7 @@ class PurchaseServiceAcceptanceTest {
 
         when(auth.ValidateToken(token)).thenReturn(uid);
         when(users.getUserShoppingCartItems(uid)).thenReturn(new HashMap<>(cart));
-        when(shops.purchaseItems(cartShop, shop)).thenReturn(30.0);
+        when(shops.purchaseItems(cartShop, shop, token)).thenReturn(30.0);
         when(repo.addPurchase(anyInt(), anyInt(), any(), anyDouble(), any())).thenReturn(9);
         doThrow(new RuntimeException("payFail")).when(users).pay(token, shop, 30.0);
 
@@ -145,7 +145,7 @@ class PurchaseServiceAcceptanceTest {
         int id = service.createBid(t, shop, itemsMap, 120);
 
         assertEquals(bidId,id);
-        verify(shops).purchaseItems(itemsMap, shop);
+        verify(shops).purchaseItems(itemsMap, shop, t);
     }
 
     /* ══════════════════════════════════════════════════════════════
