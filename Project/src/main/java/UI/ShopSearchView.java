@@ -40,11 +40,11 @@ public class ShopSearchView extends VerticalLayout {
         reviews2.add(new ShopReviewDTO(3, 3, "Average experience."));
         reviews2.add(new ShopReviewDTO(4, 2, "Not very helpful staff."));
         Map<ItemDTO, Integer> items1 = new HashMap<>();
-        items1.put(new ItemDTO(0, "banana", "a good banana", ItemCategory.GROCERY), 5);
-        items1.put(new ItemDTO(1, "apple", "a good apple", ItemCategory.GROCERY), 10);
+        items1.put(new ItemDTO(0, "banana", "a good banana", 10.0, ItemCategory.GROCERY), 5);
+        items1.put(new ItemDTO(1, "apple", "a good apple", 10.0, ItemCategory.GROCERY), 10);
         Map<ItemDTO, Integer> items2 = new HashMap<>();
-        items2.put(new ItemDTO(2, "carrot", "a good carrot", ItemCategory.GROCERY), 7);
-        items2.put(new ItemDTO(3, "potato", "a good potato", ItemCategory.GROCERY), 12);
+        items2.put(new ItemDTO(2, "carrot", "a good carrot", 10.0, ItemCategory.GROCERY), 7);
+        items2.put(new ItemDTO(3, "potato", "a good potato", 10.0, ItemCategory.GROCERY), 12);
 
         allShops.add(new ShopDTO("shop A", items1, items1, reviews1));
         allShops.add(new ShopDTO("shop B", items2, items2, reviews2));
