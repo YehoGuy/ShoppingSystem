@@ -12,7 +12,7 @@ public record ItemDTO(
         double averageRating,
         List<ItemReviewDTO> reviews) {
 
-    /* Domain → DTO /
+    /* Domain → DTO */
     public static ItemDTO fromDomain(DomainLayer.Item.Item item) {
         return new ItemDTO(
                 item.getId(),
@@ -27,7 +27,7 @@ public record ItemDTO(
         );
     }
 
-    / DTO → Domain (useful for create/update) */
+    /* DTO → Domain (useful for create/update) */
     public DomainLayer.Item.Item toDomain() {
         DomainLayer.Item.Item i = new DomainLayer.Item.Item(
                 id, name, description,
