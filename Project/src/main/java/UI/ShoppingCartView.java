@@ -18,6 +18,7 @@ import com.vaadin.flow.router.Route;
 
 import DTOs.ItemDTO;
 import DTOs.ShoppingCartDTO;
+import DomainLayer.Item.ItemCategory;
 
 @Route(value = "cart", layout = AppLayoutBasic.class)
 public class ShoppingCartView extends VerticalLayout {
@@ -25,10 +26,10 @@ public class ShoppingCartView extends VerticalLayout {
     public ShoppingCartView() {
         // Mock data for demonstration purposes
         // In a real application, you would retrieve this data from a service or database
-        ItemDTO item1 = new ItemDTO("Item 1", "Description of Item 1", 10.0);
-        ItemDTO item2 = new ItemDTO("Item 2", "Description of Item 2",20.0);
-        ItemDTO item3 = new ItemDTO("Item 3", "Description of Item 3", 30.0);
-        ItemDTO item4 = new ItemDTO("Item 4", "Description of Item 4", 40.0);
+        ItemDTO item1 = new ItemDTO(1, "Item 1", "Description of Item 1", 10.0, ItemCategory.GROCERY);
+        ItemDTO item2 = new ItemDTO(2, "Item 2", "Description of Item 2",20.0, ItemCategory.GROCERY);
+        ItemDTO item3 = new ItemDTO(3, "Item 3", "Description of Item 3", 30.0, ItemCategory.GROCERY);
+        ItemDTO item4 = new ItemDTO(4, "Item 4", "Description of Item 4", 40.0, ItemCategory.GROCERY);
         Map<ItemDTO, Integer> items1 = new HashMap<>();
         items1.put(item1, 2);
         items1.put(item2, 1);
