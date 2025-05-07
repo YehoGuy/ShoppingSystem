@@ -5,6 +5,7 @@ import java.util.List;
 
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.LoggerService;
+import ApplicationLayer.OurArg;
 import ApplicationLayer.OurRuntime;
 import ApplicationLayer.User.UserService;
 import ApplicationLayer.Shop.ShopService;
@@ -36,14 +37,15 @@ public class MessageService {
             userService.validateMemberId(senderId);
             userService.validateMemberId(receiverId);
             if (!messageRepository.isMessagePrevious(previousMessageId, senderId, receiverId)) {
-                OurRuntime e = new OurRuntime("Previous message with ID " + previousMessageId + " isn't proper previous message.");
-                LoggerService.logDebug("sendMessageToUser", e);
-                return "Error sending message to user: " + e.getMessage();
+                throw new OurRuntime("Previous message with ID " + previousMessageId + " isn't proper previous message.");
             }
             messageRepository.addMessage(senderId, receiverId, content, LocalDate.now().toString(), true, previousMessageId);
             userService.messageNotification(receiverId, senderId, true);
             LoggerService.logMethodExecutionEnd("sendMessageToUser", "Message sent successfully!");
             return "Message sent successfully!";
+        } catch (OurArg e) {
+            LoggerService.logDebug("sendMessageToUser", e);
+            return "Error sending message to user: " + e.getMessage();
         } catch (OurRuntime e) {
             LoggerService.logDebug("sendMessageToUser", e);
             return "Error sending message to user: " + e.getMessage();
@@ -60,19 +62,18 @@ public class MessageService {
             userService.validateMemberId(userId);
             Shop s = shopService.getShop(receiverId, token);
             if (s == null) {
-                OurRuntime e = new OurRuntime("Shop with ID " + receiverId + " doesn't exist.");
-                LoggerService.logDebug("sendMessageToShop", e);
-                return "Error sending message to shop: " + e.getMessage();
+                throw new OurRuntime("Shop with ID " + receiverId + " doesn't exist.");
             }
             if (!messageRepository.isMessagePrevious(previousMessageId, userId, receiverId)) {
-                OurRuntime e = new OurRuntime("Previous message with ID " + previousMessageId + " isn't proper previous message.");
-                LoggerService.logDebug("sendMessageToShop", e);
-                return "Error sending message to shop: " + e.getMessage();
+                throw new OurRuntime("Previous message with ID " + previousMessageId + " isn't proper previous message.");
             }
             messageRepository.addMessage(userId, receiverId, content, LocalDate.now().toString(), false, previousMessageId);
             userService.messageNotification(userId, receiverId, false);
             LoggerService.logMethodExecutionEnd("sendMessageToShop", "Message sent successfully!");
             return "Message sent successfully!";
+        } catch (OurArg e) {
+            LoggerService.logDebug("sendMessageToShop", e);
+            return "Error sending message to shop: " + e.getMessage();
         } catch (OurRuntime e) {
             LoggerService.logDebug("sendMessageToShop", e);
             return "Error sending message to shop: " + e.getMessage();
@@ -90,6 +91,9 @@ public class MessageService {
             messageRepository.deleteMessage(messageId, senderId);
             LoggerService.logMethodExecutionEnd("deleteMessage", "Message deleted successfully!");
             return "Message deleted successfully!";
+        } catch (OurArg e) {
+            LoggerService.logDebug("deleteMessage", e);
+            return "Error deleting message: " + e.getMessage();
         } catch (OurRuntime e) {
             LoggerService.logDebug("deleteMessage", e);
             return "Error deleting message: " + e.getMessage();
@@ -105,6 +109,12 @@ public class MessageService {
             messageRepository.updateMessage(messageId, content, LocalDate.now().toString());
             LoggerService.logMethodExecutionEnd("updateMessage", "Message updated successfully!");
             return "Message updated successfully!";
+        } catch (OurArg e) {
+            LoggerService.logDebug("updateMessage", e);
+            return "Error updating message: " + e.getMessage();
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("updateMessage", e);
+            return "Error updating message: " + e.getMessage();
         } catch (Exception e) {
             LoggerService.logError("updateMessage", e, token, messageId, content);
             throw new OurRuntime("Error updating message: " + e.getMessage(), e);
@@ -119,12 +129,18 @@ public class MessageService {
             for (Message message : messages) {
                 if (message.isDeleted()) {
                     output += "Message deleted\n";
-                    continue;
+                } else {
+                    output += message.toString() + "\n";
                 }
-                output += message.toString() + "\n";
             }
             LoggerService.logMethodExecutionEnd("getFullConversation", "Conversation retrieved successfully.");
             return output;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getFullConversation", e);
+            throw e;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getFullConversation", e);
+            throw e;
         } catch (Exception e) {
             LoggerService.logError("getFullConversation", e, token, messageId);
             throw new OurRuntime("Error getting full conversation: " + e.getMessage(), e);
@@ -141,6 +157,12 @@ public class MessageService {
             }
             LoggerService.logMethodExecutionEnd("getMessagesBySenderId", "Messages retrieved successfully.");
             return output;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getMessagesBySenderId", e);
+            throw e;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getMessagesBySenderId", e);
+            throw e;
         } catch (Exception e) {
             LoggerService.logError("getMessagesBySenderId", e, token, senderId);
             throw new OurRuntime("Error getting messages by sender ID: " + e.getMessage(), e);
@@ -157,6 +179,12 @@ public class MessageService {
             }
             LoggerService.logMethodExecutionEnd("getMessagesByReceiverId", "Messages retrieved successfully.");
             return output;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getMessagesByReceiverId", e);
+            throw e;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getMessagesByReceiverId", e);
+            throw e;
         } catch (Exception e) {
             LoggerService.logError("getMessagesByReceiverId", e, token, receiverId);
             throw new OurRuntime("Error getting messages by receiver ID: " + e.getMessage(), e);
@@ -173,6 +201,12 @@ public class MessageService {
             }
             LoggerService.logMethodExecutionEnd("getMessageById", "Message retrieved successfully.");
             return message.toString();
+        } catch (OurArg e) {
+            LoggerService.logDebug("getMessageById", e);
+            throw e;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getMessageById", e);
+            throw e;
         } catch (Exception e) {
             LoggerService.logError("getMessageById", e, token, messageId);
             throw new OurRuntime("Error getting message by ID: " + e.getMessage(), e);
@@ -189,6 +223,12 @@ public class MessageService {
             }
             LoggerService.logMethodExecutionEnd("getPreviousMessage", "Previous message retrieved successfully.");
             return message.toString();
+        } catch (OurArg e) {
+            LoggerService.logDebug("getPreviousMessage", e);
+            throw e;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getPreviousMessage", e);
+            throw e;
         } catch (Exception e) {
             LoggerService.logError("getPreviousMessage", e, token, messageId);
             throw new OurRuntime("Error getting previous message: " + e.getMessage(), e);
