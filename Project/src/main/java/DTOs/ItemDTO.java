@@ -1,19 +1,21 @@
 package DTOs;
 
+import DomainLayer.Item.ItemCategory;
+
 public class ItemDTO {
-    private String id;
+    private int id;
     private String name;
     private String description;
-    private double price;
+    private ItemCategory category;
 
-    public ItemDTO(String id, String name, String description, double price) {
+    public ItemDTO(int id, String name, String description, ItemCategory category) {
         this.id = id;
         this.name = name;
         this.description = description;
-        this.price = price;
+        this.category = category;
     }
 
-    public String getId() {
+    public int getId() {
         return id;
     }
 
@@ -25,8 +27,8 @@ public class ItemDTO {
         return description;
     }
 
-    public double getPrice() {
-        return price;
+    public String getCategory() {
+        return category.toString();
     }
 
 }
