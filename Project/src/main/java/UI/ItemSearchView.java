@@ -3,9 +3,14 @@ package UI;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 
@@ -17,6 +22,11 @@ public class ItemSearchView extends VerticalLayout {
     private List<ItemDTO> allItems = new ArrayList<>();
     private List<ItemDTO> filteredItems = new ArrayList<>();
     private VerticalLayout itemsContainer; // <--- FIELD REFERENCE
+
+    private ComboBox<ItemCategory> categoryFilter;
+    private NumberField minPriceField;
+    private NumberField maxPriceField;
+    private NumberField minRatingField;
 
     public ItemSearchView() {
         setSizeFull();
@@ -36,6 +46,8 @@ public class ItemSearchView extends VerticalLayout {
         title.getStyle().set("margin-bottom", "10px");
         add(title);
 
+        VerticalLayout filtersLayout = setupFilters();
+
         TextField searchField = new TextField();
         searchField.setPlaceholder("Search items...");
         searchField.addValueChangeListener(e -> filterItems(e.getValue()));
@@ -46,9 +58,47 @@ public class ItemSearchView extends VerticalLayout {
         itemsContainer.setWidth("80%");
         itemsContainer.setHeight("70vh");
         itemsContainer.getStyle().set("overflow", "auto");
-        add(itemsContainer);
+
+        HorizontalLayout content = new HorizontalLayout(filtersLayout, itemsContainer);
+        content.setWidthFull();
+        content.setHeightFull();
+        content.setFlexGrow(1, itemsContainer);
+        add(content);
 
         displayItems(filteredItems);
+    }
+
+    private VerticalLayout setupFilters() {
+        categoryFilter = new ComboBox<>("Category");
+        categoryFilter.setItems(ItemCategory.values());
+        categoryFilter.setClearButtonVisible(true);
+
+        minPriceField = new NumberField("Min Price");
+        minPriceField.setPlaceholder("e.g. 1.0");
+        minPriceField.setWidth("100px");
+
+        maxPriceField = new NumberField("Max Price");
+        maxPriceField.setPlaceholder("e.g. 20.0");
+        maxPriceField.setWidth("100px");
+
+        minRatingField = new NumberField("Min Rating");
+        minRatingField.setPlaceholder("e.g. 3.0");
+        minRatingField.setWidth("100px");
+
+        Button applyFiltersButton = new Button("Apply Filters", e -> getFilteredItems());
+
+        VerticalLayout filtersLayout = new VerticalLayout(
+                categoryFilter, minPriceField, maxPriceField, minRatingField, applyFiltersButton);
+        filtersLayout.setSpacing(true);
+        filtersLayout.setPadding(true);
+        filtersLayout.setWidth("250px");
+        add(filtersLayout);
+        return filtersLayout; // Return the layout for further use if needed
+    }
+
+    private void getFilteredItems() {
+        // set items to a new list, now i cant do it because i need WAF for it.
+        return; // This should be replaced with a call to the WAF to get the items
     }
 
     private void filterItems(String query) {
@@ -89,7 +139,14 @@ public class ItemSearchView extends VerticalLayout {
             Span price = new Span("💰 Price: $" + item.getPrice());
             Span category = new Span("📦 Category: " + item.getCategory());
 
-            itemCard.add(name, description, price, category);
+            Button buyButton = new Button("Buy");
+            buyButton.getStyle().set("margin-top", "10px");
+            buyButton.addClickListener(e -> {
+                // Placeholder: implement actual purchase logic later
+                Notification.show("You bought: " + item.getName());
+            });
+
+            itemCard.add(name, description, price, category, buyButton);
             itemsContainer.add(itemCard);
         }
     }
