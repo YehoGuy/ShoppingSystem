@@ -101,6 +101,33 @@
       <artifactId>logback-classic</artifactId>
       <version>1.4.11</version>
     </dependency>
+
+        <!-- ─── Presentation Layer ──────────────────────────────────────────────── -->
+    <!-- REST‑ful controllers & JSON (Spring MVC + Jackson) -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <!-- Bean‑validation annotations for request/response DTOs -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+
+    <!-- Optional: WebSocket/STOMP support for live notifications -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-websocket</artifactId>
+    </dependency>
+
+    <!-- Security filter chain (JWT Bearer, CORS, CSRF, etc.) -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+    <!-- ─────────────────────────────────────────────────────────────────────── -->
+
   </dependencies>
 
   <build>
