@@ -16,6 +16,7 @@ import DomainLayer.Item.ItemCategory;
 public class ItemSearchView extends VerticalLayout {
     private List<ItemDTO> allItems = new ArrayList<>();
     private List<ItemDTO> filteredItems = new ArrayList<>();
+    private VerticalLayout itemsContainer; // <--- FIELD REFERENCE
 
     public ItemSearchView() {
         setSizeFull();
@@ -41,13 +42,13 @@ public class ItemSearchView extends VerticalLayout {
         searchField.setWidth("300px");
         add(searchField);
 
-        VerticalLayout itemsContainer = new VerticalLayout();
+        itemsContainer = new VerticalLayout(); // <--- set reference
         itemsContainer.setWidth("80%");
         itemsContainer.setHeight("70vh");
         itemsContainer.getStyle().set("overflow", "auto");
         add(itemsContainer);
 
-        displayItems(filteredItems, itemsContainer);
+        displayItems(filteredItems);
     }
 
     private void filterItems(String query) {
@@ -57,13 +58,19 @@ public class ItemSearchView extends VerticalLayout {
                 filteredItems.add(item);
             }
         }
-
-        VerticalLayout itemsContainer = (VerticalLayout) getChildren().toArray()[3]; // scroll container
-        displayItems(filteredItems, itemsContainer);
+        displayItems(filteredItems);
     }
 
-    private void displayItems(List<ItemDTO> items, VerticalLayout container) {
-        container.removeAll();
+    private void displayItems(List<ItemDTO> items) {
+        itemsContainer.removeAll();
+
+        if (items.isEmpty()) {
+            Span noItems = new Span("No items found.");
+            noItems.getStyle().set("color", "red").set("font-size", "18px").set("font-weight", "bold");
+            itemsContainer.add(noItems);
+            return;
+        }
+
         for (ItemDTO item : items) {
             VerticalLayout itemCard = new VerticalLayout();
             itemCard.setWidth("100%");
@@ -83,7 +90,7 @@ public class ItemSearchView extends VerticalLayout {
             Span category = new Span("📦 Category: " + item.getCategory());
 
             itemCard.add(name, description, price, category);
-            container.add(itemCard);
+            itemsContainer.add(itemCard);
         }
     }
 }

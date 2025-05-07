@@ -95,7 +95,12 @@ public class ShopSearchView extends VerticalLayout {
 
     private void displayShops(List<ShopDTO> shops, VerticalLayout shopsContainer) {
         shopsContainer.removeAll(); // Clear existing components before re-rendering
-
+        if (shops.isEmpty()) {
+            Span noShops = new Span("No shops found.");
+            noShops.getStyle().set("color", "red").set("font-size", "18px").set("font-weight", "bold");
+            shopsContainer.add(noShops);
+            return;
+        }
         // Display filtered shops
         shops.forEach(shop -> {
             VerticalLayout shopLayout = new VerticalLayout();
