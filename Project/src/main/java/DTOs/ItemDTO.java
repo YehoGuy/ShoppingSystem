@@ -1,14 +1,16 @@
 package DTOs;
 
+import DomainLayer.Item.ItemCategory;
+
 public class ItemDTO {
     private String name;
     private String description;
-    private double price;
+    private ItemCategory category;
 
     public ItemDTO(String name, String description, double price) {
         this.name = name;
         this.description = description;
-        this.price = price;
+        this.category = category;
     }
 
     public String getName() {
@@ -19,8 +21,8 @@ public class ItemDTO {
         return description;
     }
 
-    public double getPrice() {
-        return price;
+    public String getCategory() {
+        return category.toString();
     }
 
 }
