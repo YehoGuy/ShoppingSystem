@@ -137,10 +137,10 @@ public class MessageService {
             return output;
         } catch (OurArg e) {
             LoggerService.logDebug("getFullConversation", e);
-            throw e;
+            throw new OurRuntime("getFullConversation", e);
         } catch (OurRuntime e) {
             LoggerService.logDebug("getFullConversation", e);
-            throw e;
+            throw new OurRuntime("getFullConversation", e);
         } catch (Exception e) {
             LoggerService.logError("getFullConversation", e, token, messageId);
             throw new OurRuntime("Error getting full conversation: " + e.getMessage(), e);
@@ -159,10 +159,10 @@ public class MessageService {
             return output;
         } catch (OurArg e) {
             LoggerService.logDebug("getMessagesBySenderId", e);
-            throw e;
+            throw new OurRuntime("getMessagesBySenderId", e);
         } catch (OurRuntime e) {
             LoggerService.logDebug("getMessagesBySenderId", e);
-            throw e;
+            throw new OurRuntime("getMessagesBySenderId", e);
         } catch (Exception e) {
             LoggerService.logError("getMessagesBySenderId", e, token, senderId);
             throw new OurRuntime("Error getting messages by sender ID: " + e.getMessage(), e);
@@ -181,10 +181,10 @@ public class MessageService {
             return output;
         } catch (OurArg e) {
             LoggerService.logDebug("getMessagesByReceiverId", e);
-            throw e;
+            throw new OurRuntime("getMessagesByReceiverId", e);
         } catch (OurRuntime e) {
             LoggerService.logDebug("getMessagesByReceiverId", e);
-            throw e;
+            throw new OurRuntime("getMessagesByReceiverId", e);
         } catch (Exception e) {
             LoggerService.logError("getMessagesByReceiverId", e, token, receiverId);
             throw new OurRuntime("Error getting messages by receiver ID: " + e.getMessage(), e);
@@ -203,10 +203,10 @@ public class MessageService {
             return message.toString();
         } catch (OurArg e) {
             LoggerService.logDebug("getMessageById", e);
-            throw e;
+            throw new OurRuntime("getMessageById", e);
         } catch (OurRuntime e) {
             LoggerService.logDebug("getMessageById", e);
-            throw e;
+            throw new OurRuntime("getMessageById", e);
         } catch (Exception e) {
             LoggerService.logError("getMessageById", e, token, messageId);
             throw new OurRuntime("Error getting message by ID: " + e.getMessage(), e);
@@ -225,10 +225,10 @@ public class MessageService {
             return message.toString();
         } catch (OurArg e) {
             LoggerService.logDebug("getPreviousMessage", e);
-            throw e;
+            throw new OurRuntime("getPreviousMessage", e);
         } catch (OurRuntime e) {
             LoggerService.logDebug("getPreviousMessage", e);
-            throw e;
+            throw new OurRuntime("getPreviousMessage", e);
         } catch (Exception e) {
             LoggerService.logError("getPreviousMessage", e, token, messageId);
             throw new OurRuntime("Error getting previous message: " + e.getMessage(), e);

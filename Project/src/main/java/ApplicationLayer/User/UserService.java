@@ -47,20 +47,20 @@ public class UserService {
         try {
             int userId = authTokenService.ValidateToken(token);
             if(isSuspended(userId)){
-                throw new RuntimeException("the user is suspended");
+                throw new OurRuntime("the user is suspended");
             }
             if(isAdmin(userId)){
                 if(id >= 0)
                     userRepository.addAdmin(id);
                 else
-                    throw new IllegalArgumentException("the id of the user to make admin is illegal");
+                    throw new OurArg("the id of the user to make admin is illegal");
             }
             else 
-                throw new RuntimeException("only admins can make admins");
+                throw new OurRuntime("only admins can make admins");
             LoggerService.logMethodExecutionEndVoid("makeAdmin");
         } catch (Exception e) {
             LoggerService.logError("makeAdmin", e, token, id);
-            throw new RuntimeException("Error making the user " + id + " an admin: " + e);
+            throw new OurRuntime("Error making the user " + id + " an admin: " + e);
         }
     }
 
@@ -70,7 +70,7 @@ public class UserService {
         try {
             int userId = authTokenService.ValidateToken(token);
             if(isSuspended(userId)){
-                throw new RuntimeException("the user is suspended");
+                throw new OurRuntime("the user is suspended");
             }
             if(isAdmin(userId)){
                 if(id >= 0){
@@ -78,14 +78,14 @@ public class UserService {
                     removedAppointment(id, "Admin", null);
                 }
                 else
-                    throw new IllegalArgumentException("the id of the user to make admin is illegal");
+                    throw new OurArg("the id of the user to make admin is illegal");
             }
             else 
-                throw new RuntimeException("only admins can remove admins");
+                throw new OurRuntime("only admins can remove admins");
             LoggerService.logMethodExecutionEndVoid("removeAdmin");
         } catch (Exception e) {
             LoggerService.logError("removeAdmin", e, token, id);
-            throw new RuntimeException("Error removing the user " + id + " from being an admin: " + e);
+            throw new OurRuntime("Error removing the user " + id + " from being an admin: " + e);
         }
     }
 
@@ -99,12 +99,12 @@ public class UserService {
                 lst = userRepository.getAllAdmins();
             }
             else 
-                throw new RuntimeException("only admins can get ids of all admins");
+                throw new OurRuntime("only admins can get ids of all admins");
             LoggerService.logMethodExecutionEndVoid("getAllAdmins");
             return lst;
         } catch (Exception e) {
             LoggerService.logError("getAllAdmins", e, token);
-            throw new RuntimeException("Error getting ids of all admins: " + e);
+            throw new OurRuntime("Error getting ids of all admins: " + e);
         }
     }
 
@@ -120,7 +120,7 @@ public class UserService {
             return user;
         } catch (Exception e) {
             LoggerService.logError("getUserById", e, id);
-            throw new RuntimeException("Error fetching user with ID " + id + ": " + e.getMessage(), e);
+            throw new OurRuntime("Error fetching user with ID " + id + ": " + e.getMessage(), e);
         }
     }
 
@@ -136,7 +136,7 @@ public class UserService {
             LoggerService.logMethodExecutionEndVoid("addMember");
         } catch (Exception e) {
             LoggerService.logError("addMember", e, username, email, phoneNumber, address);
-            throw new RuntimeException("Error adding member: " + e.getMessage(), e);
+            throw new OurRuntime("Error adding member: " + e.getMessage(), e);
         }
         
     }
@@ -146,7 +146,7 @@ public class UserService {
             int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             LoggerService.logMethodExecution("updateMemberUsername", id, username);
             if (isSuspended(id)) {
-                throw new RuntimeException("the user is suspended");
+                throw new OurRuntime("the user is suspended");
             }
             validateMemberId(id);
             isValidUsername(username); // Validate the username
@@ -154,7 +154,7 @@ public class UserService {
             LoggerService.logMethodExecutionEndVoid("updateMemberUsername");
         } catch (Exception e) {
             LoggerService.logError("updateMemberUsername", e, username);
-            throw new RuntimeException("Error updating username for token" + token + ": " + e.getMessage(), e);
+            throw new OurRuntime("Error updating username for token" + token + ": " + e.getMessage(), e);
         }
     }
 
@@ -163,7 +163,7 @@ public class UserService {
             int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             LoggerService.logMethodExecution("updateMemberPassword", id, password);
             if (isSuspended(id)) {
-                throw new RuntimeException("the user is suspended");
+                throw new OurRuntime("the user is suspended");
             }
             isValidPassword(password); // Validate the password
             password = passwordEncoder.encode(password); // Encode the password using the PasswordEncoderUtil
@@ -172,7 +172,7 @@ public class UserService {
             LoggerService.logMethodExecutionEndVoid("updateMemberPassword");
         } catch (Exception e) {
             LoggerService.logError("updateMemberPassword", e, password);
-            throw new RuntimeException("Error updating password for for token" + token + ": " + e.getMessage(), e);
+            throw new OurRuntime("Error updating password for for token" + token + ": " + e.getMessage(), e);
         }
     }
 
@@ -182,14 +182,14 @@ public class UserService {
             LoggerService.logMethodExecution("updateMemberEmail", id, email);
             validateMemberId(id);
             if (isSuspended(id)) {
-                throw new RuntimeException("the user is suspended");
+                throw new OurRuntime("the user is suspended");
             }
             isValidEmail(email); // Validate the email
             userRepository.updateMemberEmail(id, email);
             LoggerService.logMethodExecutionEndVoid("updateMemberEmail");
         } catch (Exception e) {
             LoggerService.logError("updateMemberEmail", e, email);
-            throw new RuntimeException("Error updating email for token" + token + ": " + e.getMessage(), e);
+            throw new OurRuntime("Error updating email for token" + token + ": " + e.getMessage(), e);
         }
     }
 
@@ -199,14 +199,14 @@ public class UserService {
             LoggerService.logMethodExecution("updateMemberPhoneNumber", id, phoneNumber);
             validateMemberId(id);
             if (isSuspended(id)) {
-                throw new RuntimeException("the user is suspended");
+                throw new OurRuntime("the user is suspended");
             }
             isValidPhoneNumber(phoneNumber); // Validate the phone number
             userRepository.updateMemberPhoneNumber(id, phoneNumber);
             LoggerService.logMethodExecutionEndVoid("updateMemberPhoneNumber");
         } catch (Exception e) {
             LoggerService.logError("updateMemberPhoneNumber", e, phoneNumber);
-            throw new RuntimeException("Error updating phone number for token" + token + ": " + e.getMessage(), e);
+            throw new OurRuntime("Error updating phone number for token" + token + ": " + e.getMessage(), e);
         }
     }
 
@@ -216,26 +216,26 @@ public class UserService {
             LoggerService.logMethodExecution("updateMemberAddress", id, city, street, apartmentNumber, postalCode);
             validateMemberId(id);
             if (isSuspended(id)) {
-                throw new RuntimeException("the user is suspended");
+                throw new OurRuntime("the user is suspended");
             }
             userRepository.updateMemberAddress(id, city, street, apartmentNumber, postalCode);
             LoggerService.logMethodExecutionEndVoid("updateMemberAddress");
         } catch (Exception e) {
             LoggerService.logError("updateMemberAddress", e, token, city, street, apartmentNumber, postalCode);
-            throw new RuntimeException("Error updating address for token" + token + ": " + e.getMessage(), e);
+            throw new OurRuntime("Error updating address for token" + token + ": " + e.getMessage(), e);
         }
     }
 
     public void validateMemberId(int id) {
         if (id <= 0) {
-            throw new IllegalArgumentException("Invalid user ID: " + id);
+            throw new OurArg("Invalid user ID: " + id);
         }
         if (!userRepository.getUserMapping().containsKey(id)) {
-            throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+            throw new OurArg("User with ID " + id + " doesn't exist.");
         }
         User user = userRepository.getUserById(id);
         if (!(user instanceof Member)) {
-            throw new IllegalArgumentException("User with ID " + id + " is not a member.");
+            throw new OurArg("User with ID " + id + " is not a member.");
 
         }
     }
@@ -249,7 +249,7 @@ public class UserService {
             LoggerService.logMethodExecution("loginAsGuest");
             int id = userRepository.addGuest(); // Assuming this method returns the ID of the new guest user
             if (id < 0) {
-                throw new IllegalArgumentException("Failed to create a guest user.");
+                throw new OurArg("Failed to create a guest user.");
             }
             String token = authTokenService.AuthenticateGuest(id);
             LoggerService.logMethodExecutionEnd("loginAsGuest", token);
@@ -257,7 +257,7 @@ public class UserService {
         } 
         catch (Exception e) {
             LoggerService.logError("loginAsGuest", e);
-            throw new RuntimeException("Error logging in as guest: " + e.getMessage(), e);
+            throw new OurRuntime("Error logging in as guest: " + e.getMessage(), e);
         }
     }
 
@@ -267,12 +267,12 @@ public class UserService {
         String token = null;
         try {
             if (username == null || password == null) {
-                LoggerService.logError("loginAsMember", new IllegalArgumentException("Username and password cannot be null."));
-                throw new IllegalArgumentException("Username and password cannot be null.");
+                LoggerService.logError("loginAsMember", new OurArg("Username and password cannot be null."));
+                throw new OurArg("Username and password cannot be null.");
             }
             if (username.isEmpty() || password.isEmpty()) {
-                LoggerService.logError("loginAsMember", new IllegalArgumentException("Username and password cannot be empty."));
-                throw new IllegalArgumentException("Username and password cannot be empty.");
+                LoggerService.logError("loginAsMember", new OurArg("Username and password cannot be empty."));
+                throw new OurArg("Username and password cannot be empty.");
             }
             int loginAsMember_id = userRepository.isUsernameAndPasswordValid(username, password);
             if (loginAsMember_id > 0) { // valid login attempt
@@ -294,12 +294,12 @@ public class UserService {
                     return token; 
                 }
             }else{
-                LoggerService.logError("loginAsMember", new IllegalArgumentException("Invalid username or password."));
-                throw new IllegalArgumentException("Invalid username or password.");
+                LoggerService.logError("loginAsMember", new OurArg("Invalid username or password."));
+                throw new OurArg("Invalid username or password.");
             }
         } catch (Exception e) {
             LoggerService.logError("loginAsMember", e, username, password, token_if_guest);
-            throw new RuntimeException("Error logging in as member: " + e.getMessage(), e);
+            throw new OurRuntime("Error logging in as member: " + e.getMessage(), e);
         }
     }
     
@@ -307,10 +307,10 @@ public class UserService {
     public int loginAsMember(String username, String password, int id_if_guest) {
         try {
             if (username == null || password == null) {
-                throw new IllegalArgumentException("Username and password cannot be null.");
+                throw new OurArg("Username and password cannot be null.");
             }
             if (username.isEmpty() || password.isEmpty()) {
-                throw new IllegalArgumentException("Username and password cannot be empty.");
+                throw new OurArg("Username and password cannot be empty.");
             }
             int loginAsMember_id = userRepository.isUsernameAndPasswordValid(username, password);
             if (loginAsMember_id>0)//valid login attempt 
@@ -330,7 +330,7 @@ public class UserService {
 
                 }
                 else {
-                    throw new IllegalArgumentException("The given id does not match a guest in the data. probably it is a member id!");
+                    throw new OurArg("The given id does not match a guest in the data. probably it is a member id!");
                 }
                 
             }
@@ -348,11 +348,11 @@ public class UserService {
     //     password = passwordEncoder.encode(password); // Encode the password using the PasswordEncoderUtil
     //     try {
     //         if (userRepository.isUsernameTaken(username)) {
-    //             LoggerService.logError("signUp", new IllegalArgumentException("Username is already taken."));
-    //             throw new IllegalArgumentException("Username is already taken.");
+    //             LoggerService.logError("signUp", new OurArg("Username is already taken."));
+    //             throw new OurArg("Username is already taken.");
     //         }
     //         if (!email.contains("@")) {
-    //             throw new IllegalArgumentException("Invalid email format.");
+    //             throw new OurArg("Invalid email format.");
     //         }
     //         String token = authTokenService.generateAuthToken(username); // Generate a token for the member
     //         LoggerService.logMethodExecution("signUp", username, password, email, phoneNumber, address);
@@ -360,7 +360,7 @@ public class UserService {
     //         return token;
     //     } catch (Exception e) {
     //         LoggerService.logError("signUp", e, username, password, email, phoneNumber, address);
-    //         throw new RuntimeException("Error signing up: " + e.getMessage(), e);
+    //         throw new OurRuntime("Error signing up: " + e.getMessage(), e);
     //     }
     // }
 
@@ -388,7 +388,7 @@ public class UserService {
             LoggerService.logMethodExecution("getPermitionsByShop", shopId);
             int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             if (!userRepository.isOwner(id, shopId)) {
-                throw new IllegalArgumentException("Member ID " + token + " is not an owner of shop ID " + shopId);  
+                throw new OurArg("Member ID " + token + " is not an owner of shop ID " + shopId);  
             }
             
             HashMap<Integer, PermissionsEnum[]> permissions = new HashMap<>();
@@ -405,7 +405,7 @@ public class UserService {
             return permissions;
         } catch (Exception e) {
             LoggerService.logError("getPermitionsByShop", e, shopId);
-            throw new RuntimeException("Error fetching permissions for shop ID " + shopId + ": " + e.getMessage(), e);
+            throw new OurRuntime("Error fetching permissions for shop ID " + shopId + ": " + e.getMessage(), e);
         }
         
     } 
@@ -428,7 +428,7 @@ public class UserService {
             LoggerService.logMethodExecution("changePermissions", token, memberId, shopId, permissions);
             int assigneeId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             if (isSuspended(assigneeId)) {
-                throw new RuntimeException("the user is suspended");
+                throw new OurRuntime("the user is suspended");
             }
             if (!userRepository.isOwner(assigneeId, shopId)) {
                 LoggerService.logDebug("changePermissions", new OurRuntime("Member ID " + assigneeId + " is not an owner of shop ID " + shopId));
@@ -462,7 +462,7 @@ public class UserService {
             throw e; // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("changePermissions", e, memberId, shopId, permissions);
-            throw new RuntimeException("Error changing permissions for member ID " + memberId + ": " + e.getMessage(), e);
+            throw new OurRuntime("Error changing permissions for member ID " + memberId + ": " + e.getMessage(), e);
         }
     }
 
@@ -481,7 +481,7 @@ public class UserService {
             LoggerService.logMethodExecution("makeManagerOfStore", token, shopId, permissions);
             int assignee = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             if (isSuspended(assignee)) {
-                throw new RuntimeException("the user is suspended");
+                throw new OurRuntime("the user is suspended");
             }
             if (!userRepository.isOwner(assignee, shopId)) {
                 LoggerService.logDebug("makeManagerOfStore", new OurRuntime("Member ID " + assignee + " is not an owner of shop ID " + shopId));
@@ -495,7 +495,7 @@ public class UserService {
             throw e; // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("makeManagerOfStore", e, token, shopId, permissions);
-            throw new RuntimeException("Error making manager of store for member ID " + token + ": " + e.getMessage(), e);
+            throw new OurRuntime("Error making manager of store for member ID " + token + ": " + e.getMessage(), e);
         }   
     }
 
@@ -513,7 +513,7 @@ public class UserService {
             LoggerService.logMethodExecution("removeManagerOfStore", token, shopId);
             int assigneeId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             if (isSuspended(assigneeId)) {
-                throw new RuntimeException("the user is suspended");
+                throw new OurRuntime("the user is suspended");
             }
             Role role = userRepository.getRole(managerId, shopId);
             if (role == null) {
@@ -532,7 +532,7 @@ public class UserService {
             throw e; // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("removeManagerOfStore", e, token, shopId);
-            throw new RuntimeException("Error removing manager of store for member ID " + token + ": " + e.getMessage(), e);
+            throw new OurRuntime("Error removing manager of store for member ID " + token + ": " + e.getMessage(), e);
         }   
     }
 
@@ -555,7 +555,7 @@ public class UserService {
             }
             int assigneeId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             if (isSuspended(assigneeId)) {
-                throw new RuntimeException("the user is suspended");
+                throw new OurRuntime("the user is suspended");
             }
             if (role.getAssigneeId() != assigneeId) {
                 LoggerService.logDebug("removeOwnerFromStore", new OurRuntime("Member ID " + assigneeId + " is not the assignee of member ID " + memberId + " in shop ID " + shopId));
@@ -570,7 +570,7 @@ public class UserService {
             throw e; // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("removeOwnerFromStore", e, token, shopId);
-            throw new RuntimeException("Error removing owner from store for member ID " + token + ": " + e.getMessage(), e);
+            throw new OurRuntime("Error removing owner from store for member ID " + token + ": " + e.getMessage(), e);
         }
     }
 
@@ -591,7 +591,7 @@ public class UserService {
             throw e; // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("removeAllAssigned", e, assignee, shopId);
-            throw new RuntimeException("Error removing all assigned roles for member ID " + assignee + ": " + e.getMessage(), e);
+            throw new OurRuntime("Error removing all assigned roles for member ID " + assignee + ": " + e.getMessage(), e);
         }
     }
 
@@ -609,7 +609,7 @@ public class UserService {
             LoggerService.logMethodExecution("makeStoreOwner", token, shopId);
             int assigneeId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             if (isSuspended(assigneeId)) {
-                throw new RuntimeException("the user is suspended");
+                throw new OurRuntime("the user is suspended");
             }
             if(!userRepository.isOwner(assigneeId, shopId)) {
                 LoggerService.logDebug("makeStoreOwner", new OurRuntime("Member ID " + assigneeId + " is not an owner of shop ID " + shopId));
@@ -628,7 +628,7 @@ public class UserService {
             throw e; // Rethrow the custom exception
         } catch(Exception e) {
             LoggerService.logError("makeStoreOwner", e, token, shopId);
-            throw new RuntimeException("Error making store owner for member ID " + token + ": " + e.getMessage(), e);
+            throw new OurRuntime("Error making store owner for member ID " + token + ": " + e.getMessage(), e);
         }
     }
 
@@ -645,7 +645,7 @@ public class UserService {
             LoggerService.logMethodExecution("acceptRole", token, shopId);
             int memberId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             if (isSuspended(memberId)) {
-                throw new RuntimeException("the user is suspended");
+                throw new OurRuntime("the user is suspended");
             }
             Role role = userRepository.getPendingRole(memberId, shopId);
             if (role == null) {
@@ -659,7 +659,7 @@ public class UserService {
             throw new OurArg("Error accepting role for member ID " + token + ": " + e.getMessage(), e);
         } catch (Exception e) {
             LoggerService.logError("acceptRole", e, token, shopId);
-            throw new RuntimeException("Error accepting role for member ID " + token + ": " + e.getMessage(), e);
+            throw new OurRuntime("Error accepting role for member ID " + token + ": " + e.getMessage(), e);
         }
     }
 
@@ -668,7 +668,7 @@ public class UserService {
             LoggerService.logMethodExecution("declineRole", token, shopId);
             int memberId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             if (isSuspended(memberId)) {
-                throw new RuntimeException("the user is suspended");
+                throw new OurRuntime("the user is suspended");
             }
             Role role = userRepository.getPendingRole(memberId, shopId);
             if (role == null) {
@@ -682,7 +682,7 @@ public class UserService {
             throw new OurArg("Error declineing role for member token " + token + ": " +e.getMessage(),e); // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("declineRole", e, token, shopId);
-            throw new RuntimeException("Error declineing role for member token " + token + ": " + e.getMessage(), e);
+            throw new OurRuntime("Error declineing role for member token " + token + ": " + e.getMessage(), e);
         }
     }
          
@@ -701,7 +701,7 @@ public class UserService {
             LoggerService.logMethodExecution("addRole", memberId, role);
             validateMemberId(memberId);
             if (isSuspended(memberId)) {
-                throw new RuntimeException("the user is suspended");
+                throw new OurRuntime("the user is suspended");
             }
             userRepository.addRoleToPending(memberId, role); // Add the role to the member
             LoggerService.logMethodExecutionEnd("addRole", true);
@@ -711,7 +711,7 @@ public class UserService {
             throw e; // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("addRole", e, memberId, role);
-            throw new RuntimeException("Error adding role for user ID " + memberId + ": " + e.getMessage(), e); // Indicate failure to add role
+            throw new OurRuntime("Error adding role for user ID " + memberId + ": " + e.getMessage(), e); // Indicate failure to add role
         }
     }
 
@@ -734,7 +734,7 @@ public class UserService {
             }
             validateMemberId(id);
             if (isSuspended(id)) {
-                throw new RuntimeException("the user is suspended");
+                throw new OurRuntime("the user is suspended");
             }
             Role existingRole = userRepository.getRole(id, role.getShopId());
             if (existingRole == null) {
@@ -755,7 +755,7 @@ public class UserService {
             throw e; // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("removeRole", e, id, role);
-            throw new RuntimeException("Error removing role for user ID " + id + ": " + e.getMessage(), e); // Indicate failure to remove role
+            throw new OurRuntime("Error removing role for user ID " + id + ": " + e.getMessage(), e); // Indicate failure to remove role
         }
     }
 
@@ -794,7 +794,7 @@ public class UserService {
             throw e; // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("hasRole", e, id, role);
-            throw new RuntimeException("Error checking role for user ID " + id + ": " + e.getMessage(), e); // Indicate failure to check role
+            throw new OurRuntime("Error checking role for user ID " + id + ": " + e.getMessage(), e); // Indicate failure to check role
         }
     }
 
@@ -815,7 +815,7 @@ public class UserService {
             LoggerService.logMethodExecution("addPermission", token, id, permission, shopId);
             int assigneeId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             if (isSuspended(assigneeId)) {
-                throw new RuntimeException("the user is suspended");
+                throw new OurRuntime("the user is suspended");
             }
             if (permission == null) {
                 LoggerService.logDebug("addPermission", new OurRuntime("Permission cannot be null."));
@@ -838,7 +838,7 @@ public class UserService {
             throw e; // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("addPermission", e, token, id, permission, shopId);
-            throw new RuntimeException("Error adding permission for user ID " + id + ": " + e.getMessage(), e); // Indicate failure to add permission
+            throw new OurRuntime("Error adding permission for user ID " + id + ": " + e.getMessage(), e); // Indicate failure to add permission
         }
     }
 
@@ -859,7 +859,7 @@ public class UserService {
             LoggerService.logMethodExecution("removePermission", token, id, permission, shopId);
             int assigneeId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             if (isSuspended(assigneeId)) {
-                throw new RuntimeException("the user is suspended");
+                throw new OurRuntime("the user is suspended");
             }
             if (permission == null) {
                 LoggerService.logDebug("removePermission", new OurRuntime("Permission cannot be null."));
@@ -883,11 +883,12 @@ public class UserService {
             throw e; // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("removePermission", e, token, id, permission, shopId);
-            throw new RuntimeException("Error removing permission for user ID " + id + ": " + e.getMessage(), e); // Indicate failure to remove permission
+            throw new OurRuntime("Error removing permission for user ID " + id + ": " + e.getMessage(), e); // Indicate failure to remove permission
         }
     }
     public boolean hasPermission(int id, PermissionsEnum permission, int shopId) {
         try {
+            LoggerService.logMethodExecution("hasPermission", id, permission, shopId);
             if (userRepository.getUserMapping().containsKey(id)) {
                 User user = userRepository.getUserById(id);
                 if (userRepository.isSuspended(id)) {
@@ -899,12 +900,12 @@ public class UserService {
                 }
                 return ((Member)user).hasPermission(permission,shopId); // Check if the user has the specified permission
             } else {
-                throw new IllegalArgumentException("User with ID " + id + " doesn't exist.");
+                throw new OurArg("User with ID " + id + " doesn't exist.");
             }
         } catch (Exception e) {
             return false; // Indicate failure to check permission
         }
-    }
+    }/////////////////////////////////////////logs until here///////////////////////////////////////////
 
     /**
      * Retrieves the shopping cart items for a user by their ID.
@@ -919,13 +920,13 @@ public class UserService {
             return cart;
         } catch (OurRuntime e) {
             LoggerService.logDebug("getUserShoppingCart", e);
-            throw e; // Rethrow the custom exception
-        } catch (IllegalArgumentException e) {
+            throw new OurRuntime("getUserShoppingCart: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
             LoggerService.logError("getUserShoppingCart", e, userId);
-            throw new IllegalArgumentException("Invalid user ID: " + userId, e);
+            throw new OurArg("getUserShoppingCart: " + userId, e);
         } catch (Exception e) {
             LoggerService.logError("getUserShoppingCart", e, userId);
-            throw new RuntimeException("Error fetching shopping cart for user ID " + userId + ": " + e.getMessage(), e);
+            throw new OurRuntime("getUserShoppingCart: " + e.getMessage(), e);
         }
         
     }
@@ -943,10 +944,13 @@ public class UserService {
             LoggerService.logMethodExecutionEndVoid("clearUserShoppingCart");
         } catch (OurRuntime e) {
             LoggerService.logDebug("clearUserShoppingCart", e);
-            throw e; // Rethrow the custom exception
+            throw new OurRuntime("clearUserShoppingCart: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("clearUserShoppingCart", e);
+            throw new OurArg("clearUserShoppingCart: " + e.getMessage(), e); // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("clearUserShoppingCart", e, userId);
-            throw new RuntimeException("Error clearing shopping cart for user ID " + userId + ": " + e.getMessage(), e);
+            throw new OurRuntime("clearUserShoppingCart: " + e.getMessage(), e);
         }
     }
 
@@ -965,10 +969,13 @@ public class UserService {
             LoggerService.logMethodExecutionEndVoid("restoreUserShoppingCart");
         } catch (OurRuntime e) {
             LoggerService.logDebug("restoreUserShoppingCart", e);
-            throw e;
+            throw new OurRuntime("restoreUserShoppingCart: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("restoreUserShoppingCart", e);
+            throw new OurArg("restoreUserShoppingCart: " + e.getMessage(), e); // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("restoreUserShoppingCart", e, userId, items);
-            throw new RuntimeException("Error restoring shopping cart for user ID " + userId + ": " + e.getMessage(), e);
+            throw new OurRuntime("restoreUserShoppingCart: " + e.getMessage(), e);
         }
     }
 
@@ -988,10 +995,14 @@ public class UserService {
             return paymentMethod;
         } catch (OurRuntime e) {
             LoggerService.logDebug("getUserPaymentMethod", e);
-            throw e; // Rethrow the custom exception
+            throw new OurRuntime("getUserPaymentMethod: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("getUserPaymentMethod", e);
+            throw new OurArg("getUserPaymentMethod: " + e.getMessage(), e); // Rethrow the custom exception
+        
         } catch (Exception e) {
             LoggerService.logError("getUserPaymentMethod", e, userId);
-            throw new RuntimeException("Error fetching payment method for user ID " + userId + ": " + e.getMessage(), e);
+            throw new OurRuntime("getUserPaymentMethod: " + e.getMessage(), e);
         }
     }
 
@@ -1010,16 +1021,19 @@ public class UserService {
             LoggerService.logMethodExecution("addItemToShoppingCart", token, shopId, itemId, quantity);
             int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             if (isSuspended(userId)) {
-                throw new RuntimeException("the user is suspended");
+                throw new OurRuntime("the user is suspended");
             }
             userRepository.addItemToShoppingCart(userId, shopId, itemId, quantity);
             LoggerService.logMethodExecutionEndVoid("addItemToShoppingCart");
         } catch (OurRuntime e) {
             LoggerService.logDebug("addItemToShoppingCart", e);
-            throw e; // Rethrow the custom exception
+            throw new OurRuntime("addItemToShoppingCart: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("addItemToShoppingCart", e);
+            throw new OurArg("addItemToShoppingCart: " + e.getMessage(), e); // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("addItemToShoppingCart", e, token, shopId, itemId, quantity);
-            throw new RuntimeException("Error adding item to shopping cart for user ID " + token + ": " + e.getMessage(), e);
+            throw new OurRuntime("addItemToShoppingCart: " + e.getMessage(), e);
         }
     }
 
@@ -1037,16 +1051,19 @@ public class UserService {
             LoggerService.logMethodExecution("removeItemFromShoppingCart", token, shopId, itemId);
             int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             if (isSuspended(userId)) {
-                throw new RuntimeException("the user is suspended");
+                throw new OurRuntime("the user is suspended");
             }
             userRepository.removeItemFromShoppingCart(userId, shopId, itemId);
             LoggerService.logMethodExecutionEndVoid("removeItemFromShoppingCart");
         } catch (OurRuntime e) {
             LoggerService.logDebug("removeItemFromShoppingCart", e);
-            throw e; // Rethrow the custom exception
+            throw new OurRuntime("removeItemFromShoppingCart: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("removeItemFromShoppingCart", e);
+            throw new OurArg("removeItemFromShoppingCart: " + e.getMessage(), e); // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("removeItemFromShoppingCart", e, token, shopId, itemId);
-            throw new RuntimeException("Error removing item from shopping cart for user ID " + token + ": " + e.getMessage(), e);
+            throw new OurRuntime("removeItemFromShoppingCart: " + e.getMessage(), e);
         }
     }
 
@@ -1065,16 +1082,19 @@ public class UserService {
             LoggerService.logMethodExecution("updateItemQuantityInShoppingCart", token, shopId, itemId, quantity);
             int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             if (isSuspended(userId)) {
-                throw new RuntimeException("the user is suspended");
+                throw new OurRuntime("the user is suspended");
             }
             userRepository.updateItemQuantityInShoppingCart(userId, shopId, itemId, quantity);
             LoggerService.logMethodExecutionEndVoid("updateItemQuantityInShoppingCart");
         } catch (OurRuntime e) {
             LoggerService.logDebug("updateItemQuantityInShoppingCart", e);
-            throw e; // Rethrow the custom exception
+            throw new OurRuntime("updateItemQuantityInShoppingCart: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("updateItemQuantityInShoppingCart", e);
+            throw new OurArg("updateItemQuantityInShoppingCart: " + e.getMessage(), e); // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("updateItemQuantityInShoppingCart", e, token, shopId, itemId, quantity);
-            throw new RuntimeException("Error updating item quantity in shopping cart for user ID " + token + ": " + e.getMessage(), e);
+            throw new OurRuntime("updateItemQuantityInShoppingCart: " + e.getMessage(), e);
         }
     }
 
@@ -1093,10 +1113,13 @@ public class UserService {
             LoggerService.logMethodExecutionEndVoid("clearShoppingCart");
         } catch (OurRuntime e) {
             LoggerService.logDebug("clearShoppingCart", e);
-            throw e; // Rethrow the custom exception
+            throw new OurRuntime("clearShoppingCart: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("clearShoppingCart", e);
+            throw new OurArg("clearShoppingCart: " + e.getMessage(), e); // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("clearShoppingCart", e, token);
-            throw new RuntimeException("Error clearing shopping cart for user ID " + token + ": " + e.getMessage(), e);
+            throw new OurRuntime("clearShoppingCart: " + e.getMessage(), e);
         }
     }
 
@@ -1118,10 +1141,13 @@ public class UserService {
             return items;
         } catch (OurRuntime e) {
             LoggerService.logDebug("getBasketItems", e);
-            throw e; // Rethrow the custom exception
+            throw new OurRuntime("getBasketItems: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("getBasketItems", e);
+            throw new OurArg("getBasketItems: " + e.getMessage(), e); // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("getBasketItems", e, token, shopId);
-            throw new RuntimeException("Error fetching basket items for user ID " + token + ": " + e.getMessage(), e);
+            throw new OurRuntime("getBasketItems: " + e.getMessage(), e);
         }
     }
 
@@ -1141,10 +1167,13 @@ public class UserService {
             LoggerService.logMethodExecutionEndVoid("addBasket");
         } catch (OurRuntime e) {
             LoggerService.logDebug("addBasket", e);
-            throw e; // Rethrow the custom exception
+            throw new OurRuntime("addBasket: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("addBasket", e);
+            throw new OurArg("addBasket: " + e.getMessage(), e); // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("addBasket", e, token, shopId);
-            throw new RuntimeException("Error adding basket for user ID " + token + ": " + e.getMessage(), e);
+            throw new OurRuntime("addBasket: " + e.getMessage(), e);
         }
     }
 
@@ -1230,7 +1259,7 @@ public class UserService {
         }
 
         if (errorMsg.length() > 0) {
-            throw new RuntimeException(errorMsg.toString().trim());
+            throw new OurRuntime(errorMsg.toString().trim());
         }
     }
 
@@ -1255,10 +1284,13 @@ public class UserService {
             LoggerService.logMethodExecutionEndVoid("setPaymentMethod");
         } catch (OurRuntime e) {
             LoggerService.logDebug("setPaymentMethod", e);
-            throw e; // Rethrow the custom exception
+            throw new OurRuntime("setPaymentMethod: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("setPaymentMethod", e);
+            throw new OurArg("setPaymentMethod: " + e.getMessage(), e); // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("setPaymentMethod", e, token, paymentMethod);
-            throw new RuntimeException("Error setting payment method for user ID " + token + ": " + e.getMessage(), e);
+            throw new OurRuntime("setPaymentMethod: " + e.getMessage(), e);
         }
     }
 
@@ -1277,17 +1309,20 @@ public class UserService {
             LoggerService.logMethodExecution("pay", token, shopId, payment);
             int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             if (isSuspended(userId)) {
-                throw new RuntimeException("the user is suspended");
+                throw new OurRuntime("the user is suspended");
             }
             userRepository.pay(userId, shopId, payment); // Set the payment method for the user
             LoggerService.logMethodExecutionEnd("pay", true);
             return true;
         } catch (OurRuntime e) {
             LoggerService.logDebug("pay", e);
-            throw e; // Rethrow the custom exception
+            throw new OurRuntime("pay: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("pay", e);
+            throw new OurArg("pay: " + e.getMessage(), e); // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("pay", e, token, shopId, payment);
-            throw new RuntimeException("Error setting payment method for user ID " + token + ": " + e.getMessage(), e);
+            throw new OurRuntime("pay: " + e.getMessage(), e);
         }
     }
 
@@ -1301,10 +1336,13 @@ public class UserService {
             return true;
         } catch (OurRuntime e) {
             LoggerService.logDebug("refundPayment", e);
-            throw e; // Rethrow the custom exception
+            throw new OurRuntime("refundPayment: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("refundPayment", e);
+            throw new OurArg("refundPayment: " + e.getMessage(), e); // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("refundPayment", e, token, shopId, payment);
-            throw new RuntimeException("Error setting payment method for user ID " + token + ": " + e.getMessage(), e);
+            throw new OurRuntime("refundPayment: " + e.getMessage(), e);
         }
         
     }
@@ -1322,10 +1360,13 @@ public class UserService {
             return true;
         } catch (OurRuntime e) {
             LoggerService.logDebug("refundPayment", e);
-            throw e; // Rethrow the custom exception
+            throw new OurRuntime("refundPayment: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("refundPayment", e);
+            throw new OurArg("refundPayment: " + e.getMessage(), e); // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("refundPayment", e, token, shopId, payment);
-            throw new RuntimeException("Error setting payment method for user ID " + token + ": " + e.getMessage(), e);
+            throw new OurRuntime("refundPayment: " + e.getMessage(), e);
         }
         
     }
@@ -1339,10 +1380,13 @@ public class UserService {
             return shippingAddress;
         } catch (OurRuntime e) {
             LoggerService.logDebug("getUserShippingAddress", e);
-            throw e; // Rethrow the custom exception
+            throw new OurRuntime("getUserShippingAddress: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("getUserShippingAddress", e);
+            throw new OurArg("getUserShippingAddress: " + e.getMessage(), e); // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("getUserShippingAddress", e, userId);
-            throw new RuntimeException("Error fetching shipping address for user ID " + userId + ": " + e.getMessage(), e);
+            throw new OurRuntime("Error fetching shipping address for user ID " + userId + ": " + e.getMessage(), e);
         }
     }
 
@@ -1355,10 +1399,13 @@ public class UserService {
             LoggerService.logMethodExecutionEndVoid("getNotificationsAndClear");
         } catch (OurRuntime e) {
             LoggerService.logDebug("getNotificationsAndClear", e);
-            throw e; // Rethrow the custom exception
+            throw new OurRuntime("getNotificationsAndClear: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("getNotificationsAndClear", e);
+            throw new OurArg("getNotificationsAndClear: " + e.getMessage(), e); // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("getNotificationsAndClear", e, token);
-            throw new RuntimeException("Error fetching notifications for user ID " + token + ": " + e.getMessage(), e);
+            throw new OurRuntime("getNotificationsAndClear: " + e.getMessage(), e);
         }
     }
 
@@ -1380,10 +1427,13 @@ public class UserService {
             LoggerService.logMethodExecutionEndVoid("purchaseNotification");
         } catch (OurRuntime e) {
             LoggerService.logDebug("purchaseNotification", e);
-            throw e; // Rethrow the custom exception
+            throw new OurRuntime("purchaseNotification: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("purchaseNotification", e);
+            throw new OurArg("purchaseNotification: " + e.getMessage(), e); // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("purchaseNotification", e, cart);
-            throw new RuntimeException("Error sending purchase notification: " + e.getMessage(), e);
+            throw new OurRuntime("purchaseNotification: " + e.getMessage(), e);
         }
     }
 
@@ -1397,10 +1447,13 @@ public class UserService {
             LoggerService.logMethodExecutionEndVoid("closeShopNotification");
         } catch (OurRuntime e) {
             LoggerService.logDebug("closeShopNotification", e);
-            throw e; // Rethrow the custom exception
+            throw new OurRuntime("closeShopNotification: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("closeShopNotification", e);
+            throw new OurArg("closeShopNotification: " + e.getMessage(), e); // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("closeShopNotification", e, shopId);
-            throw new RuntimeException("Error sending close shop notification: " + e.getMessage(), e);
+            throw new OurRuntime("closeShopNotification: " + e.getMessage(), e);
         }
     }
 
@@ -1415,10 +1468,13 @@ public class UserService {
             LoggerService.logMethodExecutionEndVoid("removedAppointment");
         } catch (OurRuntime e) {
             LoggerService.logDebug("removedAppointment", e);
-            throw e; // Rethrow the custom exception
+            throw new OurRuntime("removedAppointment: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("removedAppointment", e);
+            throw new OurArg("removedAppointment: " + e.getMessage(), e); // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("removedAppointment", e, memberId, appointment);
-            throw new RuntimeException("Error sending remove appointment notification: " + e.getMessage(), e);
+            throw new OurRuntime("removedAppointment: " + e.getMessage(), e);
         }
     }
 
@@ -1432,10 +1488,13 @@ public class UserService {
                 LoggerService.logMethodExecutionEndVoid("messageUserNotification");
             } catch (OurRuntime e) {
                 LoggerService.logDebug("messageUserNotification", e);
-                throw e; // Rethrow the custom exception
+                throw new OurRuntime("messageUserNotification: " + e.getMessage(), e); // Rethrow the custom exception
+            } catch (OurArg e) {
+                LoggerService.logDebug("messageUserNotification", e);
+                throw new OurArg("messageUserNotification: " + e.getMessage(), e); // Rethrow the custom exception
             } catch (Exception e) {
                 LoggerService.logError("messageUserNotification", e, memberId);
-                throw new RuntimeException("Error sending message user notification: " + e.getMessage(), e);
+                throw new OurRuntime("messageUserNotification: " + e.getMessage(), e);
             }
         }else{
             try {
@@ -1444,10 +1503,13 @@ public class UserService {
                 LoggerService.logMethodExecutionEndVoid("messageUserNotification");
             } catch (OurRuntime e) {
                 LoggerService.logDebug("messageUserNotification", e);
-                throw e; // Rethrow the custom exception
+                throw new OurRuntime("messageUserNotification: " + e.getMessage(), e); // Rethrow the custom exception
+            } catch (OurArg e) {
+                LoggerService.logDebug("messageUserNotification", e);
+                throw new OurArg("messageUserNotification: " + e.getMessage(), e); // Rethrow the custom exception
             } catch (Exception e) {
                 LoggerService.logError("messageUserNotification", e, memberId);
-                throw new RuntimeException("Error sending message user notification: " + e.getMessage(), e);
+                throw new OurRuntime("messageUserNotification: " + e.getMessage(), e);
             }
         }
         
@@ -1464,10 +1526,13 @@ public class UserService {
             LoggerService.logMethodExecutionEndVoid("setSuspended");
         } catch (OurRuntime e) {
             LoggerService.logDebug("setSuspended", e);
-            throw e; // Rethrow the custom exception
+            throw new OurRuntime("setSuspended: " + e.getMessage(), e);
+        } catch (OurArg e) {
+            LoggerService.logDebug("setSuspended", e);
+            throw new OurArg("setSuspended: " + e.getMessage(), e); 
         } catch (Exception e) {
             LoggerService.logError("setSuspended", e, userId, suspended);
-            throw new RuntimeException("Error setting suspension for user ID " + userId + ": " + e.getMessage(), e);
+            throw new OurRuntime("Error setting suspension for user ID " + userId + ": " + e.getMessage(), e);
         }
     }
 
@@ -1480,10 +1545,13 @@ public class UserService {
             return isSuspended;
         } catch (OurRuntime e) {
             LoggerService.logDebug("isSuspended", e);
-            throw e; // Rethrow the custom exception
+            throw new OurRuntime("isSuspended: " + e.getMessage(), e);
+        } catch (OurArg e) {
+            LoggerService.logDebug("isSuspended", e);
+            throw new OurArg("isSuspended: " + e.getMessage(), e);
         } catch (Exception e) {
             LoggerService.logError("isSuspended", e, userId);
-            throw new RuntimeException("Error checking suspension status for user ID " + userId + ": " + e.getMessage(), e);
+            throw new OurRuntime("isSuspended: " + e.getMessage(), e);
         }
     }
 
@@ -1495,10 +1563,15 @@ public class UserService {
             return suspendedUsers;
         } catch (OurRuntime e) {
             LoggerService.logDebug("getSuspendedUsers", e);
-            throw e; // Rethrow the custom exception
-        } catch (Exception e) {
+            throw new OurRuntime("getSuspendedUsers: " + e.getMessage(), e);
+
+        } catch (OurArg e) {
+            LoggerService.logDebug("getSuspendedUsers", e);
+            throw new OurArg("getSuspendedUsers: " + e.getMessage(), e);
+        }
+        catch (Exception e) {
             LoggerService.logError("getSuspendedUsers", e);
-            throw new RuntimeException("Error fetching suspended users: " + e.getMessage(), e);
+            throw new OurRuntime("getSuspendedUsers: " + e.getMessage(), e);
         }
     }
 }

@@ -49,10 +49,10 @@ public class ShopService {
             return returnShop;
         } catch (OurArg e) {
             LoggerService.logDebug("createShop", e);
-            throw e;
+            throw new OurArg("createShop" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("createShop", e);
-            throw e;
+            throw new OurRuntime("createShop" + e.getMessage());
         } 
         catch (Exception e) {
             LoggerService.logError("createShop", e, name, purchasePolicy);
@@ -69,10 +69,10 @@ public class ShopService {
             return returnShop;
         } catch (OurArg e) {
             LoggerService.logDebug("getShop", e);
-            throw e;
+            throw new OurArg("getShop" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("getShop", e);
-            throw e;
+            throw new OurRuntime("getShop" + e.getMessage());
         } 
         catch (Exception e) {
             LoggerService.logError("getShop", e, shopId);
@@ -89,10 +89,10 @@ public class ShopService {
             return returnShops;
         } catch (OurArg e) {
             LoggerService.logDebug("getAllShops", e);
-            throw e;
+            throw new OurArg("getAllShops" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("getAllShops", e);
-            throw e;
+            throw new OurRuntime("getAllShops" + e.getMessage());
         } 
         catch (Exception e) {
             LoggerService.logError("getAllShops", e, token);
@@ -113,10 +113,10 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("updatePurchasePolicy");
         } catch (OurArg e) {
             LoggerService.logDebug("updatePurchasePolicy", e);
-            throw e;
+            throw new OurArg("updatePurchasePolicy" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("updatePurchasePolicy", e);
-            throw e;
+            throw new OurRuntime("updatePurchasePolicy" + e.getMessage());
         } 
         catch (Exception e) {
             LoggerService.logError("updatePurchasePolicy", e, shopId, newPolicy);
@@ -137,10 +137,10 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("setGlobalDiscount");
         } catch (OurArg e) {
             LoggerService.logDebug("setGlobalDiscount", e);
-            throw e;
+            throw new OurArg("setGlobalDiscount" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("setGlobalDiscount", e);
-            throw e;
+            throw new OurRuntime("setGlobalDiscount" + e.getMessage());
         } 
         catch (Exception e) {
             LoggerService.logError("setGlobalDiscount", e, shopId, discount);
@@ -161,10 +161,10 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("removeGlobalDiscount");
         } catch (OurArg e) {
             LoggerService.logDebug("removeGlobalDiscount", e);
-            throw e;
+            throw new OurArg("removeGlobalDiscount" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("removeGlobalDiscount", e);
-            throw e;
+            throw new OurRuntime("removeGlobalDiscount" + e.getMessage());
         } 
         catch (Exception e) {
             LoggerService.logError("removeGlobalDiscount", e, shopId);
@@ -185,10 +185,10 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("setDiscountForItem");
         } catch (OurArg e) {
             LoggerService.logDebug("setDiscountForItem", e);
-            throw e;
+            throw new OurArg("setDiscountForItem" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("setDiscountForItem", e);
-            throw e;
+            throw new OurRuntime("setDiscountForItem" + e.getMessage());
         } 
         catch (Exception e) {
             LoggerService.logError("setDiscountForItem", e, shopId, itemId, discount);
@@ -209,10 +209,10 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("removeDiscountForItem");
         } catch (OurArg e) {
             LoggerService.logDebug("removeDiscountForItem", e);
-            throw e;
+            throw new OurArg("removeDiscountForItem" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("removeDiscountForItem", e);
-            throw e;
+            throw new OurRuntime("removeDiscountForItem" + e.getMessage());
         } 
         catch (Exception e) {
             LoggerService.logError("removeDiscountForItem", e, shopId, itemId);
@@ -234,10 +234,10 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("setCategoryDiscount");
         } catch (OurArg e) {
             LoggerService.logDebug("setCategoryDiscount", e);
-            throw e;
+            throw new OurArg("setCategoryDiscount" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("setCategoryDiscount", e);
-            throw e;
+            throw  new OurRuntime("setCategoryDiscount" + e.getMessage());
         } 
         catch (Exception e) {
             LoggerService.logError("setCategoryDiscount", e, shopId, category, discount);
@@ -258,10 +258,10 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("removeCategoryDiscount");
         } catch (OurArg e) {
             LoggerService.logDebug("removeCategoryDiscount", e);
-            throw e;
+            throw new OurArg("removeCategoryDiscount" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("removeCategoryDiscount", e);
-            throw e;
+            throw new OurRuntime("removeCategoryDiscount" + e.getMessage());
         } 
         catch (Exception e) {
             LoggerService.logError("removeCategoryDiscount", e, shopId, category);
@@ -283,10 +283,10 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("addReviewToShop");
         } catch (OurArg e) {
             LoggerService.logDebug("addReviewToShop", e);
-            throw e;
+            throw new OurArg("addReviewToShop" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("addReviewToShop", e);
-            throw e;
+            throw new OurRuntime("addReviewToShop" + e.getMessage());
         } 
         catch (Exception e) {
             LoggerService.logError("addReviewToShop", e, shopId, rating, reviewText);
@@ -303,10 +303,10 @@ public class ShopService {
             return returnDouble;
         } catch (OurArg e) {
             LoggerService.logDebug("getShopAverageRating", e);
-            throw e;
+            throw new OurArg("getShopAverageRating" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("getShopAverageRating", e);
-            throw e;
+            throw new OurRuntime("getShopAverageRating" + e.getMessage());
         } 
         catch (Exception e) {
             LoggerService.logError("getShopAverageRating", e, shopId);
@@ -328,10 +328,10 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("addItemToShop");
         } catch (OurArg e) {
             LoggerService.logDebug("addItemToShop", e);
-            throw e;
+            throw new OurArg("addItemToShop" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("addItemToShop", e);
-            throw e;
+            throw new OurRuntime("addItemToShop" + e.getMessage());
         } 
         catch (Exception e) {
             LoggerService.logError("addItemToShop", e, shopId, quantity, price);
@@ -352,10 +352,10 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("addSupplyToItem");
         } catch (OurArg e) {
             LoggerService.logDebug("addSupplyToItem", e);
-            throw e;
+            throw new OurArg("addSupplyToItem" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("addSupplyToItem", e);
-            throw e;
+            throw new OurRuntime("addSupplyToItem" + e.getMessage());
         } 
         catch (Exception e) {
             LoggerService.logError("addSupplyToItem", e, shopId, itemId, quantity);
@@ -376,10 +376,10 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("updateItemPriceInShop");
         } catch (OurArg e) {
             LoggerService.logDebug("updateItemPriceInShop", e);
-            throw e;
+            throw new OurArg("updateItemPriceInShop" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("updateItemPriceInShop", e);
-            throw e;
+            throw new OurRuntime("updateItemPriceInShop" + e.getMessage());
         } 
         catch (Exception e) {
             LoggerService.logError("updateItemPriceInShop", e, shopId, itemId, price);
@@ -401,10 +401,10 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("removeItemFromShop");
         } catch (OurArg e) {
             LoggerService.logDebug("removeItemFromShop", e);
-            throw e;
+            throw new OurArg("removeItemFromShop" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("removeItemFromShop", e);
-            throw e;
+            throw new OurRuntime("removeItemFromShop" + e.getMessage());
         } 
         catch (Exception e) {
             LoggerService.logError("removeItemFromShop", e, shopId, itemId);
@@ -421,10 +421,10 @@ public class ShopService {
             return returnInt;
         } catch (OurArg e) {
             LoggerService.logDebug("getItemQuantityFromShop", e);
-            throw e;
+            throw new OurArg("getItemQuantityFromShop" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("getItemQuantityFromShop", e);
-            throw e;
+            throw new OurRuntime("getItemQuantityFromShop" + e.getMessage());
         } 
         catch (Exception e) {
             LoggerService.logError("getItemQuantityFromShop", e, shopId, itemId);
@@ -446,10 +446,10 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("closeShop");
         } catch (OurArg e) {
             LoggerService.logDebug("closeShop", e);
-            throw e;
+            throw new OurArg("closeShop" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("closeShop", e);
-            throw e;
+            throw new OurRuntime("closeShop" + e.getMessage());
         } 
         catch (Exception e) {
             LoggerService.logError("closeShop", e, shopId);
@@ -466,10 +466,10 @@ public class ShopService {
             return returnBoolean;
         } catch (OurArg e) {
             LoggerService.logDebug("checkSupplyAvailability", e);
-            throw e;
+            throw new OurArg("checkSupplyAvailability" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("checkSupplyAvailability", e);
-            throw e;
+            throw new OurRuntime("checkSupplyAvailability" + e.getMessage());
         } 
         catch (Exception e) {
             LoggerService.logError("checkSupplyAvailability", e, shopId, itemId);
@@ -492,10 +492,10 @@ public class ShopService {
             return totalPrice;
         } catch (OurArg e) {
             LoggerService.logDebug("purchaseItems", e);
-            throw e;
+            throw new OurArg("purchaseItems" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("purchaseItems", e);
-            throw e;
+            throw new OurRuntime("purchaseItems" + e.getMessage());
         }
 
         catch (Exception e) {
@@ -511,10 +511,10 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("rollBackPurchase");
         } catch (OurArg e) {
             LoggerService.logDebug("rollBackPurchase", e);
-            throw e;
+            throw new OurArg("rollBackPurchase" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("rollBackPurchase", e);
-            throw e;
+            throw new OurRuntime("rollBackPurchase" + e.getMessage());
         }
          catch (Exception e) {
             LoggerService.logError("rollBackPurchase", e, purchaseLists, shopId);
@@ -530,10 +530,10 @@ public class ShopService {
             return returnBoolean;
         }catch (OurArg e) {
             LoggerService.logDebug("checkSupplyAvailabilityAndAqcuire", e);
-            throw e;
+            throw new OurArg("checkSupplyAvailabilityAndAqcuire" + e.getMessage());
         }catch (OurRuntime e) {
             LoggerService.logDebug("checkSupplyAvailabilityAndAqcuire", e);
-            throw e;
+            throw new OurRuntime("checkSupplyAvailabilityAndAqcuire" + e.getMessage());
         } 
          catch (Exception e) {
             LoggerService.logError("checkSupplyAvailability", e, shopId, itemId);
@@ -554,10 +554,10 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("addSupply");
         } catch (OurArg e) {
             LoggerService.logDebug("addSupply", e);
-            throw e;
+            throw new OurArg("addSupply" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("addSupply", e);
-            throw e;
+            throw new OurRuntime("addSupply" + e.getMessage());
         } 
         catch (Exception e) {
             LoggerService.logError("addSupply", e, shopId, itemId, supply);
@@ -575,10 +575,10 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("removeSupply");
         } catch (OurArg e) {
             LoggerService.logDebug("removeSupply", e);
-            throw e;
+            throw new OurArg("removeSupply" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("removeSupply", e);
-            throw e;
+            throw  new OurRuntime("removeSupply" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("removeSupply", e, shopId, itemId, supply);
             throw new OurRuntime("Error removing supply for item " + itemId + " in shop " + shopId + ": " + e.getMessage(), e);
@@ -594,10 +594,10 @@ public class ShopService {
             return result;
         } catch (OurArg e) {
             LoggerService.logDebug("checkPolicy", e);
-            throw e;
+            throw new OurArg("checkPolicy" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("checkPolicy", e);
-            throw e;
+            throw new OurRuntime("checkPolicy" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("checkPolicy", e, cart);
             throw new OurRuntime("Error checking policy: " + e.getMessage(), e);
@@ -615,10 +615,10 @@ public class ShopService {
             return items;
         } catch (OurArg e) {
             LoggerService.logDebug("getItems", e);
-            throw e;
+            throw new OurArg("getItems" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("getItems", e);
-            throw e;
+            throw new OurRuntime("getItems" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("getItems", e, shopId);
             throw new OurRuntime("Error retrieving items for shop " + shopId + ": " + e.getMessage(), e);
@@ -634,10 +634,10 @@ public class ShopService {
             return itemService.getItemsByIds(returnItemsIds, token);
         } catch (OurArg e) {
             LoggerService.logDebug("getItems", e);
-            throw e;
+            throw new OurArg("getItems" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("getItems", e);
-            throw e;
+            throw new OurRuntime("getItems" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("getItems", e);
             throw new OurRuntime("Error retrieving all items: " + e.getMessage(), e);
@@ -658,10 +658,10 @@ public class ShopService {
             return results;
         } catch (OurArg e) {
             LoggerService.logDebug("searchItems", e);
-            throw e;
+            throw new OurArg("searchItems" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("searchItems", e);
-            throw e;
+            throw new OurRuntime("searchItems" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("searchItems", e, name, category, keywords, minPrice, maxPrice, minProductRating, minShopRating);
             throw new OurRuntime("Error searching items: " + e.getMessage(), e);
@@ -679,10 +679,10 @@ public class ShopService {
             return results;
         } catch (OurArg e) {
             LoggerService.logDebug("searchItemsInShop", e);
-            throw e;
+            throw new OurArg("searchItemsInShop" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("searchItemsInShop", e);
-            throw e;
+            throw new OurRuntime("searchItemsInShop" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("searchItemsInShop", e, shopId, name, category, keywords, minPrice, maxPrice, minProductRating);
             throw new OurRuntime("Error searching items in shop: " + e.getMessage(), e);
@@ -712,10 +712,10 @@ public class ShopService {
             return results;
         } catch (OurArg e) {
             LoggerService.logDebug("filterItemsInShop", e);
-            throw e;
+            throw new OurArg("filterItemsInShop" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("filterItemsInShop", e);
-            throw e;
+            throw new OurRuntime("filterItemsInShop" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("filterItemsInShop", e, shop, name, category, keywords, minPrice, maxPrice, minProductRating);
             throw new OurRuntime("Error filtering items in shop: " + e.getMessage(), e);
@@ -730,10 +730,10 @@ public class ShopService {
             LoggerService.logMethodExecutionEndVoid("shipPurchase");
         } catch (OurArg e) {
             LoggerService.logDebug("shipPurchase", e);
-            throw e;
+            throw new OurArg("shipPurchase" + e.getMessage());
         } catch (OurRuntime e) {
             LoggerService.logDebug("shipPurchase", e);
-            throw e;
+            throw new OurRuntime("shipPurchase" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("shipPurchase", e, purchaseId, country, city, street, postalCode);
             throw new OurRuntime("Error shipping purchase " + purchaseId + ": " + e.getMessage(), e);

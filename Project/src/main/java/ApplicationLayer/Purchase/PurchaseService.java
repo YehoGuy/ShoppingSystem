@@ -69,10 +69,10 @@ public class PurchaseService {
             return purchaseIds.keySet().stream().toList();
         } catch (OurArg e) {
             LoggerService.logDebug("checkoutCart", e);
-            throw e;
+            throw new OurArg("checkoutCart: " + e.getMessage(), e);
         } catch (OurRuntime e) {
             LoggerService.logDebug("checkoutCart", e);
-            throw e;
+            throw new OurRuntime("checkoutCart: " + e.getMessage(), e);
         } catch (Exception e) {
             for (Integer shopId : aqcuired.keySet()) {
                 shopService.rollBackPurchase(aqcuired.get(shopId), shopId);
@@ -84,7 +84,7 @@ public class PurchaseService {
                 userService.refundPaymentAuto(authToken, shopId, totalPrices.get(shopId));
             }
             LoggerService.logError("checkoutCart", e, authToken, shippingAddress);
-            throw new OurRuntime("Error during checkout: " + e.getMessage(), e);
+            throw new OurRuntime("checkoutCart: " + e.getMessage(), e);
         }
     }
 
@@ -98,14 +98,14 @@ public class PurchaseService {
             return purchaseId;
         } catch (OurArg e) {
             LoggerService.logDebug("createBid", e);
-            throw e;
+            throw new OurArg("createBid: " + e.getMessage(), e);
         } catch (OurRuntime e) {
             LoggerService.logDebug("createBid", e);
-            throw e;
+            throw new OurRuntime("createBid: " + e.getMessage(), e);
         } catch (Exception e) {
             shopService.rollBackPurchase(items, storeId);
             LoggerService.logError("createBid", e, authToken, storeId, items);
-            throw new OurRuntime("Error creating bid: " + e.getMessage(), e);
+            throw new OurRuntime("createBid: " + e.getMessage(), e);
         }
     }
 
@@ -124,13 +124,13 @@ public class PurchaseService {
             LoggerService.logMethodExecutionEndVoid("postBidding");
         } catch (OurArg e) {
             LoggerService.logDebug("postBidding", e);
-            throw e;
+            throw new OurArg("postBidding: " + e.getMessage(), e);
         } catch (OurRuntime e) {
             LoggerService.logDebug("postBidding", e);
-            throw e;
+            throw new OurRuntime("postBidding: " + e.getMessage(), e);
         } catch (Exception e) {
             LoggerService.logError("postBidding", e, authToken, purchaseId, bidAmount);
-            throw new OurRuntime("Error posting bidding: " + e.getMessage(), e);
+            throw new OurRuntime("postBidding: " + e.getMessage(), e);
         }
     }
 
@@ -172,10 +172,10 @@ public class PurchaseService {
             return highestBidderId;
         } catch (OurArg e) {
             LoggerService.logDebug("finalizeBid", e);
-            throw e;
+            throw new OurArg("finalizeBid: " + e.getMessage(), e);
         } catch (OurRuntime e) {
             LoggerService.logDebug("finalizeBid", e);
-            throw e;
+            throw new OurRuntime("finalizeBid: " + e.getMessage(), e);
         } catch (Exception e) {
             if (payed) {
                 userService.refundPaymentByStoreEmployee(authToken, highestBidderId, shopId, finalPrice);
@@ -193,7 +193,10 @@ public class PurchaseService {
             return p;
         } catch (OurArg e) {
             LoggerService.logDebug("getPurchaseById", e);
-            throw e;
+            throw new OurArg("getPurchaseById: " + purchaseId, e);
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getPurchaseById", e);
+            throw new OurRuntime("getPurchaseById: " + e.getMessage(), e);
         } catch (Exception e) {
             LoggerService.logError("getPurchaseById", e, purchaseId);
             throw new OurArg("Invalid purchaseId: " + purchaseId, e);
@@ -212,10 +215,10 @@ public class PurchaseService {
             }
         } catch (OurArg e) {
             LoggerService.logDebug("getUserPurchases", e);
-            throw e;
+            throw new OurArg("getUserPurchases: " + e.getMessage(), e);
         } catch (OurRuntime e) {
             LoggerService.logDebug("getUserPurchases", e);
-            throw e;
+            throw new OurRuntime("getUserPurchases: " + e.getMessage(), e);
         } catch (Exception e) {
             LoggerService.logError("getUserPurchases", e, authToken, userId);
             throw new OurRuntime("Error retrieving user purchases: " + e.getMessage(), e);
