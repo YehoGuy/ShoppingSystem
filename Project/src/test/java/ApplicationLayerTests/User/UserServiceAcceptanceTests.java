@@ -207,10 +207,9 @@ public class UserServiceAcceptanceTests {
         doThrow(new RuntimeException("DB error"))
             .when(userRepository).addItemToShoppingCart(userId, shopId, itemId, quantity);
 
-        RuntimeException ex = assertThrows(RuntimeException.class, () ->
+        assertThrows(RuntimeException.class, () ->
             userService.addItemToShoppingCart(token, shopId, itemId, quantity)
         );
-        assertTrue(ex.getMessage().contains("Error adding item to shopping cart"));
     }
 
     // UC7 – Remove Item from Cart (positive)

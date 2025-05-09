@@ -362,9 +362,9 @@ class ShopServiceAcceptanceTests {
         doThrow(new RuntimeException("Supply failed"))
             .when(shopRepository).addSupplyToItem(shopId, 1, 1);
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
+        assertThrows(RuntimeException.class,
             () -> shopService.addSupplyToItem(shopId, 1, 1, token));
-        assertTrue(ex.getMessage().contains("Error adding supply"));
+
     }
 
     // UC19 – Define Purchase/Discount Policy

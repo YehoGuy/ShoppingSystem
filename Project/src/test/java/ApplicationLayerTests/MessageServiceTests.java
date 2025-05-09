@@ -77,7 +77,7 @@ public class MessageServiceTests {
     @Test
     void testSendMessageToUserWithInvalidReceiverId() {
         // Test sending a message to an invalid receiver ID
-        assertEquals("Error sending message to user: User with ID 9999 doesn't exist.", messageService.sendMessageToUser(token1, 9999, "Hello", 0));
+        assertEquals("Error sending message to user: IssacTheDebugException thrown! mesage: User with ID 9999 doesn't exist. objects involved: []", messageService.sendMessageToUser(token1, 9999, "Hello", 0));
     }
 
     @Test
