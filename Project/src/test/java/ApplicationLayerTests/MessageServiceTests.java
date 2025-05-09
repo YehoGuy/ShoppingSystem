@@ -101,7 +101,7 @@ public class MessageServiceTests {
     @Test
     void testSendMessageToShopWithInvalidReceiverId() {
         // Test sending a message to an invalid receiver ID
-        assertEquals("Error sending message to shop: Error retrieving shop with id 9999: Error retrieving shop: Shop not found: 9999", messageService.sendMessageToShop(token1, 9999, "Hello", 0));
+        assertEquals("Error sending message to shop: MosheTheDebugException thrown! message: Error retrieving shop with id 9999: Error retrieving shop: Shop not found: 9999", messageService.sendMessageToShop(token1, 9999, "Hello", 0));
     }
 
 }

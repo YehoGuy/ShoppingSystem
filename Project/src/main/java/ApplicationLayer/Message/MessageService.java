@@ -51,7 +51,7 @@ public class MessageService {
             return "Error sending message to user: " + e.getMessage();
         } catch (Exception e) {
             LoggerService.logError("sendMessageToUser", e, token, receiverId, content, previousMessageId);
-            throw new OurRuntime("Error sending message to user: " + e.getMessage(), e);
+            return "Error sending message to user: " + e.getMessage();
         }
     }
 
@@ -71,15 +71,9 @@ public class MessageService {
             userService.messageNotification(userId, receiverId, false);
             LoggerService.logMethodExecutionEnd("sendMessageToShop", "Message sent successfully!");
             return "Message sent successfully!";
-        } catch (OurArg e) {
-            LoggerService.logDebug("sendMessageToShop", e);
-            return "Error sending message to shop: " + e.getMessage();
-        } catch (OurRuntime e) {
-            LoggerService.logDebug("sendMessageToShop", e);
-            return "Error sending message to shop: " + e.getMessage();
         } catch (Exception e) {
             LoggerService.logError("sendMessageToShop", e, token, receiverId, content, previousMessageId);
-            throw new OurRuntime("Error sending message to shop: " + e.getMessage(), e);
+           return "Error sending message to shop: " + e.getMessage();
         }
     }
 

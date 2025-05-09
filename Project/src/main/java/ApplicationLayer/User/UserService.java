@@ -465,14 +465,14 @@ public class UserService {
             return logoutToken; // Generate a new guest token
         }   catch (OurRuntime e) {
             LoggerService.logDebug("logout", e);
-            throw new OurRuntime("logout: " + e.getMessage(), e); // Rethrow the custom exception
+            return null;
         } catch (OurArg e) {
             LoggerService.logDebug("logout", e);
-            throw new OurArg("logout: " + e.getMessage(), e); // Rethrow the custom exception
-        } 
+            return null;
+        }
         catch (Exception e) {
             LoggerService.logError("logout", e, token);
-            throw new OurRuntime("logout: " + e.getMessage(), e);
+           return null;
         }
     }
 
@@ -1053,14 +1053,15 @@ public class UserService {
                 }
                 return ((Member)user).hasPermission(permission,shopId); // Check if the user has the specified permission
             } else {
-                throw new OurArg("User with ID " + id + " doesn't exist.");
+                LoggerService.logDebug("hasPermission", new OurRuntime("User with ID " + id + " doesn't exist."));
+                return false; // User doesn't exist
             }
         } catch (OurRuntime e) {
             LoggerService.logDebug("hasPermission", e);
-            throw new OurRuntime("hasPermission" + e.getMessage()) ; // Rethrow the custom exception
+            return false; // Rethrow the custom exception
         } catch (Exception e) {
             LoggerService.logError("hasPermission", e, id, permission, shopId);
-            throw new OurRuntime("hasPermission:" + e.getMessage(), e); // Indicate failure to check permission
+            return false; // Indicate failure to check permission
         }
     }
 
