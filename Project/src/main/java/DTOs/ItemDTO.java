@@ -29,6 +29,10 @@ public class ItemDTO {
         return category.toString();
     }
 
+    public ItemCategory getCategoryEnum() {
+        return category;
+    }
+
     public double getPrice() {
         return price;
     }
