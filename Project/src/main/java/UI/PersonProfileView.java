@@ -3,7 +3,9 @@ package UI;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.notification.Notification;
@@ -13,7 +15,6 @@ import com.vaadin.flow.router.Route;
 import DTOs.MemberDTO;
 import DTOs.RoleDTO;
 import DTOs.ShopDTO;
-import DTOs.ItemDTO;
 import DTOs.ShopReviewDTO;
 
 @Route(value = "profile", layout = AppLayoutBasic.class)
@@ -28,16 +29,44 @@ public class PersonProfileView extends VerticalLayout {
         setPadding(true);
         setAlignItems(Alignment.CENTER);
 
-        this.member = mockMember(); // Replace with real data in production
-        this.knownShops = mockShopLookup(); // Replace with real shop lookup
+        this.member = mockMember(); // Replace with real data
+        this.knownShops = mockShopLookup(); // Replace with real data
 
-        H1 title = new H1("👤 " + member.getUsername() + "'s Shop Roles");
+        H1 title = new H1("👤 " + member.getUsername() + "'s Profile");
         add(title);
 
+        addPersonalDetails();
+        addRoleOverview();
+        addPurchaseHistory();
+    }
+
+    private void addPersonalDetails() {
+        VerticalLayout infoLayout = new VerticalLayout();
+        infoLayout.setPadding(false);
+        infoLayout.setSpacing(false);
+        infoLayout.setWidth("60%");
+        infoLayout.getStyle()
+                .set("border", "1px solid #aaa")
+                .set("border-radius", "8px")
+                .set("padding", "10px")
+                .set("margin-bottom", "20px")
+                .set("background-color", "#f3f3f3");
+
+        infoLayout.add(new Span("🆔 Member ID: " + member.getMemberId()));
+        infoLayout.add(new Span("📧 Email: " + member.getEmail()));
+        infoLayout.add(new Span("📞 Phone: " + member.getPhoneNumber()));
+
+        add(infoLayout);
+    }
+
+    private void addRoleOverview() {
         Map<String, List<RoleDTO>> rolesByShop = groupRolesByShop(member.getRoles());
 
+        H2 roleSection = new H2("🛍️ Shop Roles");
+        add(roleSection);
+
         if (rolesByShop.isEmpty()) {
-            add(new Span("You are not associated with any shops."));
+            add(new Span("You have no roles in any shops."));
         } else {
             for (String shopName : rolesByShop.keySet()) {
                 ShopDTO shop = knownShops.getOrDefault(shopName, new ShopDTO(shopName, Map.of(), Map.of(), List.of()));
@@ -45,6 +74,36 @@ public class PersonProfileView extends VerticalLayout {
                 add(createShopCard(shop, roles));
             }
         }
+    }
+
+    private void addPurchaseHistory() {
+        List<Integer> history = member.getOrderHistory();
+
+        H2 historyTitle = new H2("🧾 Purchase History");
+        add(historyTitle);
+
+        if (history == null || history.isEmpty()) {
+            add(new Span("No purchases yet."));
+            return;
+        }
+
+        VerticalLayout historyLayout = new VerticalLayout();
+        historyLayout.setPadding(false);
+        historyLayout.setSpacing(false);
+        historyLayout.setWidth("60%");
+        historyLayout.getStyle()
+                .set("border", "1px solid #ccc")
+                .set("border-radius", "8px")
+                .set("padding", "10px")
+                .set("background-color", "#fafafa");
+
+        for (Integer purchaseId : history) {
+            Anchor link = new Anchor("/receipt/" + purchaseId, "• View Receipt #" + purchaseId);
+            link.getStyle().set("text-decoration", "none");
+            historyLayout.add(link);
+        }
+
+        add(historyLayout);
     }
 
     private VerticalLayout createShopCard(ShopDTO shop, List<RoleDTO> roles) {
@@ -86,8 +145,7 @@ public class PersonProfileView extends VerticalLayout {
             }
         }
 
-        Button openButton = new Button("Edit Shop", e -> Notification.show("Opening: " + shop.getName( ) + " for editing."));
-
+        Button openButton = new Button("Edit Shop", e -> Notification.show("Opening: " + shop.getName() + " for editing."));
         card.add(name, rating, rolesList, openButton);
         return card;
     }
@@ -119,7 +177,16 @@ public class PersonProfileView extends VerticalLayout {
             new RoleDTO("Manager", "Manager at Beauty Hub\nPermissions: manageItems, getStaffInfo, handleMessages"),
             new RoleDTO("Staff", "Staff at ElectroMax\nPermissions: handleMessages")
         );
-        return new MemberDTO(1, "john_doe", "pass", "john@example.com", "123456789", roles, List.of(), List.of());
+        return new MemberDTO(
+            1,
+            "john_doe",
+            "pass",
+            "john@example.com",
+            "123456789",
+            roles,
+            List.of(101, 102, 108), // Mock purchase history
+            List.of()
+        );
     }
 
     private Map<String, ShopDTO> mockShopLookup() {
