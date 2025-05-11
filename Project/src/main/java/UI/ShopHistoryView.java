@@ -37,9 +37,6 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<S
         Reciepts.setSpacing(true);
         Reciepts.setPadding(true);
         add(Reciepts);
-
-        // Add this CSS style to ensure Details component expands
-        this.getElement().getStyle().set("width", "100%");
     }
 
     @Override
@@ -77,27 +74,53 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<S
     }
 
     private void addItem(ShopHistoryItem item) {
+        // Create a Card component to contain everything
+        com.vaadin.flow.component.html.Section card = new com.vaadin.flow.component.html.Section();
+        card.addClassNames(
+            LumoUtility.Background.CONTRAST_5,
+            LumoUtility.BorderRadius.LARGE,
+            LumoUtility.BoxShadow.SMALL,
+            LumoUtility.Padding.LARGE
+        );
+        card.setWidth("80%");
+
         VerticalLayout layout = new VerticalLayout();
         layout.setWidthFull();
+        layout.setJustifyContentMode(JustifyContentMode.CENTER);
+        layout.setSpacing(true);
+        layout.setPadding(true);
 
         H3 name = new H3("Buyer: " + item.getBuyerName());
         H3 totalPrice = new H3("Total Price: " + item.getPrice());
         H3 totalDiscount = new H3("Total Discount: " + item.getDiscount());
         H3 date = new H3("Date: " + item.getDate());
 
-        HorizontalLayout lay = new HorizontalLayout(name,totalPrice,totalDiscount,date);
+        HorizontalLayout lay = new HorizontalLayout();
+        lay.add(name);
+        lay.add(totalPrice);
+        lay.add(totalDiscount);
+        lay.add(date);
         lay.setSpacing(true);
-
+        lay.setWidthFull();
+        lay.getStyle().set("spacing", "var(--lumo-space-m)");
+        lay.getStyle().set("padding", "var(--lumo-space-m)");
+        
         layout.add(lay);
+
         Grid<Map.Entry<String, Integer>> grid = new Grid<>();
         grid.addColumn(Map.Entry::getKey).setHeader("Item");
         grid.addColumn(Map.Entry::getValue).setHeader("Quantity");
         grid.setItems(item.getItems().entrySet());
         grid.setWidthFull();
-
+        grid.getColumns().forEach(column -> column.setAutoWidth(true));
+        
         Details details = new Details("View Items", grid);
+        details.setWidthFull();
         layout.add(details);
-        Reciepts.add(layout);
+
+        // Add the layout to the card and the card to Receipts
+        card.add(layout);
+        Reciepts.add(card);
     }
 
     public static class ShopHistoryItem {

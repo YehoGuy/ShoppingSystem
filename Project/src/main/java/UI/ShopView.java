@@ -21,6 +21,8 @@ import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.OptionalParameter;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.H5;
 
 import DTOs.ItemDTO;
 import DTOs.ShopDTO;
@@ -267,7 +269,45 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String> 
                 Notification.show("Added to cart: " + item.getName());
             });
 
-            itemCard.add(name, desc, priceSpan, addCartButton);
+            Button instaBuyButton = new Button("Buy imidiatly");
+            instaBuyButton.getStyle().set("margin-top", "10px");
+            instaBuyButton.addClickListener(e -> {
+                Notification.show("Bought: " + item.getName());
+            });
+
+            Button addBidButton = new Button("Bid on item");
+            addBidButton.getStyle().set("margin-top", "10px");
+            addBidButton.addClickListener(e -> {
+                Dialog bidDialog = new Dialog();
+                bidDialog.setWidth("400px");
+                
+                VerticalLayout dialogLayout = new VerticalLayout();
+                
+                H3 title = new H3("Bid on " + item.getName());
+                H5 minimum = new H5("Minimum Bid: $" + price);
+                
+                NumberField bidField = new NumberField("Bid Amount");
+                bidField.setMin(0);
+                bidField.setStep(0.1);
+                
+                HorizontalLayout buttons = new HorizontalLayout();
+                Button cancelButton = new Button("Cancel", event -> bidDialog.close());
+                Button sendButton = new Button("Place Bid");
+                sendButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+                sendButton.addClickListener(event -> {
+                    if (bidField.getValue() == null) {
+                        Notification.show("Please enter a valid bid amount");
+                        return;
+                    }
+                });
+                buttons.add(cancelButton, sendButton);
+                buttons.setJustifyContentMode(JustifyContentMode.END);
+                dialogLayout.add(title, minimum, bidField, buttons);
+                bidDialog.add(dialogLayout);
+                bidDialog.open();
+            });
+
+            itemCard.add(name, desc, priceSpan, new HorizontalLayout(addCartButton, instaBuyButton, addBidButton));
             itemsContainer.add(itemCard);
         }
     }
