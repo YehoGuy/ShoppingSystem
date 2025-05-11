@@ -67,15 +67,15 @@ public class ItemService {
             return returnItemId;
         } catch (OurArg e) {
             LoggerService.logDebug("createItem", e);
-            throw new OurArg("Error creating item: " + e.getMessage(), e);
+            throw new OurArg("createItem: " + e.getMessage(), e);
         }
         catch (OurRuntime e) {
             LoggerService.logDebug("createItem", e);
-            throw new OurRuntime("Error creating item: " + e.getMessage(), e);
+            throw new OurRuntime("createItem: " + e.getMessage(), e);
         }
         catch (Exception e) {
             LoggerService.logError("createItem", e, name, description, category);
-            throw new OurRuntime("Error creating item: " + e.getMessage(), e);
+            throw new OurRuntime("createItem: " + e.getMessage(), e);
         }
     }
 
@@ -97,14 +97,14 @@ public class ItemService {
             return returnItem;
         } catch (OurArg e) {
             LoggerService.logDebug("getItem", e);
-            throw new OurArg("Error retrieving item with id " + itemId + ": " + e.getMessage(), e);
+            throw new OurArg("getItem " + itemId + ": " + e.getMessage(), e);
         } catch (OurRuntime e) {
             LoggerService.logDebug("getItem", e);
-            throw new OurRuntime("Error retrieving item with id " + itemId + ": " + e.getMessage(), e);
+            throw new OurRuntime("getItem " + itemId + ": " + e.getMessage(), e);
         } 
         catch (Exception e) {
             LoggerService.logError("getItem", e, itemId);
-            throw new OurRuntime("Error retrieving item with id " + itemId + ": " + e.getMessage(), e);
+            throw new OurRuntime("getItem " + itemId + ": " + e.getMessage(), e);
         }
     }
 
@@ -115,14 +115,25 @@ public class ItemService {
      * @return a map where the keys are item IDs and the values are ItemCategory instances.
      */
     public Map<Integer,ItemCategory> getItemdId2Cat(Map<Integer, Integer> itemIds){ 
-        Map<Integer, ItemCategory> itemId2Cat = new HashMap<>();
-        for (Integer itemId : itemIds.keySet()) {
-            Item item = itemRepository.getItem(itemId);
-            if (item != null) {
-                itemId2Cat.put(itemId, item.getCategory());
+        try {
+            Map<Integer, ItemCategory> itemId2Cat = new HashMap<>();
+            for (Integer itemId : itemIds.keySet()) {
+                Item item = itemRepository.getItem(itemId);
+                if (item != null) {
+                    itemId2Cat.put(itemId, item.getCategory());
+                }
             }
+            return itemId2Cat;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getItemdId2Cat", e);
+            throw new OurArg("getItemdId2Cat: " + e.getMessage(), e);
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getItemdId2Cat", e);
+            throw new OurRuntime("getItemdId2Cat: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("getItemdId2Cat", e, itemIds);
+            throw new OurRuntime("getItemdId2Cat: " + e.getMessage(), e);
         }
-        return itemId2Cat;
     }
 
     /**
@@ -139,14 +150,14 @@ public class ItemService {
             return returnItems;
         } catch (OurArg e) {
             LoggerService.logDebug("getAllItems", e);
-            throw new OurArg("Error retrieving all items: " + e.getMessage(), e);
+            throw new OurArg("getAllItems: " + e.getMessage(), e);
         } catch (OurRuntime e) {
             LoggerService.logDebug("getAllItems", e);
-            throw new OurRuntime("Error retrieving all items: " + e.getMessage(), e);
+            throw new OurRuntime("getAllItems: " + e.getMessage(), e);
         }
         catch (Exception e) {
             LoggerService.logError("getAllItems", e);
-            throw new OurRuntime("Error retrieving all items: " + e.getMessage(), e);
+            throw new OurRuntime("getAllItems: " + e.getMessage(), e);
         }
     }
 
@@ -175,14 +186,14 @@ public class ItemService {
             
         } catch (OurArg e) {
             LoggerService.logDebug("addReviewToItem", e);
-            throw new OurArg("Error adding review to item " + itemId + ": " + e.getMessage(), e);
+            throw new OurArg("addReviewToItem " + itemId + ": " + e.getMessage(), e);
         } catch (OurRuntime e) {
             LoggerService.logDebug("addReviewToItem", e);
-            throw new OurRuntime("Error adding review to item " + itemId + ": " + e.getMessage(), e);
+            throw new OurRuntime("addReviewToItem " + itemId + ": " + e.getMessage(), e);
         } 
         catch (Exception e) {
             LoggerService.logError("addReviewToItem", e, itemId, rating, reviewText);
-            throw new OurRuntime("Error adding review to item " + itemId + ": " + e.getMessage(), e);
+            throw new OurRuntime("addReviewToItem " + itemId + ": " + e.getMessage(), e);
         }
     }
 
@@ -204,14 +215,14 @@ public class ItemService {
             return returnItems;
         } catch (OurArg e) {
             LoggerService.logDebug("getItemReviews", e);
-            throw new OurArg("Error retrieving reviews for item " + itemId + ": " + e.getMessage(), e);
+            throw new OurArg("getItemReviews " + itemId + ": " + e.getMessage(), e);
         } catch (OurRuntime e) {
             LoggerService.logDebug("getItemReviews", e);
-            throw new OurRuntime("Error retrieving reviews for item " + itemId + ": " + e.getMessage(), e);
+            throw new OurRuntime("getItemReviews " + itemId + ": " + e.getMessage(), e);
         }
         catch (Exception e) {
             LoggerService.logError("getItemReviews", e, itemId);
-            throw new OurRuntime("Error retrieving reviews for item " + itemId + ": " + e.getMessage(), e);
+            throw new OurRuntime("getItemReviews " + itemId + ": " + e.getMessage(), e);
         }
     }
 
@@ -233,14 +244,14 @@ public class ItemService {
             return returnDouble;
         } catch (OurArg e) {
             LoggerService.logDebug("getItemAverageRating", e);
-            throw new OurArg("Error retrieving average rating for item " + itemId + ": " + e.getMessage(), e);
+            throw new OurArg("getItemAverageRating " + itemId + ": " + e.getMessage(), e);
         } catch (OurRuntime e) {
             LoggerService.logDebug("getItemAverageRating", e);
-            throw new OurRuntime("Error retrieving average rating for item " + itemId + ": " + e.getMessage(), e);
+            throw new OurRuntime("getItemAverageRating " + itemId + ": " + e.getMessage(), e);
         }
         catch (Exception e) {
             LoggerService.logError("getItemAverageRating", e, itemId);
-            throw new OurRuntime("Error retrieving average rating for item " + itemId + ": " + e.getMessage(), e);
+            throw new OurRuntime("getItemAverageRating " + itemId + ": " + e.getMessage(), e);
         }
     }
 
@@ -267,14 +278,14 @@ public class ItemService {
             return result;
         } catch (OurArg e) {
             LoggerService.logDebug("getItemsByIds", e);
-            throw new OurArg("Error fetching items: " + e.getMessage(), e);
+            throw new OurArg("getItemsByIds: " + e.getMessage(), e);
         } catch (OurRuntime e) {
             LoggerService.logDebug("getItemsByIds", e);
-            throw new OurRuntime("Error fetching items: " + e.getMessage(), e);
+            throw new OurRuntime("getItemsByIds: " + e.getMessage(), e);
         }
         catch (Exception e) {
             LoggerService.logError("getItemsByIds", e, itemIds);
-            throw new OurRuntime("Error fetching items: " + e.getMessage(), e);
+            throw new OurRuntime("getItemsByIds: " + e.getMessage(), e);
         }
     }
 
@@ -290,14 +301,14 @@ public class ItemService {
             return returnItems;
         } catch (OurArg e) {
             LoggerService.logDebug("getItemsByCategory", e);
-            throw new OurArg("Error retrieving items by category " + category + ": " + e.getMessage(), e);
+            throw new OurArg("getItemsByCategory " + category + ": " + e.getMessage(), e);
         } catch (OurRuntime e) {
             LoggerService.logDebug("getItemsByCategory", e);
-            throw new OurRuntime("Error retrieving items by category " + category + ": " + e.getMessage(), e);
+            throw new OurRuntime("getItemsByCategory " + category + ": " + e.getMessage(), e);
         }
         catch (Exception e) {
             LoggerService.logError("getItemsByCategory", e, category);
-            throw new OurRuntime("Error retrieving items by category " + category + ": " + e.getMessage(), e);
+            throw new OurRuntime("getItemsByCategory " + category + ": " + e.getMessage(), e);
         }
     }
 

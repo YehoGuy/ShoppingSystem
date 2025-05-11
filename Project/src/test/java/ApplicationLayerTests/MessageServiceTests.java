@@ -77,7 +77,7 @@ public class MessageServiceTests {
     @Test
     void testSendMessageToUserWithInvalidReceiverId() {
         // Test sending a message to an invalid receiver ID
-        assertEquals("Error sending message to user: User with ID 9999 doesn't exist.", messageService.sendMessageToUser(token1, 9999, "Hello", 0));
+        assertEquals("Error sending message to user: IssacTheDebugException thrown! mesage: User with ID 9999 doesn't exist. objects involved: []", messageService.sendMessageToUser(token1, 9999, "Hello", 0));
     }
 
     @Test
@@ -101,7 +101,7 @@ public class MessageServiceTests {
     @Test
     void testSendMessageToShopWithInvalidReceiverId() {
         // Test sending a message to an invalid receiver ID
-        assertEquals("Error sending message to shop: Error retrieving shop with id 9999: Error retrieving shop: Shop not found: 9999", messageService.sendMessageToShop(token1, 9999, "Hello", 0));
+        assertEquals("Error sending message to shop: MosheTheDebugException thrown! message: Error retrieving shop with id 9999: Error retrieving shop: Shop not found: 9999", messageService.sendMessageToShop(token1, 9999, "Hello", 0));
     }
 
 }

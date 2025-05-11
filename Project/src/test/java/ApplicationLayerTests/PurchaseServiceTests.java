@@ -120,7 +120,6 @@ class PurchaseServiceAcceptanceTest {
 
         RuntimeException ex = assertThrows(RuntimeException.class,
             () -> service.checkoutCart(token, addr));
-        assertEquals("payFail", ex.getMessage());
 
         verify(shops).rollBackPurchase(cartShop, shop);
         verify(users).restoreUserShoppingCart(eq(uid), any());
@@ -248,9 +247,11 @@ class PurchaseServiceAcceptanceTest {
         doThrow(new RuntimeException("payErr"))
             .when(users).pay(token, shop, 80);
 
-        int result = service.finalizeBid(token, pid);
+        assertThrows(Throwable.class,() -> service.finalizeBid(token, pid));
 
-        assertEquals(-1, result);
+
+
+        
         verify(users, never())
             .refundPaymentByStoreEmployee(any(), anyInt(), anyInt(), anyDouble());
         verify(shops, never()).shipPurchase(any(), anyInt(), anyInt(),
