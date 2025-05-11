@@ -1,0 +1,139 @@
+package UI;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.Grid.Column;
+import com.vaadin.flow.component.details.Details;
+import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.page.History;
+
+import com.vaadin.flow.router.BeforeEvent;
+import com.vaadin.flow.router.HasUrlParameter;
+import com.vaadin.flow.router.Route;
+import com.vaadin.flow.theme.lumo.LumoUtility;
+
+
+@Route(value = "history", layout = AppLayoutBasic.class)
+public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<String> {
+    private final List<ShopHistoryItem> shopHistoryItems = new ArrayList<>();
+    private String shopName;
+    private VerticalLayout Reciepts;
+
+    public ShopHistoryView() {
+        setSizeFull();
+
+        setAlignItems(Alignment.CENTER);
+        setJustifyContentMode(JustifyContentMode.CENTER);
+
+        Reciepts = new VerticalLayout();
+        Reciepts.setWidthFull();
+        Reciepts.setAlignItems(Alignment.CENTER);
+        Reciepts.setJustifyContentMode(JustifyContentMode.CENTER);
+        Reciepts.setSpacing(true);
+        Reciepts.setPadding(true);
+        add(Reciepts);
+
+        // Add this CSS style to ensure Details component expands
+        this.getElement().getStyle().set("width", "100%");
+    }
+
+    @Override
+    public void setParameter(BeforeEvent event, String parameter) {
+        this.shopName = parameter;
+
+        shopHistoryItems.add(new ShopHistoryItem(
+            Map.of("Apple", 3, "Orange", 2, "Banana", 5),
+            25.50,
+            5.00,
+            "2024-01-15",
+            "John Doe"
+        ));
+
+        shopHistoryItems.add(new ShopHistoryItem(
+            Map.of("Milk", 2, "Bread", 1, "Eggs", 12),
+            18.75,
+            2.50,
+            "2024-01-14",
+            "Jane Smith"
+        ));
+
+        shopHistoryItems.add(new ShopHistoryItem(
+            Map.of("Coffee", 1, "Sugar", 2, "Cream", 1),
+            15.99,
+            1.00,
+            "2024-01-13",
+            "Bob Wilson"
+        ));
+
+        for(ShopHistoryItem item : shopHistoryItems)
+        {
+            addItem(item);
+        }
+    }
+
+    private void addItem(ShopHistoryItem item) {
+        VerticalLayout layout = new VerticalLayout();
+        layout.setWidthFull();
+
+        H3 name = new H3("Buyer: " + item.getBuyerName());
+        H3 totalPrice = new H3("Total Price: " + item.getPrice());
+        H3 totalDiscount = new H3("Total Discount: " + item.getDiscount());
+        H3 date = new H3("Date: " + item.getDate());
+
+        HorizontalLayout lay = new HorizontalLayout(name,totalPrice,totalDiscount,date);
+        lay.setSpacing(true);
+
+        layout.add(lay);
+        Grid<Map.Entry<String, Integer>> grid = new Grid<>();
+        grid.addColumn(Map.Entry::getKey).setHeader("Item");
+        grid.addColumn(Map.Entry::getValue).setHeader("Quantity");
+        grid.setItems(item.getItems().entrySet());
+        grid.setWidthFull();
+
+        Details details = new Details("View Items", grid);
+        layout.add(details);
+        Reciepts.add(layout);
+    }
+
+    public static class ShopHistoryItem {
+        private Map<String, Integer> items;
+        private double price;
+        private String date;
+        private String buyerName;
+        private double discount;
+
+        public ShopHistoryItem(Map<String, Integer> items, double price, double discount, String date, String buyerName) {
+            this.items = items;
+            this.price = price;
+            this.date = date;
+            this.buyerName = buyerName;
+            this.discount = discount;
+        }
+
+        public Map<String, Integer> getItems() {
+            return items;
+        }
+
+        public double getDiscount()
+        {
+            return discount;
+        }
+
+        public double getPrice() {
+            return price;
+        }
+
+        public String getDate() {
+            return date;
+        }
+
+        public String getBuyerName() {
+            return buyerName;
+        }
+    }
+}

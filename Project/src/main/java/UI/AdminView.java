@@ -12,7 +12,7 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 
 import DTOs.MemberDTO;
 import DTOs.ShopDTO;
-import UI.ShoppingCartView.ItemRow;
+import UI.AppLayoutBasic;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +21,7 @@ import java.util.Map;
 
 import com.vaadin.flow.component.UI;
 
-@Route("admin")
+@Route(value = "admin", layout = AppLayoutBasic.class)
 public class AdminView extends VerticalLayout {
     public static class UserGridRow {
         private String username;
@@ -201,7 +201,7 @@ public class AdminView extends VerticalLayout {
                 Notification.show("Shop " + shop.getName() + " has been removed.")
             );
             viewButton.addClickListener(e -> 
-            UI.getCurrent().navigate("shop/" + shop.getName().replaceAll(" ", "-"))
+            UI.getCurrent().navigate("shop/" + shop.getName())
             );
             return buttons;
         });

@@ -3,6 +3,7 @@ package UI;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H2;
@@ -145,7 +146,7 @@ public class PersonProfileView extends VerticalLayout {
             }
         }
 
-        Button openButton = new Button("Edit Shop", e -> Notification.show("Opening: " + shop.getName() + " for editing."));
+        Button openButton = new Button("Edit Shop", e -> UI.getCurrent().navigate("/editShop/" + shop.getName()));
         card.add(name, rating, rolesList, openButton);
         return card;
     }

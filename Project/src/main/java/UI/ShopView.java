@@ -3,19 +3,24 @@ package UI;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.vaadin.flow.component.ClickEvent;
+import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
+import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.OptionalParameter;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.component.button.ButtonVariant;
 
 import DTOs.ItemDTO;
 import DTOs.ShopDTO;
@@ -55,7 +60,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String> 
 
     private void loadShopData(String shopName) {
         selectedShop = new ShopDTO(
-                "shop-A",
+                "shop A",
                 Map.of(
                         new ItemDTO(1, "Banana", "Fresh yellow banana", 2.5, ItemCategory.GROCERY), 5,
                         new ItemDTO(2, "Apple", "Juicy red apple", 3.0, ItemCategory.GROCERY), 10
@@ -65,8 +70,8 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String> 
                         new ItemDTO(2, "Apple", "Juicy red apple", 3.0, ItemCategory.GROCERY), 3
                 ),
                 List.of(
-                        new ShopReviewDTO(1, 5, "Great service!"),
-                        new ShopReviewDTO(2, 4, "Good selection of products.")
+                        new ShopReviewDTO(1, 5, "Great service!", "shop A"),
+                        new ShopReviewDTO(2, 4, "Good selection of products.", "shop A")
                 )
         );
 
@@ -85,12 +90,100 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String> 
         allItems.clear();
         allItems.addAll(selectedShop.getItems().keySet());
 
+        HorizontalLayout header = new HorizontalLayout();
+        header.setWidthFull();
+        header.setJustifyContentMode(JustifyContentMode.BETWEEN);
+        header.setAlignItems(Alignment.CENTER);
+
+        VerticalLayout titleSection = new VerticalLayout();
+        titleSection.setAlignItems(Alignment.CENTER);
+        
         H1 title = new H1("🛍️ Welcome to " + selectedShop.getName());
         title.getStyle().set("margin-bottom", "10px");
-        add(title);
-
+        
         Span avgRating = new Span("⭐ Average Rating: " + calculateAverageRating(selectedShop.getReviews()));
-        add(avgRating);
+        
+        titleSection.add(title, avgRating);
+
+        Button reviewButton = new Button("Leave Review");
+        reviewButton.addClickListener(new ComponentEventListener<ClickEvent<Button>>() {
+            @Override
+            public void onComponentEvent(ClickEvent<Button> e) {
+                String shopName = selectedShop.getName();
+                Dialog reviewDialog = new Dialog();
+                reviewDialog.setWidth("400px");
+                
+                VerticalLayout dialogLayout = new VerticalLayout();
+                
+                NumberField ratingField = new NumberField("Rating (1-5 stars)");
+                ratingField.setMin(1);
+                ratingField.setMax(5);
+                ratingField.setStep(1);
+                ratingField.setValue(5.0);
+                ratingField.setStepButtonsVisible(true);
+                
+                TextArea messageField = new TextArea("Review Message");
+                messageField.setWidth("100%");
+                
+                HorizontalLayout buttons = new HorizontalLayout();
+                Button cancelButton = new Button("Cancel", event -> reviewDialog.close());
+                Button sendButton = new Button("Send Review");
+                sendButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+                sendButton.addClickListener(event -> {
+                    if (ratingField.getValue() == null || messageField.getValue().trim().isEmpty()) {
+                        Notification.show("Please fill in all fields");
+                        return;
+                    }
+                    // TODO: Add logic to save review
+                    Notification.show("Review submitted successfully!");
+                    reviewDialog.close();
+                });
+                
+                buttons.add(cancelButton, sendButton);
+                buttons.setJustifyContentMode(JustifyContentMode.END);
+                
+                dialogLayout.add(ratingField, messageField, buttons);
+                reviewDialog.add(dialogLayout);
+                
+                reviewDialog.open();
+            }
+        });
+
+        Button contactButton = new Button("Contact Seller");
+        contactButton.addClickListener(e -> {
+            Dialog contactDialog = new Dialog();
+            contactDialog.setWidth("400px");
+            
+            VerticalLayout dialogLayout = new VerticalLayout();
+            
+            TextField titleField = new TextField("Title");
+            titleField.setWidth("70%");
+            TextArea messageField = new TextArea("Message to Seller");
+            messageField.setWidth("100%");
+            
+            HorizontalLayout buttons = new HorizontalLayout();
+            Button cancelButton = new Button("Cancel", event -> contactDialog.close());
+            Button sendButton = new Button("Send Message");
+
+            buttons.add(cancelButton, sendButton);
+
+            dialogLayout.add(titleField, messageField, buttons);
+
+            sendButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+            sendButton.addClickListener(event -> {
+                if (messageField.getValue().trim().isEmpty()) {
+                    Notification.show("Please fill in the message field");
+                    return;
+                }
+            });
+
+            contactDialog.add(dialogLayout);
+            contactDialog.open();
+        });
+
+        header.add(contactButton, titleSection, reviewButton);
+        add(header);
+
 
         itemsContainer = new VerticalLayout();
         itemsContainer.setWidth("80%");

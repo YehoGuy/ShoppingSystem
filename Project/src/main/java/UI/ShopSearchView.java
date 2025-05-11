@@ -33,11 +33,11 @@ public class ShopSearchView extends VerticalLayout {
 
         // Sample data for demonstration
         List<ShopReviewDTO> reviews1 = new ArrayList<>();
-        reviews1.add(new ShopReviewDTO(1, 5, "Great service!"));
-        reviews1.add(new ShopReviewDTO(2, 4, "Good selection of products."));
+        reviews1.add(new ShopReviewDTO(1, 5, "Great service!", "shop A"));
+        reviews1.add(new ShopReviewDTO(2, 4, "Good selection of products.", "shop A"));
         List<ShopReviewDTO> reviews2 = new ArrayList<>();
-        reviews2.add(new ShopReviewDTO(3, 3, "Average experience."));
-        reviews2.add(new ShopReviewDTO(4, 2, "Not very helpful staff."));
+        reviews2.add(new ShopReviewDTO(3, 3, "Average experience.", "shop B"));
+        reviews2.add(new ShopReviewDTO(4, 2, "Not very helpful staff.", "shop B"));
         Map<ItemDTO, Integer> items1 = new HashMap<>();
         items1.put(new ItemDTO(0, "banana", "a good banana", 10.0, ItemCategory.GROCERY), 5);
         items1.put(new ItemDTO(1, "apple", "a good apple", 10.0, ItemCategory.GROCERY), 10);
@@ -117,7 +117,7 @@ public class ShopSearchView extends VerticalLayout {
                     .set("transition", "color 0.2s");
 
             shopName.addClickListener(e -> {
-                UI.getCurrent().navigate("shop/" + shop.getName().replaceAll(" ", "-"));
+                UI.getCurrent().navigate("shop/" + shop.getName());
             });
             shopName.getElement().executeJs(
                     "this.addEventListener('mouseover', () => this.style.color = '#0056b3');" +
