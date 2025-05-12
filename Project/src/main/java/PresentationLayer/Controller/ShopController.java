@@ -431,4 +431,24 @@ public class ShopController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+//adding from here
+    @PostMapping("/{shopId}/items/{itemId}/supply")
+    public ResponseEntity<?> addSupplyToItem(
+            @PathVariable int shopId,
+            @PathVariable int itemId,
+            @RequestParam int quantity,
+            @RequestParam String token) {
+        try {
+            shopService.addSupplyToItem(shopId, itemId, quantity, token);
+            return ResponseEntity.noContent().build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }
+    }
+
+
+
 }
+
+
