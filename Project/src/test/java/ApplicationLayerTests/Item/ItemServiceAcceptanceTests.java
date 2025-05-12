@@ -77,9 +77,10 @@ public class ItemServiceAcceptanceTests {
                 .when(itemRepository)
                 .addReviewToItem(itemId, rating, text);
     
-            assertThrows(RuntimeException.class, () ->
+            RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 itemService.addReviewToItem(itemId, rating, text, TOKEN)
             );
+            assertTrue(ex.getMessage().contains("Error adding review to item"));
         }
 
         // UC11 – Add Review to Item (negative: invaklid description)
@@ -93,9 +94,10 @@ public class ItemServiceAcceptanceTests {
                 .when(itemRepository)
                 .addReviewToItem(itemId, rating, text);
     
-            assertThrows(RuntimeException.class, () ->
+            RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 itemService.addReviewToItem(itemId, rating, text, TOKEN)
             );
+            assertTrue(ex.getMessage().contains("Error adding review to item"));
         }
 
     // UC16 – Create Item (positive)
@@ -153,10 +155,10 @@ public class ItemServiceAcceptanceTests {
         when(itemRepository.createItem(name, description, category))
             .thenThrow(new RuntimeException("Database error"));
 
-        assertThrows(RuntimeException.class, () ->
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
             itemService.createItem(SHOP_ID, name, description, category, TOKEN)
         );
-
+        assertTrue(ex.getMessage().contains("Error creating item"));
     }
 
     // UC16 – Create Item (invalid description)
@@ -173,9 +175,10 @@ public class ItemServiceAcceptanceTests {
         when(itemRepository.createItem(name, description, category))
             .thenThrow(new RuntimeException("Database error"));
 
-        assertThrows(RuntimeException.class, () ->
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
             itemService.createItem(SHOP_ID, name, description, category, TOKEN)
         );
+        assertTrue(ex.getMessage().contains("Error creating item"));
     }
 
     // UC16 – Create Item (invalid category)
@@ -188,11 +191,11 @@ public class ItemServiceAcceptanceTests {
         when(userService.hasPermission(USER_ID, PermissionsEnum.manageItems, SHOP_ID))
             .thenReturn(true);
 
-        assertThrows(RuntimeException.class, () ->
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
             itemService.createItem(SHOP_ID, name, description, category, TOKEN)
         );
+        assertTrue(ex.getMessage().contains("Error creating item"));
     }
-       
 
     // UC16 – Create Item (invalid shop ID)
     @Test
@@ -205,9 +208,10 @@ public class ItemServiceAcceptanceTests {
         when(userService.hasPermission(USER_ID, PermissionsEnum.manageItems, shopId))
             .thenReturn(true);
 
-            assertThrows(RuntimeException.class, () ->
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
             itemService.createItem(shopId, name, description, category, TOKEN)
         );
+        assertTrue(ex.getMessage().contains("Error creating item"));
     }
 
     // Uc5 - search item in the market (positive)

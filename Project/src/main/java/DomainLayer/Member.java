@@ -1,9 +1,5 @@
 package DomainLayer;
 
-import java.util.ArrayList;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -17,17 +13,14 @@ public class Member extends User {
     private volatile String password; // Password of the user
     private volatile String email; // Email address of the user
     private volatile String phoneNumber; // Phone number of the user
-    private volatile LocalDateTime suspended; // Suspension status of the user
     
     private final List<Role> roles; // List of roles associated with the user
     private final List<Integer> orderHistory;// List of order IDs
     private final List<Role> pending_roles; // List of pending roles not yet confirmed/declined by the user
-    private final List<Notification> notifications; // List of notifications for the user
 
     private final Object rolesLock = new Object();
     private final Object pendingRolesLock = new Object();
     private final Object orderHistoryLock = new Object();
-    private final Object notificationsLock = new Object();  
 
     public Member(int memberId, String username, String password, String email, String phoneNumber, String addressToRemove) {
         super(memberId); // Call the User class constructor
@@ -36,11 +29,9 @@ public class Member extends User {
         this.password = password; // Initialize password
         this.email = email; // Initialize email address
         this.phoneNumber = phoneNumber; // Initialize phone number
-        this.suspended = LocalDateTime.now(); // Initialize suspension status (not suspended)
         this.orderHistory = new CopyOnWriteArrayList<>(); // Initialize order history
         this.roles = new CopyOnWriteArrayList<>(); // Initialize roles
         this.pending_roles = new CopyOnWriteArrayList<>(); // Initialize pending roles
-        this.notifications = new CopyOnWriteArrayList<>(); // Initialize notifications
 
     }
 
@@ -51,12 +42,11 @@ public class Member extends User {
         this.password = password; // Initialize password
         this.email = email; // Initialize email address
         this.phoneNumber = phoneNumber; // Initialize phone number
-        this.suspended = LocalDateTime.now(); // Initialize suspension status (not suspended)
         this.orderHistory = new CopyOnWriteArrayList<>(); // Initialize order history
         this.roles = new CopyOnWriteArrayList<>(); // Initialize roles
         this.pending_roles = new CopyOnWriteArrayList<>(); // Initialize pending roles
         this.address = address;
-        this.notifications = new CopyOnWriteArrayList<>(); // Initialize notifications
+
     }
 
     public int getMemberId() {
@@ -77,14 +67,6 @@ public class Member extends User {
 
     public String getPhoneNumber() {
         return phoneNumber; // Return the phone number
-    }
-
-    public Boolean isSuspended() {
-        return suspended.isAfter(LocalDateTime.now()); // Check if the user is suspended
-    }
-
-    public void setSuspended(LocalDateTime suspended) {
-        this.suspended = suspended; // Set the suspension status
     }
 
     public synchronized void setUsername(String username) {
@@ -165,7 +147,6 @@ public class Member extends User {
             }
         }
     }
-
     public void declineRole(Role role) {
         synchronized (pendingRolesLock) {
             if (pending_roles.contains(role)) {
@@ -234,27 +215,6 @@ public class Member extends User {
         synchronized (orderHistoryLock) {
             this.orderHistory.clear();
             this.orderHistory.addAll(newOrderHistory);
-        }
-    }
-
-    public void addNotification(Notification notification) {
-        synchronized (notificationsLock) {
-            notifications.add(notification);
-        }
-    }
-
-    /**
-     * Atomically returns all pending notifications and clears them,
-     * without losing any that arrive concurrently.
-     */
-    public List<Notification> getNotificationsAndClear() {
-        synchronized (notificationsLock) {
-            // snapshot current list
-            List<Notification> snapshot = new ArrayList<>(notifications);
-            // clear the underlying list
-            notifications.clear();
-            // return what was there
-            return snapshot;
         }
     }
 }

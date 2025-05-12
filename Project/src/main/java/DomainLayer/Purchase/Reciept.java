@@ -103,28 +103,10 @@ public class Reciept {
     /**
      * Returns the shipping address for the purchase.
      *
-     * @return the shipping address as string.
-     */
-    public String getShippingAddressString() {
-        return shippingAddress.toString();
-    }
-
-    /**
-     * Returns the shipping address for the purchase.
-     *
      * @return the shipping address.
      */
-    public Address getShippingAddress() {
-        return shippingAddress;
-    }
-
-    /**
-     * Returns the price in the reciept.
-     *
-     * @return the price.
-     */
-    public double getPrice() {
-        return price;
+    public String getAddress() {
+        return shippingAddress.toString();
     }
 
     /**

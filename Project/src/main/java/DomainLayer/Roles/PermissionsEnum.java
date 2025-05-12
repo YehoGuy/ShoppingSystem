@@ -56,10 +56,5 @@ public enum PermissionsEnum {
     /**
      * enables getting buying history of the shop.
      */
-    getHistory,
-
-    /**
-     * enables suspending users.
-     */
-    suspension
+    getHistory
 }
