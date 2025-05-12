@@ -203,6 +203,29 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
         displayShopItems(allItems);
         displayShopRoles(allRoles);
         displayShopDiscounts(allDiscounts);
+
+        Button removeShopBtn = new Button("❌ Delete Shop", e -> {
+            // TODO: Replace with actual service call
+            Notification.show("Shop '" + shop.getName() + "' removed (mock)");
+            getUI().ifPresent(ui -> ui.navigate("shops")); // redirect to shop list
+        });
+        removeShopBtn.getStyle()
+                .set("color", "white")
+                .set("background-color", "#e74c3c")
+                .set("margin-bottom", "10px");
+
+        add(removeShopBtn);
+
+        Dialog confirmDialog = new Dialog();
+        confirmDialog.add("Are you sure you want to delete the shop?");
+        Button confirm = new Button("Yes", evt -> {
+            confirmDialog.close();
+            // call delete shop service
+        });
+        Button cancel = new Button("Cancel", evt -> confirmDialog.close());
+        confirmDialog.add(new HorizontalLayout(confirm, cancel));
+
+        removeShopBtn.addClickListener(e -> confirmDialog.open());
     }
 
     private void openGlobalDiscountDialog() {
