@@ -11,6 +11,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -55,11 +56,11 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
     @Override
     public void setParameter(BeforeEvent event, String shopName) {
         // Replace spaces with dashes in shop name
-        
+
         loadShopData(shopName);
-        
+
         removeAll(); // Clear previous content
-        
+
         H1 title = new H1("🛍️ Admin View – " + shop.getName());
         add(title);
 
@@ -72,15 +73,15 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
         Button viewReviewsButton = new Button("📋 View Reviews", e -> {
             Dialog reviewsDialog = new Dialog();
             reviewsDialog.setHeaderTitle("Reviews for " + shop.getName());
-            
+
             VerticalLayout reviewsContent = new VerticalLayout();
             for (ShopReviewDTO review : shop.getReviews()) {
-            reviewsContent.add(new Span("⭐ " + review.getRating() + " - " + review.getReviewText()));
+                reviewsContent.add(new Span("⭐ " + review.getRating() + " - " + review.getReviewText()));
             }
-            
+
             Button closeButton = new Button("Close", ev -> reviewsDialog.close());
             reviewsContent.add(closeButton);
-            
+
             reviewsDialog.add(reviewsContent);
             reviewsDialog.open();
         });
@@ -91,6 +92,16 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
 
         allItems = new ArrayList<>(shop.getItems().keySet());
 
+        HorizontalLayout discountButtons = new HorizontalLayout();
+        discountButtons.setSpacing(true);
+
+        Button globalDiscountButton = new Button("Set Global Discount", e -> openGlobalDiscountDialog());
+        Button itemDiscountButton = new Button("Set Item Discount", e -> openItemDiscountDialog());
+        Button categoryDiscountButton = new Button("Set Category Discount", e -> openCategoryDiscountDialog());
+
+        discountButtons.add(globalDiscountButton, itemDiscountButton, categoryDiscountButton);
+
+        add(discountButtons);
 
         itemsContainer = new VerticalLayout();
         itemsContainer.setHeight("70vh");
@@ -108,51 +119,52 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
         Button addItemButton = new Button("➕ Add Item", e -> {
             Dialog dialog = new Dialog();
             dialog.setHeaderTitle("Add New Item");
-            
+
             TextField nameField = new TextField("Name");
             TextField descField = new TextField("Description");
             NumberField priceField = new NumberField("Price");
             NumberField quantityField = new NumberField("Quantity");
             ComboBox<ItemCategory> categoryField = new ComboBox<>("Category");
             categoryField.setItems(ItemCategory.values());
-            
+
             Button confirmButton = new Button("Confirm", ev -> {
-            if (nameField.isEmpty() || descField.isEmpty() || priceField.isEmpty() || quantityField.isEmpty() || categoryField.isEmpty()) {
-                Notification.show("Please fill all fields");
-                return;
-            }
-            ItemDTO newItem = new ItemDTO(allItems.size() + 1, nameField.getValue(), 
-                descField.getValue(), priceField.getValue(), categoryField.getValue());
-            allItems.add(newItem);
-            shop.getItems().put(newItem, quantityField.getValue().intValue());
-            shop.getPrices().put(newItem, priceField.getValue().intValue());
-            displayShopItems(allItems);
-            dialog.close();
+                if (nameField.isEmpty() || descField.isEmpty() || priceField.isEmpty() || quantityField.isEmpty()
+                        || categoryField.isEmpty()) {
+                    Notification.show("Please fill all fields");
+                    return;
+                }
+                ItemDTO newItem = new ItemDTO(allItems.size() + 1, nameField.getValue(),
+                        descField.getValue(), priceField.getValue(), categoryField.getValue());
+                allItems.add(newItem);
+                shop.getItems().put(newItem, quantityField.getValue().intValue());
+                shop.getPrices().put(newItem, priceField.getValue().intValue());
+                displayShopItems(allItems);
+                dialog.close();
             });
-            
+
             Button cancelButton = new Button("Cancel", ev -> dialog.close());
-            dialog.add(new VerticalLayout(nameField, descField, priceField, quantityField, 
-            categoryField, new HorizontalLayout(confirmButton, cancelButton)));
+            dialog.add(new VerticalLayout(nameField, descField, priceField, quantityField,
+                    categoryField, new HorizontalLayout(confirmButton, cancelButton)));
             dialog.open();
         });
-        
+
         VerticalLayout itemSection = new VerticalLayout(addItemButton, itemsContainer);
         itemSection.setWidthFull();
         itemSection.setHeight("70vh");
         itemSection.getStyle().set("overflow", "auto");
         itemSection.setAlignItems(Alignment.CENTER);
-        
+
         // Create buttons and layouts for roles
         Button addRoleButton;
         addRoleButton = new Button("➕ Add Role", e -> {
             Dialog dialog = new Dialog();
             dialog.setHeaderTitle("Add New Role");
-            
+
             TextField roleNameField = new TextField("Role Name");
             TextField userNameField = new TextField("Username");
             Checkbox isOwnerField = new Checkbox("Is Owner?");
             isOwnerField.setValue(false);
-            
+
             Button confirmButton = new Button("Confirm", ev -> {
                 if (roleNameField.isEmpty() || userNameField.isEmpty()) {
                     Notification.show("Please fill all fields");
@@ -164,53 +176,53 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
                 displayShopRoles(allRoles);
                 dialog.close();
             });
-            
+
             Button cancelButton = new Button("Cancel", ev -> dialog.close());
             dialog.add(new VerticalLayout(roleNameField, userNameField, isOwnerField,
                     new HorizontalLayout(confirmButton, cancelButton)));
             dialog.open();
         });
-        
+
         VerticalLayout roleSection = new VerticalLayout(addRoleButton, rolesContainer);
         roleSection.setWidthFull();
         roleSection.setHeight("70vh");
         roleSection.getStyle().set("overflow", "auto");
         roleSection.setAlignItems(Alignment.CENTER);
-        
+
         // Create buttons and layouts for policies
         Button addPolicyButton = new Button("➕ Add Policy", e -> {
             Dialog dialog = new Dialog();
             dialog.setHeaderTitle("Add New Policy");
-            
+
             TextField policyNameField = new TextField("Policy Name");
             TextField descField = new TextField("Description");
             ComboBox<String> typeField = new ComboBox<>("Type");
             typeField.setItems("Purchase", "Discount");
-            
+
             Button confirmButton = new Button("Confirm", ev -> {
-            if (policyNameField.isEmpty() || descField.isEmpty() || typeField.isEmpty()) {
-            Notification.show("Please fill all fields");
-            return;
-            }
-            policiesDTO newPolicy = new policiesDTO(policyNameField.getValue(), 
-            descField.getValue(), shop.getName(), typeField.getValue().equals("Discount"));
-            allPolicies.add(newPolicy);
-            displayShopPolicies(allPolicies);
-            dialog.close();
+                if (policyNameField.isEmpty() || descField.isEmpty() || typeField.isEmpty()) {
+                    Notification.show("Please fill all fields");
+                    return;
+                }
+                policiesDTO newPolicy = new policiesDTO(policyNameField.getValue(),
+                        descField.getValue(), shop.getName(), typeField.getValue().equals("Discount"));
+                allPolicies.add(newPolicy);
+                displayShopPolicies(allPolicies);
+                dialog.close();
             });
-            
+
             Button cancelButton = new Button("Cancel", ev -> dialog.close());
-            dialog.add(new VerticalLayout(policyNameField, descField, typeField, 
-            new HorizontalLayout(confirmButton, cancelButton)));
+            dialog.add(new VerticalLayout(policyNameField, descField, typeField,
+                    new HorizontalLayout(confirmButton, cancelButton)));
             dialog.open();
         });
-        
+
         VerticalLayout policySection = new VerticalLayout(addPolicyButton, poliVerticalLayout);
         policySection.setWidthFull();
         policySection.setHeight("70vh");
         policySection.getStyle().set("overflow", "auto");
         policySection.setAlignItems(Alignment.CENTER);
-        
+
         HorizontalLayout content = new HorizontalLayout(setupFilters(), itemSection, roleSection, policySection);
         content.setWidthFull();
         add(content);
@@ -219,9 +231,100 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
         displayShopRoles(allRoles);
         displayShopPolicies(allPolicies);
     }
+
+    private void openGlobalDiscountDialog() {
+        Dialog dialog = new Dialog();
+        dialog.setWidth("400px");
+
+        VerticalLayout layout = new VerticalLayout();
+        layout.add(new H3("Set Global Discount"));
+
+        NumberField percentageField = new NumberField("Discount %");
+        percentageField.setMin(0);
+        percentageField.setMax(100);
+        percentageField.setSuffixComponent(new Span("%"));
+
+        Button applyButton = new Button("Apply", e -> {
+            if (percentageField.getValue() == null) {
+                Notification.show("Enter a valid discount");
+                return;
+            }
+            // TODO: call backend to apply global discount
+            Notification.show("Global discount set: " + percentageField.getValue() + "%");
+            dialog.close();
+        });
+
+        layout.add(percentageField, applyButton);
+        dialog.add(layout);
+        dialog.open();
+    }
+
+    private void openItemDiscountDialog() {
+        Dialog dialog = new Dialog();
+        dialog.setWidth("400px");
+
+        VerticalLayout layout = new VerticalLayout();
+        layout.add(new H3("Set Discount for Item"));
+
+        ComboBox<ItemDTO> itemSelect = new ComboBox<>("Select Item");
+        itemSelect.setItems(allItems);
+        itemSelect.setItemLabelGenerator(ItemDTO::getName);
+
+        NumberField percentageField = new NumberField("Discount %");
+        percentageField.setMin(0);
+        percentageField.setMax(100);
+        percentageField.setSuffixComponent(new Span("%"));
+
+        Button applyButton = new Button("Apply", e -> {
+            if (itemSelect.getValue() == null || percentageField.getValue() == null) {
+                Notification.show("Select an item and enter a discount");
+                return;
+            }
+            // TODO: call backend to apply discount to item
+            Notification
+                    .show("Discount for " + itemSelect.getValue().getName() + ": " + percentageField.getValue() + "%");
+            dialog.close();
+        });
+
+        layout.add(itemSelect, percentageField, applyButton);
+        dialog.add(layout);
+        dialog.open();
+    }
+
+    private void openCategoryDiscountDialog() {
+        Dialog dialog = new Dialog();
+        dialog.setWidth("400px");
+
+        VerticalLayout layout = new VerticalLayout();
+        layout.add(new H3("Set Discount for Category"));
+
+        ComboBox<ItemCategory> categorySelect = new ComboBox<>("Select Category");
+        categorySelect.setItems(ItemCategory.values());
+
+        NumberField percentageField = new NumberField("Discount %");
+        percentageField.setMin(0);
+        percentageField.setMax(100);
+        percentageField.setSuffixComponent(new Span("%"));
+
+        Button applyButton = new Button("Apply", e -> {
+            if (categorySelect.getValue() == null || percentageField.getValue() == null) {
+                Notification.show("Select a category and enter a discount");
+                return;
+            }
+            // TODO: call backend to apply discount to category
+            Notification.show("Discount for " + categorySelect.getValue() + ": " + percentageField.getValue() + "%");
+            dialog.close();
+        });
+
+        layout.add(categorySelect, percentageField, applyButton);
+        dialog.add(layout);
+        dialog.open();
+    }
+
     public void loadShopData(String shopName) {
         // Simulate loading shop data from a service or database
-        // In a real application, you would replace this with actual data retrieval logic
+        // In a real application, you would replace this with actual data retrieval
+        // logic
         Map<ItemDTO, Integer> items = new HashMap<>();
         Map<ItemDTO, Integer> prices = new HashMap<>();
         List<ShopReviewDTO> reviews = new ArrayList<>();
@@ -247,7 +350,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
         allRoles = new ArrayList<>();
         allRoles.add(new rolesDTO("Admin", List.of("ADD_ITEM", "REMOVE_ITEM"), shopName, "user1"));
         allRoles.add(new rolesDTO("Manager", List.of("VIEW_ITEM", "EDIT_ITEM"), shopName, "user2"));
-        allRoles.add(new rolesDTO("Staff",  List.of("VIEW_ITEM"), shopName, "user3"));
+        allRoles.add(new rolesDTO("Staff", List.of("VIEW_ITEM"), shopName, "user3"));
 
         allPolicies = new ArrayList<>();
         allPolicies.add(new policiesDTO("Return Policy", "Items can be returned within 30 days.", shopName, false));
@@ -290,9 +393,9 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
         nameSearchField.addValueChangeListener(e -> applyFilters());
 
         Button clearFiltersButton = new Button("Clear Filters", e -> clearFilters());
-        
+
         filterLayout.add(categoryFilter, minPriceField, maxPriceField, nameSearchField, clearFiltersButton);
-        
+
         return filterLayout;
     }
 
@@ -364,7 +467,6 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
             quantityField.setValue(shop.getPrices().getOrDefault(item, 0).doubleValue());
             quantityField.setReadOnly(true);
 
-
             Button addQuantityButton = new Button("📦 Add Stock", e -> {
                 Dialog dialog = new Dialog();
                 dialog.setHeaderTitle("Add Stock for " + item.getName());
@@ -389,16 +491,13 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
                 Button cancelButton = new Button("Cancel", ev -> dialog.close());
 
                 dialog.add(
-                    new VerticalLayout(
-                        unitsField,
-                        new HorizontalLayout(confirmButton, cancelButton)
-                    )
-                );
+                        new VerticalLayout(
+                                unitsField,
+                                new HorizontalLayout(confirmButton, cancelButton)));
 
                 dialog.open();
             });
 
-            
             Button removeButton = new Button("❌ Remove", e -> {
                 shop.getItems().remove(item);
                 shop.getPrices().remove(item);
@@ -406,7 +505,8 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
                 displayShopItems(allItems);
             });
 
-            itemCard.add(nameField, descField, categoryField, priceField, quantityField, new HorizontalLayout(addQuantityButton, removeButton));
+            itemCard.add(nameField, descField, categoryField, priceField, quantityField,
+                    new HorizontalLayout(addQuantityButton, removeButton));
             itemsContainer.add(itemCard);
         }
     }
@@ -440,7 +540,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
                     .set("margin", "10px 0")
                     .set("display", "block")
                     .set("font-size", "14px");
-            
+
             Button removeButton = new Button("❌ Remove Role", e -> {
                 allRoles.remove(role);
                 displayShopRoles(allRoles);
@@ -462,9 +562,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
                 dialog.add(
                         new VerticalLayout(
                                 permissionsFieldD,
-                                new HorizontalLayout(confirmButton, cancelButton)
-                        )
-                );
+                                new HorizontalLayout(confirmButton, cancelButton)));
 
                 dialog.open();
             });
@@ -504,7 +602,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
             TextField descField = new TextField("Description", policy.getDescription());
             descField.setValue(policy.getDescription());
             descField.setReadOnly(true);
-            
+
             Button removeButton = new Button("❌ Remove Policy", e -> {
                 allPolicies.remove(policy);
                 displayShopPolicies(allPolicies);
