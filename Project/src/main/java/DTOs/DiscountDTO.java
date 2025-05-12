@@ -6,14 +6,14 @@ public class DiscountDTO {
     private int percentage;
     private boolean isDouble;
     private ItemCategory itemCategory;
-    private Integer itemId;
+    private String itemName;
 
     public DiscountDTO(int percentage, boolean isDouble,
-            ItemCategory itemCategory, Integer itemId) {
+            ItemCategory itemCategory, String itemName) {
         this.percentage = percentage;
         this.isDouble = isDouble;
         this.itemCategory = itemCategory;
-        this.itemId = itemId;
+        this.itemName = itemName;
     }
 
     public int getPercentage() {
@@ -28,13 +28,13 @@ public class DiscountDTO {
         return itemCategory;
     }
 
-    public Integer getItemId() {
-        return itemId;
+    public String getItemName() {
+        return itemName;
     }
 
     public String toString() {
-        if (itemId != null) {
-            return "Discount of " + percentage + "% on item with ID " + itemId;
+        if (itemName != null) {
+            return "Discount of " + percentage + "% on item with ID " + itemName;
         } else if (itemCategory != null) {
             return "Discount of " + percentage + "% on items in category " + itemCategory;
         } else {
