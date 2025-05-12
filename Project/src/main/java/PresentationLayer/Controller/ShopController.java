@@ -447,6 +447,18 @@ public class ShopController {
         }
     }
 
+    @GetMapping("/{shopId}/items/{itemId}/quantity")
+    public ResponseEntity<?> getItemQuantity(
+            @PathVariable int shopId,
+            @PathVariable int itemId,
+            @RequestParam String token) {
+        try {
+            int qty = shopService.getItemQuantityFromShop(shopId, itemId, token);
+            return ResponseEntity.ok(qty);
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }
+    }
 
 
 }
