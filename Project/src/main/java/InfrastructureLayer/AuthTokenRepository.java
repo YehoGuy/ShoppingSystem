@@ -4,10 +4,13 @@ import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.stereotype.Repository;
+
 import ApplicationLayer.OurArg;
 import DomainLayer.AuthToken;
 import DomainLayer.IAuthTokenRepository;
 
+@Repository
 public class AuthTokenRepository implements IAuthTokenRepository {
     private Map<Integer, DomainLayer.AuthToken> authTokenMap; // Maps user IDs to their authentication tokens
 

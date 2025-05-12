@@ -9,12 +9,15 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import org.springframework.stereotype.Repository;
+
 import ApplicationLayer.Purchase.ShippingMethod;
 import DomainLayer.Item.ItemCategory;
 import DomainLayer.Shop.IShopRepository;
 import DomainLayer.Shop.PurchasePolicy;
 import DomainLayer.Shop.Shop;
 
+@Repository
 public class ShopRepository implements IShopRepository {
 
     private final ConcurrentHashMap<Integer, Shop> shops = new ConcurrentHashMap<>();
