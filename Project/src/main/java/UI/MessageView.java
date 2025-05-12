@@ -1,6 +1,13 @@
 package UI;
 
-import DTOs.MessageDTO;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.H1;
@@ -8,13 +15,9 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.stream.Collectors;
+import DTOs.MessageDTO;
 
 @Route(value = "messages", layout = AppLayoutBasic.class)
 public class MessageView extends VerticalLayout {
@@ -35,8 +38,14 @@ public class MessageView extends VerticalLayout {
         setPadding(true);
         setSpacing(true);
 
+        HorizontalLayout page = new HorizontalLayout();
+        page.setWidthFull();
+
+        VerticalLayout leftPanel = new VerticalLayout();
+        leftPanel.setWidth("30%");
+
         H1 title = new H1("📨 Messaging");
-        add(title);
+        leftPanel.add(title);
 
         setupMockMessages();
 
@@ -73,7 +82,43 @@ public class MessageView extends VerticalLayout {
             }
         });
 
-        add(userSelector, threadContainer, messageArea, sendButton);
+        leftPanel.add(userSelector, threadContainer, messageArea, sendButton);
+
+        page.add(leftPanel);
+
+        VerticalLayout middlePanel = new VerticalLayout();
+        middlePanel.setWidth("30%");
+
+        H1 notificationsTitle = new H1("🔔 Notifications");
+        middlePanel.add(notificationsTitle);
+
+        // Placeholder for notifications
+        VerticalLayout notificationsContainer = new VerticalLayout();
+        notificationsContainer.setWidth("100%");
+
+        loadNotifications(notificationsContainer);
+        middlePanel.add(notificationsContainer);
+        page.add(middlePanel);
+
+        VerticalLayout rightPanel = new VerticalLayout();
+        rightPanel.setWidth("30%");
+
+        H1 pendingRolesTitle = new H1("👤 Pending Roles");
+        rightPanel.add(pendingRolesTitle);
+
+        // Placeholder for pending roles
+        VerticalLayout pendingRolesContainer = new VerticalLayout();
+        pendingRolesContainer.setWidth("100%");
+        loadPendingRoles(pendingRolesContainer);
+        rightPanel.add(pendingRolesContainer);
+        page.add(rightPanel);
+
+        page.setWidthFull();
+        page.setHeightFull();
+        page.getStyle().set("display", "flex")
+                .set("align-items", "stretch")
+                .set("justify-content", "space-between");
+        add(page);
     }
 
 
@@ -121,5 +166,55 @@ public class MessageView extends VerticalLayout {
                 .filter(m -> (m.getSenderId() == currentUserId && m.getReceiverId() == otherUserId)
                           || (m.getSenderId() == otherUserId && m.getReceiverId() == currentUserId))
                 .mapToInt(MessageDTO::getMessageId).max().orElse(-1);
+    }
+
+    private void loadNotifications(VerticalLayout notificationsContainer) {
+        // Placeholder for loading notifications
+        List<String> notifications = new ArrayList<>();
+        notifications.add("an admin deleted shop #1");
+        notifications.add("an admin deleted shop #2");
+        notifications.add("a problem with your order #3");
+        notifications.add("a problem with your order #4");
+
+        if (!notifications.isEmpty()) {
+            notifications.forEach(notification -> {
+                Span notificationSpan = new Span("• " + notification);
+                notificationSpan.getStyle().set("margin-bottom", "5px")
+                        .set("font-size", "bigger");
+                notificationsContainer.add(notificationSpan);
+            });
+        } else
+            notificationsContainer.add(new Span("No new notifications."));
+    }
+
+    private void loadPendingRoles(VerticalLayout pendingRolesContainer) {
+        // Placeholder for loading pending roles
+        List<String> pendingRoles = new ArrayList<>();
+        pendingRoles.add("User #2: Pending Role 1");
+        pendingRoles.add("User #3: Pending Role 2");
+        pendingRoles.add("User #4: Pending Role 3");
+
+        if (!pendingRoles.isEmpty()) {
+            pendingRoles.forEach(role -> {
+                HorizontalLayout roleLayout = new HorizontalLayout();
+                Span roleSpan = new Span(role);
+                
+                Button acceptButton = new Button("Accept", e -> {
+                    pendingRolesContainer.remove(roleLayout);
+                });
+                acceptButton.getStyle().set("background-color", "#4CAF50").set("color", "white");
+                
+                Button rejectButton = new Button("Reject", e -> {
+                    pendingRolesContainer.remove(roleLayout);
+                });
+                rejectButton.getStyle().set("background-color", "#f44336").set("color", "white");
+                
+                roleLayout.add(roleSpan, acceptButton, rejectButton);
+                roleLayout.getStyle().set("margin-bottom", "5px")
+                        .set("align-items", "center");
+                pendingRolesContainer.add(roleLayout);
+            });
+        } else
+            pendingRolesContainer.add(new Span("No pending roles."));
     }
 }
