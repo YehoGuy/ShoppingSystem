@@ -4,13 +4,13 @@ import DomainLayer.Item.ItemCategory;
 
 public class LeafPolicyDTO {
     private Integer threshold;
-    private Integer itemId;
+    private String itemName;
     private ItemCategory itemCategory;
     private Double basketValue;
 
-    public LeafPolicyDTO(Integer threshold, Integer itemId, ItemCategory itemCategory, double basketValue) {
+    public LeafPolicyDTO(Integer threshold, String itemName, ItemCategory itemCategory, double basketValue) {
         this.threshold = threshold;
-        this.itemId = itemId;
+        this.itemName = itemName;
         this.itemCategory = itemCategory;
         this.basketValue = basketValue;
     }
@@ -19,8 +19,8 @@ public class LeafPolicyDTO {
         return threshold;
     }
 
-    public Integer getItemId() {
-        return itemId;
+    public String getItemName() {
+        return itemName;
     }
 
     public ItemCategory getItemCategory() {
@@ -33,7 +33,7 @@ public class LeafPolicyDTO {
 
     public String toString() {
         if (threshold != null && itemCategory == null)
-            return "Minimum quantity of item " + itemId + " is " + threshold;
+            return "Minimum quantity of item " + itemName + " is " + threshold;
         else if (threshold != null && itemCategory != null)
             return "Minimum quantity of category " + itemCategory + " is " + threshold;
         else
