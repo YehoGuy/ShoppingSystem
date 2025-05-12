@@ -17,22 +17,9 @@
     <artifactId>Project</artifactId>
     <version>1.0-SNAPSHOT</version>
 
-    <properties>
-        <java.version>21</java.version>
-        <vaadin.version>24.3.4</vaadin.version>
-    </properties>
+   
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>com.vaadin</groupId>
-                <artifactId>vaadin-bom</artifactId>
-                <version>${vaadin.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+    
 
     <dependencies>
         <!-- Spring Boot -->
@@ -45,11 +32,8 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- Vaadin -->
-        <dependency>
-            <groupId>com.vaadin</groupId>
-            <artifactId>vaadin-spring-boot-starter</artifactId>
-        </dependency>
+        
+       
 
         <!-- Spring Security -->
         <dependency>
@@ -149,11 +133,6 @@
         <artifactId>spring-boot-starter-websocket</artifactId>
     </dependency>
 
-    <!-- Security filter chain (JWT Bearer, CORS, CSRF, etc.) -->
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-security</artifactId>
-    </dependency>
 
     <!-- springboot tests -->
     <dependency>
@@ -185,20 +164,8 @@
                 </configuration>
             </plugin>
 
-            <!-- Vaadin Plugin -->
-            <plugin>
-                <groupId>com.vaadin</groupId>
-                <artifactId>vaadin-maven-plugin</artifactId>
-                <version>${vaadin.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>prepare-frontend</goal>
-                            <goal>build-frontend</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
+          
+            
       <!-- Compiler plugin -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
