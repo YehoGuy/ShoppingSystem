@@ -690,7 +690,7 @@ public class UserService {
         }
     }
 
-    private void removeAllAssigned(int assignee, int shopId) {
+    public void removeAllAssigned(int assignee, int shopId) {
         try{
             for (Member member : userRepository.getMembersList()) {
                 for (Role role : member.getRoles()) {
