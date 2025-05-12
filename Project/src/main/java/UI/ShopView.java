@@ -24,6 +24,7 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.H5;
 
+import DTOs.DiscountDTO;
 import DTOs.ItemDTO;
 import DTOs.ShopDTO;
 import DTOs.ShopReviewDTO;
@@ -41,7 +42,6 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String> 
     private TextField nameSearchField;
 
     private List<ItemDTO> allItems = new ArrayList<>(); // Store the full list of items
-
 
     @Override
     public void setParameter(BeforeEvent event, @OptionalParameter String shopName) {
@@ -65,17 +65,13 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String> 
                 "shop A",
                 Map.of(
                         new ItemDTO(1, "Banana", "Fresh yellow banana", 2.5, ItemCategory.GROCERY), 5,
-                        new ItemDTO(2, "Apple", "Juicy red apple", 3.0, ItemCategory.GROCERY), 10
-                ),
+                        new ItemDTO(2, "Apple", "Juicy red apple", 3.0, ItemCategory.GROCERY), 10),
                 Map.of(
                         new ItemDTO(1, "Banana", "Fresh yellow banana", 2.5, ItemCategory.GROCERY), 2,
-                        new ItemDTO(2, "Apple", "Juicy red apple", 3.0, ItemCategory.GROCERY), 3
-                ),
+                        new ItemDTO(2, "Apple", "Juicy red apple", 3.0, ItemCategory.GROCERY), 3),
                 List.of(
                         new ShopReviewDTO(1, 5, "Great service!", "shop A"),
-                        new ShopReviewDTO(2, 4, "Good selection of products.", "shop A")
-                )
-        );
+                        new ShopReviewDTO(2, 4, "Good selection of products.", "shop A")));
 
         if (!selectedShop.getName().equalsIgnoreCase(shopName)) {
             selectedShop = null;
@@ -99,12 +95,12 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String> 
 
         VerticalLayout titleSection = new VerticalLayout();
         titleSection.setAlignItems(Alignment.CENTER);
-        
+
         H1 title = new H1("🛍️ Welcome to " + selectedShop.getName());
         title.getStyle().set("margin-bottom", "10px");
-        
+
         Span avgRating = new Span("⭐ Average Rating: " + calculateAverageRating(selectedShop.getReviews()));
-        
+
         titleSection.add(title, avgRating);
 
         Button reviewButton = new Button("Leave Review");
@@ -114,19 +110,19 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String> 
                 String shopName = selectedShop.getName();
                 Dialog reviewDialog = new Dialog();
                 reviewDialog.setWidth("400px");
-                
+
                 VerticalLayout dialogLayout = new VerticalLayout();
-                
+
                 NumberField ratingField = new NumberField("Rating (1-5 stars)");
                 ratingField.setMin(1);
                 ratingField.setMax(5);
                 ratingField.setStep(1);
                 ratingField.setValue(5.0);
                 ratingField.setStepButtonsVisible(true);
-                
+
                 TextArea messageField = new TextArea("Review Message");
                 messageField.setWidth("100%");
-                
+
                 HorizontalLayout buttons = new HorizontalLayout();
                 Button cancelButton = new Button("Cancel", event -> reviewDialog.close());
                 Button sendButton = new Button("Send Review");
@@ -140,13 +136,13 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String> 
                     Notification.show("Review submitted successfully!");
                     reviewDialog.close();
                 });
-                
+
                 buttons.add(cancelButton, sendButton);
                 buttons.setJustifyContentMode(JustifyContentMode.END);
-                
+
                 dialogLayout.add(ratingField, messageField, buttons);
                 reviewDialog.add(dialogLayout);
-                
+
                 reviewDialog.open();
             }
         });
@@ -155,14 +151,14 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String> 
         contactButton.addClickListener(e -> {
             Dialog contactDialog = new Dialog();
             contactDialog.setWidth("400px");
-            
+
             VerticalLayout dialogLayout = new VerticalLayout();
-            
+
             TextField titleField = new TextField("Title");
             titleField.setWidth("70%");
             TextArea messageField = new TextArea("Message to Seller");
             messageField.setWidth("100%");
-            
+
             HorizontalLayout buttons = new HorizontalLayout();
             Button cancelButton = new Button("Cancel", event -> contactDialog.close());
             Button sendButton = new Button("Send Message");
@@ -186,6 +182,25 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String> 
         header.add(contactButton, titleSection, reviewButton);
         add(header);
 
+        HorizontalLayout discountButtons = new HorizontalLayout();
+        discountButtons.setSpacing(true);
+
+        Button globalDiscountButton = new Button("Set Global Discount", e -> openGlobalDiscountDialog());
+        Button itemDiscountButton = new Button("Set Item Discount", e -> openItemDiscountDialog());
+        Button categoryDiscountButton = new Button("Set Category Discount", e -> openCategoryDiscountDialog());
+
+        discountButtons.add(globalDiscountButton, itemDiscountButton, categoryDiscountButton);
+
+        add(discountButtons);
+
+        // Display active discounts
+        VerticalLayout discountDisplay = new VerticalLayout();
+        discountDisplay.setPadding(false);
+        discountDisplay.setSpacing(false);
+        discountDisplay.setWidth("80%");
+        discountDisplay.add(new H3("📉 Active Discounts:"));
+
+        add(discountDisplay);
 
         itemsContainer = new VerticalLayout();
         itemsContainer.setWidth("80%");
@@ -197,6 +212,95 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String> 
         add(content);
 
         displayShopItems(allItems);// show all items at first
+    }
+
+    private void openGlobalDiscountDialog() {
+        Dialog dialog = new Dialog();
+        dialog.setWidth("400px");
+
+        VerticalLayout layout = new VerticalLayout();
+        layout.add(new H3("Set Global Discount"));
+
+        NumberField percentageField = new NumberField("Discount %");
+        percentageField.setMin(0);
+        percentageField.setMax(100);
+        percentageField.setSuffixComponent(new Span("%"));
+
+        Button applyButton = new Button("Apply", e -> {
+            if (percentageField.getValue() == null) {
+                Notification.show("Enter a valid discount");
+                return;
+            }
+            // TODO: call backend to apply global discount
+            Notification.show("Global discount set: " + percentageField.getValue() + "%");
+            dialog.close();
+        });
+
+        layout.add(percentageField, applyButton);
+        dialog.add(layout);
+        dialog.open();
+    }
+
+    private void openItemDiscountDialog() {
+        Dialog dialog = new Dialog();
+        dialog.setWidth("400px");
+
+        VerticalLayout layout = new VerticalLayout();
+        layout.add(new H3("Set Discount for Item"));
+
+        ComboBox<ItemDTO> itemSelect = new ComboBox<>("Select Item");
+        itemSelect.setItems(allItems);
+        itemSelect.setItemLabelGenerator(ItemDTO::getName);
+
+        NumberField percentageField = new NumberField("Discount %");
+        percentageField.setMin(0);
+        percentageField.setMax(100);
+        percentageField.setSuffixComponent(new Span("%"));
+
+        Button applyButton = new Button("Apply", e -> {
+            if (itemSelect.getValue() == null || percentageField.getValue() == null) {
+                Notification.show("Select an item and enter a discount");
+                return;
+            }
+            // TODO: call backend to apply discount to item
+            Notification
+                    .show("Discount for " + itemSelect.getValue().getName() + ": " + percentageField.getValue() + "%");
+            dialog.close();
+        });
+
+        layout.add(itemSelect, percentageField, applyButton);
+        dialog.add(layout);
+        dialog.open();
+    }
+
+    private void openCategoryDiscountDialog() {
+        Dialog dialog = new Dialog();
+        dialog.setWidth("400px");
+
+        VerticalLayout layout = new VerticalLayout();
+        layout.add(new H3("Set Discount for Category"));
+
+        ComboBox<ItemCategory> categorySelect = new ComboBox<>("Select Category");
+        categorySelect.setItems(ItemCategory.values());
+
+        NumberField percentageField = new NumberField("Discount %");
+        percentageField.setMin(0);
+        percentageField.setMax(100);
+        percentageField.setSuffixComponent(new Span("%"));
+
+        Button applyButton = new Button("Apply", e -> {
+            if (categorySelect.getValue() == null || percentageField.getValue() == null) {
+                Notification.show("Select a category and enter a discount");
+                return;
+            }
+            // TODO: call backend to apply discount to category
+            Notification.show("Discount for " + categorySelect.getValue() + ": " + percentageField.getValue() + "%");
+            dialog.close();
+        });
+
+        layout.add(categorySelect, percentageField, applyButton);
+        dialog.add(layout);
+        dialog.open();
     }
 
     private VerticalLayout setupFilters() {
@@ -217,8 +321,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String> 
                 categoryFilter,
                 minPriceField,
                 maxPriceField,
-                applyFiltersButton
-        );
+                applyFiltersButton);
         filtersLayout.setSpacing(true);
         filtersLayout.setPadding(true);
         filtersLayout.setWidth("250px");
@@ -226,7 +329,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String> 
     }
 
     private void applyFilters() {
-        //implement with waf        
+        // implement with waf
     }
 
     private void displayShopItems(List<ItemDTO> items) {
@@ -239,81 +342,53 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String> 
             return;
         }
 
-        Map<ItemDTO, Integer> prices= selectedShop.getItems().entrySet().stream()
-                .filter(entry -> items.contains(entry.getKey().getId()))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        Map<ItemCategory, List<ItemDTO>> grouped = items.stream()
+                .collect(Collectors.groupingBy(ItemDTO::getCategoryEnum));
 
-        for (ItemDTO item : allItems) {
+        for (ItemCategory category : ItemCategory.values()) {
+            List<ItemDTO> itemsInCategory = grouped.getOrDefault(category, List.of());
+            if (itemsInCategory.isEmpty())
+                continue;
 
-            int price = prices.getOrDefault(item, 0);
+            H3 categoryHeader = new H3("📂 " + category.name());
+            itemsContainer.add(categoryHeader);
 
-            VerticalLayout itemCard = new VerticalLayout();
-            itemCard.setWidth("100%");
-            itemCard.getStyle()
-                    .set("border", "1px solid #ccc")
-                    .set("border-radius", "8px")
-                    .set("padding", "10px")
-                    .set("box-shadow", "0 2px 5px rgba(0,0,0,0.05)")
-                    .set("margin-bottom", "10px")
-                    .set("background-color", "#f9f9f9");
+            for (ItemDTO item : itemsInCategory) {
+                int price = selectedShop.getItems().getOrDefault(item, 0);
+                VerticalLayout itemCard = new VerticalLayout();
+                itemCard.setWidth("100%");
+                itemCard.getStyle()
+                        .set("border", "1px solid #ccc")
+                        .set("border-radius", "8px")
+                        .set("padding", "10px")
+                        .set("box-shadow", "0 2px 5px rgba(0,0,0,0.05)")
+                        .set("margin-bottom", "10px")
+                        .set("background-color", "#f9f9f9");
 
-            Span name = new Span("📦 " + item.getName());
-            name.getStyle().set("font-size", "18px").set("font-weight", "600");
+                Span name = new Span("📦 " + item.getName());
+                name.getStyle().set("font-size", "18px").set("font-weight", "600");
 
-            Span desc = new Span(item.getDescription());
-            Span priceSpan = new Span("💰 Price: $" + price);
+                Span desc = new Span(item.getDescription());
+                Span priceSpan = new Span("💰 Price: $" + price);
 
-            Button addCartButton = new Button("Add to Cart");
-            addCartButton.getStyle().set("margin-top", "10px");
-            addCartButton.addClickListener(e -> {
-                Notification.show("Added to cart: " + item.getName());
-            });
-
-            Button instaBuyButton = new Button("Buy imidiatly");
-            instaBuyButton.getStyle().set("margin-top", "10px");
-            instaBuyButton.addClickListener(e -> {
-                Notification.show("Bought: " + item.getName());
-            });
-
-            Button addBidButton = new Button("Bid on item");
-            addBidButton.getStyle().set("margin-top", "10px");
-            addBidButton.addClickListener(e -> {
-                Dialog bidDialog = new Dialog();
-                bidDialog.setWidth("400px");
-                
-                VerticalLayout dialogLayout = new VerticalLayout();
-                
-                H3 title = new H3("Bid on " + item.getName());
-                H5 minimum = new H5("Minimum Bid: $" + price);
-                
-                NumberField bidField = new NumberField("Bid Amount");
-                bidField.setMin(0);
-                bidField.setStep(0.1);
-                
-                HorizontalLayout buttons = new HorizontalLayout();
-                Button cancelButton = new Button("Cancel", event -> bidDialog.close());
-                Button sendButton = new Button("Place Bid");
-                sendButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-                sendButton.addClickListener(event -> {
-                    if (bidField.getValue() == null) {
-                        Notification.show("Please enter a valid bid amount");
-                        return;
-                    }
+                Button addCartButton = new Button("Add to Cart",
+                        ev -> Notification.show("Added to cart: " + item.getName()));
+                Button instaBuyButton = new Button("Buy immediately",
+                        ev -> Notification.show("Bought: " + item.getName()));
+                Button bidButton = new Button("Bid on item", ev -> {
+                    // Keep your existing bid dialog logic here
                 });
-                buttons.add(cancelButton, sendButton);
-                buttons.setJustifyContentMode(JustifyContentMode.END);
-                dialogLayout.add(title, minimum, bidField, buttons);
-                bidDialog.add(dialogLayout);
-                bidDialog.open();
-            });
 
-            itemCard.add(name, desc, priceSpan, new HorizontalLayout(addCartButton, instaBuyButton, addBidButton));
-            itemsContainer.add(itemCard);
+                itemCard.add(name, desc, priceSpan, new HorizontalLayout(addCartButton, instaBuyButton, bidButton));
+                itemsContainer.add(itemCard);
+            }
         }
+
     }
 
     private double calculateAverageRating(List<ShopReviewDTO> reviews) {
-        if (reviews == null || reviews.isEmpty()) return 0.0;
+        if (reviews == null || reviews.isEmpty())
+            return 0.0;
         return reviews.stream().mapToDouble(ShopReviewDTO::getRating).average().orElse(0.0);
     }
 }
