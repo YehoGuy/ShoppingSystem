@@ -3,12 +3,12 @@ package DTOs;
 import DomainLayer.Item.ItemCategory;
 
 public class DiscountDTO {
-    private int percentage;
+    private Integer percentage;
     private boolean isDouble;
     private ItemCategory itemCategory;
     private String itemName;
 
-    public DiscountDTO(int percentage, boolean isDouble,
+    public DiscountDTO(Integer percentage, boolean isDouble,
             ItemCategory itemCategory, String itemName) {
         this.percentage = percentage;
         this.isDouble = isDouble;
@@ -16,7 +16,7 @@ public class DiscountDTO {
         this.itemName = itemName;
     }
 
-    public int getPercentage() {
+    public Integer getPercentage() {
         return percentage;
     }
 
