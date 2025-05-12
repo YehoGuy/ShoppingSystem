@@ -10,12 +10,12 @@ public class MemberDTO {
     private String password; // Password of the member
     private String email; // Email address of the member
     private String phoneNumber; // Phone number of the member
-    private List<RoleDTO> roles; // List of roles associated with the user
+    private List<rolesDTO> roles; // List of roles associated with the user
     private List<Integer> orderHistory;// List of order IDs
-    private List<RoleDTO> pending_roles; // List of pending roles not yet confirmed/declined by the user
+    private List<rolesDTO> pending_roles; // List of pending roles not yet confirmed/declined by the user
 
-    public MemberDTO(int memberId, String username, String password, String email, String phoneNumber, List<RoleDTO> roles,
-            List<Integer> orderHistory, List<RoleDTO> pending_roles) {
+    public MemberDTO(int memberId, String username, String password, String email, String phoneNumber, List<rolesDTO> roles,
+            List<Integer> orderHistory, List<rolesDTO> pending_roles) {
         this.memberId = memberId;
         this.username = username;
         this.password = password;
@@ -49,7 +49,7 @@ public class MemberDTO {
         return phoneNumber;
     }
 
-    public List<RoleDTO> getRoles() {
+    public List<rolesDTO> getRoles() {
         return roles;
     }
 
@@ -57,7 +57,7 @@ public class MemberDTO {
         return orderHistory;
     }
 
-    public List<RoleDTO> getPendingRoles() {
+    public List<rolesDTO> getPendingRoles() {
         return pending_roles;
     }
 }

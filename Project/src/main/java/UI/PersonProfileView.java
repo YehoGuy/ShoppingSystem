@@ -1,22 +1,23 @@
 package UI;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 
 import DTOs.MemberDTO;
-import DTOs.RoleDTO;
 import DTOs.ShopDTO;
 import DTOs.ShopReviewDTO;
+import DTOs.rolesDTO;
 
 @Route(value = "profile", layout = AppLayoutBasic.class)
 public class PersonProfileView extends VerticalLayout {
@@ -61,7 +62,7 @@ public class PersonProfileView extends VerticalLayout {
     }
 
     private void addRoleOverview() {
-        Map<String, List<RoleDTO>> rolesByShop = groupRolesByShop(member.getRoles());
+        Map<String, List<rolesDTO>> rolesByShop = groupRolesByShop(member.getRoles());
 
         H2 roleSection = new H2("🛍️ Shop Roles");
         add(roleSection);
@@ -71,7 +72,7 @@ public class PersonProfileView extends VerticalLayout {
         } else {
             for (String shopName : rolesByShop.keySet()) {
                 ShopDTO shop = knownShops.getOrDefault(shopName, new ShopDTO(shopName, Map.of(), Map.of(), List.of()));
-                List<RoleDTO> roles = rolesByShop.get(shopName);
+                List<rolesDTO> roles = rolesByShop.get(shopName);
                 add(createShopCard(shop, roles));
             }
         }
@@ -107,7 +108,7 @@ public class PersonProfileView extends VerticalLayout {
         add(historyLayout);
     }
 
-    private VerticalLayout createShopCard(ShopDTO shop, List<RoleDTO> roles) {
+    private VerticalLayout createShopCard(ShopDTO shop, List<rolesDTO> roles) {
         VerticalLayout card = new VerticalLayout();
         card.setWidth("60%");
         card.getStyle()
@@ -126,23 +127,21 @@ public class PersonProfileView extends VerticalLayout {
         rolesList.setPadding(false);
         rolesList.setSpacing(false);
         rolesList.add(new Span("🧑‍💼 Roles:"));
-        for (RoleDTO role : roles) {
+        for (rolesDTO role : roles) {
             Span roleLabel = new Span("- " + role.getRoleName());
             roleLabel.getStyle().set("font-weight", "bold");
             rolesList.add(roleLabel);
 
-            if (role.getDescription().contains("Permissions:")) {
-                String[] parts = role.getDescription().split("Permissions:");
-                if (parts.length > 1) {
-                    String[] permissions = parts[1].split(",");
-                    VerticalLayout permList = new VerticalLayout();
-                    permList.setSpacing(false);
-                    permList.setPadding(false);
-                    for (String perm : permissions) {
-                        permList.add(new Span("   • " + perm.trim()));
-                    }
-                    rolesList.add(permList);
+            if (role.getPermissions().size() > 0) {
+                System.out.println("Permissions for role " + role.getRoleName() + ": " + role.getPermissions().size());
+                List<String> permissions = role.getPermissions();
+                VerticalLayout permList = new VerticalLayout();
+                permList.setSpacing(false);
+                permList.setPadding(false);
+                for (String perm : permissions) {
+                    permList.add(new Span("   • " + perm));
                 }
+                rolesList.add(permList);
             }
         }
 
@@ -151,18 +150,13 @@ public class PersonProfileView extends VerticalLayout {
         return card;
     }
 
-    private Map<String, List<RoleDTO>> groupRolesByShop(List<RoleDTO> roles) {
-        return roles.stream()
-                .filter(r -> r.getDescription() != null && r.getDescription().contains(" at "))
-                .collect(Collectors.groupingBy(this::extractShopNameFromDescription));
-    }
-
-    private String extractShopNameFromDescription(RoleDTO role) {
-        String desc = role.getDescription();
-        int atIndex = desc.indexOf(" at ");
-        int newline = desc.indexOf("\n", atIndex);
-        return newline > 0 ? desc.substring(atIndex + 4, newline).trim()
-                           : desc.substring(atIndex + 4).trim();
+    private Map<String, List<rolesDTO>> groupRolesByShop(List<rolesDTO> roles) {
+        Map<String, List<rolesDTO>> rolesByShop = new HashMap<>();
+        for (rolesDTO role : roles) {
+            String shopName = role.getShopName();
+            rolesByShop.computeIfAbsent(shopName, k -> new java.util.ArrayList<>()).add(role);
+        }
+        return rolesByShop;
     }
 
     private double calculateAverageRating(List<ShopReviewDTO> reviews) {
@@ -173,10 +167,10 @@ public class PersonProfileView extends VerticalLayout {
     // ---------- MOCK DATA BELOW ----------
 
     private MemberDTO mockMember() {
-        List<RoleDTO> roles = List.of(
-            new RoleDTO("Owner", "Owner at Fresh Mart\nPermissions: manageItems, setPolicy, manageOwners, manageManagers, getHistory"),
-            new RoleDTO("Manager", "Manager at Beauty Hub\nPermissions: manageItems, getStaffInfo, handleMessages"),
-            new RoleDTO("Staff", "Staff at ElectroMax\nPermissions: handleMessages")
+        List<rolesDTO> roles = List.of(
+            new rolesDTO("Manager", List.of("Manage Inventory", "View Sales"), "Fresh Mart", "john_doe"),
+            new rolesDTO("Manager", List.of("Process Payments"), "Beauty Hub", "john_doe"),
+            new rolesDTO("Manager", List.of("View Products"), "ElectroMax", "john_doe")
         );
         return new MemberDTO(
             1,
