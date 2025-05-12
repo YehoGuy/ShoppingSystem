@@ -1,5 +1,6 @@
 package PresentationLayer.Controller;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -538,6 +539,20 @@ public class ShopController {
         try {
             shopService.removeSupply(shopId, itemId, supply, token);
             return ResponseEntity.noContent().build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }
+    }
+
+
+
+    @PostMapping("/policy/check")
+    public ResponseEntity<?> checkPolicy(
+            @RequestBody HashMap<Integer, HashMap<Integer, Integer>> cart,
+            @RequestParam String token) {
+        try {
+            boolean result = shopService.checkPolicy(cart, token);
+            return ResponseEntity.ok(result);
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
         }
