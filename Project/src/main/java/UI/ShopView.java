@@ -182,17 +182,6 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String> 
         header.add(contactButton, titleSection, reviewButton);
         add(header);
 
-        HorizontalLayout discountButtons = new HorizontalLayout();
-        discountButtons.setSpacing(true);
-
-        Button globalDiscountButton = new Button("Set Global Discount", e -> openGlobalDiscountDialog());
-        Button itemDiscountButton = new Button("Set Item Discount", e -> openItemDiscountDialog());
-        Button categoryDiscountButton = new Button("Set Category Discount", e -> openCategoryDiscountDialog());
-
-        discountButtons.add(globalDiscountButton, itemDiscountButton, categoryDiscountButton);
-
-        add(discountButtons);
-
         // Display active discounts
         VerticalLayout discountDisplay = new VerticalLayout();
         discountDisplay.setPadding(false);
@@ -212,95 +201,6 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String> 
         add(content);
 
         displayShopItems(allItems);// show all items at first
-    }
-
-    private void openGlobalDiscountDialog() {
-        Dialog dialog = new Dialog();
-        dialog.setWidth("400px");
-
-        VerticalLayout layout = new VerticalLayout();
-        layout.add(new H3("Set Global Discount"));
-
-        NumberField percentageField = new NumberField("Discount %");
-        percentageField.setMin(0);
-        percentageField.setMax(100);
-        percentageField.setSuffixComponent(new Span("%"));
-
-        Button applyButton = new Button("Apply", e -> {
-            if (percentageField.getValue() == null) {
-                Notification.show("Enter a valid discount");
-                return;
-            }
-            // TODO: call backend to apply global discount
-            Notification.show("Global discount set: " + percentageField.getValue() + "%");
-            dialog.close();
-        });
-
-        layout.add(percentageField, applyButton);
-        dialog.add(layout);
-        dialog.open();
-    }
-
-    private void openItemDiscountDialog() {
-        Dialog dialog = new Dialog();
-        dialog.setWidth("400px");
-
-        VerticalLayout layout = new VerticalLayout();
-        layout.add(new H3("Set Discount for Item"));
-
-        ComboBox<ItemDTO> itemSelect = new ComboBox<>("Select Item");
-        itemSelect.setItems(allItems);
-        itemSelect.setItemLabelGenerator(ItemDTO::getName);
-
-        NumberField percentageField = new NumberField("Discount %");
-        percentageField.setMin(0);
-        percentageField.setMax(100);
-        percentageField.setSuffixComponent(new Span("%"));
-
-        Button applyButton = new Button("Apply", e -> {
-            if (itemSelect.getValue() == null || percentageField.getValue() == null) {
-                Notification.show("Select an item and enter a discount");
-                return;
-            }
-            // TODO: call backend to apply discount to item
-            Notification
-                    .show("Discount for " + itemSelect.getValue().getName() + ": " + percentageField.getValue() + "%");
-            dialog.close();
-        });
-
-        layout.add(itemSelect, percentageField, applyButton);
-        dialog.add(layout);
-        dialog.open();
-    }
-
-    private void openCategoryDiscountDialog() {
-        Dialog dialog = new Dialog();
-        dialog.setWidth("400px");
-
-        VerticalLayout layout = new VerticalLayout();
-        layout.add(new H3("Set Discount for Category"));
-
-        ComboBox<ItemCategory> categorySelect = new ComboBox<>("Select Category");
-        categorySelect.setItems(ItemCategory.values());
-
-        NumberField percentageField = new NumberField("Discount %");
-        percentageField.setMin(0);
-        percentageField.setMax(100);
-        percentageField.setSuffixComponent(new Span("%"));
-
-        Button applyButton = new Button("Apply", e -> {
-            if (categorySelect.getValue() == null || percentageField.getValue() == null) {
-                Notification.show("Select a category and enter a discount");
-                return;
-            }
-            // TODO: call backend to apply discount to category
-            Notification.show("Discount for " + categorySelect.getValue() + ": " + percentageField.getValue() + "%");
-            dialog.close();
-        });
-
-        layout.add(categorySelect, percentageField, applyButton);
-        dialog.add(layout);
-        dialog.open();
     }
 
     private VerticalLayout setupFilters() {
