@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Anchor;
@@ -133,7 +132,6 @@ public class PersonProfileView extends VerticalLayout {
             rolesList.add(roleLabel);
 
             if (role.getPermissions().size() > 0) {
-                System.out.println("Permissions for role " + role.getRoleName() + ": " + role.getPermissions().size());
                 List<String> permissions = role.getPermissions();
                 VerticalLayout permList = new VerticalLayout();
                 permList.setSpacing(false);
