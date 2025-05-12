@@ -1,6 +1,8 @@
 package PresentationLayer.Controller;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.springframework.http.HttpStatus;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -431,4 +434,149 @@ public class ShopController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+//adding from here
+    @PostMapping("/{shopId}/items/{itemId}/supply")
+    public ResponseEntity<?> addSupplyToItem(
+            @PathVariable int shopId,
+            @PathVariable int itemId,
+            @RequestParam int quantity,
+            @RequestParam String token) {
+        try {
+            shopService.addSupplyToItem(shopId, itemId, quantity, token);
+            return ResponseEntity.noContent().build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }
+    }
+
+    @GetMapping("/{shopId}/items/{itemId}/quantity")
+    public ResponseEntity<?> getItemQuantity(
+            @PathVariable int shopId,
+            @PathVariable int itemId,
+            @RequestParam String token) {
+        try {
+            int qty = shopService.getItemQuantityFromShop(shopId, itemId, token);
+            return ResponseEntity.ok(qty);
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }
+    }
+
+    @GetMapping("/{shopId}/items/{itemId}/available")
+    public ResponseEntity<?> checkSupply(
+            @PathVariable int shopId,
+            @PathVariable int itemId,
+            @RequestParam String token) {
+        try {
+            boolean available = shopService.checkSupplyAvailability(shopId, itemId, token);
+            return ResponseEntity.ok(available);
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }
+    }
+
+    @PostMapping("/{shopId}/purchase")
+    public ResponseEntity<?> purchaseItems(
+            @PathVariable int shopId,
+            @RequestBody Map<Integer, Integer> purchaseLists,
+            @RequestParam String token) {
+        try {
+            double total = shopService.purchaseItems(purchaseLists, shopId, token);
+            return ResponseEntity.ok(total);
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }
+    }
+
+    @PostMapping("/{shopId}/purchase/rollback")
+    public ResponseEntity<?> rollbackPurchase(
+            @PathVariable int shopId,
+            @RequestBody Map<Integer, Integer> purchaseLists) {
+        try {
+            shopService.rollBackPurchase(purchaseLists, shopId);
+            return ResponseEntity.noContent().build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }
+    }
+
+    @GetMapping("/{shopId}/items/{itemId}/reserve")
+    public ResponseEntity<?> checkAndAcquire(
+            @PathVariable int shopId,
+            @PathVariable int itemId,
+            @RequestParam int supply) {
+        try {
+            boolean success = shopService.checkSupplyAvailabilityAndAcquire(shopId, itemId, supply);
+            return ResponseEntity.ok(success);
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }
+    }
+
+
+    @PatchMapping("/{shopId}/items/{itemId}/supply/add")
+    public ResponseEntity<?> addSupply(
+            @PathVariable int shopId,
+            @PathVariable int itemId,
+            @RequestParam int supply,
+            @RequestParam String token) {
+        try {
+            shopService.addSupply(shopId, itemId, supply, token);
+            return ResponseEntity.noContent().build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }
+    }
+
+
+    @PatchMapping("/{shopId}/items/{itemId}/supply/remove")
+    public ResponseEntity<?> removeSupply(
+            @PathVariable int shopId,
+            @PathVariable int itemId,
+            @RequestParam int supply,
+            @RequestParam String token) {
+        try {
+            shopService.removeSupply(shopId, itemId, supply, token);
+            return ResponseEntity.noContent().build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }
+    }
+
+
+
+    @PostMapping("/policy/check")
+    public ResponseEntity<?> checkPolicy(
+            @RequestBody HashMap<Integer, HashMap<Integer, Integer>> cart,
+            @RequestParam String token) {
+        try {
+            boolean result = shopService.checkPolicy(cart, token);
+            return ResponseEntity.ok(result);
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }
+    }
+
+
+    @PostMapping("/{shopId}/purchase/{purchaseId}/ship")
+    public ResponseEntity<?> shipPurchase(
+            @PathVariable int shopId,
+            @PathVariable int purchaseId,
+            @RequestParam String country,
+            @RequestParam String city,
+            @RequestParam String street,
+            @RequestParam String postalCode,
+            @RequestParam String token) {
+        try {
+            shopService.shipPurchase(token, purchaseId, shopId, country, city, street, postalCode);
+            return ResponseEntity.accepted().build();  // 202
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }
+    }
+
+
 }
+
+
