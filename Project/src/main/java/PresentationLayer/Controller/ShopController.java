@@ -558,6 +558,25 @@ public class ShopController {
         }
     }
 
+
+    @PostMapping("/{shopId}/purchase/{purchaseId}/ship")
+    public ResponseEntity<?> shipPurchase(
+            @PathVariable int shopId,
+            @PathVariable int purchaseId,
+            @RequestParam String country,
+            @RequestParam String city,
+            @RequestParam String street,
+            @RequestParam String postalCode,
+            @RequestParam String token) {
+        try {
+            shopService.shipPurchase(token, purchaseId, shopId, country, city, street, postalCode);
+            return ResponseEntity.accepted().build();  // 202
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }
+    }
+
+
 }
 
 
