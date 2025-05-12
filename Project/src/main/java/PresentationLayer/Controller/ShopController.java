@@ -528,6 +528,21 @@ public class ShopController {
         }
     }
 
+
+    @PatchMapping("/{shopId}/items/{itemId}/supply/remove")
+    public ResponseEntity<?> removeSupply(
+            @PathVariable int shopId,
+            @PathVariable int itemId,
+            @RequestParam int supply,
+            @RequestParam String token) {
+        try {
+            shopService.removeSupply(shopId, itemId, supply, token);
+            return ResponseEntity.noContent().build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }
+    }
+
 }
 
 
