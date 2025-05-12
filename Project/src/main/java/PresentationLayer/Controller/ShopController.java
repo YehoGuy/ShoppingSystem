@@ -514,6 +514,20 @@ public class ShopController {
     }
 
 
+    @PatchMapping("/{shopId}/items/{itemId}/supply/add")
+    public ResponseEntity<?> addSupply(
+            @PathVariable int shopId,
+            @PathVariable int itemId,
+            @RequestParam int supply,
+            @RequestParam String token) {
+        try {
+            shopService.addSupply(shopId, itemId, supply, token);
+            return ResponseEntity.noContent().build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }
+    }
+
 }
 
 
