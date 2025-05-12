@@ -8,6 +8,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.stereotype.Repository;
+
 import ApplicationLayer.OurRuntime;
 import ApplicationLayer.Purchase.PaymentMethod;
 import DomainLayer.Guest;
@@ -23,6 +25,7 @@ import DomainLayer.User;
 // Assuming User is a class that has been defined elsewhere in your project
 // and has a method getId() to retrieve the user's ID.
 
+@Repository
 public class UserRepository implements IUserRepository {
     // A map to store users with their IDs as keys
     private ConcurrentHashMap<Integer, DomainLayer.User> userMapping;

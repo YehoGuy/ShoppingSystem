@@ -5,12 +5,15 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.stereotype.Repository;
+
 import DomainLayer.Purchase.Address;
 import DomainLayer.Purchase.Bid;
 import DomainLayer.Purchase.IPurchaseRepository;
 import DomainLayer.Purchase.Purchase;
 import DomainLayer.Purchase.Reciept;
 
+@Repository
 public class PurchaseRepository implements IPurchaseRepository {
     /**
     * This class handles the purchases data storage and retrieval.
