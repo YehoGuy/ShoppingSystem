@@ -1,5 +1,6 @@
 package UI;
 
+import DTOs.DiscountDTO;
 import DTOs.ItemDTO;
 import DTOs.ShopDTO;
 import DTOs.ShopReviewDTO;
@@ -12,6 +13,7 @@ import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -34,7 +36,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
     private ShopDTO shop;
     private VerticalLayout itemsContainer;
     private VerticalLayout rolesContainer;
-    private VerticalLayout poliVerticalLayout;
+    private VerticalLayout discountVerticalLayout;
 
     private ComboBox<ItemCategory> categoryFilter;
     private NumberField minPriceField;
@@ -43,7 +45,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
 
     private List<ItemDTO> allItems;
     private List<rolesDTO> allRoles; // Store the full list of roles
-    private List<policiesDTO> allPolicies; // Store the full list of policies
+    private List<DiscountDTO> allDiscounts; // Store the full list of discounts
 
     public EditShopView() {
         setSizeFull();
@@ -95,9 +97,9 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
         HorizontalLayout discountButtons = new HorizontalLayout();
         discountButtons.setSpacing(true);
 
-        Button globalDiscountButton = new Button("Set Global Discount", e -> openGlobalDiscountDialog());
-        Button itemDiscountButton = new Button("Set Item Discount", e -> openItemDiscountDialog());
-        Button categoryDiscountButton = new Button("Set Category Discount", e -> openCategoryDiscountDialog());
+        Button globalDiscountButton = new Button("➕ Set Global Discount", e -> openGlobalDiscountDialog());
+        Button itemDiscountButton = new Button("➕ Set Item Discount", e -> openItemDiscountDialog());
+        Button categoryDiscountButton = new Button("➕ Set Category Discount", e -> openCategoryDiscountDialog());
 
         discountButtons.add(globalDiscountButton, itemDiscountButton, categoryDiscountButton);
 
@@ -111,9 +113,9 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
         rolesContainer.setHeight("70vh");
         rolesContainer.getStyle().set("overflow", "auto");
 
-        poliVerticalLayout = new VerticalLayout();
-        poliVerticalLayout.setHeight("70vh");
-        poliVerticalLayout.getStyle().set("overflow", "auto");
+        discountVerticalLayout = new VerticalLayout();
+        discountVerticalLayout.setHeight("70vh");
+        discountVerticalLayout.getStyle().set("overflow", "auto");
 
         // Create buttons and layouts for items
         Button addItemButton = new Button("➕ Add Item", e -> {
@@ -155,8 +157,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
         itemSection.setAlignItems(Alignment.CENTER);
 
         // Create buttons and layouts for roles
-        Button addRoleButton;
-        addRoleButton = new Button("➕ Add Role", e -> {
+        Button addRoleButton = new Button("➕ Add Role", e -> {
             Dialog dialog = new Dialog();
             dialog.setHeaderTitle("Add New Role");
 
@@ -189,47 +190,19 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
         roleSection.getStyle().set("overflow", "auto");
         roleSection.setAlignItems(Alignment.CENTER);
 
-        // Create buttons and layouts for policies
-        Button addPolicyButton = new Button("➕ Add Policy", e -> {
-            Dialog dialog = new Dialog();
-            dialog.setHeaderTitle("Add New Policy");
+        VerticalLayout DiscountSection = new VerticalLayout(discountButtons, discountVerticalLayout);
+        DiscountSection.setWidthFull();
+        DiscountSection.setHeight("70vh");
+        DiscountSection.getStyle().set("overflow", "auto");
+        DiscountSection.setAlignItems(Alignment.CENTER);
 
-            TextField policyNameField = new TextField("Policy Name");
-            TextField descField = new TextField("Description");
-            ComboBox<String> typeField = new ComboBox<>("Type");
-            typeField.setItems("Purchase", "Discount");
-
-            Button confirmButton = new Button("Confirm", ev -> {
-                if (policyNameField.isEmpty() || descField.isEmpty() || typeField.isEmpty()) {
-                    Notification.show("Please fill all fields");
-                    return;
-                }
-                policiesDTO newPolicy = new policiesDTO(policyNameField.getValue(),
-                        descField.getValue(), shop.getName(), typeField.getValue().equals("Discount"));
-                allPolicies.add(newPolicy);
-                displayShopPolicies(allPolicies);
-                dialog.close();
-            });
-
-            Button cancelButton = new Button("Cancel", ev -> dialog.close());
-            dialog.add(new VerticalLayout(policyNameField, descField, typeField,
-                    new HorizontalLayout(confirmButton, cancelButton)));
-            dialog.open();
-        });
-
-        VerticalLayout policySection = new VerticalLayout(addPolicyButton, poliVerticalLayout);
-        policySection.setWidthFull();
-        policySection.setHeight("70vh");
-        policySection.getStyle().set("overflow", "auto");
-        policySection.setAlignItems(Alignment.CENTER);
-
-        HorizontalLayout content = new HorizontalLayout(setupFilters(), itemSection, roleSection, policySection);
+        HorizontalLayout content = new HorizontalLayout(setupFilters(), itemSection, roleSection, DiscountSection);
         content.setWidthFull();
         add(content);
 
         displayShopItems(allItems);
         displayShopRoles(allRoles);
-        displayShopPolicies(allPolicies);
+        displayShopDiscounts(allDiscounts);
     }
 
     private void openGlobalDiscountDialog() {
@@ -253,8 +226,11 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
             Notification.show("Global discount set: " + percentageField.getValue() + "%");
             dialog.close();
         });
-
-        layout.add(percentageField, applyButton);
+        Button policyButton = new Button("set policy", e -> {
+            Dialog dialog2 = openPolicyDialog();
+            dialog2.open();
+        });
+        layout.add(percentageField, policyButton, applyButton);
         dialog.add(layout);
         dialog.open();
     }
@@ -285,8 +261,11 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
                     .show("Discount for " + itemSelect.getValue().getName() + ": " + percentageField.getValue() + "%");
             dialog.close();
         });
-
-        layout.add(itemSelect, percentageField, applyButton);
+        Button policyButton = new Button("set policy", e -> {
+            Dialog dialog2 = openPolicyDialog();
+            dialog2.open();
+        });
+        layout.add(itemSelect, percentageField, policyButton, applyButton);
         dialog.add(layout);
         dialog.open();
     }
@@ -315,10 +294,51 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
             Notification.show("Discount for " + categorySelect.getValue() + ": " + percentageField.getValue() + "%");
             dialog.close();
         });
-
-        layout.add(categorySelect, percentageField, applyButton);
+        Button policyButton = new Button("set policy", e -> {
+            Dialog dialog2 = openPolicyDialog();
+            dialog2.open();
+        });
+        layout.add(categorySelect, percentageField, policyButton, applyButton);
         dialog.add(layout);
         dialog.open();
+    }
+
+    private Dialog openPolicyDialog() {
+        Dialog dialog = new Dialog();
+        dialog.setWidth("400px");
+
+        VerticalLayout layout = new VerticalLayout();
+        layout.add(new H3("Set Policy"));
+        layout.add(new H4(
+                "please enter threshold and category, threshold and item name or basket value. if all are not entered, assume there is no policy"));
+        NumberField thresholdField = new NumberField("Threshold");
+        TextField itemNameField = new TextField("Item Name");
+        ComboBox<ItemCategory> categorySelect = new ComboBox<>("Select Category");
+        categorySelect.setItems(ItemCategory.values());
+        NumberField basketValueField = new NumberField("Basket Value");
+
+        Button applyButton = new Button("Apply", e -> {
+            if (!thresholdField.isEmpty() && !itemNameField.isEmpty()) {
+                Notification.show("item threshold was selected");
+                return;
+            } else if (!thresholdField.isEmpty() && !categorySelect.isEmpty()) {
+                Notification.show("category threshold was selected");
+                return;
+            } else if (!basketValueField.isEmpty()) {
+                Notification.show("basket value was selected");
+                return;
+            } else if (thresholdField.isEmpty() && itemNameField.isEmpty()
+                    && categorySelect.isEmpty() && basketValueField.isEmpty()) {
+                Notification.show("everyone get this discount");
+                return;
+            } else {
+                Notification.show("please enter a valid policy");
+                return;
+            }
+        });
+        layout.add(thresholdField, itemNameField, categorySelect, basketValueField, applyButton);
+        dialog.add(layout);
+        return dialog;
     }
 
     public void loadShopData(String shopName) {
@@ -352,11 +372,10 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
         allRoles.add(new rolesDTO("Manager", List.of("VIEW_ITEM", "EDIT_ITEM"), shopName, "user2"));
         allRoles.add(new rolesDTO("Staff", List.of("VIEW_ITEM"), shopName, "user3"));
 
-        allPolicies = new ArrayList<>();
-        allPolicies.add(new policiesDTO("Return Policy", "Items can be returned within 30 days.", shopName, false));
-        allPolicies.add(new policiesDTO("Privacy Policy", "Customer data will be kept confidential.", shopName, false));
-        allPolicies.add(new policiesDTO("Shipping Policy", "Free shipping on orders over $50.", shopName, false));
-        allPolicies.add(new policiesDTO("Discount Policy", "10% discount on first purchase.", shopName, true));
+        allDiscounts = new ArrayList<>();
+        allDiscounts.add(new DiscountDTO(5, false, ItemCategory.ELECTRONICS, null));
+        allDiscounts.add(new DiscountDTO(10, true, ItemCategory.AUTOMOTIVE, "Item 2"));
+        allDiscounts.add(new DiscountDTO(15, false, null, "Item 3"));
     }
 
     private double calculateAverageRating(List<ShopReviewDTO> reviews) {
@@ -572,20 +591,20 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
         }
     }
 
-    private void displayShopPolicies(List<policiesDTO> policies) {
-        poliVerticalLayout.removeAll();
+    private void displayShopDiscounts(List<DiscountDTO> discounts) {
+        discountVerticalLayout.removeAll();
 
-        if (policies.isEmpty()) {
+        if (discounts.isEmpty()) {
             Span noPolicies = new Span("No policies available for current filters.");
             noPolicies.getStyle().set("color", "red").set("font-size", "18px").set("font-weight", "bold");
-            poliVerticalLayout.add(noPolicies);
+            discountVerticalLayout.add(noPolicies);
             return;
         }
 
-        for (policiesDTO policy : policies) {
-            VerticalLayout policyCard = new VerticalLayout();
-            policyCard.setWidth("100%");
-            policyCard.getStyle()
+        for (DiscountDTO discount : discounts) {
+            VerticalLayout discountCard = new VerticalLayout();
+            discountCard.setWidth("100%");
+            discountCard.getStyle()
                     .set("border", "1px solid #ccc")
                     .set("border-radius", "8px")
                     .set("padding", "10px")
@@ -593,23 +612,31 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
                     .set("margin-bottom", "10px")
                     .set("background-color", "#f9f9f9");
 
-            TextField nameField = new TextField("Policy Name", policy.getPolicyName());
-            nameField.setValue(policy.getPolicyName());
-            nameField.setReadOnly(true);
-            TextField isDiscountField = new TextField("Type", policy.isDiscount() ? "Discount" : "Purchase");
-            isDiscountField.setValue(policy.isDiscount() ? "Discount" : "Purchase");
-            isDiscountField.setReadOnly(true);
-            TextField descField = new TextField("Description", policy.getDescription());
-            descField.setValue(policy.getDescription());
-            descField.setReadOnly(true);
+            TextField discountNameField = null;
+            if (discount.getItemName() != null) {
+                discountNameField = new TextField("Item Name", discount.getItemName());
+                discountNameField.setValue(discount.getItemName());
+                discountNameField.setReadOnly(true);
+            } else if (discount.getItemCategory() != null) {
+                discountNameField = new TextField("Category", discount.getItemCategory().toString());
+                discountNameField.setValue(discount.getItemCategory().toString());
+                discountNameField.setReadOnly(true);
+            } else {
+                discountNameField = new TextField("Global Discount", "All Items");
+                discountNameField.setValue("All Items");
+                discountNameField.setReadOnly(true);
+            }
+            NumberField percentage = new NumberField("Discount Percentage", discount.getPercentage().toString());
+            percentage.setValue(discount.getPercentage().doubleValue());
+            percentage.setReadOnly(true);
 
             Button removeButton = new Button("❌ Remove Policy", e -> {
-                allPolicies.remove(policy);
-                displayShopPolicies(allPolicies);
+                allDiscounts.remove(discount);
+                displayShopDiscounts(discounts);
             });
 
-            policyCard.add(nameField, isDiscountField, descField, removeButton);
-            poliVerticalLayout.add(policyCard);
+            discountCard.add(discountNameField, percentage, removeButton);
+            discountVerticalLayout.add(discountCard);
         }
     }
 }
