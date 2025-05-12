@@ -1,16 +1,18 @@
 package InfrastructureLayer;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import ApplicationLayer.OurRuntime;
+import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Map;
+import ApplicationLayer.OurRuntime;
 import DomainLayer.IMessageRepository;
 import DomainLayer.Message;
 
+@Repository
 public class MessageRepository implements IMessageRepository {
     private Map<Integer, Message> messages; // Map to store messages with their IDs as keys
     private AtomicInteger nextId; // Counter for generating unique message IDs
