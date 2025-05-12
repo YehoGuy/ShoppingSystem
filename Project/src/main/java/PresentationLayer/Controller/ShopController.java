@@ -488,6 +488,17 @@ public class ShopController {
         }
     }
 
+    @PostMapping("/{shopId}/purchase/rollback")
+    public ResponseEntity<?> rollbackPurchase(
+            @PathVariable int shopId,
+            @RequestBody Map<Integer, Integer> purchaseLists) {
+        try {
+            shopService.rollBackPurchase(purchaseLists, shopId);
+            return ResponseEntity.noContent().build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }
+    }
 
 
 }
