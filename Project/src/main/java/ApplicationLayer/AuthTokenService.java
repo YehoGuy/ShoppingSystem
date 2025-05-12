@@ -5,7 +5,7 @@ import java.util.function.Function;
 
 import javax.crypto.SecretKey;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 import DomainLayer.AuthToken;
 import DomainLayer.IAuthTokenRepository;
@@ -16,9 +16,10 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 
+@Service
 public class AuthTokenService {
-    @Value("${jwt.secret}")
-    private String secret; 
+    //@Value("${jwt.secret}")
+    //private String secret; 
     private static final long EXPIRATION_TIME = 86400000; 
     private SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS256); 
 

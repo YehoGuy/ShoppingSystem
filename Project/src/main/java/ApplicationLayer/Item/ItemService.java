@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.stereotype.Service;
+
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.LoggerService;
 import ApplicationLayer.OurArg;
@@ -15,6 +17,7 @@ import DomainLayer.Item.ItemCategory;
 import DomainLayer.Item.ItemReview;
 import DomainLayer.Roles.PermissionsEnum;
 
+@Service
 public class ItemService {
 
     private final IItemRepository itemRepository;

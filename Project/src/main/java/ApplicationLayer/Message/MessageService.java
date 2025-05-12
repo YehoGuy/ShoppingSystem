@@ -3,16 +3,19 @@ package ApplicationLayer.Message;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.stereotype.Service;
+
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.LoggerService;
 import ApplicationLayer.OurArg;
 import ApplicationLayer.OurRuntime;
-import ApplicationLayer.User.UserService;
 import ApplicationLayer.Shop.ShopService;
+import ApplicationLayer.User.UserService;
 import DomainLayer.IMessageRepository;
 import DomainLayer.Message;
 import DomainLayer.Shop.Shop;
 
+@Service
 public class MessageService {
 
     public IMessageRepository messageRepository;

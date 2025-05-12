@@ -4,11 +4,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.stereotype.Service;
+
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.Item.ItemService;
 import ApplicationLayer.LoggerService;
-import ApplicationLayer.OurArg;
 import ApplicationLayer.Message.MessageService;
+import ApplicationLayer.OurArg;
 import ApplicationLayer.OurRuntime;
 import ApplicationLayer.Shop.ShopService;
 import ApplicationLayer.User.UserService;
@@ -19,6 +21,7 @@ import DomainLayer.Purchase.IPurchaseRepository;
 import DomainLayer.Purchase.Purchase;
 import DomainLayer.Purchase.Reciept;
 
+@Service
 public class PurchaseService {
 
     private final IPurchaseRepository purchaseRepository;

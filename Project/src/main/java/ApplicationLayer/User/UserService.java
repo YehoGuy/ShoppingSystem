@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.stereotype.Service;
+
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.LoggerService;
 import ApplicationLayer.OurArg;
@@ -18,6 +20,7 @@ import DomainLayer.Roles.Role;
 import DomainLayer.User;
 import InfrastructureLayer.PasswordEncoderUtil;
 
+@Service
 public class UserService {
     
     private final IUserRepository userRepository;

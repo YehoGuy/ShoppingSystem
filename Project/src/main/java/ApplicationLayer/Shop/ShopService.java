@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.stereotype.Service;
+
 import ApplicationLayer.AuthTokenService;
 import ApplicationLayer.Item.ItemService;
 import ApplicationLayer.LoggerService;
@@ -20,6 +22,7 @@ import DomainLayer.Shop.IShopRepository;
 import DomainLayer.Shop.PurchasePolicy;
 import DomainLayer.Shop.Shop;
 
+@Service
 public class ShopService {
     private final IShopRepository shopRepository;
     private AuthTokenService authTokenService;
