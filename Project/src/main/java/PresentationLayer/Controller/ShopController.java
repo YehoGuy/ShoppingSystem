@@ -460,6 +460,19 @@ public class ShopController {
         }
     }
 
+    @GetMapping("/{shopId}/items/{itemId}/available")
+    public ResponseEntity<?> checkSupply(
+            @PathVariable int shopId,
+            @PathVariable int itemId,
+            @RequestParam String token) {
+        try {
+            boolean available = shopService.checkSupplyAvailability(shopId, itemId, token);
+            return ResponseEntity.ok(available);
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }
+    }
+
 
 }
 
