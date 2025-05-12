@@ -1,9 +1,15 @@
 name: Java CI with Maven
 on:
   push:
-    branches: [ "main", "developement", "V*" ]
+    branches: [ "main", "developement", "V" ]
+    paths:
+        - 'Project/**'
+        - 'pom.xml'
   pull_request:
-    branches: [ "main", "developement", "V*" ]
+    branches: [ "main", "developement", "V" ]
+    paths:
+        - 'Project/**'
+        - 'pom.xml'
 jobs:
   build:
     timeout-minutes: 30  # increases the timeout to 30 minutes
@@ -16,9 +22,10 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
         cache: maven
-    - name: Install main project dependencies (skip frontend)
-      run: mvn install -DskipTests --no-transfer-progress -f ./Project/pom.xml
-      
+    - name: Install dependencies
+      run: mvn install -DskipTests --no-transfer-progress
+      working-directory: ./Project
+
   tests:
     runs-on: ubuntu-latest
     timeout-minutes: 30  # increases the timeout to 30 minutes
@@ -31,5 +38,6 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
         cache: maven
-    - name: Run tests (only for main project)
-      run: mvn test --no-transfer-progress -f ./Project/pom.xml
+    - name: Run tests
+      run: mvn test --no-transfer-progress 
+      working-directory: ./Project
