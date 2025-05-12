@@ -500,6 +500,19 @@ public class ShopController {
         }
     }
 
+    @GetMapping("/{shopId}/items/{itemId}/reserve")
+    public ResponseEntity<?> checkAndAcquire(
+            @PathVariable int shopId,
+            @PathVariable int itemId,
+            @RequestParam int supply) {
+        try {
+            boolean success = shopService.checkSupplyAvailabilityAndAcquire(shopId, itemId, supply);
+            return ResponseEntity.ok(success);
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }
+    }
+
 
 }
 
