@@ -1,5 +1,6 @@
 package DomainLayer;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -82,4 +83,10 @@ public interface IUserRepository {
     // Password encoding
     PasswordEncoderUtil passwordEncoderUtil = new PasswordEncoderUtil(); // Use the password encoder utility
     void setEncoderToTest(boolean isTest); // Set the encoder to test mode
+    void addNotification(int userId, String title, String message);
+    List<Notification> getNotificationsAndClear(int userId);
+    public List<Member> getOwners(int shopId);
+    void setSuspended(int userId, LocalDateTime suspended); // Set a user as suspended
+    boolean isSuspended(int userId); // Check if a user is suspended
+    List<Integer> getSuspendedUsers(); // Get a list of suspended users
 }

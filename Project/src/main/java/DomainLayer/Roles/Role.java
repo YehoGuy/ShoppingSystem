@@ -132,6 +132,15 @@ public class Role {
         }
     }
 
+    public String toNotification(){
+        synchronized (lock) {
+            StringBuilder sb = new StringBuilder("Role{");
+            sb.append("Permissions=").append(Arrays.toString(permissions));
+            sb.append("}");
+            return sb.toString();
+        }
+    }
+
     public boolean isOwner() {
         return hasPermission(PermissionsEnum.manageOwners);
     }
