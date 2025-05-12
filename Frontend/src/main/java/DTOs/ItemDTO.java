@@ -1,7 +1,6 @@
 package DTOs;
 
-import main.java.Domain.ItemCategory;
-
+import Domain.ItemCategory;
 public class ItemDTO {
     private int id;
     private double price;

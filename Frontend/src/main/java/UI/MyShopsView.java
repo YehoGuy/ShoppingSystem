@@ -19,7 +19,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import DTOs.ItemDTO;
 import DTOs.ShopDTO;
 import DTOs.ShopReviewDTO;
-import main.java.Domain.ItemCategory;
+import Domain.ItemCategory;
 
 @Route(value = "myshops", layout = AppLayoutBasic.class)
 public class MyShopsView extends VerticalLayout {
