@@ -16,9 +16,8 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
         cache: maven
-    - name: Install dependencies
-      run: mvn install -DskipTests --no-transfer-progress
-      working-directory: ./Project
+    - name: Install main project dependencies (skip frontend)
+      run: mvn install -DskipTests --no-transfer-progress -f ./Project/pom.xml
       
   tests:
     runs-on: ubuntu-latest
@@ -32,6 +31,5 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
         cache: maven
-    - name: Run tests
-      run: mvn test --no-transfer-progress
-      working-directory: ./Project
+    - name: Run tests (only for main project)
+      run: mvn test --no-transfer-progress -f ./Project/pom.xml
