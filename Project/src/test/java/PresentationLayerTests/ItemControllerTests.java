@@ -22,19 +22,20 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
+
+import com.example.app.ApplicationLayer.OurArg;
+import com.example.app.ApplicationLayer.OurRuntime;
+import com.example.app.ApplicationLayer.Item.ItemService;
+import com.example.app.DomainLayer.Item.Item;
+import com.example.app.DomainLayer.Item.ItemCategory;
+import com.example.app.DomainLayer.Item.ItemReview;
+import com.example.app.PresentationLayer.Controller.ItemController;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import ApplicationLayer.Item.ItemService;
-import ApplicationLayer.OurArg;
-import ApplicationLayer.OurRuntime;
-import DomainLayer.Item.Item;
-import DomainLayer.Item.ItemCategory;
-import DomainLayer.Item.ItemReview;
-import PresentationLayer.Controller.ItemController;
 
 /**
  * Comprehensive slice tests for ItemController.

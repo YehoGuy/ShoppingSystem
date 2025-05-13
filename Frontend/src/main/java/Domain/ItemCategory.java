@@ -1,4 +1,4 @@
-package main.java.Domain;
+package Domain;
 
 public enum ItemCategory {
     ELECTRONICS,

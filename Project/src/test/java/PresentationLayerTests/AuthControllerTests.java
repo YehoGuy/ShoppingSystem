@@ -18,12 +18,14 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
+
+import com.example.app.ApplicationLayer.AuthTokenService;
+import com.example.app.PresentationLayer.Controller.AuthController;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import ApplicationLayer.AuthTokenService;
-import PresentationLayer.Controller.AuthController;
 import io.jsonwebtoken.ExpiredJwtException;
 
 /**

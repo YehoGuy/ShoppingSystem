@@ -9,9 +9,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import DomainLayer.Member;
-import DomainLayer.Roles.PermissionsEnum;
-import DomainLayer.Roles.Role;
+import com.example.app.DomainLayer.Member;
+import com.example.app.DomainLayer.Roles.PermissionsEnum;
+import com.example.app.DomainLayer.Roles.Role;
 
 public class MemberTest {
 

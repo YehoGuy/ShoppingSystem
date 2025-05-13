@@ -1,7 +1,6 @@
 package DTOs;
 
-import main.java.Domain.ItemCategory;
-
+import Domain.ItemCategory;
 public class DiscountDTO {
     private Integer percentage;
     private boolean isDouble;

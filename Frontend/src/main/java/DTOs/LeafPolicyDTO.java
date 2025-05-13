@@ -1,7 +1,6 @@
 package DTOs;
 
-import main.java.Domain.ItemCategory;
-
+import Domain.ItemCategory;
 public class LeafPolicyDTO {
     private Integer threshold;
     private String itemName;

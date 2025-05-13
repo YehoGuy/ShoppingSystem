@@ -11,10 +11,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import DomainLayer.Guest;
-import DomainLayer.Member;
-import DomainLayer.User;
-import InfrastructureLayer.UserRepository;
+import com.example.app.DomainLayer.Guest;
+import com.example.app.DomainLayer.Member;
+import com.example.app.DomainLayer.User;
+import com.example.app.InfrastructureLayer.UserRepository;
     
 public class UserRepositoryTests {
 

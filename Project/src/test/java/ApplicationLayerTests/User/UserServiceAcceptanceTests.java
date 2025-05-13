@@ -18,12 +18,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.MockitoAnnotations;
 
-import ApplicationLayer.AuthTokenService;
-import ApplicationLayer.OurRuntime;
-import ApplicationLayer.User.UserService;
-import DomainLayer.Roles.PermissionsEnum;
-import DomainLayer.Roles.Role;
-import InfrastructureLayer.UserRepository;
+import com.example.app.ApplicationLayer.AuthTokenService;
+import com.example.app.ApplicationLayer.OurRuntime;
+import com.example.app.ApplicationLayer.User.UserService;
+import com.example.app.DomainLayer.Roles.PermissionsEnum;
+import com.example.app.DomainLayer.Roles.Role;
+import com.example.app.InfrastructureLayer.UserRepository;
 
 public class UserServiceAcceptanceTests {
     @Mock

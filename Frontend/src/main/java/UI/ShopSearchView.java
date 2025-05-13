@@ -17,8 +17,7 @@ import com.vaadin.flow.router.Route;
 import DTOs.ItemDTO;
 import DTOs.ShopDTO;
 import DTOs.ShopReviewDTO;
-import main.java.Domain.ItemCategory;
-
+import Domain.ItemCategory;
 @Route(value = "shops", layout = AppLayoutBasic.class)
 public class ShopSearchView extends VerticalLayout {
     private List<ShopDTO> allShops = new ArrayList<>(); // Store the full list of shops

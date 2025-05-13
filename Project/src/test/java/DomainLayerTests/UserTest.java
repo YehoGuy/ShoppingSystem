@@ -1,9 +1,10 @@
 package DomainLayerTests;
 
-import DomainLayer.ShoppingCart;
-import DomainLayer.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import com.example.app.DomainLayer.ShoppingCart;
+import com.example.app.DomainLayer.User;
 
 import java.util.HashMap;
 

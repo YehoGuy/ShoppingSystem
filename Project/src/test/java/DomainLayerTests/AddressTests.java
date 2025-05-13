@@ -12,10 +12,11 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import com.example.app.DomainLayer.Purchase.Address;
+
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-
-import DomainLayer.Purchase.Address;
 
 /**
  * Unit tests for {@link Address}.

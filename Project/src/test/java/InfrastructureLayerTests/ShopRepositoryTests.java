@@ -10,11 +10,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import ApplicationLayer.Purchase.ShippingMethod;
-import DomainLayer.Item.ItemCategory;
-import DomainLayer.Shop.PurchasePolicy;
-import DomainLayer.Shop.Shop;
-import InfrastructureLayer.ShopRepository;
+import com.example.app.ApplicationLayer.Purchase.ShippingMethod;
+import com.example.app.DomainLayer.Item.ItemCategory;
+import com.example.app.DomainLayer.Shop.PurchasePolicy;
+import com.example.app.DomainLayer.Shop.Shop;
+import com.example.app.InfrastructureLayer.ShopRepository;
 
 public class ShopRepositoryTests {
 

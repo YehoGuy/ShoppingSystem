@@ -6,7 +6,8 @@ import DTOs.ShopDTO;
 import DTOs.ShopReviewDTO;
 import DTOs.policiesDTO;
 import DTOs.rolesDTO;
-import main.java.Domain.ItemCategory;
+import Domain.ItemCategory;
+import Domain.PermissionsEnum;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -28,7 +29,6 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 
-import main.java.Domain.PermissionsEnum;
 
 @Route(value = "editShop", layout = AppLayoutBasic.class)
 public class EditShopView extends VerticalLayout implements HasUrlParameter<String> {

@@ -5,18 +5,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
 
-import ApplicationLayer.AuthTokenService;
-import ApplicationLayer.Item.ItemService;
-import ApplicationLayer.Message.MessageService;
-import ApplicationLayer.Purchase.ShippingMethod;
-import ApplicationLayer.Shop.ShopService;
-import ApplicationLayer.User.UserService;
-import DomainLayer.Shop.PurchasePolicy;
-import InfrastructureLayer.AuthTokenRepository;
-import InfrastructureLayer.ItemRepository;
-import InfrastructureLayer.MessageRepository;
-import InfrastructureLayer.ShopRepository;
-import InfrastructureLayer.UserRepository;
+import com.example.app.ApplicationLayer.AuthTokenService;
+import com.example.app.ApplicationLayer.Item.ItemService;
+import com.example.app.ApplicationLayer.Message.MessageService;
+import com.example.app.ApplicationLayer.Purchase.ShippingMethod;
+import com.example.app.ApplicationLayer.Shop.ShopService;
+import com.example.app.ApplicationLayer.User.UserService;
+import com.example.app.DomainLayer.Shop.PurchasePolicy;
+import com.example.app.InfrastructureLayer.AuthTokenRepository;
+import com.example.app.InfrastructureLayer.ItemRepository;
+import com.example.app.InfrastructureLayer.MessageRepository;
+import com.example.app.InfrastructureLayer.ShopRepository;
+import com.example.app.InfrastructureLayer.UserRepository;
 
 
 public class MessageServiceTests {

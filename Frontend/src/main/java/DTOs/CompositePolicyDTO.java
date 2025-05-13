@@ -1,6 +1,6 @@
 package DTOs;
 
-import main.java.Domain.Operator;
+import Domain.Operator;
 
 public class CompositePolicyDTO {
     private CompositePolicyDTO compoPolicy1;

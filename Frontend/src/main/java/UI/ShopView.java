@@ -28,8 +28,7 @@ import DTOs.DiscountDTO;
 import DTOs.ItemDTO;
 import DTOs.ShopDTO;
 import DTOs.ShopReviewDTO;
-import main.java.Domain.ItemCategory;
-
+import Domain.ItemCategory;
 @Route(value = "shop", layout = AppLayoutBasic.class)
 public class ShopView extends VerticalLayout implements HasUrlParameter<String> {
 

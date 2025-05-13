@@ -3,7 +3,7 @@ package DomainLayerTests;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import DomainLayer.Message;
+import com.example.app.DomainLayer.Message;
 
 import static org.junit.jupiter.api.Assertions.*;
 

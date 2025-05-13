@@ -1,4 +1,4 @@
-package main.java.Domain;
+package Domain;
 
 /**
  * The RolesEnum enumeration defines various roles that can be assigned
