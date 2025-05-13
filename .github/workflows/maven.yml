@@ -2,14 +2,10 @@ name: Java CI with Maven
 on:
   push:
     branches: [ "main", "developement", "V*" ]
-    paths:
-        - 'Project/**'
     paths-ignore:
         - 'Frontend/**'
   pull_request:
     branches: [ "main", "developement", "V*" ]
-    paths:
-        - 'Project/**'
     paths-ignore:
         - 'Frontend/**'
 jobs:
