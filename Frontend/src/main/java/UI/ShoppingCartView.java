@@ -18,7 +18,8 @@ import com.vaadin.flow.router.Route;
 
 import DTOs.ItemDTO;
 import DTOs.ShoppingCartDTO;
-import main.java.Domain.ItemCategory;
+import Domain.ItemCategory;
+
 
 @Route(value = "cart", layout = AppLayoutBasic.class)
 public class ShoppingCartView extends VerticalLayout {

@@ -10,20 +10,21 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import com.example.app.ApplicationLayer.AuthTokenService;
+import com.example.app.ApplicationLayer.OurArg;
+import com.example.app.ApplicationLayer.Item.ItemService;
+import com.example.app.ApplicationLayer.User.UserService;
+import com.example.app.DomainLayer.Item.IItemRepository;
+import com.example.app.DomainLayer.Item.Item;
+import com.example.app.DomainLayer.Roles.PermissionsEnum;
+
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import ApplicationLayer.AuthTokenService;
-import ApplicationLayer.Item.ItemService;
-import ApplicationLayer.OurArg;
-import ApplicationLayer.User.UserService;
-import DomainLayer.Item.IItemRepository;
-import DomainLayer.Item.Item;
-import DomainLayer.Roles.PermissionsEnum;
 
 public class ItemServiceAcceptanceTests {
 

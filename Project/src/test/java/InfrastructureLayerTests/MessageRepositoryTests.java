@@ -1,10 +1,11 @@
 package InfrastructureLayerTests;
 
-import DomainLayer.Message;
-import InfrastructureLayer.MessageRepository;
-import ApplicationLayer.OurRuntime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import com.example.app.ApplicationLayer.OurRuntime;
+import com.example.app.DomainLayer.Message;
+import com.example.app.InfrastructureLayer.MessageRepository;
 
 import java.util.List;
 

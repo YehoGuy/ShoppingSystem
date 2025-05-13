@@ -20,8 +20,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-import DomainLayer.Purchase.Bid;
-import DomainLayer.Purchase.BidReciept;
+import com.example.app.DomainLayer.Purchase.Bid;
+import com.example.app.DomainLayer.Purchase.BidReciept;
 
 /**
  * Solid JUnit-5 test-suite for {@link Bid} with exhaustive coverage and dead-lock-proof

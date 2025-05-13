@@ -7,8 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import org.junit.jupiter.api.Test;
 
-import ApplicationLayer.AuthTokenService;
-import InfrastructureLayer.AuthTokenRepository;
+import com.example.app.ApplicationLayer.AuthTokenService;
+import com.example.app.InfrastructureLayer.AuthTokenRepository;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 

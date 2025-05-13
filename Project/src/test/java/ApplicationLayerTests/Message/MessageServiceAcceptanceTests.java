@@ -15,13 +15,13 @@ import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import ApplicationLayer.AuthTokenService;
-import ApplicationLayer.OurRuntime;
-import ApplicationLayer.Message.MessageService;
-import ApplicationLayer.Shop.ShopService;
-import ApplicationLayer.User.UserService;
-import DomainLayer.IMessageRepository;
-import DomainLayer.Shop.Shop;
+import com.example.app.ApplicationLayer.AuthTokenService;
+import com.example.app.ApplicationLayer.OurRuntime;
+import com.example.app.ApplicationLayer.Message.MessageService;
+import com.example.app.ApplicationLayer.Shop.ShopService;
+import com.example.app.ApplicationLayer.User.UserService;
+import com.example.app.DomainLayer.IMessageRepository;
+import com.example.app.DomainLayer.Shop.Shop;
 
 public class MessageServiceAcceptanceTests {
     private IMessageRepository messageRepository;

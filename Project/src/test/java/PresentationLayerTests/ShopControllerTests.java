@@ -16,6 +16,14 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
+
+import com.example.app.ApplicationLayer.Purchase.ShippingMethod;
+import com.example.app.ApplicationLayer.Shop.ShopService;
+import com.example.app.DomainLayer.Item.Item;
+import com.example.app.DomainLayer.Item.ItemCategory;
+import com.example.app.DomainLayer.Shop.Shop;
+import com.example.app.PresentationLayer.Controller.ShopController;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -23,13 +31,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import ApplicationLayer.Purchase.ShippingMethod;
-import ApplicationLayer.Shop.ShopService;
-import DomainLayer.Item.Item;
-import DomainLayer.Item.ItemCategory;
-import DomainLayer.Shop.Shop;
-import PresentationLayer.Controller.ShopController;
 
 /**
  * Comprehensive slice tests for ShopController.

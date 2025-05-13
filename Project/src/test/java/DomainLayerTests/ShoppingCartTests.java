@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import DomainLayer.ShoppingCart;
+import com.example.app.DomainLayer.ShoppingCart;
 
 public class ShoppingCartTests {
 

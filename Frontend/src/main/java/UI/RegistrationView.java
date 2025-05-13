@@ -63,7 +63,7 @@ public class RegistrationView extends VerticalLayout {
 
                 if (response.getStatusCode() == HttpStatus.CREATED) {
                     Notification.show("Registration successful!");
-                    getUI().ifPresent(ui -> ui.navigate("login"));
+                    getUI().ifPresent(ui -> ui.navigate("home"));
                 } else {
                     Notification.show("Registration failed (" + response.getStatusCode() + ")");
                 }

@@ -13,13 +13,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import ApplicationLayer.AuthTokenService;
-import ApplicationLayer.Purchase.PaymentMethod;
-import ApplicationLayer.User.UserService;
-import DomainLayer.Member;
-import DomainLayer.User;
-import InfrastructureLayer.AuthTokenRepository;
-import InfrastructureLayer.UserRepository;
+import com.example.app.ApplicationLayer.AuthTokenService;
+import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
+import com.example.app.ApplicationLayer.User.UserService;
+import com.example.app.DomainLayer.Member;
+import com.example.app.DomainLayer.User;
+import com.example.app.InfrastructureLayer.AuthTokenRepository;
+import com.example.app.InfrastructureLayer.UserRepository;
 
 
 public class UserServiceTest {

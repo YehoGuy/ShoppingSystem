@@ -28,17 +28,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import ApplicationLayer.AuthTokenService;
-import ApplicationLayer.Item.ItemService;
-import ApplicationLayer.Message.MessageService;
-import ApplicationLayer.Purchase.PurchaseService;
-import ApplicationLayer.Shop.ShopService;
-import ApplicationLayer.User.UserService;
-import DomainLayer.Purchase.Address;
-import DomainLayer.Purchase.Bid;
-import DomainLayer.Purchase.BidReciept;
-import DomainLayer.Purchase.IPurchaseRepository;
-import DomainLayer.Purchase.Reciept;
+import com.example.app.ApplicationLayer.AuthTokenService;
+import com.example.app.ApplicationLayer.Item.ItemService;
+import com.example.app.ApplicationLayer.Message.MessageService;
+import com.example.app.ApplicationLayer.Purchase.PurchaseService;
+import com.example.app.ApplicationLayer.Shop.ShopService;
+import com.example.app.ApplicationLayer.User.UserService;
+import com.example.app.DomainLayer.Purchase.Address;
+import com.example.app.DomainLayer.Purchase.Bid;
+import com.example.app.DomainLayer.Purchase.BidReciept;
+import com.example.app.DomainLayer.Purchase.IPurchaseRepository;
+import com.example.app.DomainLayer.Purchase.Reciept;
 
 /**
  * High-level “acceptance” tests for {@link PurchaseService}.  

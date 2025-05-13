@@ -15,8 +15,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 
 import DTOs.ItemDTO;
-import main.java.Domain.ItemCategory;
-
+import Domain.ItemCategory;
 @Route(value = "items", layout = AppLayoutBasic.class)
 public class ItemSearchView extends VerticalLayout {
     private List<ItemDTO> allItems = new ArrayList<>();

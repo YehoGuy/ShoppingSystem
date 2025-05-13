@@ -22,6 +22,13 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
+
+import com.example.app.ApplicationLayer.AuthTokenService;
+import com.example.app.ApplicationLayer.User.UserService;
+import com.example.app.DomainLayer.Member;
+import com.example.app.DomainLayer.Roles.PermissionsEnum;
+import com.example.app.PresentationLayer.Controller.UserController;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -29,12 +36,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import ApplicationLayer.AuthTokenService;
-import ApplicationLayer.User.UserService;
-import DomainLayer.Member;
-import DomainLayer.Roles.PermissionsEnum;
-import PresentationLayer.Controller.UserController;
 
 /**
  * Comprehensive slice tests for UserController.

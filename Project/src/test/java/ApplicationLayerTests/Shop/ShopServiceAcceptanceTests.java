@@ -24,18 +24,18 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import DomainLayer.Item.Item;
-import DomainLayer.Item.ItemCategory;
-import DomainLayer.Shop.Shop;
-import InfrastructureLayer.ShopRepository;
-import DomainLayer.Shop.IShopRepository;
-import DomainLayer.Shop.PurchasePolicy;
-import DomainLayer.Roles.PermissionsEnum;
-import ApplicationLayer.AuthTokenService;
-import ApplicationLayer.Item.ItemService;
-import ApplicationLayer.Purchase.ShippingMethod;
-import ApplicationLayer.Shop.ShopService;
-import ApplicationLayer.User.UserService;
+import com.example.app.ApplicationLayer.AuthTokenService;
+import com.example.app.ApplicationLayer.Item.ItemService;
+import com.example.app.ApplicationLayer.Purchase.ShippingMethod;
+import com.example.app.ApplicationLayer.Shop.ShopService;
+import com.example.app.ApplicationLayer.User.UserService;
+import com.example.app.DomainLayer.Item.Item;
+import com.example.app.DomainLayer.Item.ItemCategory;
+import com.example.app.DomainLayer.Roles.PermissionsEnum;
+import com.example.app.DomainLayer.Shop.IShopRepository;
+import com.example.app.DomainLayer.Shop.PurchasePolicy;
+import com.example.app.DomainLayer.Shop.Shop;
+import com.example.app.InfrastructureLayer.ShopRepository;
 
 class ShopServiceAcceptanceTests {
 

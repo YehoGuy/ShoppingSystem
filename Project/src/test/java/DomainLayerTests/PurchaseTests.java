@@ -17,16 +17,17 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import com.example.app.DomainLayer.Purchase.Address;
+import com.example.app.DomainLayer.Purchase.Purchase;
+import com.example.app.DomainLayer.Purchase.Reciept;
+
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
-import DomainLayer.Purchase.Address;
-import DomainLayer.Purchase.Purchase;
-import DomainLayer.Purchase.Reciept;
 
 /**
  * Unit tests for {@link Purchase}.

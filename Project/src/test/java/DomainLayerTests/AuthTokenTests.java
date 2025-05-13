@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import DomainLayer.AuthToken;
+import com.example.app.DomainLayer.AuthToken;
 
 public class AuthTokenTests {
     private AuthToken authToken;

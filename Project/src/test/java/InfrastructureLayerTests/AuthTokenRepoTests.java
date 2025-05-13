@@ -7,9 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import DomainLayer.AuthToken;
-import DomainLayer.IAuthTokenRepository;
-import InfrastructureLayer.AuthTokenRepository;
+import com.example.app.DomainLayer.AuthToken;
+import com.example.app.DomainLayer.IAuthTokenRepository;
+import com.example.app.InfrastructureLayer.AuthTokenRepository;
 
 public class AuthTokenRepoTests {
     private IAuthTokenRepository authTokenRepo;

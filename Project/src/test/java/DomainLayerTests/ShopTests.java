@@ -30,18 +30,18 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import org.mockito.MockitoAnnotations;
 
-import ApplicationLayer.AuthTokenService;
-import ApplicationLayer.Item.ItemService;
-import ApplicationLayer.Purchase.ShippingMethod;
-import ApplicationLayer.Shop.ShopService;
-import ApplicationLayer.User.UserService;
-import DomainLayer.Item.ItemCategory;
-import DomainLayer.Roles.PermissionsEnum;
-import DomainLayer.Shop.IShopRepository;
-import DomainLayer.Shop.Operator;
-import DomainLayer.Shop.PurchasePolicy;
-import DomainLayer.Shop.Shop;
-import DomainLayer.Shop.ShopReview;
+import com.example.app.ApplicationLayer.AuthTokenService;
+import com.example.app.ApplicationLayer.Item.ItemService;
+import com.example.app.ApplicationLayer.Purchase.ShippingMethod;
+import com.example.app.ApplicationLayer.Shop.ShopService;
+import com.example.app.ApplicationLayer.User.UserService;
+import com.example.app.DomainLayer.Item.ItemCategory;
+import com.example.app.DomainLayer.Roles.PermissionsEnum;
+import com.example.app.DomainLayer.Shop.IShopRepository;
+import com.example.app.DomainLayer.Shop.Operator;
+import com.example.app.DomainLayer.Shop.PurchasePolicy;
+import com.example.app.DomainLayer.Shop.Shop;
+import com.example.app.DomainLayer.Shop.ShopReview;
 
 public class ShopTests {
 
@@ -632,11 +632,11 @@ public void testRollbackOnDiscountFailure_Success() throws Exception {
     var f = Shop.class.getDeclaredField("discounts");
     f.setAccessible(true);
     @SuppressWarnings("unchecked")
-    CopyOnWriteArrayList<DomainLayer.Shop.Discount.Discount> discounts =
-        (CopyOnWriteArrayList<DomainLayer.Shop.Discount.Discount>) f.get(shop);
+    CopyOnWriteArrayList<com.example.app.DomainLayer.Shop.Discount.Discount> discounts =
+        (CopyOnWriteArrayList<com.example.app.DomainLayer.Shop.Discount.Discount>) f.get(shop);
 
     // inject a “faulty” discount that always throws
-    discounts.add(new DomainLayer.Shop.Discount.Discount() {
+    discounts.add(new com.example.app.DomainLayer.Shop.Discount.Discount() {
         @Override
         public Map<Integer, Double> applyDiscounts(
             Map<Integer, Integer> items,
