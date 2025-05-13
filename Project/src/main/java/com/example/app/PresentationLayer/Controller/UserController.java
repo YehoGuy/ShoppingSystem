@@ -19,8 +19,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
 import com.example.app.ApplicationLayer.User.UserService;
-import com.example.app.DomainLayer.User;
+import com.example.app.DomainLayer.Guest;
+import com.example.app.DomainLayer.Member;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
+import com.example.app.DomainLayer.User;
+import com.example.app.PresentationLayer.DTO.User.GuestDTO;
+import com.example.app.PresentationLayer.DTO.User.MemberDTO;
 
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.constraints.Min;
@@ -31,7 +35,7 @@ import jakarta.validation.constraints.Size;
  * Base path: /api/users (JSON in / JSON out)
  *
  * Endpoints:
- * 1. GET /{userId} params: token → 200 User
+ * 1. GET /{userId} params: token → 200 MemberDTO / GuestDTO
  * 2. POST /register params: username, password, email, phoneNumber, address →
  * 201
  * 3. POST /{userId}/admin params: token → 204 assign admin
@@ -94,8 +98,19 @@ public class UserController {
         try {
             authService.ValidateToken(token);
             User user = userService.getUserById(userId);
-            return ResponseEntity.ok(user);
-
+            if(user == null) 
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+            if(user instanceof Member) {
+                Member member = (Member) user;
+                MemberDTO userDTO = MemberDTO.fromDomain(member);
+                return ResponseEntity.ok(userDTO);
+            } else if(user instanceof Guest){
+                Guest guest = (Guest) user;
+                GuestDTO userDTO = GuestDTO.fromDomain(guest);
+                return ResponseEntity.ok(userDTO);
+            } else{
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Not member or Guest");
+            }
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
 

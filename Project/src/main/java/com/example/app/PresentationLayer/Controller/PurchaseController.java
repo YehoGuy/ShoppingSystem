@@ -7,6 +7,7 @@ import java.util.NoSuchElementException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.app.ApplicationLayer.Purchase.PurchaseService;
+import com.example.app.PresentationLayer.DTO.Purchase.RecieptDTO;
 
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.constraints.Min;
@@ -38,6 +40,10 @@ import jakarta.validation.constraints.Min;
  * 4. POST /bids/{bidId}/finalize
  *    Params  : authToken
  *    Success : 200  →  17                    (winning bidder’s user‑id)
+ * 
+ * 5. GET /api/purchases/users/{userId}
+ *    Params : authToken
+ *    Success: 200 → [ RecieptDTO, … ]
  *
  *  Error mapping (all endpoints)
  *    400 – Bad data / validation failure
@@ -185,6 +191,36 @@ public class PurchaseController {
             // anything unexpected → 500
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                                 .body("Internal server error");
+        }
+    }
+
+    // ────────────────────────── GET PURCHASES ────────────────────────── */
+    @GetMapping("/users/{userId}")
+    public ResponseEntity<?> getUserPurchases(
+            @PathVariable @Min(1) int userId,
+            @RequestParam String authToken) {
+
+        try {
+            List<RecieptDTO> receipts = purchaseService
+                    .getUserPurchases(authToken, userId)           // domain list
+                    .stream()
+                    .map(RecieptDTO::fromDomain)                   // → DTO
+                    .toList();
+
+            return ResponseEntity.ok(receipts);                    // 200
+
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());          // 400
+
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage()); // 404
+
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());  // 409
+
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body("Internal server error");                    // 500
         }
     }
 }

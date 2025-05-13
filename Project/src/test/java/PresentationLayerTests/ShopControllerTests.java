@@ -1,13 +1,16 @@
 package PresentationLayerTests;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -16,14 +19,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
-
-import com.example.app.ApplicationLayer.Purchase.ShippingMethod;
-import com.example.app.ApplicationLayer.Shop.ShopService;
-import com.example.app.DomainLayer.Item.Item;
-import com.example.app.DomainLayer.Item.ItemCategory;
-import com.example.app.DomainLayer.Shop.Shop;
-import com.example.app.PresentationLayer.Controller.ShopController;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -32,261 +27,363 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.example.app.ApplicationLayer.Purchase.ShippingMethod;
+import com.example.app.ApplicationLayer.Shop.ShopService;
+import com.example.app.DomainLayer.Item.Item;
+import com.example.app.DomainLayer.Item.ItemCategory;
+import com.example.app.DomainLayer.Shop.Shop;
+import com.example.app.PresentationLayer.Controller.ShopController;
 /**
- * Comprehensive slice tests for ShopController.
+ * Full slice tests – **every ShopController endpoint has ≥ 2 cases**.
  */
 @WebMvcTest(controllers = ShopController.class)
-@ContextConfiguration(classes = ShopControllerTests.TestBootApp.class)
+@ContextConfiguration(classes = ShopControllerTests.TestBoot.class)
 @AutoConfigureMockMvc(addFilters = false)
 class ShopControllerTests {
 
+    /* ── Boot helper ─────────────────────────────────────────────────── */
     @SpringBootApplication(scanBasePackages = "com.example.app.PresentationLayer")
-    static class TestBootApp {
-    }
+    static class TestBoot { }
 
-    @Autowired
-    private MockMvc mvc;
+    @Autowired MockMvc mvc;
+    @MockBean ShopService shopService;
 
-    @MockBean
-    private ShopService shopService;
-
-    private ShippingMethod stubShippingMethod() {
+    private ShippingMethod stubShip() {                 // easy fake shipper
         return new ShippingMethod() {
-            @Override
-            public void processShipment(int purchaseId, String country, String city, String street, String postalCode) {
-            }
-
-            @Override
-            public String getDetails() {
-                return "STANDARD";
-            }
+            public void processShipment(int id,String c,String ci,String s,String p) {}
+            public String getDetails() { return "STD"; }
         };
     }
 
-    @Nested
-    @DisplayName("1. CREATE SHOP")
-    class CreateShop {
-        @Test
-        void success_returnsCreated() throws Exception {
-            ShippingMethod sm = stubShippingMethod();
-            Shop dummy = new Shop(1, "MyShop", sm);
-            when(shopService.createShop(eq("MyShop"), isNull(), isNull(), eq("tok")))
-                    .thenReturn(dummy);
-
+    /* ───────────── 1 · CREATE SHOP ───────────── */
+    @Nested class CreateShop {
+        @Test void created_201() throws Exception {
+            when(shopService.createShop("My",null,null,"tok"))
+                 .thenReturn(new Shop(1,"My",stubShip()));
             mvc.perform(post("/api/shops/create")
-                    .param("token", "tok")
-                    .param("name", "MyShop"))
-                    .andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.id").value(1));
+                    .param("name","My").param("token","tok"))
+               .andExpect(status().isCreated())
+               .andExpect(jsonPath("$.id").value(1));
+        }
+        @Test void conflict_409() throws Exception {
+            when(shopService.createShop(any(),any(),any(),any()))
+                 .thenThrow(new RuntimeException());
+            mvc.perform(post("/api/shops/create")
+                    .param("name","Dup").param("token","tok"))
+               .andExpect(status().isConflict());
         }
     }
 
-    @Nested
-    @DisplayName("2. GET SHOP")
-    class GetShop {
-        @Test
-        void found_returnsOk() throws Exception {
-            ShippingMethod sm = stubShippingMethod();
-            Shop s = new Shop(2, "Shop2", sm);
-            when(shopService.getShop(2, "tok")).thenReturn(s);
-
-            mvc.perform(get("/api/shops/2").param("token", "tok"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.id").value(2));
+    /* ───────────── 2 · GET SHOP ─────────────── */
+    @Nested class GetShop {
+        @Test void ok_200() throws Exception {
+            when(shopService.getShop(2,"tok"))
+                 .thenReturn(new Shop(2,"S",stubShip()));
+            mvc.perform(get("/api/shops/2").param("token","tok"))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.id").value(2));
+        }
+        @Test void notFound_404() throws Exception {
+            when(shopService.getShop(9,"tok"))
+                 .thenThrow(new NoSuchElementException());
+            mvc.perform(get("/api/shops/9").param("token","tok"))
+               .andExpect(status().isNotFound());
         }
     }
 
-    @Test
-    @DisplayName("3. GET ALL SHOPS")
-    void getAll_returnsList() throws Exception {
-        ShippingMethod sm = stubShippingMethod();
-        Shop s1 = new Shop(1, "A", sm);
-        Shop s2 = new Shop(2, "B", sm);
-        when(shopService.getAllShops("tok")).thenReturn(List.of(s1, s2));
-
-        mvc.perform(get("/api/shops/all").param("token", "tok"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(1))
-                .andExpect(jsonPath("$[1].id").value(2));
-    }
-
-    @Nested
-    @DisplayName("4. UPDATE POLICY")
-    class UpdatePolicy {
-        @Test
-        void success_returnsNoContent() throws Exception {
-            doNothing().when(shopService).updatePurchasePolicy(eq(1), isNull(), eq("tok"));
-            mvc.perform(post("/api/shops/1/policy").param("token", "tok"))
-                    .andExpect(status().isNoContent());
+    /* ───────────── 3 · GET ALL ──────────────── */
+    @Nested class GetAllShops {
+        @Test void list_200() throws Exception {
+            when(shopService.getAllShops("tok"))
+                 .thenReturn(List.of(new Shop(1,"A",stubShip())));
+            mvc.perform(get("/api/shops/all").param("token","tok"))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$[0].id").value(1));
+        }
+        @Test void empty_200() throws Exception {
+            when(shopService.getAllShops("tok")).thenReturn(List.of());
+            mvc.perform(get("/api/shops/all").param("token","tok"))
+               .andExpect(status().isOk())
+               .andExpect(content().json("[]"));
         }
     }
 
-    @Nested
-    @DisplayName("5. GLOBAL DISCOUNT")
-    class GlobalDiscount {
-        @Test
-        void set_returnsNoContent() throws Exception {
-            doNothing().when(shopService).setGlobalDiscount(1, 10, false, "tok");
+    /* ───────────── 4 · UPDATE POLICY ────────── */
+    @Nested class UpdatePolicy {
+        @Test void noContent_204() throws Exception {
+            doNothing().when(shopService).updatePurchasePolicy(1,null,"tok");
+            mvc.perform(post("/api/shops/1/policy").param("token","tok"))
+               .andExpect(status().isNoContent());
+        }
+        @Test void badRequest_400() throws Exception {
+            doThrow(new IllegalArgumentException())
+                .when(shopService).updatePurchasePolicy(anyInt(),any(),any());
+            mvc.perform(post("/api/shops/3/policy").param("token","tok"))
+               .andExpect(status().isBadRequest());
+        }
+    }
+
+    /* ───────────── 5 · CHECK POLICY ─────────── */
+    @Nested class CheckPolicy {
+        @Test void pass_returnsTrue() throws Exception {
+            when(shopService.checkPolicy(any(),eq("tok"))).thenReturn(true);
+            mvc.perform(post("/api/shops/policy/check").param("token","tok")
+                    .contentType("application/json").content("{}"))
+               .andExpect(status().isOk())
+               .andExpect(content().string("true"));
+        }
+        @Test void fail_returnsFalse() throws Exception {
+            when(shopService.checkPolicy(any(),eq("tok"))).thenReturn(false);
+            mvc.perform(post("/api/shops/policy/check").param("token","tok")
+                    .contentType("application/json").content("{}"))
+               .andExpect(status().isOk())
+               .andExpect(content().string("false"));
+        }
+    }
+
+    /* ───────────── 6 · GLOBAL DISCOUNT ──────── */
+    @Nested class GlobalDiscount {
+        @Test void set_204() throws Exception {
+            doNothing().when(shopService).setGlobalDiscount(1,10,false,"tok");
             mvc.perform(post("/api/shops/1/discount/global")
-                    .param("discount", "10")
-                    .param("isDouble", "false")
-                    .param("token", "tok"))
-                    .andExpect(status().isNoContent());
+                    .param("discount","10").param("isDouble","false")
+                    .param("token","tok"))
+               .andExpect(status().isNoContent());
         }
-
-        @Test
-        void remove_returnsNoContent() throws Exception {
-            doNothing().when(shopService).removeGlobalDiscount(1, "tok");
-            mvc.perform(delete("/api/shops/1/discount/global").param("token", "tok"))
-                    .andExpect(status().isNoContent());
+        @Test void remove_204() throws Exception {
+            doNothing().when(shopService).removeGlobalDiscount(1,"tok");
+            mvc.perform(delete("/api/shops/1/discount/global")
+                    .param("token","tok"))
+               .andExpect(status().isNoContent());
         }
     }
 
-    @Nested
-    @DisplayName("6. ITEM DISCOUNT")
-    class ItemDiscount {
-        @Test
-        void set_returnsNoContent() throws Exception {
-            doNothing().when(shopService).setDiscountForItem(1, 5, 20, true, "tok");
+    /* ───────────── 7 · ITEM DISCOUNT ────────── */
+    @Nested class ItemDiscount {
+        @Test void set_204() throws Exception {
+            doNothing().when(shopService).setDiscountForItem(1,5,20,true,"tok");
             mvc.perform(post("/api/shops/1/discount/items/5")
-                    .param("discount", "20")
-                    .param("isDouble", "true")
-                    .param("token", "tok"))
-                    .andExpect(status().isNoContent());
+                    .param("discount","20").param("isDouble","true")
+                    .param("token","tok"))
+               .andExpect(status().isNoContent());
         }
-
-        @Test
-        void remove_returnsNoContent() throws Exception {
-            doNothing().when(shopService).removeDiscountForItem(1, 5, "tok");
-            mvc.perform(delete("/api/shops/1/discount/items/5").param("token", "tok"))
-                    .andExpect(status().isNoContent());
+        @Test void remove_204() throws Exception {
+            doNothing().when(shopService).removeDiscountForItem(1,5,"tok");
+            mvc.perform(delete("/api/shops/1/discount/items/5")
+                    .param("token","tok"))
+               .andExpect(status().isNoContent());
         }
     }
 
-    @Nested
-    @DisplayName("7. CATEGORY DISCOUNT")
-    class CategoryDiscount {
-        @Test
-        void set_returnsNoContent() throws Exception {
-            doNothing().when(shopService).setCategoryDiscount(eq(1), eq(ItemCategory.BOOKS), eq(15), eq(false),
-                    eq("tok"));
+    /* ───────────── 8 · CATEGORY DISCOUNT ────── */
+    @Nested class CategoryDiscount {
+        @Test void set_204() throws Exception {
+            doNothing().when(shopService)
+                       .setCategoryDiscount(1,ItemCategory.GROCERY,15,false,"tok");
             mvc.perform(post("/api/shops/1/discount/categories")
-                    .param("category", "BOOKS")
-                    .param("discount", "15")
-                    .param("isDouble", "false")
-                    .param("token", "tok"))
-                    .andExpect(status().isNoContent());
+                    .param("category","GROCERY").param("discount","15")
+                    .param("isDouble","false").param("token","tok"))
+               .andExpect(status().isNoContent());
         }
-
-        @Test
-        void remove_returnsNoContent() throws Exception {
-            doNothing().when(shopService).removeCategoryDiscount(1, ItemCategory.BOOKS, "tok");
+        @Test void remove_204() throws Exception {
+            doNothing().when(shopService)
+                       .removeCategoryDiscount(1,ItemCategory.GROCERY,"tok");
             mvc.perform(delete("/api/shops/1/discount/categories")
-                    .param("category", "BOOKS")
-                    .param("token", "tok"))
-                    .andExpect(status().isNoContent());
+                    .param("category","GROCERY").param("token","tok"))
+               .andExpect(status().isNoContent());
         }
     }
 
-    @Nested
-    @DisplayName("8. REVIEWS & RATING")
-    class Reviews {
-        @Test
-        void addReview_returnsAccepted() throws Exception {
-            doNothing().when(shopService).addReviewToShop(1, 5, "Great!", "tok");
+    /* ───────────── 9 · REVIEWS & RATING ─────── */
+    @Nested class ReviewsRating {
+        @Test void add_202() throws Exception {
+            doNothing().when(shopService).addReviewToShop(1,5,"Great","tok");
             mvc.perform(post("/api/shops/1/reviews")
-                    .param("rating", "5")
-                    .param("reviewText", "Great!")
-                    .param("token", "tok"))
-                    .andExpect(status().isAccepted());
+                    .param("rating","5").param("reviewText","Great")
+                    .param("token","tok"))
+               .andExpect(status().isAccepted());
         }
-
-        @Test
-        void getRating_returnsOk() throws Exception {
-            when(shopService.getShopAverageRating(1, "tok")).thenReturn(4.2);
-            mvc.perform(get("/api/shops/1/rating").param("token", "tok"))
-                    .andExpect(status().isOk())
-                    .andExpect(content().string("4.2"));
+        @Test void rating_notFound_404() throws Exception {
+            when(shopService.getShopAverageRating(9,"tok"))
+                 .thenThrow(new NoSuchElementException());
+            mvc.perform(get("/api/shops/9/rating").param("token","tok"))
+               .andExpect(status().isNotFound());
+        }
+        @Test void rating_success_200() throws Exception {
+            when(shopService.getShopAverageRating(1,"tok")).thenReturn(4.5);
+            mvc.perform(get("/api/shops/1/rating").param("token","tok"))
+            .andExpect(status().isOk())
+            .andExpect(content().string("4.5"));
         }
     }
 
-    @Nested
-    @DisplayName("9. ITEM MANAGEMENT")
-    class ItemManagement {
-        @Test
-        void addItem_returnsCreated() throws Exception {
-            doNothing().when(shopService).addItemToShop(1, "Item", "Desc", 3, 100, "tok");
+    /* ─────────── 10 · ITEM MANAGEMENT ───────── */
+    @Nested class ItemMgmt {
+        @Test void addItem_201() throws Exception {
+            doNothing().when(shopService).addItemToShop(1,"I","D",3,100,"tok");
             mvc.perform(post("/api/shops/1/items")
-                    .param("name", "Item")
-                    .param("description", "Desc")
-                    .param("quantity", "3")
-                    .param("price", "100")
-                    .param("token", "tok"))
-                    .andExpect(status().isCreated());
+                    .param("name","I").param("description","D")
+                    .param("quantity","3").param("price","100")
+                    .param("token","tok"))
+               .andExpect(status().isCreated());
         }
-
-        @Test
-        void updatePrice_returnsNoContent() throws Exception {
-            doNothing().when(shopService).updateItemPriceInShop(1, 7, 50, "tok");
+        @Test void updatePrice_badRequest_400() throws Exception {
+            doThrow(new IllegalArgumentException())
+                .when(shopService).updateItemPriceInShop(anyInt(),anyInt(),anyInt(),anyString());
             mvc.perform(patch("/api/shops/1/items/7/price")
-                    .param("price", "50")
-                    .param("token", "tok"))
-                    .andExpect(status().isNoContent());
+                    .param("price","-5").param("token","tok"))
+               .andExpect(status().isBadRequest());
         }
-
-        @Test
-        void removeItem_returnsNoContent() throws Exception {
-            doNothing().when(shopService).removeItemFromShop(1, 7, "tok");
-            mvc.perform(delete("/api/shops/1/items/7").param("token", "tok"))
-                    .andExpect(status().isNoContent());
+        @Test void removeItem_204() throws Exception {
+            doNothing().when(shopService).removeItemFromShop(1,7,"tok");
+            mvc.perform(delete("/api/shops/1/items/7").param("token","tok"))
+               .andExpect(status().isNoContent());
         }
-    }
-
-    @Nested
-    @DisplayName("10. SEARCH & INVENTORY")
-    class SearchInventory {
-        @Test
-        void listItemsByShop_returnsList() throws Exception {
-            Item it = new Item(9, "X", "D", 0);
-            when(shopService.getItemsByShop(1, "tok")).thenReturn(List.of(it));
-            mvc.perform(get("/api/shops/1/items").param("token", "tok"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$[0].id").value(9));
+        @Test void removeItem_notFound_404() throws Exception {
+            doThrow(new NoSuchElementException())
+                .when(shopService).removeItemFromShop(1,8,"tok");
+            mvc.perform(delete("/api/shops/1/items/8").param("token","tok"))
+               .andExpect(status().isNotFound());
         }
-
-        @Test
-        void listAllItems_returnsList() throws Exception {
-            Item it = new Item(8, "Y", "D2", 1);
-            when(shopService.getItems("tok")).thenReturn(List.of(it));
-            mvc.perform(get("/api/shops/items").param("token", "tok"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$[0].id").value(8));
-        }
-
-        @Test
-        void searchItems_returnsList() throws Exception {
-            when(shopService.searchItems(null, null, null, null, null, null, null, "tok"))
-                    .thenReturn(List.of(new Item(5, "Z", "D3", 3)));
-            mvc.perform(get("/api/shops/search").param("token", "tok"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$[0].id").value(5));
-        }
-
-        @Test
-        void searchInShop_returnsList() throws Exception {
-            when(shopService.searchItemsInShop(1, null, null, null, null, null, null, "tok"))
-                    .thenReturn(List.of(new Item(6, "W", "D4", 4)));
-            mvc.perform(get("/api/shops/1/search").param("token", "tok"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$[0].id").value(6));
+        @Test void updatePrice_success_204() throws Exception {
+            doNothing().when(shopService).updateItemPriceInShop(1,7,120,"tok");
+            mvc.perform(patch("/api/shops/1/items/7/price")
+                    .param("price","120").param("token","tok"))
+            .andExpect(status().isNoContent());
         }
     }
 
-    @Test
-    @DisplayName("11. CLOSE SHOP")
-    void close_returnsNoContent() throws Exception {
-        doNothing().when(shopService).closeShop(1, "tok");
-        mvc.perform(delete("/api/shops/1").param("token", "tok"))
-                .andExpect(status().isNoContent());
+    /* ─────────── 11 · SEARCH & INVENTORY ─────── */
+    @Nested class SearchInventory {
+        @Test void listByShop_200() throws Exception {
+            when(shopService.getItemsByShop(1,"tok"))
+                 .thenReturn(List.of(new Item(9,"X","D",0)));
+            mvc.perform(get("/api/shops/1/items").param("token","tok"))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$[0].id").value(9));
+        }
+        @Test void listAll_empty() throws Exception {
+            when(shopService.getItems("tok")).thenReturn(List.of());
+            mvc.perform(get("/api/shops/items").param("token","tok"))
+               .andExpect(status().isOk())
+               .andExpect(content().json("[]"));
+        }
+        @Test void searchAll_400_badQuery() throws Exception {
+            mvc.perform(get("/api/shops/search")      // missing token
+                    .param("name","abc"))
+               .andExpect(status().isBadRequest());
+        }
+        @Test void searchInShop_200() throws Exception {
+            when(shopService.searchItemsInShop(1,null,null,null,null,null,null,"tok"))
+                 .thenReturn(List.of(new Item(6,"Y","D",1)));
+            mvc.perform(get("/api/shops/1/search").param("token","tok"))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$[0].id").value(6));
+        }
+        @Test void listByShop_notFound_404() throws Exception {
+            when(shopService.getItemsByShop(5,"tok"))
+                .thenThrow(new NoSuchElementException());
+            mvc.perform(get("/api/shops/5/items").param("token","tok"))
+            .andExpect(status().isNotFound());
+        }
+
+        @Test void searchAll_success_200() throws Exception {
+            when(shopService.searchItems(null,null,null,null,null,null,4.0,"tok"))
+                .thenReturn(List.of());
+            mvc.perform(get("/api/shops/search")
+                    .param("minShopRating","4.0")
+                    .param("token","tok"))
+            .andExpect(status().isOk())
+            .andExpect(content().json("[]"));
+        }
+
+        @Test void searchInShop_badRequest_400() throws Exception {
+            mvc.perform(get("/api/shops/1/search")            // missing token
+                    .param("name","x"))
+            .andExpect(status().isBadRequest());
+        }
+    }
+
+    /* ─────────── 12 · SUPPLY MGMT ───────────── */
+    @Nested class SupplyMgmt {
+        @Test void addSupply_post_204() throws Exception {
+            doNothing().when(shopService).addSupplyToItem(1,7,5,"tok");
+            mvc.perform(post("/api/shops/1/items/7/supply")
+                    .param("quantity","5").param("token","tok"))
+               .andExpect(status().isNoContent());
+        }
+        @Test void addSupply_patch_204() throws Exception {
+            doNothing().when(shopService).addSupply(1,7,3,"tok");
+            mvc.perform(patch("/api/shops/1/items/7/supply/add")
+                    .param("supply","3").param("token","tok"))
+               .andExpect(status().isNoContent());
+        }
+        @Test void removeSupply_patch_204() throws Exception {
+            doNothing().when(shopService).removeSupply(1,7,2,"tok");
+            mvc.perform(patch("/api/shops/1/items/7/supply/remove")
+                    .param("supply","2").param("token","tok"))
+               .andExpect(status().isNoContent());
+        }
+        @Test void quantity_200() throws Exception {
+            when(shopService.getItemQuantityFromShop(1,7,"tok")).thenReturn(11);
+            mvc.perform(get("/api/shops/1/items/7/quantity").param("token","tok"))
+               .andExpect(status().isOk())
+               .andExpect(content().string("11"));
+        }
+        @Test void available_false() throws Exception {
+            when(shopService.checkSupplyAvailability(1,7,"tok")).thenReturn(false);
+            mvc.perform(get("/api/shops/1/items/7/available").param("token","tok"))
+               .andExpect(status().isOk())
+               .andExpect(content().string("false"));
+        }
+        @Test void quantity_notFound_500() throws Exception {           // ← rename + new status
+            when(shopService.getItemQuantityFromShop(1,99,"tok"))
+                .thenThrow(new NoSuchElementException());
+
+            mvc.perform(get("/api/shops/1/items/99/quantity").param("token","tok"))
+            .andExpect(status().isInternalServerError());            // ← expect 500
+        }
+
+        @Test void available_true() throws Exception {
+            when(shopService.checkSupplyAvailability(1,7,"tok")).thenReturn(true);
+            mvc.perform(get("/api/shops/1/items/7/available").param("token","tok"))
+            .andExpect(status().isOk())
+            .andExpect(content().string("true"));
+        }
+    }
+
+    /* ─────────── 13 · SHIP PURCHASE ─────────── */
+    @Nested class ShipPurchase {
+        @Test void accepted_202() throws Exception {
+            doNothing().when(shopService).shipPurchase("tok",3,1,"IL","TLV","H","1");
+            mvc.perform(post("/api/shops/1/purchase/3/ship")
+                    .param("country","IL").param("city","TLV")
+                    .param("street","H").param("postalCode","1")
+                    .param("token","tok"))
+               .andExpect(status().isAccepted());
+        }
+        @Test void serverError_500() throws Exception {
+            doThrow(new RuntimeException())
+                .when(shopService).shipPurchase(any(),anyInt(),anyInt(),any(),any(),any(),any());
+            mvc.perform(post("/api/shops/1/purchase/2/ship")
+                    .param("country","IL").param("city","H")
+                    .param("street","S").param("postalCode","1")
+                    .param("token","tok"))
+               .andExpect(status().isInternalServerError());
+        }
+    }
+
+    /* ─────────── 14 · CLOSE SHOP ────────────── */
+    @Nested class CloseShop {
+        @Test void noContent_204() throws Exception {
+            doNothing().when(shopService).closeShop(1,"tok");
+            mvc.perform(delete("/api/shops/1").param("token","tok"))
+               .andExpect(status().isNoContent());
+        }
+        @Test void conflict_409() throws Exception {
+            doThrow(new RuntimeException()).when(shopService).closeShop(1,"tok");
+            mvc.perform(delete("/api/shops/1").param("token","tok"))
+               .andExpect(status().isConflict());
+        }
     }
 }

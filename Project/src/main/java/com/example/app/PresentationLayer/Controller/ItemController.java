@@ -13,11 +13,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Item.ItemService;
+import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.DomainLayer.Item.Item;
 import com.example.app.DomainLayer.Item.ItemCategory;
-import com.example.app.DomainLayer.Item.ItemReview;
+import com.example.app.PresentationLayer.DTO.Item.ItemDTO;
+import com.example.app.PresentationLayer.DTO.Item.ItemReviewDTO;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -32,11 +33,11 @@ import jakarta.validation.constraints.NotBlank;
  *
  * 2. GET    /{itemId}
  *    Params : token
- *    Success: 200 →  Item as JSON
+ *    Success: 200 →  ItemDTO as JSON
  *
  * 3. GET    /all
  *    Params : token
- *    Success: 200 →  [Item,...]
+ *    Success: 200 →  [ItemDTO,...]
  *
  * 4. POST   /{itemId}/reviews
  *    Params : rating, reviewText, token
@@ -44,7 +45,7 @@ import jakarta.validation.constraints.NotBlank;
  *
  * 5. GET    /{itemId}/reviews
  *    Params : token
- *    Success: 200 → [ItemReview,...]
+ *    Success: 200 → [ItemReviewDTO,...]
  *
  * 6. GET    /{itemId}/rating
  *    Params : token
@@ -53,7 +54,7 @@ import jakarta.validation.constraints.NotBlank;
  * 7. POST   /by-ids
  *    Body   : [1,2,3]
  *    Params : token
- *    Success: 200 → [Item,...]
+ *    Success: 200 → [ItemDTO,...]
  *
  * 8. GET    /category
  *    Params : category, token
@@ -107,7 +108,8 @@ public class ItemController {
             @RequestParam @NotBlank String token) {
         try {
             Item item = itemService.getItem(itemId, token);
-            return ResponseEntity.ok(item);
+            ItemDTO itemDTO = ItemDTO.fromDomain(item);
+            return ResponseEntity.ok(itemDTO);
 
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());            // 400
@@ -129,7 +131,8 @@ public class ItemController {
             @RequestParam @NotBlank String token) {
         try {
             List<Item> items = itemService.getAllItems(token);
-            return ResponseEntity.ok(items);
+            List<ItemDTO> itemDTOs = items.stream().map(ItemDTO::fromDomain).toList();
+            return ResponseEntity.ok(itemDTOs);
 
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
@@ -174,7 +177,7 @@ public class ItemController {
             @PathVariable @Min(0) int itemId,
             @RequestParam @NotBlank String token) {
         try {
-            List<ItemReview> reviews = itemService.getItemReviews(itemId, token);
+            List<ItemReviewDTO> reviews = itemService.getItemReviews(itemId, token).stream().map(ItemReviewDTO::fromDomain).toList();
             return ResponseEntity.ok(reviews);
 
         } catch (IllegalArgumentException ex) {
@@ -221,7 +224,8 @@ public class ItemController {
             @RequestParam @NotBlank String token) {
         try {
             List<Item> items = itemService.getItemsByIds(itemIds, token);
-            return ResponseEntity.ok(items);
+            List<ItemDTO> itemDTOs = items.stream().map(ItemDTO::fromDomain).toList();
+            return ResponseEntity.ok(itemDTOs);
 
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
