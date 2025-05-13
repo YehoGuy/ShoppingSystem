@@ -4,12 +4,14 @@ on:
     branches: [ "main", "developement", "V" ]
     paths:
         - 'Project/**'
-        - 'pom.xml'
+    paths-ignore:
+        - 'Frontend/**'
   pull_request:
     branches: [ "main", "developement", "V" ]
     paths:
         - 'Project/**'
-        - 'pom.xml'
+    paths-ignore:
+        - 'Frontend/**'
 jobs:
   build:
     timeout-minutes: 30  # increases the timeout to 30 minutes
