@@ -8,12 +8,14 @@ import com.vaadin.flow.router.Route;
 
 public class HomeView extends VerticalLayout {
     public HomeView() {
+        if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
+            UI.getCurrent().navigate("login");
+        }
         setSizeFull();
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.CENTER);
         H1 title = new H1("Welcome to the Home Page!");
         add(title);
-
 
     }
 }
