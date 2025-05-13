@@ -12,8 +12,16 @@ import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 import com.vaadin.flow.server.VaadinSession;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.swing.GroupLayout.Alignment;
 
 @Route("register")
 public class RegistrationView extends VerticalLayout {
@@ -61,14 +69,17 @@ public class RegistrationView extends VerticalLayout {
                 String url = REGISTER_API_URL
                         + "?username={username}&password={password}&email={email}&phoneNumber={phoneNumber}&address={address}";
 
-                ResponseEntity<String> response = restTemplate.postForEntity(url, request, Void.class, params);
+                ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class, params);
 
                 if (response.getStatusCode() == HttpStatus.CREATED) {
-                    VaadinSession.getCurrent().getSession().setAttribute("username", user);
-                    VaadinSession.getCurrent().getSession().setAttribute("email", mail);
-                    VaadinSession.getCurrent().getSession().setAttribute("phoneNumber", phoneNum);
-                    VaadinSession.getCurrent().getSession().setAttribute("address", addr);
-                    VaadinSession.getCurrent().getSession().setAttribute("authToken", response.getBody());
+                    VaadinSession session = VaadinSession.getCurrent();
+
+                    session.setAttribute("username", user);
+                    session.setAttribute("email", mail);
+                    session.setAttribute("phoneNumber", phoneNum);
+                    session.setAttribute("address", addr);
+                    session.setAttribute("authToken", response.getBody());
+
                     Notification.show("Registration successful!");
                     getUI().ifPresent(ui -> ui.navigate("home"));
                 } else {
