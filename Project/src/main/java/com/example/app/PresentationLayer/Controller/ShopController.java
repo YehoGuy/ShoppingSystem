@@ -2,7 +2,6 @@ package com.example.app.PresentationLayer.Controller;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.springframework.http.HttpStatus;
@@ -29,87 +28,81 @@ import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.constraints.Min;
 
 /**
- *  Base path  : /api/shops     (JSON in / JSON out)
+ *  Base path : /api/shops     (JSON in / JSON out)
  *
- *  ──────────────────────────────── SHOP LIFE‑CYCLE ────────────────────────────────
- *  1.  POST    /create                                    params: token, name
- *                                                        → 201  ShopDTO
- *  2.  GET     /{shopId}                                 params: token
- *                                                        → 200  ShopDTO
- *  3.  GET     /all                                      params: token
- *                                                        → 200  [List<ShopDTO>]
- *  4.  DELETE  /{shopId}                                 params: token
- *                                                        → 204
+ *  ─────────────────────────────── SHOP LIFE‑CYCLE ────────────────────────────────
+ *  1.  POST   /create                                   params: token, name
+ *                                                       → 201  ShopDTO
+ *  2.  GET    /{shopId}                                 params: token
+ *                                                       → 200  ShopDTO
+ *  3.  GET    /all                                      params: token
+ *                                                       → 200  [List<ShopDTO>]
+ *  4.  DELETE /{shopId}                                 params: token
+ *                                                       → 204
  *
- *  ──────────────────────────── SHOP‑LEVEL POLICIES & CHECKS ───────────────────────
- *  5.  POST    /{shopId}/policy                          params: token, body: {rule…}
- *                                                        → 204
- *  6.  POST    /policy/check                             params: token, body: cart{shop→item→qty}
- *                                                        → 200  boolean
+ *  ────────────────────────── SHOP‑LEVEL POLICY & VALIDATION ───────────────────────
+ *  5.  POST   /{shopId}/policy                          params: token, body {rule…}
+ *                                                       → 204
+ *  6.  POST   /policy/check                             params: token, body cart{shop→item→qty}
+ *                                                       → 200  boolean
  *
  *  ───────────────────────────── GLOBAL DISCOUNT RULES ─────────────────────────────
- *  7.  POST    /{shopId}/discount/global                 params: token, discount, isDouble
- *                                                        → 204
- *  8.  DELETE  /{shopId}/discount/global                 params: token
- *                                                        → 204
+ *  7.  POST   /{shopId}/discount/global                 params: token, discount, isDouble
+ *                                                       → 204
+ *  8.  DELETE /{shopId}/discount/global                 params: token
+ *                                                       → 204
  *
- *  ───────────────────────────── ITEM‑SPECIFIC DISCOUNTS ───────────────────────────
- *  9.  POST    /{shopId}/discount/items/{itemId}         params: token, discount, isDouble
- *                                                        → 204
- * 10.  DELETE  /{shopId}/discount/items/{itemId}         params: token
- *                                                        → 204
+ *  ─────────────────────────── ITEM‑SPECIFIC DISCOUNTS ────────────────────────────
+ *  9.  POST   /{shopId}/discount/items/{itemId}         params: token, discount, isDouble
+ *                                                       → 204
+ * 10.  DELETE /{shopId}/discount/items/{itemId}         params: token
+ *                                                       → 204
  *
- *  ──────────────────────────── CATEGORY‑LEVEL DISCOUNTS ───────────────────────────
- * 11.  POST    /{shopId}/discount/categories             params: token, category, discount, isDouble
- *                                                        → 204
- * 12.  DELETE  /{shopId}/discount/categories             params: token, category
- *                                                        → 204
+ *  ────────────────────────── CATEGORY‑LEVEL DISCOUNTS ────────────────────────────
+ * 11.  POST   /{shopId}/discount/categories             params: token, category, discount, isDouble
+ *                                                       → 204
+ * 12.  DELETE /{shopId}/discount/categories             params: token, category
+ *                                                       → 204
  *
- *  ─────────────────────────────‑‑ PRODUCT REVIEWS / RATING ────────────────────────
- * 13.  POST    /{shopId}/reviews                         params: token, rating, reviewText
- *                                                        → 202
- * 14.  GET     /{shopId}/rating                          params: token
- *                                                        → 200  double
+ *  ───────────────────────────── REVIEWS & RATING ─────────────────────────────────
+ * 13.  POST   /{shopId}/reviews                         params: token, rating, reviewText
+ *                                                       → 202
+ * 14.  GET    /{shopId}/rating                          params: token
+ *                                                       → 200  double
  *
- *  ───────────────────────────── INVENTORY MANAGEMENT ──────────────────────────────
- * 15.  POST    /{shopId}/items                           params: token, name, description, qty, price
- *                                                        → 201
- * 16.  PATCH   /{shopId}/items/{itemId}/price            params: token, price
- *                                                        → 204
- * 17.  DELETE  /{shopId}/items/{itemId}                  params: token
- *                                                        → 204
- * 18.  GET     /{shopId}/items                           params: token
- *                                                        → 200  [List<ItemDTO>]
- * 19.  GET     /items                                    params: token
- *                                                        → 200  [List<ItemDTO>]
+ *  ───────────────────────────── INVENTORY MANAGEMENT ─────────────────────────────
+ * 15.  POST   /{shopId}/items                           params: token, name, description, qty, price
+ *                                                       → 201
+ * 16.  PATCH  /{shopId}/items/{itemId}/price            params: token, price
+ *                                                       → 204
+ * 17.  DELETE /{shopId}/items/{itemId}                  params: token
+ *                                                       → 204
+ * 18.  GET    /{shopId}/items                           params: token
+ *                                                       → 200  [List<ItemDTO>]
+ * 19.  GET    /items                                    params: token
+ *                                                       → 200  [List<ItemDTO>]
  *
- *  ──────────────────────────────── SEARCH FACILITIES ──────────────────────────────
- * 20.  GET     /search                                   params: token, name|category|keywords|minPrice|maxPrice|minProductRating|minShopRating
- *                                                        → 200  [List<ItemDTO>]
- * 21.  GET     /{shopId}/search                          params: token, name|category|keywords|minPrice|maxPrice|minProductRating
- *                                                        → 200  [List<ItemDTO>]
+ *  ───────────────────────────────── SEARCH ENDPOINTS ─────────────────────────────
+ * 20.  GET    /search                                   params: token, name|category|keywords|minPrice|maxPrice|minProductRating|minShopRating
+ *                                                       → 200  [List<ItemDTO>]
+ * 21.  GET    /{shopId}/search                          params: token, name|category|keywords|minPrice|maxPrice|minProductRating
+ *                                                       → 200  [List<ItemDTO>]
  *
- *  ───────────────────────────── SUPPLY / STOCK CONTROL ────────────────────────────
- * 22.  POST    /{shopId}/items/{itemId}/supply           params: token, quantity
- *                                                        → 204  (add initial supply)
- * 23.  GET     /{shopId}/items/{itemId}/quantity         params: token
- *                                                        → 200  int
- * 24.  GET     /{shopId}/items/{itemId}/available        params: token
- *                                                        → 200  boolean
- * 25.  PATCH   /{shopId}/items/{itemId}/supply/add       params: token, supply
- *                                                        → 204  (increase)
- * 26.  PATCH   /{shopId}/items/{itemId}/supply/remove    params: token, supply
- *                                                        → 204  (decrease)
- * 27.  GET     /{shopId}/items/{itemId}/reserve          params: shopId, itemId, supply
- *                                                        → 200  boolean
+ *  ───────────────────────────── SUPPLY / STOCK CONTROL ───────────────────────────
+ * 22.  POST   /{shopId}/items/{itemId}/supply           params: token, quantity
+ *                                                       → 204  (add initial supply)
+ * 23.  GET    /{shopId}/items/{itemId}/quantity         params: token
+ *                                                       → 200  int
+ * 24.  GET    /{shopId}/items/{itemId}/available        params: token
+ *                                                       → 200  boolean
+ * 25.  PATCH  /{shopId}/items/{itemId}/supply/add       params: token, supply
+ *                                                       → 204  (increase)
+ * 26.  PATCH  /{shopId}/items/{itemId}/supply/remove    params: token, supply
+ *                                                       → 204  (decrease)
  *
  *  ────────────────────────────── PURCHASE WORK‑FLOW ───────────────────────────────
- * 28.  POST    /{shopId}/purchase                        params: token, body: {itemId:qty,…}
- *                                                        → 200  double (total price)
- * 29.  POST    /{shopId}/purchase/rollback               params: body: {itemId:qty,…}
- *                                                        → 204
- * 30.  POST    /{shopId}/purchase/{purchaseId}/ship      params: token, country, city, street, postalCode
- *                                                        → 202
+ * 27.  POST   /{shopId}/purchase/{purchaseId}/ship      params: token, country, city, street, postalCode
+ *                                                       → 202
  *
  *  ───────────────────────────── ERROR MAPPING (ALL) ───────────────────────────────
  *    400 – Bad input / validation failure
@@ -564,44 +557,6 @@ public class ShopController {
         try {
             boolean available = shopService.checkSupplyAvailability(shopId, itemId, token);
             return ResponseEntity.ok(available);
-        } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
-        }
-    }
-
-    @PostMapping("/{shopId}/purchase")
-    public ResponseEntity<?> purchaseItems(
-            @PathVariable int shopId,
-            @RequestBody Map<Integer, Integer> purchaseLists,
-            @RequestParam String token) {
-        try {
-            double total = shopService.purchaseItems(purchaseLists, shopId, token);
-            return ResponseEntity.ok(total);
-        } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
-        }
-    }
-
-    @PostMapping("/{shopId}/purchase/rollback")
-    public ResponseEntity<?> rollbackPurchase(
-            @PathVariable int shopId,
-            @RequestBody Map<Integer, Integer> purchaseLists) {
-        try {
-            shopService.rollBackPurchase(purchaseLists, shopId);
-            return ResponseEntity.noContent().build();
-        } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
-        }
-    }
-
-    @GetMapping("/{shopId}/items/{itemId}/reserve")
-    public ResponseEntity<?> checkAndAcquire(
-            @PathVariable int shopId,
-            @PathVariable int itemId,
-            @RequestParam int supply) {
-        try {
-            boolean success = shopService.checkSupplyAvailabilityAndAcquire(shopId, itemId, supply);
-            return ResponseEntity.ok(success);
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
         }
