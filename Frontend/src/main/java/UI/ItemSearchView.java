@@ -3,6 +3,8 @@ package UI;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.GroupLayout.Alignment;
+
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.H1;
@@ -32,6 +34,9 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
     private NumberField maxPriceField;
     private NumberField minRatingField;
 
+    private final RestTemplate restTemplate = new RestTemplate();
+    private final String URL = "http://localhost:8080/api/items";
+
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
@@ -46,12 +51,7 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
         setSpacing(true);
         setPadding(true);
 
-        // Sample data
-        allItems.add(new ItemDTO(1, "Banana", "Fresh yellow banana", 2.5, ItemCategory.GROCERY));
-        allItems.add(new ItemDTO(2, "Apple", "Juicy red apple", 3.0, ItemCategory.GROCERY));
-        allItems.add(new ItemDTO(3, "Potato", "Organic potato", 1.2, ItemCategory.GROCERY));
-        allItems.add(new ItemDTO(4, "Shampoo", "For dry hair", 15.0, ItemCategory.BEAUTY));
-        filteredItems.addAll(allItems);
+        getItems();
 
         H1 title = new H1("Available Items");
         title.getStyle().set("margin-bottom", "10px");
@@ -61,7 +61,7 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
 
         TextField searchField = new TextField();
         searchField.setPlaceholder("Search items...");
-        searchField.addValueChangeListener(e -> filterItems(e.getValue()));
+        searchField.addValueChangeListener(e -> searchItems(e.getValue()));
         searchField.setWidth("300px");
         add(searchField);
 
@@ -77,6 +77,23 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
         add(content);
 
         displayItems(filteredItems);
+    }
+
+    private void getItems() {
+        String url = URL + "/all";
+        ResponseEntity<ItemDTO[]> response = restTemplate.getForEntity(url, ItemDTO[].class);
+        if (response.getStatusCode() == HttpStatus.OK) {
+            ItemDTO[] items = response.getBody();
+            if (items != null) {
+                allItems.clear();
+                for (ItemDTO item : items) {
+                    allItems.add(item);
+                }
+                filteredItems.addAll(allItems); // Initially, show all items
+            }
+        } else {
+            Notification.show("Failed to fetch items: " + response.getStatusCode());
+        }
     }
 
     private VerticalLayout setupFilters() {
@@ -112,7 +129,8 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
         return; // This should be replaced with a call to the WAF to get the items
     }
 
-    private void filterItems(String query) {
+    // search by name
+    private void searchItems(String query) {
         filteredItems.clear();
         for (ItemDTO item : allItems) {
             if (item.getName().toLowerCase().contains(query.toLowerCase())) {
