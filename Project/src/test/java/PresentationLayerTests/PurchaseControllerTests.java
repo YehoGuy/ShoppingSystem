@@ -21,14 +21,14 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.example.app.ApplicationLayer.Purchase.PurchaseService;
 import com.example.app.DomainLayer.Purchase.Address;
 import com.example.app.PresentationLayer.Controller.PurchaseController;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Comprehensive slice tests for PurchaseController.
@@ -249,4 +249,33 @@ class PurchaseControllerTests {
                     .andExpect(status().isConflict());
         }
     }
+
+        @Nested
+        @DisplayName("5. USER PURCHASE HISTORY")
+        class UserPurchaseHistoryTests {
+
+        @Test
+        void success_returns200AndJsonList() throws Exception {
+                // stub service – empty list is enough to prove mapping
+                when(purchaseService.getUserPurchases("tok", 7))
+                        .thenReturn(List.of());
+
+                mvc.perform(get("/api/purchases/users/7")
+                        .param("authToken", "tok"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[]"));
+        }
+
+        @Test
+        void badRequest_returns400() throws Exception {
+                when(purchaseService.getUserPurchases(anyString(), anyInt()))
+                        .thenThrow(new IllegalArgumentException());
+
+                mvc.perform(get("/api/purchases/users/3")
+                        .param("authToken", "tok"))
+                .andExpect(status().isBadRequest());
+        }
+        }
+
+    
 }
