@@ -12,17 +12,29 @@ import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinSession;
 
 import DTOs.MemberDTO;
 import DTOs.ShopDTO;
 import DTOs.ShopReviewDTO;
 import DTOs.rolesDTO;
 
+import com.vaadin.flow.server.VaadinSession;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
+
 @Route(value = "profile", layout = AppLayoutBasic.class)
-public class PersonProfileView extends VerticalLayout {
+public class PersonProfileView extends VerticalLayout implements BeforeEnterObserver {
 
     private MemberDTO member;
     private Map<String, ShopDTO> knownShops = new HashMap<>();
+
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
+            event.forwardTo("");
+        }
+    }
 
     public PersonProfileView() {
         setSizeFull();
@@ -111,11 +123,11 @@ public class PersonProfileView extends VerticalLayout {
         VerticalLayout card = new VerticalLayout();
         card.setWidth("60%");
         card.getStyle()
-            .set("border", "1px solid #ccc")
-            .set("border-radius", "8px")
-            .set("padding", "10px")
-            .set("margin-bottom", "15px")
-            .set("background-color", "#f9f9f9");
+                .set("border", "1px solid #ccc")
+                .set("border-radius", "8px")
+                .set("padding", "10px")
+                .set("margin-bottom", "15px")
+                .set("background-color", "#f9f9f9");
 
         Span name = new Span("🏪 " + shop.getName());
         name.getStyle().set("font-size", "18px").set("font-weight", "600");
@@ -158,7 +170,8 @@ public class PersonProfileView extends VerticalLayout {
     }
 
     private double calculateAverageRating(List<ShopReviewDTO> reviews) {
-        if (reviews == null || reviews.isEmpty()) return 0.0;
+        if (reviews == null || reviews.isEmpty())
+            return 0.0;
         return reviews.stream().mapToDouble(ShopReviewDTO::getRating).average().orElse(0.0);
     }
 
@@ -166,27 +179,24 @@ public class PersonProfileView extends VerticalLayout {
 
     private MemberDTO mockMember() {
         List<rolesDTO> roles = List.of(
-            new rolesDTO("Manager", List.of("Manage Inventory", "View Sales"), "Fresh Mart", "john_doe"),
-            new rolesDTO("Manager", List.of("Process Payments"), "Beauty Hub", "john_doe"),
-            new rolesDTO("Manager", List.of("View Products"), "ElectroMax", "john_doe")
-        );
+                new rolesDTO("Manager", List.of("Manage Inventory", "View Sales"), "Fresh Mart", "john_doe"),
+                new rolesDTO("Manager", List.of("Process Payments"), "Beauty Hub", "john_doe"),
+                new rolesDTO("Manager", List.of("View Products"), "ElectroMax", "john_doe"));
         return new MemberDTO(
-            1,
-            "john_doe",
-            "pass",
-            "john@example.com",
-            "123456789",
-            roles,
-            List.of(101, 102, 108), // Mock purchase history
-            List.of()
-        );
+                1,
+                "john_doe",
+                "pass",
+                "john@example.com",
+                "123456789",
+                roles,
+                List.of(101, 102, 108), // Mock purchase history
+                List.of());
     }
 
     private Map<String, ShopDTO> mockShopLookup() {
         return Map.of(
-            "Fresh Mart", new ShopDTO("Fresh Mart", Map.of(), Map.of(), List.of()),
-            "Beauty Hub", new ShopDTO("Beauty Hub", Map.of(), Map.of(), List.of()),
-            "ElectroMax", new ShopDTO("ElectroMax", Map.of(), Map.of(), List.of())
-        );
+                "Fresh Mart", new ShopDTO("Fresh Mart", Map.of(), Map.of(), List.of()),
+                "Beauty Hub", new ShopDTO("Beauty Hub", Map.of(), Map.of(), List.of()),
+                "ElectroMax", new ShopDTO("ElectroMax", Map.of(), Map.of(), List.of()));
     }
 }

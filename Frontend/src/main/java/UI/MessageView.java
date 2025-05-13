@@ -17,21 +17,31 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.Route;
 
+import com.vaadin.flow.server.VaadinSession;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
+
 import DTOs.MessageDTO;
 
 @Route(value = "messages", layout = AppLayoutBasic.class)
-public class MessageView extends VerticalLayout {
+public class MessageView extends VerticalLayout implements BeforeEnterObserver {
     private final List<MessageDTO> messageStore = new ArrayList<>();
     private final VerticalLayout threadContainer = new VerticalLayout();
 
     private final int currentUserId = 1; // mock current user
     private final Map<Integer, String> userDirectory = Map.of(
-        2, "alice", 3, "bob", 4, "charlie"
-    );
+            2, "alice", 3, "bob", 4, "charlie");
     private final Map<String, Integer> usernameToId = userDirectory.entrySet()
-        .stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+            .stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
 
     private int currentChatUserId = 2; // default conversation
+
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
+            event.forwardTo("");
+        }
+    }
 
     public MessageView() {
         setSizeFull();
@@ -74,8 +84,7 @@ public class MessageView extends VerticalLayout {
             if (!content.isEmpty()) {
                 MessageDTO newMsg = new MessageDTO(
                         generateId(), currentUserId, currentChatUserId, content,
-                        getNow(), true, getLastMessageId(currentChatUserId), false
-                );
+                        getNow(), true, getLastMessageId(currentChatUserId), false);
                 messageStore.add(newMsg);
                 messageArea.clear();
                 displayThreadForUser(currentChatUserId);
@@ -121,7 +130,6 @@ public class MessageView extends VerticalLayout {
         add(page);
     }
 
-
     private void setupMockMessages() {
         messageStore.add(new MessageDTO(1, 2, 1, "Hey! Can I ask a question?", "2024-05-01 13:12", true, -1, false));
         messageStore.add(new MessageDTO(2, 1, 2, "Sure, go ahead!", "2024-05-01 13:14", true, 1, false));
@@ -133,7 +141,7 @@ public class MessageView extends VerticalLayout {
 
         List<MessageDTO> thread = messageStore.stream()
                 .filter(m -> (m.getSenderId() == currentUserId && m.getReceiverId() == otherUserId)
-                          || (m.getSenderId() == otherUserId && m.getReceiverId() == currentUserId))
+                        || (m.getSenderId() == otherUserId && m.getReceiverId() == currentUserId))
                 .sorted(Comparator.comparing(MessageDTO::getMessageId))
                 .collect(Collectors.toList());
 
@@ -164,7 +172,7 @@ public class MessageView extends VerticalLayout {
     private int getLastMessageId(int otherUserId) {
         return messageStore.stream()
                 .filter(m -> (m.getSenderId() == currentUserId && m.getReceiverId() == otherUserId)
-                          || (m.getSenderId() == otherUserId && m.getReceiverId() == currentUserId))
+                        || (m.getSenderId() == otherUserId && m.getReceiverId() == currentUserId))
                 .mapToInt(MessageDTO::getMessageId).max().orElse(-1);
     }
 
@@ -198,17 +206,17 @@ public class MessageView extends VerticalLayout {
             pendingRoles.forEach(role -> {
                 HorizontalLayout roleLayout = new HorizontalLayout();
                 Span roleSpan = new Span(role);
-                
+
                 Button acceptButton = new Button("Accept", e -> {
                     pendingRolesContainer.remove(roleLayout);
                 });
                 acceptButton.getStyle().set("background-color", "#4CAF50").set("color", "white");
-                
+
                 Button rejectButton = new Button("Reject", e -> {
                     pendingRolesContainer.remove(roleLayout);
                 });
                 rejectButton.getStyle().set("background-color", "#f44336").set("color", "white");
-                
+
                 roleLayout.add(roleSpan, acceptButton, rejectButton);
                 roleLayout.getStyle().set("margin-bottom", "5px")
                         .set("align-items", "center");

@@ -14,10 +14,15 @@ import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 
+import com.vaadin.flow.server.VaadinSession;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
+
 import DTOs.ItemDTO;
 import Domain.ItemCategory;
+
 @Route(value = "items", layout = AppLayoutBasic.class)
-public class ItemSearchView extends VerticalLayout {
+public class ItemSearchView extends VerticalLayout implements BeforeEnterObserver {
     private List<ItemDTO> allItems = new ArrayList<>();
     private List<ItemDTO> filteredItems = new ArrayList<>();
     private VerticalLayout itemsContainer; // <--- FIELD REFERENCE
@@ -26,6 +31,13 @@ public class ItemSearchView extends VerticalLayout {
     private NumberField minPriceField;
     private NumberField maxPriceField;
     private NumberField minRatingField;
+
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
+            event.forwardTo("");
+        }
+    }
 
     public ItemSearchView() {
         setSizeFull();

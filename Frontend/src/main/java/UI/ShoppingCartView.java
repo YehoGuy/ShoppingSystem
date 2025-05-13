@@ -20,9 +20,19 @@ import DTOs.ItemDTO;
 import DTOs.ShoppingCartDTO;
 import Domain.ItemCategory;
 
+import com.vaadin.flow.server.VaadinSession;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 
 @Route(value = "cart", layout = AppLayoutBasic.class)
-public class ShoppingCartView extends VerticalLayout {
+public class ShoppingCartView extends VerticalLayout implements BeforeEnterObserver {
+
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
+            event.forwardTo("");
+        }
+    }
 
     public ShoppingCartView() {
         // Mock data for demonstration purposes

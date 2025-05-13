@@ -17,12 +17,22 @@ import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
+import com.vaadin.flow.server.VaadinSession;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 
 @Route(value = "history", layout = AppLayoutBasic.class)
-public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<String> {
+public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<String>, BeforeEnterObserver {
     private final List<ShopHistoryItem> shopHistoryItems = new ArrayList<>();
     private String shopName;
     private VerticalLayout Reciepts;
+
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
+            event.forwardTo("");
+        }
+    }
 
     public ShopHistoryView() {
         setSizeFull();
@@ -44,31 +54,27 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<S
         this.shopName = parameter;
 
         shopHistoryItems.add(new ShopHistoryItem(
-            Map.of("Apple", 3, "Orange", 2, "Banana", 5),
-            25.50,
-            5.00,
-            "2024-01-15",
-            "John Doe"
-        ));
+                Map.of("Apple", 3, "Orange", 2, "Banana", 5),
+                25.50,
+                5.00,
+                "2024-01-15",
+                "John Doe"));
 
         shopHistoryItems.add(new ShopHistoryItem(
-            Map.of("Milk", 2, "Bread", 1, "Eggs", 12),
-            18.75,
-            2.50,
-            "2024-01-14",
-            "Jane Smith"
-        ));
+                Map.of("Milk", 2, "Bread", 1, "Eggs", 12),
+                18.75,
+                2.50,
+                "2024-01-14",
+                "Jane Smith"));
 
         shopHistoryItems.add(new ShopHistoryItem(
-            Map.of("Coffee", 1, "Sugar", 2, "Cream", 1),
-            15.99,
-            1.00,
-            "2024-01-13",
-            "Bob Wilson"
-        ));
+                Map.of("Coffee", 1, "Sugar", 2, "Cream", 1),
+                15.99,
+                1.00,
+                "2024-01-13",
+                "Bob Wilson"));
 
-        for(ShopHistoryItem item : shopHistoryItems)
-        {
+        for (ShopHistoryItem item : shopHistoryItems) {
             addItem(item);
         }
     }
@@ -77,11 +83,10 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<S
         // Create a Card component to contain everything
         com.vaadin.flow.component.html.Section card = new com.vaadin.flow.component.html.Section();
         card.addClassNames(
-            LumoUtility.Background.CONTRAST_5,
-            LumoUtility.BorderRadius.LARGE,
-            LumoUtility.BoxShadow.SMALL,
-            LumoUtility.Padding.LARGE
-        );
+                LumoUtility.Background.CONTRAST_5,
+                LumoUtility.BorderRadius.LARGE,
+                LumoUtility.BoxShadow.SMALL,
+                LumoUtility.Padding.LARGE);
         card.setWidth("80%");
 
         VerticalLayout layout = new VerticalLayout();
@@ -104,7 +109,7 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<S
         lay.setWidthFull();
         lay.getStyle().set("spacing", "var(--lumo-space-m)");
         lay.getStyle().set("padding", "var(--lumo-space-m)");
-        
+
         layout.add(lay);
 
         Grid<Map.Entry<String, Integer>> grid = new Grid<>();
@@ -113,7 +118,7 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<S
         grid.setItems(item.getItems().entrySet());
         grid.setWidthFull();
         grid.getColumns().forEach(column -> column.setAutoWidth(true));
-        
+
         Details details = new Details("View Items", grid);
         details.setWidthFull();
         layout.add(details);
@@ -130,7 +135,8 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<S
         private String buyerName;
         private double discount;
 
-        public ShopHistoryItem(Map<String, Integer> items, double price, double discount, String date, String buyerName) {
+        public ShopHistoryItem(Map<String, Integer> items, double price, double discount, String date,
+                String buyerName) {
             this.items = items;
             this.price = price;
             this.date = date;
@@ -142,8 +148,7 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<S
             return items;
         }
 
-        public double getDiscount()
-        {
+        public double getDiscount() {
             return discount;
         }
 

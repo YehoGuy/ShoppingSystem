@@ -18,10 +18,22 @@ import DTOs.ItemDTO;
 import DTOs.ShopDTO;
 import DTOs.ShopReviewDTO;
 import Domain.ItemCategory;
+
+import com.vaadin.flow.server.VaadinSession;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
+
 @Route(value = "shops", layout = AppLayoutBasic.class)
-public class ShopSearchView extends VerticalLayout {
+public class ShopSearchView extends VerticalLayout implements BeforeEnterObserver {
     private List<ShopDTO> allShops = new ArrayList<>(); // Store the full list of shops
     private List<ShopDTO> filteredShops = new ArrayList<>(); // Store the filtered list
+
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
+            event.forwardTo("");
+        }
+    }
 
     public ShopSearchView() {
         setSizeFull();

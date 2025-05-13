@@ -23,15 +23,20 @@ import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 
+import com.vaadin.flow.server.VaadinSession;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
+
 import java.util.*;
+
+import javax.swing.GroupLayout.Alignment;
 
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 
-
 @Route(value = "editShop", layout = AppLayoutBasic.class)
-public class EditShopView extends VerticalLayout implements HasUrlParameter<String> {
+public class EditShopView extends VerticalLayout implements HasUrlParameter<String>, BeforeEnterObserver {
 
     private ShopDTO shop;
     private VerticalLayout itemsContainer;
@@ -46,6 +51,13 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
     private List<ItemDTO> allItems;
     private List<rolesDTO> allRoles; // Store the full list of roles
     private List<DiscountDTO> allDiscounts; // Store the full list of discounts
+
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
+            event.forwardTo("");
+        }
+    }
 
     public EditShopView() {
         setSizeFull();
