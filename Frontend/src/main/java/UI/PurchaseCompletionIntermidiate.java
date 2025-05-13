@@ -14,8 +14,12 @@ import java.util.Map;
 import DTOs.AddressDTO;
 import DTOs.ItemDTO;
 
+import com.vaadin.flow.server.VaadinSession;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
+
 @Route(value = "complete-purchase", layout = AppLayoutBasic.class)
-public class PurchaseCompletionIntermidiate extends VerticalLayout {
+public class PurchaseCompletionIntermidiate extends VerticalLayout implements BeforeEnterObserver {
 
     private ComboBox<String> shippingTypeCombo;
     private TextField countryField;
@@ -27,6 +31,13 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout {
 
     private Map<ItemDTO, Integer> cartItems;
     private double totalPrice = 0;
+
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
+            event.forwardTo("");
+        }
+    }
 
     public PurchaseCompletionIntermidiate() {
         setSizeFull();

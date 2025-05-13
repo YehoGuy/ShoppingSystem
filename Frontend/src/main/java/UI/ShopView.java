@@ -29,8 +29,13 @@ import DTOs.ItemDTO;
 import DTOs.ShopDTO;
 import DTOs.ShopReviewDTO;
 import Domain.ItemCategory;
+
+import com.vaadin.flow.server.VaadinSession;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
+
 @Route(value = "shop", layout = AppLayoutBasic.class)
-public class ShopView extends VerticalLayout implements HasUrlParameter<String> {
+public class ShopView extends VerticalLayout implements HasUrlParameter<String>, BeforeEnterObserver {
 
     private VerticalLayout itemsContainer;
     private ShopDTO selectedShop;
@@ -41,6 +46,13 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String> 
     private TextField nameSearchField;
 
     private List<ItemDTO> allItems = new ArrayList<>(); // Store the full list of items
+
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
+            event.forwardTo("");
+        }
+    }
 
     @Override
     public void setParameter(BeforeEvent event, @OptionalParameter String shopName) {

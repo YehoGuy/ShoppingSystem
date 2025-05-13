@@ -10,8 +10,19 @@ import java.util.Map;
 import DTOs.PurchaseDTO;
 import DTOs.AddressDTO;
 
+import com.vaadin.flow.server.VaadinSession;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
+
 @Route("receipt")
-public class ReceiptView extends VerticalLayout implements HasUrlParameter<Integer> {
+public class ReceiptView extends VerticalLayout implements HasUrlParameter<Integer>, BeforeEnterObserver {
+
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
+            event.forwardTo("");
+        }
+    }
 
     @Override
     public void setParameter(BeforeEvent event, @OptionalParameter Integer purchaseId) {
@@ -37,26 +48,23 @@ public class ReceiptView extends VerticalLayout implements HasUrlParameter<Integ
         AddressDTO address = purchase.getShippingAddress();
         double total = purchase.getPrice();
 
-        items.forEach((id, qty) ->
-            add(new Span("• Item #" + id + " x" + qty))
-        );
+        items.forEach((id, qty) -> add(new Span("• Item #" + id + " x" + qty)));
 
         add(new Span("📦 Shipping To: " + address.getStreet() + " " + address.getHouseNumber() +
-                     ", " + address.getCity()));
+                ", " + address.getCity()));
         add(new Span("💰 Total Paid: $" + total));
     }
 
     // Replace this with real service logic
     private PurchaseDTO mockPurchaseById(int id) {
         return new PurchaseDTO(
-            id,
-            1,
-            5,
-            Map.of(1, 2, 2, 3),
-            new AddressDTO("USA", "NY", "Main St", "101", "2A", "10001"),
-            true,
-            null,
-            23.5
-        );
+                id,
+                1,
+                5,
+                Map.of(1, 2, 2, 3),
+                new AddressDTO("USA", "NY", "Main St", "101", "2A", "10001"),
+                true,
+                null,
+                23.5);
     }
 }

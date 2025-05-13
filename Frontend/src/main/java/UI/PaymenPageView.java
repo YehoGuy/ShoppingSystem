@@ -13,8 +13,12 @@ import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 
+import com.vaadin.flow.server.VaadinSession;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
+
 @Route(value = "payment")
-public class PaymenPageView extends VerticalLayout{
+public class PaymenPageView extends VerticalLayout implements BeforeEnterObserver {
     // This class will be used to create the payment page view
     // It will contain the UI components and layout for the payment page
     // It will also handle the payment processing logic
@@ -22,6 +26,14 @@ public class PaymenPageView extends VerticalLayout{
     List<PaymentMethodDTO> paymentMethods = new ArrayList<>();
     double totalAmount = 0.0; // Total amount to be paid
     String orderId = ""; // Order ID for the payment
+
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        // Check if the user is logged in
+        if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
+            event.forwardTo("");
+        }
+    }
 
     public PaymenPageView() {
         // Initialize the payment methods
@@ -62,7 +74,7 @@ public class PaymenPageView extends VerticalLayout{
         // Add buttons to the layout
         for (PaymentMethodDTO method : paymentMethods) {
             Button methodButton = new Button(method.getMethodName(), event -> {
-            handlePaymentMethodSelection(method);
+                handlePaymentMethodSelection(method);
             });
             methodButton.setWidthFull();
             buttonLayout.add(methodButton);
@@ -73,7 +85,7 @@ public class PaymenPageView extends VerticalLayout{
         scroller.getStyle().set("overflow-y", "auto");
         scroller.setHeightFull();
         scroller.setWidth("300px");
-        
+
         add(scroller);
     }
 
