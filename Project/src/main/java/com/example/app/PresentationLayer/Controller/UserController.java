@@ -28,43 +28,50 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * Base path: /api/users    (JSON in / JSON out)
+ * Base path: /api/users (JSON in / JSON out)
  *
  * Endpoints:
- *  1. GET    /{userId}                                  params: token                                             → 200  User
- *  2. POST   /register                                   params: username, password, email, phoneNumber, address   → 201
- *  3. POST   /{userId}/admin                             params: token                                             → 204  assign admin
- *  4. DELETE /{userId}/admin                             params: token                                             → 204  remove admin
- *  5. GET    /admins                                     params: token                                             → 200  [ids]
- *  6. PATCH  /{userId}/username                          params: token, username                                   → 204
- *  7. PATCH  /{userId}/password                          params: token, password                                   → 204
- *  8. PATCH  /{userId}/email                             params: token, email                                      → 204
- *  9. PATCH  /{userId}/phone                             params: token, phone                                      → 204
- * 10. PATCH  /{userId}/address                           params: token, city, street, apartmentNumber, postalCode  → 204
+ * 1. GET /{userId} params: token → 200 User
+ * 2. POST /register params: username, password, email, phoneNumber, address →
+ * 201
+ * 3. POST /{userId}/admin params: token → 204 assign admin
+ * 4. DELETE /{userId}/admin params: token → 204 remove admin
+ * 5. GET /admins params: token → 200 [ids]
+ * 6. PATCH /{userId}/username params: token, username → 204
+ * 7. PATCH /{userId}/password params: token, password → 204
+ * 8. PATCH /{userId}/email params: token, email → 204
+ * 9. PATCH /{userId}/phone params: token, phone → 204
+ * 10. PATCH /{userId}/address params: token, city, street, apartmentNumber,
+ * postalCode → 204
  *
- * 11. GET    /{userId}/isAdmin                          params: token                                             → 200  boolean
- * 12. POST   /encoder/testMode                          params: enable                                            → 204
- * 13. GET    /validate/{memberId}                        –                                                          → 204
- * 14. POST   /login/guest                                –                                                          → 200  token
- * 15. POST   /login/member                               params: username, password, [guestToken]                  → 200  token
- * 16. POST   /logout                                     params: token                                             → 200  guestToken
+ * 11. GET /{userId}/isAdmin params: token → 200 boolean
+ * 12. POST /encoder/testMode params: enable → 204
+ * 13. GET /validate/{memberId} – → 204
+ * 14. POST /login/guest – → 200 token
+ * 15. POST /login/member params: username, password, [guestToken] → 200 token
+ * 16. POST /logout params: token → 200 guestToken
  *
- * 17. GET    /shops/{shopId}/permissions                 params: token                                             → 200  {memberId:[permissions]}
- * 18. PATCH  /shops/{shopId}/permissions/{memberId}      params: token, body [PermissionsEnum[]]                   → 204
- * 19. POST   /shops/{shopId}/managers                    params: token, memberId, body [PermissionsEnum[]]         → 204  make manager
- * 20. DELETE /shops/{shopId}/managers/{memberId}         params: token                                             → 204  remove manager
- * 21. POST   /shops/{shopId}/owners                      params: token, memberId                                   → 204  make owner
- * 22. DELETE /shops/{shopId}/owners/{memberId}           params: token                                             → 204  remove owner
- * 23. DELETE /shops/{shopId}/assignee/{assigneeId}/all   params: token                                             → 204  remove all assignments
+ * 17. GET /shops/{shopId}/permissions params: token → 200
+ * {memberId:[permissions]}
+ * 18. PATCH /shops/{shopId}/permissions/{memberId} params: token,
+ * body [PermissionsEnum[]] → 204
+ * 19. POST /shops/{shopId}/managers params: token, memberId,
+ * body [PermissionsEnum[]] → 204 make manager
+ * 20. DELETE /shops/{shopId}/managers/{memberId} params: token → 204 remove
+ * manager
+ * 21. POST /shops/{shopId}/owners params: token, memberId → 204 make owner
+ * 22. DELETE /shops/{shopId}/owners/{memberId} params: token → 204 remove owner
+ * 23. DELETE /shops/{shopId}/assignee/{assigneeId}/all params: token → 204
+ * remove all assignments
  *
- * 24. POST   /roles/{shopId}/accept                      params: token                                             → 204  accept role
- * 25. POST   /roles/{shopId}/decline                     params: token                                             → 204  decline role
+ * 24. POST /roles/{shopId}/accept params: token → 204 accept role
+ * 25. POST /roles/{shopId}/decline params: token → 204 decline role
  *
  * Error mapping (all endpoints):
- *   400 – Bad data / validation failure
- *   404 – Entity not found
- *   409 – Business rule conflict / permissions
- *   500 – Internal server error
+ * 400 – Bad data / validation failure
+ * 404 – Entity not found
+ * 409 – Business rule conflict / permissions
+ * 500 – Internal server error
  */
 @RestController
 @RequestMapping("/api/users")
@@ -105,14 +112,15 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(
-            @RequestParam @NotBlank @Size(min=3,max=20) String username,
+            @RequestParam @NotBlank @Size(min = 3, max = 20) String username,
             @RequestParam @NotBlank String password,
             @RequestParam @NotBlank String email,
             @RequestParam @NotBlank String phoneNumber,
             @RequestParam @NotBlank String address) {
         try {
             userService.addMember(username, password, email, phoneNumber, address);
-            return ResponseEntity.status(HttpStatus.CREATED).build();
+            String token = authService.generateAuthToken(username);
+            return ResponseEntity.status(HttpStatus.CREATED).body(token);
 
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
@@ -187,7 +195,7 @@ public class UserController {
     public ResponseEntity<Void> updateUsername(
             @PathVariable @Min(1) int userId,
             @RequestParam String token,
-            @RequestParam @NotBlank @Size(min=3,max=20) String username) {
+            @RequestParam @NotBlank @Size(min = 3, max = 20) String username) {
         try {
             authService.ValidateToken(token);
             userService.updateMemberUsername(token, username);
@@ -274,7 +282,7 @@ public class UserController {
             @RequestParam @NotBlank String city,
             @RequestParam @NotBlank String street,
             @RequestParam int apartmentNumber,
-            @RequestParam(required=false) String postalCode) {
+            @RequestParam(required = false) String postalCode) {
         try {
             authService.ValidateToken(token);
             userService.updateMemberAddress(token, city, street, apartmentNumber, postalCode);
@@ -297,7 +305,7 @@ public class UserController {
             @RequestParam String token) {
 
         try {
-            authService.ValidateToken(token);          // only authenticated callers
+            authService.ValidateToken(token); // only authenticated callers
             boolean res = userService.isAdmin(userId);
             return ResponseEntity.ok(res);
 
@@ -311,7 +319,7 @@ public class UserController {
     }
 
     /* -------------------------------------------------- */
-    /*  Switch encoder to test mode (mainly for QA)   */
+    /* Switch encoder to test mode (mainly for QA) */
     /* -------------------------------------------------- */
     @PostMapping("/encoder/testMode")
     public ResponseEntity<Void> setEncoderToTest(@RequestParam boolean enable) {
@@ -323,7 +331,6 @@ public class UserController {
         }
     }
 
-    
     @GetMapping("/validate/{memberId}")
     public ResponseEntity<Void> validateMemberId(@PathVariable @Min(1) int memberId) {
         try {
@@ -338,7 +345,6 @@ public class UserController {
         }
     }
 
-   
     @PostMapping("/login/guest")
     public ResponseEntity<?> loginAsGuest() {
         try {
@@ -351,7 +357,6 @@ public class UserController {
         }
     }
 
-    
     @PostMapping("/login/member")
     public ResponseEntity<?> loginAsMember(
             @RequestParam @NotBlank String username,
@@ -370,7 +375,6 @@ public class UserController {
         }
     }
 
-    
     @PostMapping("/logout")
     public ResponseEntity<?> logout(@RequestParam String token) {
         try {
@@ -383,7 +387,6 @@ public class UserController {
         }
     }
 
-    
     @GetMapping("/shops/{shopId}/permissions")
     public ResponseEntity<?> getPermissionsByShop(
             @PathVariable @Min(1) int shopId,
@@ -402,10 +405,7 @@ public class UserController {
         }
     }
 
-    
-    @PatchMapping(
-    path = "/shops/{shopId}/permissions/{memberId}",
-    consumes = "application/json") 
+    @PatchMapping(path = "/shops/{shopId}/permissions/{memberId}", consumes = "application/json")
     public ResponseEntity<Void> changePermissions(
             @PathVariable @Min(1) int shopId,
             @PathVariable @Min(1) int memberId,
@@ -413,7 +413,7 @@ public class UserController {
             @RequestBody PermissionsEnum[] permissions) {
 
         try {
-            authService.ValidateToken(token);     
+            authService.ValidateToken(token);
             userService.changePermissions(token, memberId, shopId, permissions);
             return ResponseEntity.noContent().build();
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
@@ -425,9 +425,7 @@ public class UserController {
         }
     }
 
-    @PostMapping(
-    path = "/shops/{shopId}/managers",
-    consumes = "application/json")
+    @PostMapping(path = "/shops/{shopId}/managers", consumes = "application/json")
     public ResponseEntity<Void> makeManagerOfStore(
             @PathVariable @Min(1) int shopId,
             @RequestParam @Min(1) int memberId,
@@ -447,7 +445,6 @@ public class UserController {
         }
     }
 
-
     @DeleteMapping("/shops/{shopId}/managers/{memberId}")
     public ResponseEntity<Void> removeManagerFromStore(
             @PathVariable @Min(1) int shopId,
@@ -465,7 +462,6 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-
 
     @PostMapping("/shops/{shopId}/owners")
     public ResponseEntity<Void> makeStoreOwner(
@@ -503,7 +499,6 @@ public class UserController {
         }
     }
 
-    
     @DeleteMapping("/shops/{shopId}/assignee/{assigneeId}/all")
     public ResponseEntity<Void> removeAllAssigned(
             @PathVariable @Min(1) int shopId,
@@ -511,7 +506,7 @@ public class UserController {
             @RequestParam String token) {
 
         try {
-            authService.ValidateToken(token);     // ensure caller is authenticated
+            authService.ValidateToken(token); // ensure caller is authenticated
             userService.removeAllAssigned(assigneeId, shopId);
             return ResponseEntity.noContent().build();
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
@@ -523,7 +518,6 @@ public class UserController {
         }
     }
 
-    
     @PostMapping("/roles/{shopId}/accept")
     public ResponseEntity<Void> acceptRole(
             @PathVariable @Min(1) int shopId,
@@ -558,6 +552,4 @@ public class UserController {
         }
     }
 
-
 }
-
