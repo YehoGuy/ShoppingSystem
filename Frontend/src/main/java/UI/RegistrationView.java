@@ -10,6 +10,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
+import com.vaadin.flow.server.VaadinSession;
 
 import java.util.HashMap;
 import java.util.Map;
