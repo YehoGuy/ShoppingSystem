@@ -38,8 +38,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc(addFilters = false)
 class PurchaseControllerTests {
 
-    @SpringBootApplication(scanBasePackages = "PresentationLayer")
-    static class TestBootApp {}
+    @SpringBootApplication(scanBasePackages = "com.example.app.PresentationLayer")
+    static class TestBootApp {
+    }
 
     @Autowired
     private MockMvc mvc;
@@ -54,58 +55,58 @@ class PurchaseControllerTests {
         void success_returns201() throws Exception {
             // stub service
             when(purchaseService.checkoutCart(eq("tok"), any(Address.class)))
-                .thenReturn(List.of(100, 101));
+                    .thenReturn(List.of(100, 101));
 
             mvc.perform(post("/api/purchases/checkout")
-                    .param("authToken","tok")
-                    .param("country","US")
-                    .param("city","NY")
-                    .param("street","Broadway")
-                    .param("houseNumber","1"))
-               .andExpect(status().isCreated())
-               .andExpect(content().json("[100,101]"));
+                    .param("authToken", "tok")
+                    .param("country", "US")
+                    .param("city", "NY")
+                    .param("street", "Broadway")
+                    .param("houseNumber", "1"))
+                    .andExpect(status().isCreated())
+                    .andExpect(content().json("[100,101]"));
         }
 
         @Test
         void badRequest_returns400() throws Exception {
             when(purchaseService.checkoutCart(anyString(), any()))
-                .thenThrow(new IllegalArgumentException());
+                    .thenThrow(new IllegalArgumentException());
 
             mvc.perform(post("/api/purchases/checkout")
-                    .param("authToken","tok")
-                    .param("country","US")
-                    .param("city","NY")
-                    .param("street","Broadway")
-                    .param("houseNumber","1"))
-               .andExpect(status().isBadRequest());
+                    .param("authToken", "tok")
+                    .param("country", "US")
+                    .param("city", "NY")
+                    .param("street", "Broadway")
+                    .param("houseNumber", "1"))
+                    .andExpect(status().isBadRequest());
         }
 
         @Test
         void notFound_returns404() throws Exception {
             when(purchaseService.checkoutCart(anyString(), any()))
-                .thenThrow(new NoSuchElementException());
+                    .thenThrow(new NoSuchElementException());
 
             mvc.perform(post("/api/purchases/checkout")
-                    .param("authToken","tok")
-                    .param("country","US")
-                    .param("city","NY")
-                    .param("street","Broadway")
-                    .param("houseNumber","1"))
-               .andExpect(status().isNotFound());
+                    .param("authToken", "tok")
+                    .param("country", "US")
+                    .param("city", "NY")
+                    .param("street", "Broadway")
+                    .param("houseNumber", "1"))
+                    .andExpect(status().isNotFound());
         }
 
         @Test
         void conflict_returns409() throws Exception {
             when(purchaseService.checkoutCart(anyString(), any()))
-                .thenThrow(new RuntimeException());
+                    .thenThrow(new RuntimeException());
 
             mvc.perform(post("/api/purchases/checkout")
-                    .param("authToken","tok")
-                    .param("country","US")
-                    .param("city","NY")
-                    .param("street","Broadway")
-                    .param("houseNumber","1"))
-               .andExpect(status().isConflict());
+                    .param("authToken", "tok")
+                    .param("country", "US")
+                    .param("city", "NY")
+                    .param("street", "Broadway")
+                    .param("houseNumber", "1"))
+                    .andExpect(status().isConflict());
         }
     }
 
@@ -115,59 +116,59 @@ class PurchaseControllerTests {
         @Test
         void success_returns201() throws Exception {
             when(purchaseService.createBid(eq("tok"), eq(5), anyMap(), eq(50)))
-                .thenReturn(200);
+                    .thenReturn(200);
 
             mvc.perform(post("/api/purchases/bids")
-                    .param("authToken","tok")
-                    .param("storeId","5")
-                    .param("initialPrice","50")
+                    .param("authToken", "tok")
+                    .param("storeId", "5")
+                    .param("initialPrice", "50")
                     .contentType("application/json")
                     .content("{\"1\":2}"))
-               .andExpect(status().isCreated())
-               .andExpect(content().string("200"));
+                    .andExpect(status().isCreated())
+                    .andExpect(content().string("200"));
         }
 
         @Test
         void badRequest_returns400() throws Exception {
             when(purchaseService.createBid(anyString(), anyInt(), anyMap(), anyInt()))
-                .thenThrow(new IllegalArgumentException());
+                    .thenThrow(new IllegalArgumentException());
 
             mvc.perform(post("/api/purchases/bids")
-                    .param("authToken","tok")
-                    .param("storeId","5")
-                    .param("initialPrice","50")
+                    .param("authToken", "tok")
+                    .param("storeId", "5")
+                    .param("initialPrice", "50")
                     .contentType("application/json")
                     .content("{\"1\":2}"))
-               .andExpect(status().isBadRequest());
+                    .andExpect(status().isBadRequest());
         }
 
         @Test
         void notFound_returns404() throws Exception {
             when(purchaseService.createBid(anyString(), anyInt(), anyMap(), anyInt()))
-                .thenThrow(new NoSuchElementException());
+                    .thenThrow(new NoSuchElementException());
 
             mvc.perform(post("/api/purchases/bids")
-                    .param("authToken","tok")
-                    .param("storeId","5")
-                    .param("initialPrice","50")
+                    .param("authToken", "tok")
+                    .param("storeId", "5")
+                    .param("initialPrice", "50")
                     .contentType("application/json")
                     .content("{\"1\":2}"))
-               .andExpect(status().isNotFound());
+                    .andExpect(status().isNotFound());
         }
 
         @Test
         void conflict_returns409() throws Exception {
             when(purchaseService.createBid(anyString(), anyInt(), anyMap(), anyInt()))
-                .thenThrow(new RuntimeException());
+                    .thenThrow(new RuntimeException());
 
             mvc.perform(post("/api/purchases/bids")
-                    .param("authToken","tok")
-                    .param("storeId","5")
-                    .param("initialPrice","50")
+                    .param("authToken", "tok")
+                    .param("storeId", "5")
+                    .param("initialPrice", "50")
                     .contentType("application/json")
-                    
-.content("{\"1\":2}"))
-               .andExpect(status().isConflict());
+
+                    .content("{\"1\":2}"))
+                    .andExpect(status().isConflict());
         }
     }
 
@@ -179,9 +180,9 @@ class PurchaseControllerTests {
             doNothing().when(purchaseService).postBidding(eq("tok"), eq(10), eq(75));
 
             mvc.perform(post("/api/purchases/bids/10/offers")
-                    .param("authToken","tok")
-                    .param("bidAmount","75"))
-               .andExpect(status().isAccepted());
+                    .param("authToken", "tok")
+                    .param("bidAmount", "75"))
+                    .andExpect(status().isAccepted());
         }
 
         @Test
@@ -189,8 +190,8 @@ class PurchaseControllerTests {
             doNothing().when(purchaseService).postBidding(eq("tok"), eq(10), eq(75));
             // invalid bidAmount param missing / negative
             mvc.perform(post("/api/purchases/bids/10/offers")
-                    .param("authToken","tok"))
-               .andExpect(status().isBadRequest());
+                    .param("authToken", "tok"))
+                    .andExpect(status().isBadRequest());
         }
 
         @Test
@@ -199,9 +200,9 @@ class PurchaseControllerTests {
             doThrow(new RuntimeException()).when(purchaseService).postBidding(eq("tok"), eq(10), eq(75));
 
             mvc.perform(post("/api/purchases/bids/10/offers")
-                    .param("authToken","tok")
-                    .param("bidAmount","75"))
-               .andExpect(status().isConflict());
+                    .param("authToken", "tok")
+                    .param("bidAmount", "75"))
+                    .andExpect(status().isConflict());
         }
     }
 
@@ -213,39 +214,39 @@ class PurchaseControllerTests {
             when(purchaseService.finalizeBid(eq("tok"), eq(10))).thenReturn(999);
 
             mvc.perform(post("/api/purchases/bids/10/finalize")
-                    .param("authToken","tok"))
-               .andExpect(status().isOk())
-               .andExpect(content().string("999"));
+                    .param("authToken", "tok"))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string("999"));
         }
 
         @Test
         void badRequest_returns400() throws Exception {
             when(purchaseService.finalizeBid(anyString(), anyInt()))
-                .thenThrow(new IllegalArgumentException());
+                    .thenThrow(new IllegalArgumentException());
 
             mvc.perform(post("/api/purchases/bids/10/finalize")
-                    .param("authToken","tok"))
-               .andExpect(status().isBadRequest());
+                    .param("authToken", "tok"))
+                    .andExpect(status().isBadRequest());
         }
 
         @Test
         void notFound_returns404() throws Exception {
             when(purchaseService.finalizeBid(anyString(), anyInt()))
-                .thenThrow(new NoSuchElementException());
+                    .thenThrow(new NoSuchElementException());
 
             mvc.perform(post("/api/purchases/bids/10/finalize")
-                    .param("authToken","tok"))
-               .andExpect(status().isNotFound());
+                    .param("authToken", "tok"))
+                    .andExpect(status().isNotFound());
         }
 
         @Test
         void conflict_returns409() throws Exception {
             when(purchaseService.finalizeBid(anyString(), anyInt()))
-                .thenThrow(new RuntimeException());
+                    .thenThrow(new RuntimeException());
 
             mvc.perform(post("/api/purchases/bids/10/finalize")
-                    .param("authToken","tok"))
-               .andExpect(status().isConflict());
+                    .param("authToken", "tok"))
+                    .andExpect(status().isConflict());
         }
     }
 }

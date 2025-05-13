@@ -36,8 +36,9 @@ import io.jsonwebtoken.ExpiredJwtException;
 @AutoConfigureMockMvc(addFilters = false)
 class AuthControllerTests {
 
-    @SpringBootApplication(scanBasePackages = "PresentationLayer")
-    static class TestBootApp {}
+    @SpringBootApplication(scanBasePackages = "com.example.app.PresentationLayer")
+    static class TestBootApp {
+    }
 
     @Autowired
     private MockMvc mvc;
@@ -53,27 +54,27 @@ class AuthControllerTests {
             when(authService.AuthenticateGuest(123)).thenReturn("token123");
 
             mvc.perform(post("/api/auth/guest")
-                    .param("guestId","123"))
-               .andExpect(status().isCreated())
-               .andExpect(content().string("token123"));
+                    .param("guestId", "123"))
+                    .andExpect(status().isCreated())
+                    .andExpect(content().string("token123"));
         }
 
         @Test
         void badRequest_returns400() throws Exception {
             when(authService.AuthenticateGuest(anyInt()))
-                .thenThrow(new IllegalArgumentException("invalid"));
+                    .thenThrow(new IllegalArgumentException("invalid"));
 
-            mvc.perform(post("/api/auth/guest").param("guestId","0"))
-               .andExpect(status().isBadRequest());
+            mvc.perform(post("/api/auth/guest").param("guestId", "0"))
+                    .andExpect(status().isBadRequest());
         }
 
         @Test
         void conflict_returns409() throws Exception {
             when(authService.AuthenticateGuest(anyInt()))
-                .thenThrow(new RuntimeException("exists"));
+                    .thenThrow(new RuntimeException("exists"));
 
-            mvc.perform(post("/api/auth/guest").param("guestId","123"))
-               .andExpect(status().isConflict());
+            mvc.perform(post("/api/auth/guest").param("guestId", "123"))
+                    .andExpect(status().isConflict());
         }
     }
 
@@ -83,38 +84,38 @@ class AuthControllerTests {
         @Test
         void success_returns201AndToken() throws Exception {
             when(authService.Login(eq("user"), eq("pass"), eq(42)))
-                .thenReturn("jwt-token");
+                    .thenReturn("jwt-token");
 
             mvc.perform(post("/api/auth/login")
-                    .param("username","user")
-                    .param("password","pass")
-                    .param("userId","42"))
-               .andExpect(status().isCreated())
-               .andExpect(content().string("jwt-token"));
+                    .param("username", "user")
+                    .param("password", "pass")
+                    .param("userId", "42"))
+                    .andExpect(status().isCreated())
+                    .andExpect(content().string("jwt-token"));
         }
 
         @Test
         void badRequest_returns400() throws Exception {
             when(authService.Login(anyString(), anyString(), anyInt()))
-                .thenThrow(new IllegalArgumentException());
+                    .thenThrow(new IllegalArgumentException());
 
             mvc.perform(post("/api/auth/login")
-                    .param("username","u")
-                    .param("password","p")
-                    .param("userId","0"))
-               .andExpect(status().isBadRequest());
+                    .param("username", "u")
+                    .param("password", "p")
+                    .param("userId", "0"))
+                    .andExpect(status().isBadRequest());
         }
 
         @Test
         void conflict_returns409() throws Exception {
             when(authService.Login(anyString(), anyString(), anyInt()))
-                .thenThrow(new RuntimeException());
+                    .thenThrow(new RuntimeException());
 
             mvc.perform(post("/api/auth/login")
-                    .param("username","user")
-                    .param("password","pass")
-                    .param("userId","42"))
-               .andExpect(status().isConflict());
+                    .param("username", "user")
+                    .param("password", "pass")
+                    .param("userId", "42"))
+                    .andExpect(status().isConflict());
         }
     }
 
@@ -126,32 +127,32 @@ class AuthControllerTests {
             doNothing().when(authService).Logout(eq("tok"));
 
             mvc.perform(post("/api/auth/logout")
-                    .param("authToken","tok"))
-               .andExpect(status().isNoContent());
+                    .param("authToken", "tok"))
+                    .andExpect(status().isNoContent());
         }
 
         @Test
         void notFound_returns404() throws Exception {
             doThrow(new NoSuchElementException()).when(authService).Logout(eq("tok"));
 
-            mvc.perform(post("/api/auth/logout").param("authToken","tok"))
-               .andExpect(status().isNotFound());
+            mvc.perform(post("/api/auth/logout").param("authToken", "tok"))
+                    .andExpect(status().isNotFound());
         }
 
         @Test
         void unauthorized_expiredJwt() throws Exception {
             doThrow(new ExpiredJwtException(null, null, "expired")).when(authService).Logout(eq("tok"));
 
-            mvc.perform(post("/api/auth/logout").param("authToken","tok"))
-               .andExpect(status().isUnauthorized());
+            mvc.perform(post("/api/auth/logout").param("authToken", "tok"))
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
         void badRequest_returns400() throws Exception {
             doThrow(new IllegalArgumentException()).when(authService).Logout(eq("tok"));
 
-            mvc.perform(post("/api/auth/logout").param("authToken","tok"))
-               .andExpect(status().isBadRequest());
+            mvc.perform(post("/api/auth/logout").param("authToken", "tok"))
+                    .andExpect(status().isBadRequest());
         }
     }
 
@@ -162,45 +163,45 @@ class AuthControllerTests {
         void success_returns200AndUserId() throws Exception {
             when(authService.ValidateToken(eq("tok"))).thenReturn(77);
 
-            mvc.perform(post("/api/auth/validate").param("authToken","tok"))
-               .andExpect(status().isOk())
-               .andExpect(content().string("77"));
+            mvc.perform(post("/api/auth/validate").param("authToken", "tok"))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string("77"));
         }
 
         @Test
         void notFound_returns404() throws Exception {
             when(authService.ValidateToken(eq("tok")))
-                .thenThrow(new NoSuchElementException());
+                    .thenThrow(new NoSuchElementException());
 
-            mvc.perform(post("/api/auth/validate").param("authToken","tok"))
-               .andExpect(status().isNotFound());
+            mvc.perform(post("/api/auth/validate").param("authToken", "tok"))
+                    .andExpect(status().isNotFound());
         }
 
         @Test
         void expired_returns401() throws Exception {
             when(authService.ValidateToken(eq("tok")))
-                .thenThrow(new ExpiredJwtException(null,null,"exp"));
+                    .thenThrow(new ExpiredJwtException(null, null, "exp"));
 
-            mvc.perform(post("/api/auth/validate").param("authToken","tok"))
-               .andExpect(status().isUnauthorized());
+            mvc.perform(post("/api/auth/validate").param("authToken", "tok"))
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
         void badRequest_returns400() throws Exception {
             when(authService.ValidateToken(eq("tok")))
-                .thenThrow(new IllegalArgumentException());
+                    .thenThrow(new IllegalArgumentException());
 
-            mvc.perform(post("/api/auth/validate").param("authToken","tok"))
-               .andExpect(status().isBadRequest());
+            mvc.perform(post("/api/auth/validate").param("authToken", "tok"))
+                    .andExpect(status().isBadRequest());
         }
 
         @Test
         void invalidJwt_returns401() throws Exception {
             when(authService.ValidateToken(eq("tok")))
-                .thenThrow(new RuntimeException("invalid"));
+                    .thenThrow(new RuntimeException("invalid"));
 
-            mvc.perform(post("/api/auth/validate").param("authToken","tok"))
-               .andExpect(status().isUnauthorized());
+            mvc.perform(post("/api/auth/validate").param("authToken", "tok"))
+                    .andExpect(status().isUnauthorized());
         }
     }
 }

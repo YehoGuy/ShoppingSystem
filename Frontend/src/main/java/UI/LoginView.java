@@ -26,8 +26,6 @@
 //     }
 // } 
 
-
-
 ////////////////////////////////////////////// this was old class ///////////////////////////////////
 package UI;
 
@@ -39,6 +37,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
+import com.vaadin.flow.server.VaadinSession;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -62,6 +61,9 @@ public class LoginView extends VerticalLayout {
             String password = event.getPassword();
             try {
                 String token = loginAsMember(username, password);
+                VaadinSession session = VaadinSession.getCurrent();
+                session.setAttribute("authToken", token);
+                session.setAttribute("username", username);
                 Notification.show("Login successful! Token: " + token);
                 getUI().ifPresent(ui -> ui.navigate("home"));
                 // Optionally: store token in session or navigate to profile
@@ -122,4 +124,3 @@ public class LoginView extends VerticalLayout {
         return i18n;
     }
 }
-
