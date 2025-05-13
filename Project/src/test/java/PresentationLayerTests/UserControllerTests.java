@@ -45,7 +45,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc(addFilters = false)
 public class UserControllerTests {
 
-    @SpringBootApplication(scanBasePackages = "PresentationLayer")
+    @SpringBootApplication(scanBasePackages = "com.example.app.PresentationLayer")
     static class TestBootApp {}
 
     @Autowired
