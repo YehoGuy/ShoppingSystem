@@ -57,11 +57,17 @@ public class RegistrationView extends VerticalLayout {
                 HttpEntity<?> request = new HttpEntity<>(null, headers);
 
                 // build query string
-                String url = REGISTER_API_URL + "?username={username}&password={password}&email={email}&phoneNumber={phoneNumber}&address={address}";
+                String url = REGISTER_API_URL
+                        + "?username={username}&password={password}&email={email}&phoneNumber={phoneNumber}&address={address}";
 
-                ResponseEntity<Void> response = restTemplate.postForEntity(url, request, Void.class, params);
+                ResponseEntity<String> response = restTemplate.postForEntity(url, request, Void.class, params);
 
                 if (response.getStatusCode() == HttpStatus.CREATED) {
+                    VaadinSession.getCurrent().getSession().setAttribute("username", user);
+                    VaadinSession.getCurrent().getSession().setAttribute("email", mail);
+                    VaadinSession.getCurrent().getSession().setAttribute("phoneNumber", phoneNum);
+                    VaadinSession.getCurrent().getSession().setAttribute("address", addr);
+                    VaadinSession.getCurrent().getSession().setAttribute("authToken", response.getBody());
                     Notification.show("Registration successful!");
                     getUI().ifPresent(ui -> ui.navigate("home"));
                 } else {
