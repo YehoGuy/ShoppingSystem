@@ -111,7 +111,7 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(
+    public ResponseEntity<String> register(
             @RequestParam @NotBlank @Size(min = 3, max = 20) String username,
             @RequestParam @NotBlank String password,
             @RequestParam @NotBlank String email,
