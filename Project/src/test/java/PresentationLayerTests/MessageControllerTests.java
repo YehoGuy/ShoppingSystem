@@ -32,8 +32,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc(addFilters = false)
 public class MessageControllerTests {
 
-    @SpringBootApplication(scanBasePackages = "PresentationLayer")
-    static class TestBootApp {}
+    @SpringBootApplication(scanBasePackages = "com.example.app.PresentationLayer")
+    static class TestBootApp {
+    }
 
     @Autowired
     private MockMvc mvc;
@@ -47,29 +48,29 @@ public class MessageControllerTests {
         @Test
         void success_returns202() throws Exception {
             when(messageService.sendMessageToUser("tok", 5, "Hello", 0))
-                .thenReturn("msg-123");
+                    .thenReturn("msg-123");
 
             mvc.perform(post("/api/messages/user")
                     .param("authToken", "tok")
                     .param("receiverId", "5")
                     .param("content", "Hello")
                     .param("previousMessageId", "0"))
-               .andExpect(status().isAccepted())
-               .andExpect(content().string("msg-123"));
+                    .andExpect(status().isAccepted())
+                    .andExpect(content().string("msg-123"));
         }
 
         @Test
         void badRequest_onErrorResult_returns400() throws Exception {
             when(messageService.sendMessageToUser(anyString(), anyInt(), anyString(), anyInt()))
-                .thenReturn("Error: blocked");
+                    .thenReturn("Error: blocked");
 
             mvc.perform(post("/api/messages/user")
                     .param("authToken", "tok")
                     .param("receiverId", "5")
                     .param("content", "Hello")
                     .param("previousMessageId", "0"))
-               .andExpect(status().isBadRequest())
-               .andExpect(content().string("Error: blocked"));
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().string("Error: blocked"));
         }
     }
 
@@ -79,29 +80,29 @@ public class MessageControllerTests {
         @Test
         void success_returns202() throws Exception {
             when(messageService.sendMessageToShop("tok", 10, "Order?", 2))
-                .thenReturn("shop-msg-789");
+                    .thenReturn("shop-msg-789");
 
             mvc.perform(post("/api/messages/shop")
                     .param("authToken", "tok")
                     .param("receiverId", "10")
                     .param("content", "Order?")
                     .param("previousMessageId", "2"))
-               .andExpect(status().isAccepted())
-               .andExpect(content().string("shop-msg-789"));
+                    .andExpect(status().isAccepted())
+                    .andExpect(content().string("shop-msg-789"));
         }
 
         @Test
         void badRequest_onErrorResult_returns400() throws Exception {
             when(messageService.sendMessageToShop(anyString(), anyInt(), anyString(), anyInt()))
-                .thenReturn("Error: shop closed");
+                    .thenReturn("Error: shop closed");
 
             mvc.perform(post("/api/messages/shop")
                     .param("authToken", "tok")
                     .param("receiverId", "10")
                     .param("content", "Order?")
                     .param("previousMessageId", "2"))
-               .andExpect(status().isBadRequest())
-               .andExpect(content().string("Error: shop closed"));
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().string("Error: shop closed"));
         }
     }
 
@@ -114,19 +115,19 @@ public class MessageControllerTests {
 
             mvc.perform(delete("/api/messages/42")
                     .param("authToken", "tok"))
-               .andExpect(status().isOk())
-               .andExpect(content().string("deleted"));
+                    .andExpect(status().isOk())
+                    .andExpect(content().string("deleted"));
         }
 
         @Test
         void badRequest_onErrorResult_returns400() throws Exception {
             when(messageService.deleteMessage(anyString(), anyInt()))
-                .thenReturn("Error: no rights");
+                    .thenReturn("Error: no rights");
 
             mvc.perform(delete("/api/messages/42")
                     .param("authToken", "tok"))
-               .andExpect(status().isBadRequest())
-               .andExpect(content().string("Error: no rights"));
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().string("Error: no rights"));
         }
     }
 
@@ -136,25 +137,25 @@ public class MessageControllerTests {
         @Test
         void success_returns200() throws Exception {
             when(messageService.updateMessage("tok", 7, "New content"))
-                .thenReturn("updated");
+                    .thenReturn("updated");
 
             mvc.perform(patch("/api/messages/7")
                     .param("authToken", "tok")
                     .param("content", "New content"))
-               .andExpect(status().isOk())
-               .andExpect(content().string("updated"));
+                    .andExpect(status().isOk())
+                    .andExpect(content().string("updated"));
         }
 
         @Test
         void badRequest_onErrorResult_returns400() throws Exception {
             when(messageService.updateMessage(anyString(), anyInt(), anyString()))
-                .thenReturn("Error: too late");
+                    .thenReturn("Error: too late");
 
             mvc.perform(patch("/api/messages/7")
                     .param("authToken", "tok")
                     .param("content", "New content"))
-               .andExpect(status().isBadRequest())
-               .andExpect(content().string("Error: too late"));
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().string("Error: too late"));
         }
     }
 
@@ -164,12 +165,12 @@ public class MessageControllerTests {
         @Test
         void success_returns200AndConversation() throws Exception {
             when(messageService.getFullConversation("tok", 15))
-                .thenReturn("msg1 -> msg2 -> msg3");
+                    .thenReturn("msg1 -> msg2 -> msg3");
 
             mvc.perform(get("/api/messages/15/conversation")
                     .param("authToken", "tok"))
-               .andExpect(status().isOk())
-               .andExpect(content().string("msg1 -> msg2 -> msg3"));
+                    .andExpect(status().isOk())
+                    .andExpect(content().string("msg1 -> msg2 -> msg3"));
         }
     }
 
@@ -179,12 +180,12 @@ public class MessageControllerTests {
         @Test
         void success_returns200AndMessages() throws Exception {
             when(messageService.getMessagesBySenderId("tok", 3))
-                .thenReturn("m1,m2");
+                    .thenReturn("m1,m2");
 
             mvc.perform(get("/api/messages/sender/3")
                     .param("authToken", "tok"))
-               .andExpect(status().isOk())
-               .andExpect(content().string("m1,m2"));
+                    .andExpect(status().isOk())
+                    .andExpect(content().string("m1,m2"));
         }
     }
 
@@ -194,12 +195,12 @@ public class MessageControllerTests {
         @Test
         void success_returns200AndMessages() throws Exception {
             when(messageService.getMessagesByReceiverId("tok", 4))
-                .thenReturn("mA,mB");
+                    .thenReturn("mA,mB");
 
             mvc.perform(get("/api/messages/receiver/4")
                     .param("authToken", "tok"))
-               .andExpect(status().isOk())
-               .andExpect(content().string("mA,mB"));
+                    .andExpect(status().isOk())
+                    .andExpect(content().string("mA,mB"));
         }
     }
 
@@ -209,23 +210,23 @@ public class MessageControllerTests {
         @Test
         void success_returns200() throws Exception {
             when(messageService.getMessageById("tok", 9))
-                .thenReturn("single message");
+                    .thenReturn("single message");
 
             mvc.perform(get("/api/messages/9")
                     .param("authToken", "tok"))
-               .andExpect(status().isOk())
-               .andExpect(content().string("single message"));
+                    .andExpect(status().isOk())
+                    .andExpect(content().string("single message"));
         }
 
         @Test
         void notFound_returns404() throws Exception {
             when(messageService.getMessageById(anyString(), anyInt()))
-                .thenReturn("Message not found!");
+                    .thenReturn("Message not found!");
 
             mvc.perform(get("/api/messages/9")
                     .param("authToken", "tok"))
-               .andExpect(status().isNotFound())
-               .andExpect(content().string("Message not found!"));
+                    .andExpect(status().isNotFound())
+                    .andExpect(content().string("Message not found!"));
         }
     }
 
@@ -235,23 +236,23 @@ public class MessageControllerTests {
         @Test
         void success_returns200() throws Exception {
             when(messageService.getPreviousMessage("tok", 9))
-                .thenReturn("prev message");
+                    .thenReturn("prev message");
 
             mvc.perform(get("/api/messages/9/previous")
                     .param("authToken", "tok"))
-               .andExpect(status().isOk())
-               .andExpect(content().string("prev message"));
+                    .andExpect(status().isOk())
+                    .andExpect(content().string("prev message"));
         }
 
         @Test
         void notFound_returns404() throws Exception {
             when(messageService.getPreviousMessage(anyString(), anyInt()))
-                .thenReturn("No previous message found!");
+                    .thenReturn("No previous message found!");
 
             mvc.perform(get("/api/messages/9/previous")
                     .param("authToken", "tok"))
-               .andExpect(status().isNotFound())
-               .andExpect(content().string("No previous message found!"));
+                    .andExpect(status().isNotFound())
+                    .andExpect(content().string("No previous message found!"));
         }
     }
 }

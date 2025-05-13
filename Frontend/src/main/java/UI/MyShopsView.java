@@ -26,7 +26,7 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 
 @Route(value = "myshops", layout = AppLayoutBasic.class)
-public class MyShopsView extends VerticalLayout {
+public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
 
     private List<ShopDTO> allShops = new ArrayList<>(); // Store the full list of shops
     private List<ShopDTO> filteredShops = new ArrayList<>(); // Store the filtered list
