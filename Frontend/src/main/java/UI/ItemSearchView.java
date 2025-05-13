@@ -35,7 +35,8 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
     private NumberField minRatingField;
 
     private final RestTemplate restTemplate = new RestTemplate();
-    private final String URL = "http://localhost:8080/api/items";
+    private final String ITEM_URL = "http://localhost:8080/api/items";
+    private final String SHOP_URL = "http://localhost:8080/api/shops";
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
@@ -80,7 +81,7 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
     }
 
     private void getItems() {
-        String url = URL + "/all";
+        String url = ITEM_URL + "/all";
         ResponseEntity<ItemDTO[]> response = restTemplate.getForEntity(url, ItemDTO[].class);
         if (response.getStatusCode() == HttpStatus.OK) {
             ItemDTO[] items = response.getBody();
@@ -113,7 +114,11 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
         minRatingField.setPlaceholder("e.g. 3.0");
         minRatingField.setWidth("100px");
 
-        Button applyFiltersButton = new Button("Apply Filters", e -> getFilteredItems());
+        Button applyFiltersButton = new Button("Apply Filters", e -> getFilteredItems("",
+                categoryFilter.getValue(), new ArrayList<>(),
+                minPriceField.getValue() != null ? minPriceField.getValue().intValue() : null,
+                maxPriceField.getValue() != null ? maxPriceField.getValue().intValue() : null,
+                minRatingField.getValue(), null));
 
         VerticalLayout filtersLayout = new VerticalLayout(
                 categoryFilter, minPriceField, maxPriceField, minRatingField, applyFiltersButton);
@@ -124,9 +129,31 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
         return filtersLayout; // Return the layout for further use if needed
     }
 
-    private void getFilteredItems() {
-        // set items to a new list, now i cant do it because i need WAF for it.
-        return; // This should be replaced with a call to the WAF to get the items
+    private void getFilteredItems(String name, ItemCategory category, List<String> keywords,
+            Integer minPrice, Integer maxPrice, Double minProductRating, Double minShopRating) {
+        String url = SHOP_URL
+                + "/search?name={name}&category={category}&keywords={keywords}&minPrice={minPrice}&maxPrice={maxPrice}&minProductRating={minProductRating}&minShopRating={minShopRating}";
+        Map<String, Object> params = new HashMap<>();
+        params.put("name", name);
+        params.put("category", category);
+        params.put("keywords", keywords);
+        params.put("minPrice", minPrice);
+        params.put("maxPrice", maxPrice);
+        params.put("minProductRating", minProductRating);
+        params.put("minShopRating", minShopRating);
+        ResponseEntity<ItemDTO[]> response = restTemplate.getForEntity(url, ItemDTO[].class, params);
+        if (response.getStatusCode() == HttpStatus.OK) {
+            ItemDTO[] items = response.getBody();
+            if (items != null) {
+                filteredItems.clear();
+                for (ItemDTO item : items) {
+                    filteredItems.add(item);
+                }
+                displayItems(filteredItems);
+            }
+        } else {
+            Notification.show("Failed to fetch items: " + response.getStatusCode());
+        }
     }
 
     // search by name
