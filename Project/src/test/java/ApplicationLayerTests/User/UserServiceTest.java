@@ -1,4 +1,7 @@
 package ApplicationLayerTests.User;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -9,11 +12,20 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
+import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
 import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.Member;
@@ -354,6 +366,228 @@ public class UserServiceTest {
         // After concurrent add/remove, either admin is in or not
         assertTrue(userRepository.getAllAdmins().contains(userId)); // The system creator admin must always exist
     }
+
+    @Test
+    void testSetSuspendedSuccess() {
+        // create a fresh user
+        userService.addMember("suspendUser", "pass123", "suspend@mail.com", "0123456789", "addr");
+        int memberId = userRepository.isUsernameAndPasswordValid("suspendUser", "pass123");
+        // suspend for 24 hours
+        LocalDateTime until = LocalDateTime.now().plusDays(1);
+        userService.setSuspended(memberId, until);
+        // now isSuspended should return true
+        assertTrue(userService.isSuspended(memberId));
+    }
+
+    @Test
+    void testSetSuspendedFailure() {
+        // replace repository with a mock that throws
+        UserRepository mockRepo = Mockito.mock(UserRepository.class);
+        userService = new UserService(mockRepo);
+        userService.setServices(authTokenService);
+        // stub to throw low‐level error
+        Mockito.doThrow(new RuntimeException("DB error"))
+            .when(mockRepo).setSuspended(Mockito.eq(42), Mockito.any(LocalDateTime.class));
+        // calling setSuspended should be wrapped in OurRuntime
+        OurRuntime ex = assertThrows(OurRuntime.class, () ->
+            userService.setSuspended(42, LocalDateTime.now())
+        );
+        assertTrue(ex.getMessage().contains("Error setting suspension for user ID 42"));
+    }
+
+    // --- getNotificationsAndClear ---
+    @Test
+    void testGetNotificationsAndClearSuccess() throws Exception {
+        UserRepository mockRepo = mock(UserRepository.class);
+        AuthTokenService mockAuth = mock(AuthTokenService.class);  
+        UserService svc = new UserService(mockRepo);
+        svc.setServices(mockAuth);                               
+    
+        String token = "tok123";
+        when(mockAuth.ValidateToken(token)).thenReturn(77);            
+    
+        svc.getNotificationsAndClear(token);
+    
+        verify(mockRepo).getNotificationsAndClear(77);
+    }
+    
+    @Test
+    void testGetNotificationsAndClearFailure() throws Exception {
+        UserRepository mockRepo = mock(UserRepository.class);
+        AuthTokenService mockAuth = mock(AuthTokenService.class);    
+        UserService svc = new UserService(mockRepo);
+        svc.setServices(mockAuth);
+    
+        String token = "tokX";
+        when(mockAuth.ValidateToken(token)).thenReturn(42);
+        doThrow(new RuntimeException("DB down"))
+            .when(mockRepo).getNotificationsAndClear(42);
+    
+        OurRuntime ex = assertThrows(OurRuntime.class, () ->
+            svc.getNotificationsAndClear(token)
+        );
+        assertTrue(ex.getMessage().contains("getNotificationsAndClear"));
+    }    
+
+    // --- purchaseNotification ---
+    @Test
+    void testPurchaseNotificationSuccess() {
+        // --- arrange ---
+        UserRepository mockRepo = mock(UserRepository.class);
+        UserService svc = new UserService(mockRepo);
+
+        Member owner = mock(Member.class);
+        when(owner.getMemberId()).thenReturn(10);
+        when(mockRepo.getOwners(5)).thenReturn(List.of(owner));
+
+        // build the cart as exactly HashMap<Integer,HashMap<Integer,Integer>>
+        HashMap<Integer, HashMap<Integer,Integer>> cart = new HashMap<>();
+        HashMap<Integer,Integer> items = new HashMap<>();
+        items.put(3, 2);
+        cart.put(5, items);
+
+        // --- act ---
+        svc.purchaseNotification(cart);
+
+        // --- assert ---
+        verify(mockRepo).addNotification(10,
+            "Item 3 Purchased",
+            "Quantity: 2 purchased from your shop ID: 5");
+    }
+
+    @Test
+    void testPurchaseNotificationFailure() {
+        // --- arrange ---
+        UserRepository mockRepo = mock(UserRepository.class);
+        UserService svc = new UserService(mockRepo);
+
+        Member owner = mock(Member.class);
+        when(owner.getMemberId()).thenReturn(9);
+        when(mockRepo.getOwners(1)).thenReturn(List.of(owner));
+
+        // build the cart with the right types
+        HashMap<Integer, HashMap<Integer,Integer>> cart = new HashMap<>();
+        HashMap<Integer,Integer> items = new HashMap<>();
+        items.put(7, 3);
+        cart.put(1, items);
+
+        // stub addNotification to throw
+        doThrow(new RuntimeException("oops"))
+            .when(mockRepo).addNotification(eq(9), anyString(), anyString());
+
+        // --- act & assert ---
+        OurRuntime ex = assertThrows(OurRuntime.class, () ->
+            svc.purchaseNotification(cart)
+        );
+        assertTrue(ex.getMessage().contains("purchaseNotification"));
+    }
+
+
+    // --- closeShopNotification ---
+    @Test
+    void testCloseShopNotificationSuccess() {
+        UserRepository mockRepo = mock(UserRepository.class);
+        UserService svc = new UserService(mockRepo);
+
+        Member owner = mock(Member.class);
+        when(owner.getMemberId()).thenReturn(21);
+        when(mockRepo.getOwners(11)).thenReturn(List.of(owner));
+
+        svc.closeShopNotification(11);
+
+        verify(mockRepo).addNotification(21,
+            "Shop Closed",
+            "Your shop ID: 11 has been closed.");
+    }
+
+    @Test
+    void testCloseShopNotificationFailure() {
+        UserRepository mockRepo = mock(UserRepository.class);
+        UserService svc = new UserService(mockRepo);
+
+        when(mockRepo.getOwners(99))
+            .thenThrow(new RuntimeException("network"));
+
+        OurRuntime ex = assertThrows(OurRuntime.class, () ->
+            svc.closeShopNotification(99)
+        );
+        assertTrue(ex.getMessage().contains("closeShopNotification"));
+    }
+
+    // --- removedAppointment ---
+    @Test
+    void testRemovedAppointmentWithoutShopSuccess() {
+        UserRepository mockRepo = mock(UserRepository.class);
+        UserService svc = new UserService(mockRepo);
+
+        svc.removedAppointment(5, "Dentist", null);
+        verify(mockRepo).addNotification(5,
+            "Appointment Removed",
+            "Your appointment to: Dentist has been removed.");
+    }
+
+    @Test
+    void testRemovedAppointmentWithShopSuccess() {
+        UserRepository mockRepo = mock(UserRepository.class);
+        UserService svc = new UserService(mockRepo);
+
+        svc.removedAppointment(6, "Checkup", 42);
+        verify(mockRepo).addNotification(6,
+            "Appointment Removed",
+            "Your appointment to: Checkup in the shop 42 has been removed.");
+    }
+
+    @Test
+    void testRemovedAppointmentFailure() {
+        UserRepository mockRepo = mock(UserRepository.class);
+        UserService svc = new UserService(mockRepo);
+
+        doThrow(new RuntimeException("boom"))
+            .when(mockRepo).addNotification(anyInt(), anyString(), anyString());
+
+        OurRuntime ex = assertThrows(OurRuntime.class, () ->
+            svc.removedAppointment(8, "X", null)
+        );
+        assertTrue(ex.getMessage().contains("removedAppointment"));
+    }
+
+    // --- messageNotification ---
+    @Test
+    void testMessageNotificationFromShopSuccess() {
+        UserRepository mockRepo = mock(UserRepository.class);
+        UserService svc = new UserService(mockRepo);
+
+        svc.messageNotification(33, 55, true);
+        verify(mockRepo).addNotification(33,
+            "Message Received",
+            "You have received a new message from the shop (id=55).");
+    }
+
+    @Test
+    void testMessageNotificationFromUserSuccess() {
+        UserRepository mockRepo = mock(UserRepository.class);
+        UserService svc = new UserService(mockRepo);
+
+        svc.messageNotification(44, 0, false);
+        verify(mockRepo).addNotification(44,
+            "Message Received",
+            "You have received a new message from the user (id=44).");
+    }
+
+    @Test
+    void testMessageNotificationFailure() {
+        UserRepository mockRepo = mock(UserRepository.class);
+        UserService svc = new UserService(mockRepo);
+
+        doThrow(new RuntimeException("failMsg"))
+            .when(mockRepo).addNotification(anyInt(), anyString(), anyString());
+
+        OurRuntime ex = assertThrows(OurRuntime.class, () ->
+            svc.messageNotification(99, 0, false)
+        );
+        assertTrue(ex.getMessage().contains("messageUserNotification"));
+    }
+
 /*
     @Test
     void testConcurrentShoppingCartModifications() throws InterruptedException {
