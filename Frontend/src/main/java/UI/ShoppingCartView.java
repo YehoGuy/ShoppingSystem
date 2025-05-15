@@ -36,6 +36,7 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 public class ShoppingCartView extends VerticalLayout implements BeforeEnterObserver {
 
     private static final String USER_API_URL = "http://localhost:8080/api/users";
+    private static final String SHOP_API_URL = "http://localhost:8080/api/shops";
     private ShoppingCartDTO shoppingCart;
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -173,12 +174,28 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<?> request = new HttpEntity<>(null, headers);
             String url = USER_API_URL + "/shoppingCart";
+            Map<String, String> params = new HashMap<>();
+            params.put("token", authToken);
             ResponseEntity<?> response = restTemplate
-                    .getForEntity(url, HashMap.class, request);
+                    .getForEntity(url, HashMap.class, request, params);
             if (response.getStatusCode().is2xxSuccessful()) {
                 HashMap<Integer, HashMap<Integer, Integer>> responseBody = (HashMap<Integer, HashMap<Integer, Integer>>) response
                         .getBody();
-
+                if (responseBody != null) {
+                    // get shops names
+                    HttpHeaders headers2 = new HttpHeaders();
+                    headers2.setContentType(MediaType.APPLICATION_JSON);
+                    HttpEntity<?> request2 = new HttpEntity<>(null, headers2);
+                    String url2 = SHOP_API_URL + "/getShopsNames";
+                    Map<String, String> params2 = new HashMap<>();
+                    params2.put("shopsIds", responseBody.keySet().toString());
+                    params2.put("token", authToken);
+                    ResponseEntity<?> response2 = restTemplate
+                            .getForEntity(url2, List.class, request2, params2);
+                    if (response2.getStatusCode().is2xxSuccessful()) {
+                        List<String> shopsNames = (List<String>) response2.getBody();
+                        
+                }
             }
         } catch (Exception e) {
             Notification.show("Error: could not retrieve shopping cart", 5000,
