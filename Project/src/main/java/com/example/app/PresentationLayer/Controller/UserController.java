@@ -72,6 +72,7 @@ import jakarta.validation.constraints.Size;
  *
  * 24. POST /roles/{shopId}/accept params: token → 204 accept role
  * 25. POST /roles/{shopId}/decline params: token → 204 decline role
+ * 26. GET /shoppingCart/{userId} params: token → 200
  *
  * Error mapping (all endpoints):
  * 400 – Bad data / validation failure
