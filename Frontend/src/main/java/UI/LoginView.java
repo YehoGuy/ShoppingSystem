@@ -1,32 +1,3 @@
-// package UI;
-
-// import com.vaadin.flow.component.button.Button;
-// import com.vaadin.flow.component.login.LoginForm;
-// import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-// import com.vaadin.flow.router.Route;
-
-// @Route("login")
-// public class LoginView extends VerticalLayout {
-
-//     public LoginView() {
-//         setSizeFull();
-//         setAlignItems(Alignment.CENTER);
-//         setJustifyContentMode(JustifyContentMode.CENTER);
-
-//         LoginForm loginForm = new LoginForm();
-//         loginForm.addLoginListener(event -> {
-//             // Handle login logic here
-//         });
-//         Button loginAsGuestButton = new Button("Login as Guest", e -> {
-//             // Handle guest login logic here
-//         });
-//         Button back = new Button("Back", e -> getUI().ifPresent(ui -> ui.navigate("")));
-
-//         add(loginForm, loginAsGuestButton, back);
-//     }
-// } 
-
-////////////////////////////////////////////// this was old class ///////////////////////////////////
 package UI;
 
 import com.vaadin.flow.component.button.Button;
@@ -34,13 +5,17 @@ import com.vaadin.flow.component.login.LoginForm;
 import com.vaadin.flow.component.login.LoginI18n;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 import com.vaadin.flow.router.Route;
-import org.springframework.http.*;
-import org.springframework.web.client.RestTemplate;
 import com.vaadin.flow.server.VaadinSession;
-
-import java.util.HashMap;
-import java.util.Map;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 
 @Route("login")
 public class LoginView extends VerticalLayout {
@@ -55,61 +30,70 @@ public class LoginView extends VerticalLayout {
 
         LoginForm loginForm = new LoginForm();
         loginForm.setI18n(createCustomLoginI18n());
-
         loginForm.addLoginListener(event -> {
             String username = event.getUsername();
             String password = event.getPassword();
             try {
                 String token = loginAsMember(username, password);
-                VaadinSession session = VaadinSession.getCurrent();
-                session.setAttribute("authToken", token);
-                session.setAttribute("username", username);
-                Notification.show("Login successful! Token: " + token);
+                VaadinSession.getCurrent().setAttribute("authToken", token);
+                VaadinSession.getCurrent().setAttribute("username", username);
+                loginForm.setError(false);
+                Notification.show("Login successful!");
                 getUI().ifPresent(ui -> ui.navigate("home"));
-                // Optionally: store token in session or navigate to profile
             } catch (Exception ex) {
                 loginForm.setError(true);
                 Notification.show("Login failed: " + ex.getMessage(), 3000, Notification.Position.MIDDLE);
             }
         });
 
-        Button loginAsGuestButton = new Button("Login as Guest", e -> {
+        Button guestButton = new Button("Login as Guest", e -> {
             try {
                 String token = loginAsGuest();
-                Notification.show("Logged in as guest! Token: " + token);
+                VaadinSession.getCurrent().setAttribute("authToken", token);
+                VaadinSession.getCurrent().setAttribute("username", "guest");
+                Notification.show("Logged in as guest!");
                 getUI().ifPresent(ui -> ui.navigate("home"));
-
-                // Optionally: store token in session or navigate to guest profile
             } catch (Exception ex) {
                 Notification.show("Guest login failed: " + ex.getMessage(), 3000, Notification.Position.MIDDLE);
             }
         });
 
-        Button back = new Button("Back", e -> getUI().ifPresent(ui -> ui.navigate("")));
+        Button backButton = new Button("Back", e -> getUI().ifPresent(ui -> ui.navigate("")));
 
-        add(loginForm, loginAsGuestButton, back);
-    }
-
-    private String loginAsGuest() {
-        ResponseEntity<String> response = restTemplate.postForEntity(BASE_URL + "/login/guest", null, String.class);
-        if (response.getStatusCode().is2xxSuccessful()) {
-            return response.getBody(); // This is the token
-        } else {
-            throw new RuntimeException("Guest login failed");
-        }
+        add(loginForm, guestButton, backButton);
     }
 
     private String loginAsMember(String username, String password) {
-        String url = BASE_URL + "/login/member?username={username}&password={password}";
-        Map<String, String> params = new HashMap<>();
-        params.put("username", username);
-        params.put("password", password);
+        String url = BASE_URL + "/login/member";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-        ResponseEntity<String> response = restTemplate.postForEntity(url, null, String.class, params);
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("username", username);
+        form.add("password", password);
+
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(form, headers);
+        ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
+
         if (response.getStatusCode().is2xxSuccessful()) {
-            return response.getBody(); // This is the token
+            return response.getBody();
         } else {
-            throw new RuntimeException("Member login failed");
+            throw new RuntimeException("Member login failed: HTTP " + response.getStatusCodeValue());
+        }
+    }
+
+    private String loginAsGuest() {
+        String url = BASE_URL + "/login/guest";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(new LinkedMultiValueMap<>(), headers);
+        ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
+
+        if (response.getStatusCode().is2xxSuccessful()) {
+            return response.getBody();
+        } else {
+            throw new RuntimeException("Guest login failed: HTTP " + response.getStatusCodeValue());
         }
     }
 
