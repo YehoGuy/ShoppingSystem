@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
+import com.example.app.ApplicationLayer.OurArg;
+import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.Guest;
 import com.example.app.DomainLayer.Member;
@@ -575,6 +577,10 @@ public class UserController {
             authService.ValidateToken(token);
             HashMap<Integer, HashMap<Integer, Integer>> shoppingCart = userService.getUserShoppingCartItems(userId);
             return ResponseEntity.ok(shoppingCart);
+        } catch (OurRuntime e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        } catch (OurArg e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
         } catch (RuntimeException ex) {
