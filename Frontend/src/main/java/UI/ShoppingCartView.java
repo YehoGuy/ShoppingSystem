@@ -3,8 +3,10 @@ package UI;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
@@ -169,6 +171,15 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             String authToken = (String) VaadinSession.getCurrent().getAttribute("authToken");
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<?> request = new HttpEntity<>(null, headers);
+            String url = USER_API_URL + "/shoppingCart";
+            ResponseEntity<?> response = restTemplate
+                    .getForEntity(url, HashMap.class, request);
+            if (response.getStatusCode().is2xxSuccessful()) {
+                HashMap<Integer, HashMap<Integer, Integer>> responseBody = (HashMap<Integer, HashMap<Integer, Integer>>) response
+                        .getBody();
+
+            }
         } catch (Exception e) {
             Notification.show("Error: could not retrieve shopping cart", 5000,
                     Notification.Position.MIDDLE);
