@@ -28,87 +28,102 @@ import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.constraints.Min;
 
 /**
- *  Base path : /api/shops     (JSON in / JSON out)
+ * Base path : /api/shops     (JSON in / JSON out)
  *
- *  ─────────────────────────────── SHOP LIFE‑CYCLE ────────────────────────────────
- *  1.  POST   /create                                   params: token, name
- *                                                       → 201  ShopDTO
- *  2.  GET    /{shopId}                                 params: token
- *                                                       → 200  ShopDTO
- *  3.  GET    /all                                      params: token
- *                                                       → 200  [List<ShopDTO>]
- *  4.  DELETE /{shopId}                                 params: token
- *                                                       → 204
+ * ─────────────────────────────── SHOP LIFE‑CYCLE
+ * ────────────────────────────────
+ *  1. POST /create params: token, name
+ * → 201  ShopDTO
+ *  2. GET /{shopId} params: token
+ * → 200  ShopDTO
+ *  3. GET /all params: token
+ * → 200  [List<ShopDTO>]
+ *  4. DELETE /{shopId} params: token
+ * → 204
  *
- *  ────────────────────────── SHOP‑LEVEL POLICY & VALIDATION ───────────────────────
- *  5.  POST   /{shopId}/policy                          params: token, body {rule…}
- *                                                       → 204
- *  6.  POST   /policy/check                             params: token, body cart{shop→item→qty}
- *                                                       → 200  boolean
+ * ────────────────────────── SHOP‑LEVEL POLICY & VALIDATION
+ * ───────────────────────
+ *  5. POST /{shopId}/policy params: token, body {rule…}
+ * → 204
+ *  6. POST /policy/check params: token, body cart{shop→item→qty}
+ * → 200  boolean
  *
- *  ───────────────────────────── GLOBAL DISCOUNT RULES ─────────────────────────────
- *  7.  POST   /{shopId}/discount/global                 params: token, discount, isDouble
- *                                                       → 204
- *  8.  DELETE /{shopId}/discount/global                 params: token
- *                                                       → 204
+ * ───────────────────────────── GLOBAL DISCOUNT RULES
+ * ─────────────────────────────
+ *  7. POST /{shopId}/discount/global params: token, discount, isDouble
+ * → 204
+ *  8. DELETE /{shopId}/discount/global params: token
+ * → 204
  *
- *  ─────────────────────────── ITEM‑SPECIFIC DISCOUNTS ────────────────────────────
- *  9.  POST   /{shopId}/discount/items/{itemId}         params: token, discount, isDouble
- *                                                       → 204
- * 10.  DELETE /{shopId}/discount/items/{itemId}         params: token
- *                                                       → 204
+ * ─────────────────────────── ITEM‑SPECIFIC DISCOUNTS
+ * ────────────────────────────
+ *  9. POST /{shopId}/discount/items/{itemId} params: token, discount, isDouble
+ * → 204
+ * 10. DELETE /{shopId}/discount/items/{itemId} params: token
+ * → 204
  *
- *  ────────────────────────── CATEGORY‑LEVEL DISCOUNTS ────────────────────────────
- * 11.  POST   /{shopId}/discount/categories             params: token, category, discount, isDouble
- *                                                       → 204
- * 12.  DELETE /{shopId}/discount/categories             params: token, category
- *                                                       → 204
+ * ────────────────────────── CATEGORY‑LEVEL DISCOUNTS
+ * ────────────────────────────
+ * 11. POST /{shopId}/discount/categories params: token, category, discount,
+ * isDouble
+ * → 204
+ * 12. DELETE /{shopId}/discount/categories params: token, category
+ * → 204
  *
- *  ───────────────────────────── REVIEWS & RATING ─────────────────────────────────
- * 13.  POST   /{shopId}/reviews                         params: token, rating, reviewText
- *                                                       → 202
- * 14.  GET    /{shopId}/rating                          params: token
- *                                                       → 200  double
+ * ───────────────────────────── REVIEWS & RATING
+ * ─────────────────────────────────
+ * 13. POST /{shopId}/reviews params: token, rating, reviewText
+ * → 202
+ * 14. GET /{shopId}/rating params: token
+ * → 200  double
  *
- *  ───────────────────────────── INVENTORY MANAGEMENT ─────────────────────────────
- * 15.  POST   /{shopId}/items                           params: token, name, description, qty, price
- *                                                       → 201
- * 16.  PATCH  /{shopId}/items/{itemId}/price            params: token, price
- *                                                       → 204
- * 17.  DELETE /{shopId}/items/{itemId}                  params: token
- *                                                       → 204
- * 18.  GET    /{shopId}/items                           params: token
- *                                                       → 200  [List<ItemDTO>]
- * 19.  GET    /items                                    params: token
- *                                                       → 200  [List<ItemDTO>]
+ * ───────────────────────────── INVENTORY MANAGEMENT
+ * ─────────────────────────────
+ * 15. POST /{shopId}/items params: token, name, description, qty, price
+ * → 201
+ * 16. PATCH /{shopId}/items/{itemId}/price params: token, price
+ * → 204
+ * 17. DELETE /{shopId}/items/{itemId} params: token
+ * → 204
+ * 18. GET /{shopId}/items params: token
+ * → 200  [List<ItemDTO>]
+ * 19. GET /items params: token
+ * → 200  [List<ItemDTO>]
  *
- *  ───────────────────────────────── SEARCH ENDPOINTS ─────────────────────────────
- * 20.  GET    /search                                   params: token, name|category|keywords|minPrice|maxPrice|minProductRating|minShopRating
- *                                                       → 200  [List<ItemDTO>]
- * 21.  GET    /{shopId}/search                          params: token, name|category|keywords|minPrice|maxPrice|minProductRating
- *                                                       → 200  [List<ItemDTO>]
+ * ───────────────────────────────── SEARCH ENDPOINTS
+ * ─────────────────────────────
+ * 20. GET /search params: token,
+ * name|category|keywords|minPrice|maxPrice|minProductRating|minShopRating
+ * → 200  [List<ItemDTO>]
+ * 21. GET /{shopId}/search params: token,
+ * name|category|keywords|minPrice|maxPrice|minProductRating
+ * → 200  [List<ItemDTO>]
  *
- *  ───────────────────────────── SUPPLY / STOCK CONTROL ───────────────────────────
- * 22.  POST   /{shopId}/items/{itemId}/supply           params: token, quantity
- *                                                       → 204  (add initial supply)
- * 23.  GET    /{shopId}/items/{itemId}/quantity         params: token
- *                                                       → 200  int
- * 24.  GET    /{shopId}/items/{itemId}/available        params: token
- *                                                       → 200  boolean
- * 25.  PATCH  /{shopId}/items/{itemId}/supply/add       params: token, supply
- *                                                       → 204  (increase)
- * 26.  PATCH  /{shopId}/items/{itemId}/supply/remove    params: token, supply
- *                                                       → 204  (decrease)
+ * ───────────────────────────── SUPPLY / STOCK CONTROL
+ * ───────────────────────────
+ * 22. POST /{shopId}/items/{itemId}/supply params: token, quantity
+ * → 204  (add initial supply)
+ * 23. GET /{shopId}/items/{itemId}/quantity params: token
+ * → 200  int
+ * 24. GET /{shopId}/items/{itemId}/available params: token
+ * → 200  boolean
+ * 25. PATCH /{shopId}/items/{itemId}/supply/add params: token, supply
+ * → 204  (increase)
+ * 26. PATCH /{shopId}/items/{itemId}/supply/remove params: token, supply
+ * → 204  (decrease)
  *
- *  ────────────────────────────── PURCHASE WORK‑FLOW ───────────────────────────────
- * 27.  POST   /{shopId}/purchase/{purchaseId}/ship      params: token, country, city, street, postalCode
- *                                                       → 202
+ * ────────────────────────────── PURCHASE WORK‑FLOW
+ * ───────────────────────────────
+ * 27. POST /{shopId}/purchase/{purchaseId}/ship params: token, country, city,
+ * street, postalCode
+ * → 202
  *
- *  ───────────────────────────── ERROR MAPPING (ALL) ───────────────────────────────
- *    400 – Bad input / validation failure
- *    404 – Entity not found
- *    409 – Business‑rule conflict (permissions, stock, etc.)
- *    500 – Internal server error
+ * ───────────────────────────── ERROR MAPPING (ALL)
+ * ───────────────────────────────
+ * 400 – Bad input / validation failure
+ * 404 – Entity not found
+ * 409 – Business‑rule conflict (permissions, stock, etc.)
+ * 500 – Internal server error
  */
 @RestController
 @RequestMapping("/api/shops")
@@ -135,12 +150,12 @@ public class ShopController {
             return ResponseEntity.status(HttpStatus.CREATED).body(shopDTO);
 
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().body(ex.getMessage());        // 400
+            return ResponseEntity.badRequest().body(ex.getMessage()); // 400
         } catch (RuntimeException ex) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                 .body("Internal server error");            // 500
+                    .body("Internal server error"); // 500
         }
     }
 
@@ -159,7 +174,7 @@ public class ShopController {
         } catch (NoSuchElementException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage()); // 404
         } catch (RuntimeException ex) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());  // 409
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
         }
@@ -332,7 +347,7 @@ public class ShopController {
             @RequestParam String token) {
         try {
             shopService.addReviewToShop(shopId, rating, reviewText, token);
-            return ResponseEntity.accepted().build();  // 202
+            return ResponseEntity.accepted().build(); // 202
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
         } catch (NoSuchElementException ex) {
@@ -370,7 +385,7 @@ public class ShopController {
             @RequestParam String token) {
         try {
             shopService.addItemToShop(shopId, name, description, quantity, price, token);
-            return ResponseEntity.status(HttpStatus.CREATED).build();       // 201
+            return ResponseEntity.status(HttpStatus.CREATED).build(); // 201
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
         } catch (RuntimeException ex) {
@@ -521,7 +536,7 @@ public class ShopController {
         }
     }
 
-//adding from here
+    // adding from here
     @PostMapping("/{shopId}/items/{itemId}/supply")
     public ResponseEntity<?> addSupplyToItem(
             @PathVariable int shopId,
@@ -562,7 +577,6 @@ public class ShopController {
         }
     }
 
-
     @PatchMapping("/{shopId}/items/{itemId}/supply/add")
     public ResponseEntity<?> addSupply(
             @PathVariable int shopId,
@@ -576,7 +590,6 @@ public class ShopController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
         }
     }
-
 
     @PatchMapping("/{shopId}/items/{itemId}/supply/remove")
     public ResponseEntity<?> removeSupply(
@@ -592,8 +605,6 @@ public class ShopController {
         }
     }
 
-
-
     @PostMapping("/policy/check")
     public ResponseEntity<?> checkPolicy(
             @RequestBody HashMap<Integer, HashMap<Integer, Integer>> cart,
@@ -606,7 +617,6 @@ public class ShopController {
         }
     }
 
-
     @PostMapping("/{shopId}/purchase/{purchaseId}/ship")
     public ResponseEntity<?> shipPurchase(
             @PathVariable int shopId,
@@ -618,13 +628,20 @@ public class ShopController {
             @RequestParam String token) {
         try {
             shopService.shipPurchase(token, purchaseId, shopId, country, city, street, postalCode);
-            return ResponseEntity.accepted().build();  // 202
+            return ResponseEntity.accepted().build(); // 202
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
         }
     }
 
+    @GetMapping("/getShopsNames")
+    public ResponseEntity<?> getShopsNames(@RequestParam String token, @RequestParam List<Integer> shopsIds) {
+        try {
+            List<String> shopsNames = shopService.getShopsNames(shopsIds, token);
+            return ResponseEntity.ok(shopsNames);
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }
+    }
 
 }
-
-
