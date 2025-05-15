@@ -24,7 +24,6 @@ public class ShopRepository implements IShopRepository {
     private final AtomicInteger shopIdCounter = new AtomicInteger(1);
     private final List<Shop> closedShops = new CopyOnWriteArrayList<>();
 
-    
     @Override
     public Shop createShop(String name, PurchasePolicy purchasePolicy, ShippingMethod shippingMethod) {
         try {
@@ -57,8 +56,7 @@ public class ShopRepository implements IShopRepository {
     public List<Shop> getAllShops() {
         try {
             return Collections.unmodifiableList(
-                shops.values().stream().collect(Collectors.toList())
-            );
+                    shops.values().stream().collect(Collectors.toList()));
         } catch (Exception e) {
             throw new RuntimeException("Error retrieving all shops: " + e.getMessage(), e);
         }
@@ -71,7 +69,7 @@ public class ShopRepository implements IShopRepository {
             if (shop == null) {
                 throw new IllegalArgumentException("Shop not found: " + shopId);
             }
-            //shop.addPurchasePolicy(newPolicy);
+            // shop.addPurchasePolicy(newPolicy);
         } catch (Exception e) {
             throw new RuntimeException("Error updating purchase policy: " + e.getMessage(), e);
         }
@@ -148,7 +146,7 @@ public class ShopRepository implements IShopRepository {
     }
 
     @Override
-    public void addReviewToShop(int shopId,int userId, int rating, String reviewText) {
+    public void addReviewToShop(int shopId, int userId, int rating, String reviewText) {
         try {
             Shop shop = shops.get(shopId);
             if (shop == null) {
@@ -265,7 +263,8 @@ public class ShopRepository implements IShopRepository {
     }
 
     @Override
-    public double purchaseItems(Map<Integer, Integer> purchaseLists, Map<Integer, ItemCategory> itemsCategory, Integer shopId) {
+    public double purchaseItems(Map<Integer, Integer> purchaseLists, Map<Integer, ItemCategory> itemsCategory,
+            Integer shopId) {
         try {
             Shop shop = shops.get(shopId);
             if (shop == null) {
@@ -290,7 +289,6 @@ public class ShopRepository implements IShopRepository {
         }
     }
 
-
     @Override
     /**
      * Should not be used and be deleted after guy chagnes his code
@@ -300,8 +298,10 @@ public class ShopRepository implements IShopRepository {
         if (shop != null) {
             int currentQuantity = shop.getItemQuantity(itemId);
             if (currentQuantity >= supply) {
-                // shop.removeItemQuantity(itemId, supply); // Decrease the supply count   ----- האם צריך להוריד את הכמות?
-                // or just return true and let the caller handle the removal  ----------- לבדוק אם זה בסדר
+                // shop.removeItemQuantity(itemId, supply); // Decrease the supply count -----
+                // האם צריך להוריד את הכמות?
+                // or just return true and let the caller handle the removal ----------- לבדוק
+                // אם זה בסדר
                 return true;
             }
             return false;
@@ -309,14 +309,14 @@ public class ShopRepository implements IShopRepository {
             throw new IllegalArgumentException("Shop not found: " + shopId);
         }
     }
-    
+
     @Override
     /**
      * adds a given quantity of an item to the specified shop.
      * 
-     * @param shopId   the shop id.
-     * @param itemId   the item id.
-     * @param supply   the quantity to add.
+     * @param shopId the shop id.
+     * @param itemId the item id.
+     * @param supply the quantity to add.
      */
     public void addSupply(Integer shopId, Integer itemId, Integer supply) {
         Shop shop = shops.get(shopId);
@@ -329,7 +329,8 @@ public class ShopRepository implements IShopRepository {
 
     @Override
     /**
-     * Decreases the supply count for the given item in the shop by the specified supply value.
+     * Decreases the supply count for the given item in the shop by the specified
+     * supply value.
      *
      * @param shopId the shop id.
      * @param itemId the item id.
@@ -349,7 +350,7 @@ public class ShopRepository implements IShopRepository {
 
     // Should be change to be curd (too much logic)
     @Override
-    public boolean checkPolicy(HashMap<Integer, HashMap<Integer,Integer>> cart, String token) {
+    public boolean checkPolicy(HashMap<Integer, HashMap<Integer, Integer>> cart, String token) {
         try {
             // TODO: policies
             // 1. member policy - member items only
@@ -359,7 +360,6 @@ public class ShopRepository implements IShopRepository {
             throw new RuntimeException("Error checking policy: " + e.getMessage(), e);
         }
     }
-
 
     @Override
     public List<Integer> getItemsByShop(Integer shopId) {
@@ -379,23 +379,23 @@ public class ShopRepository implements IShopRepository {
         try {
             return Collections.unmodifiableList(
                     shops.values().stream()
-                         .flatMap(shop -> shop.getItemIds().stream())
-                         .collect(Collectors.toList())
-            );
+                            .flatMap(shop -> shop.getItemIds().stream())
+                            .collect(Collectors.toList()));
         } catch (Exception e) {
             throw new RuntimeException("Error retrieving all items: " + e.getMessage(), e);
         }
     }
 
     @Override
-    public void shipPurchase(int purchaseId, int shopId, String country, String city, String street, String postalCode) {
+    public void shipPurchase(int purchaseId, int shopId, String country, String city, String street,
+            String postalCode) {
         try {
             Shop shop = shops.get(shopId);
-            if (shop == null) 
+            if (shop == null)
                 throw new IllegalArgumentException("Shop not found: " + shopId);
-            
+
             shop.getShippingMethod().processShipment(purchaseId, country, city, street, postalCode);
-            
+
         } catch (Exception e) {
             throw new RuntimeException("Error shipping purchase: " + e.getMessage(), e);
         }
@@ -409,5 +409,22 @@ public class ShopRepository implements IShopRepository {
         }
     }
 
+    @Override
+    public List<String> getShopsNames(List<Integer> shopsIds) {
+        try {
+            return shopsIds.stream()
+                    .map(shopId -> {
+                        Shop shop = shops.get(shopId);
+                        if (shop != null) {
+                            return shop.getName();
+                        } else {
+                            throw new IllegalArgumentException("Shop not found: " + shopId);
+                        }
+                    })
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving shop names: " + e.getMessage(), e);
+        }
+    }
 
 }
