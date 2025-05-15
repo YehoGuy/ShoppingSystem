@@ -570,12 +570,12 @@ public class UserController {
         }
     }
 
-    @GetMapping("shoppingCart/{userId}")
+    @GetMapping("shoppingCart")
     public ResponseEntity<?> getShoppingCart(
-            @PathVariable @Min(1) int userId,
             @RequestParam String token) {
         try {
             authService.ValidateToken(token);
+            int userId = authService.getUserIdByToken(token);
             HashMap<Integer, HashMap<Integer, Integer>> shoppingCart = userService.getUserShoppingCartItems(userId);
             return ResponseEntity.ok(shoppingCart);
         } catch (OurRuntime e) {
