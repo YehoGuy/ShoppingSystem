@@ -98,17 +98,17 @@ public class UserController {
         try {
             authService.ValidateToken(token);
             User user = userService.getUserById(userId);
-            if(user == null) 
+            if (user == null)
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
-            if(user instanceof Member) {
+            if (user instanceof Member) {
                 Member member = (Member) user;
                 MemberDTO userDTO = MemberDTO.fromDomain(member);
                 return ResponseEntity.ok(userDTO);
-            } else if(user instanceof Guest){
+            } else if (user instanceof Guest) {
                 Guest guest = (Guest) user;
                 GuestDTO userDTO = GuestDTO.fromDomain(guest);
                 return ResponseEntity.ok(userDTO);
-            } else{
+            } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Not member or Guest");
             }
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
@@ -564,6 +564,23 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("shoppingCart/{userId}")
+    public ResponseEntity<?> getShoppingCart(
+            @PathVariable @Min(1) int userId,
+            @RequestParam String token) {
+        try {
+            authService.ValidateToken(token);
+            HashMap<Integer, HashMap<Integer, Integer>> shoppingCart = userService.getUserShoppingCartItems(userId);
+            return ResponseEntity.ok(shoppingCart);
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
         }
     }
 
