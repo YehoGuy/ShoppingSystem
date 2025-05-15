@@ -21,68 +21,66 @@ import io.jsonwebtoken.security.Keys;
 @Service
 public class AuthTokenService {
     @Value("${jwt.secret}")
-    private String secret; 
-    private static final long EXPIRATION_TIME = 86400000; 
-    private SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS256); 
+    private String secret;
+    private static final long EXPIRATION_TIME = 86400000;
+    private SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
 
-    private IAuthTokenRepository authTokenRepository; 
+    private IAuthTokenRepository authTokenRepository;
 
     public AuthTokenService(IAuthTokenRepository authTokenRepository) {
-        this.authTokenRepository = authTokenRepository; 
+        this.authTokenRepository = authTokenRepository;
     }
 
     public SecretKey getKey() {
-        return key; 
+        return key;
     }
 
     public String AuthenticateGuest(int guestId) {
-        LoggerService.logMethodExecution("AuthenticateGuest",guestId);
-        if(guestId <= 0) {
+        LoggerService.logMethodExecution("AuthenticateGuest", guestId);
+        if (guestId <= 0) {
             throw new OurArg("Guest ID must be a positive integer");
         }
         String token = generateAuthToken("guest");
         long expirationTime = System.currentTimeMillis() + EXPIRATION_TIME;
         AuthToken authToken = new AuthToken(token, new Date(expirationTime));
         authTokenRepository.setAuthToken(guestId, authToken);
-        LoggerService.logMethodExecutionEnd("AuthenticateGuest",token);
+        LoggerService.logMethodExecutionEnd("AuthenticateGuest", token);
         return token;
     }
 
-
     public String Login(String username, String password, int userId) {
-        LoggerService.logMethodExecution("Login",username,password,userId);
-        if(username == null || username.isEmpty()) {
+        LoggerService.logMethodExecution("Login", username, password, userId);
+        if (username == null || username.isEmpty()) {
             throw new OurArg("Username cannot be null or empty");
         }
-        if(password == null || password.isEmpty()) {
+        if (password == null || password.isEmpty()) {
             throw new OurArg("Password cannot be null or empty");
         }
-        if(userId <= 0) {
+        if (userId <= 0) {
             throw new OurArg("User ID must be a positive integer");
         }
-            String token = generateAuthToken(username); 
-            long expirationTime = System.currentTimeMillis() + EXPIRATION_TIME; 
-            AuthToken authToken = new AuthToken(token, new Date(expirationTime));
-            authTokenRepository.setAuthToken(userId, authToken);
-            LoggerService.logMethodExecutionEnd("Login",token);
-            return token;
+        String token = generateAuthToken(username);
+        long expirationTime = System.currentTimeMillis() + EXPIRATION_TIME;
+        AuthToken authToken = new AuthToken(token, new Date(expirationTime));
+        authTokenRepository.setAuthToken(userId, authToken);
+        LoggerService.logMethodExecutionEnd("Login", token);
+        return token;
     }
 
-
     public void Logout(String token) throws Exception {
-         LoggerService.logMethodExecution("Logout",token);
-        
-        if(ValidateToken(token) != null) { 
-            int userId = authTokenRepository.getUserIdByToken(token); 
-            authTokenRepository.removeAuthToken(userId); 
+        LoggerService.logMethodExecution("Logout", token);
+
+        if (ValidateToken(token) != null) {
+            int userId = authTokenRepository.getUserIdByToken(token);
+            authTokenRepository.removeAuthToken(userId);
             LoggerService.logMethodExecutionEndVoid("Logout");
         } else {
-            throw new Exception("Token not found in repository"); 
+            throw new Exception("Token not found in repository");
         }
     }
 
     public String generateAuthToken(String username) {
-        LoggerService.logMethodExecution("generateAuthToken",username);
+        LoggerService.logMethodExecution("generateAuthToken", username);
         if (username == null || username.isEmpty()) {
             throw new OurArg("Username cannot be null or empty");
         }
@@ -93,99 +91,115 @@ public class AuthTokenService {
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(key)
                 .compact();
-        LoggerService.logMethodExecutionEnd("generateAuthToken",token);
+        LoggerService.logMethodExecutionEnd("generateAuthToken", token);
         return token;
     }
 
-
     public Integer ValidateToken(String token) throws Exception {
-        LoggerService.logMethodExecution("ValidateToken",token);
+        LoggerService.logMethodExecution("ValidateToken", token);
         if (token == null || token.isEmpty()) {
             throw new OurArg("Token cannot be null or empty");
         }
         try {
             Jwts.parserBuilder()
-                    .setSigningKey(key) 
+                    .setSigningKey(key)
                     .build()
-                    .parseClaimsJws(token); 
-            if(extractUsername(token) == null || extractUsername(token).isEmpty()) {
-                throw new JwtException("Invalid token"); 
+                    .parseClaimsJws(token);
+            if (extractUsername(token) == null || extractUsername(token).isEmpty()) {
+                throw new JwtException("Invalid token");
             }
-            int userId = authTokenRepository.getUserIdByToken(token); 
+            int userId = authTokenRepository.getUserIdByToken(token);
             if (userId != -1) {
-                if(extractExpiration(token).before(new Date())) {
+                if (extractExpiration(token).before(new Date())) {
                     authTokenRepository.removeAuthToken(authTokenRepository.getUserIdByToken(token));
-                    throw new ExpiredJwtException(null, null, "Token expired"); 
+                    throw new ExpiredJwtException(null, null, "Token expired");
                 }
-                LoggerService.logMethodExecutionEnd("ValidateToken",userId);
-                return userId; 
+                LoggerService.logMethodExecutionEnd("ValidateToken", userId);
+                return userId;
             } else {
-                throw new Exception("Token not found in repository"); 
+                throw new Exception("Token not found in repository");
             }
-        }
-        catch (OurArg e)
-        {
+        } catch (OurArg e) {
             LoggerService.logDebug("ValidateToken", e);
             throw new OurArg("problem with args in token validation");
-        }
-        catch (OurRuntime e) {
+        } catch (OurRuntime e) {
             LoggerService.logDebug("ValidateToken", e);
             throw new OurRuntime("problem with runtime in token validation");
-        }
-        catch (ExpiredJwtException e) {
+        } catch (ExpiredJwtException e) {
 
             LoggerService.logError("ValidateToken", e, token);
             throw new Exception("Token expired");
         } catch (JwtException e) {
             LoggerService.logError("ValidateToken", e, token);
-            throw new Exception("Invalid token"); 
+            throw new Exception("Invalid token");
         } catch (Exception e) {
             LoggerService.logError("ValidateToken", e, token);
-            throw new Exception("Token validation failed: " + e.getMessage()); 
+            throw new Exception("Token validation failed: " + e.getMessage());
         }
     }
 
     public String extractUsername(String token) {
-        LoggerService.logMethodExecution("extractUsername",token);
+        LoggerService.logMethodExecution("extractUsername", token);
         if (token == null || token.isEmpty()) {
             throw new OurArg("Token cannot be null or empty");
         }
-        String username = extractClaim(token, Claims::getSubject);  
-        LoggerService.logMethodExecutionEnd("extractUsername",username);
+        String username = extractClaim(token, Claims::getSubject);
+        LoggerService.logMethodExecutionEnd("extractUsername", username);
         return username;
     }
 
     public Date extractExpiration(String token) {
-        LoggerService.logMethodExecution("extractExpiration",token);
+        LoggerService.logMethodExecution("extractExpiration", token);
         if (token == null || token.isEmpty()) {
             throw new OurArg("Token cannot be null or empty");
         }
-        Date expiration = extractClaim(token, Claims::getExpiration); 
-        LoggerService.logMethodExecutionEnd("extractExpiration",expiration);
+        Date expiration = extractClaim(token, Claims::getExpiration);
+        LoggerService.logMethodExecutionEnd("extractExpiration", expiration);
         return expiration;
     }
 
     private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        LoggerService.logMethodExecution("extractClaim",token);
+        LoggerService.logMethodExecution("extractClaim", token);
         if (token == null || token.isEmpty()) {
             throw new OurArg("Token cannot be null or empty");
         }
-        T claim = claimsResolver.apply(extractAllClaims(token)); 
-        LoggerService.logMethodExecutionEnd("extractClaim",claim);
+        T claim = claimsResolver.apply(extractAllClaims(token));
+        LoggerService.logMethodExecutionEnd("extractClaim", claim);
         return claim;
     }
 
     private Claims extractAllClaims(String token) {
-        LoggerService.logMethodExecution("extractAllClaims",token);
+        LoggerService.logMethodExecution("extractAllClaims", token);
         if (token == null || token.isEmpty()) {
             throw new OurArg("Token cannot be null or empty");
         }
         Claims claims = Jwts.parserBuilder()
-                .setSigningKey(key) 
+                .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
-                .getBody(); 
-        LoggerService.logMethodExecutionEnd("extractAllClaims",claims);
+                .getBody();
+        LoggerService.logMethodExecutionEnd("extractAllClaims", claims);
         return claims;
+    }
+
+    public int getUserIdByToken(String token) {
+        try {
+            LoggerService.logMethodExecution("getUserIdByToken", token);
+            if (token == null || token.isEmpty()) {
+                throw new OurArg("Token cannot be null or empty");
+            }
+            int userId = authTokenRepository.getUserIdByToken(token);
+            LoggerService.logMethodExecutionEnd("getUserIdByToken", userId);
+            return userId;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getUserIdByToken", e);
+            throw new OurArg("problem with args in token validation");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getUserIdByToken", e);
+            throw new OurRuntime("problem with runtime in token validation");
+        } catch (Exception e) {
+            LoggerService.logError("getUserIdByToken", e, token);
+            throw new RuntimeException("Failed to get user ID by token: " + e.getMessage());
+        }
     }
 }
