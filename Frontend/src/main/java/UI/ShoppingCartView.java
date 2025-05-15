@@ -2,6 +2,11 @@ package UI;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.web.client.RestTemplate;
+
 import java.util.List;
 
 import com.vaadin.flow.component.button.Button;
@@ -12,6 +17,7 @@ import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
@@ -27,6 +33,10 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 @Route(value = "cart", layout = AppLayoutBasic.class)
 public class ShoppingCartView extends VerticalLayout implements BeforeEnterObserver {
 
+    private static final String USER_API_URL = "http://localhost:8080/api/users";
+    private ShoppingCartDTO shoppingCart;
+    private final RestTemplate restTemplate = new RestTemplate();
+
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
@@ -38,6 +48,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         // Mock data for demonstration purposes
         // In a real application, you would retrieve this data from a service or
         // database
+        getShoppingCart();
         ItemDTO item1 = new ItemDTO(1, "Item 1", "Description of Item 1", 10.0, ItemCategory.GROCERY);
         ItemDTO item2 = new ItemDTO(2, "Item 2", "Description of Item 2", 20.0, ItemCategory.GROCERY);
         ItemDTO item3 = new ItemDTO(3, "Item 3", "Description of Item 3", 30.0, ItemCategory.GROCERY);
@@ -150,6 +161,17 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
     public record ItemRow(String name, double price, int quantity, double totalPrice, String description) {
         public ItemRow(ItemDTO item, int quantity) {
             this(item.getName(), item.getPrice(), quantity, item.getPrice() * quantity, item.getDescription());
+        }
+    }
+
+    private void getShoppingCart() {
+        try {
+            String authToken = (String) VaadinSession.getCurrent().getAttribute("authToken");
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+        } catch (Exception e) {
+            Notification.show("Error: could not retrieve shopping cart", 5000,
+                    Notification.Position.MIDDLE);
         }
     }
 }
