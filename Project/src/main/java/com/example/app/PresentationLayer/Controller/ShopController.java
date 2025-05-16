@@ -1,5 +1,6 @@
 package com.example.app.PresentationLayer.Controller;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -168,7 +169,7 @@ public class ShopController {
     /* ───────────────────────── 3. GET ALL SHOPS ─────────────────────── */
 
     @GetMapping("/all")
-    public ResponseEntity<?> getAllShops(@RequestParam String token) {
+    public ResponseEntity<List<ShopDTO>> getAllShops(@RequestParam String token) {
         try {
             List<Shop> shops = shopService.getAllShops(token);
             List<ShopDTO> shopDTOs = shops.stream()
@@ -176,9 +177,12 @@ public class ShopController {
                     .toList();
             return ResponseEntity.ok(shopDTOs);
         } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+            ex.printStackTrace();                   // log the real error
+            // Instead of a 500, return an empty list
+            return ResponseEntity.ok(Collections.emptyList());
         }
     }
+
 
     /* ───────────────────────── 4. DISCOUNTS & POLICY ────────────────── */
 
@@ -623,7 +627,6 @@ public class ShopController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
         }
     }
-
 
 }
 

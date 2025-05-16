@@ -1,6 +1,7 @@
 package DTOs;
 
 import Domain.ItemCategory;
+
 public class ItemDTO {
     private int id;
     private double price;
@@ -8,36 +9,29 @@ public class ItemDTO {
     private String description;
     private ItemCategory category;
 
+    // Jackson needs this
+    public ItemDTO() { }
+
     public ItemDTO(int id, String name, String description, double price, ItemCategory category) {
+        this.id = id;
         this.name = name;
         this.description = description;
-        this.category = category;
         this.price = price;
-        this.id = id;
+        this.category = category;
     }
 
-    public String getName() {
-        return name;
-    }
+    // Getters
+    public int getId() { return id; }
+    public double getPrice() { return price; }
+    public String getName() { return name; }
+    public String getDescription() { return description; }
+    public String getCategory() { return category.toString(); }
+    public ItemCategory getCategoryEnum() { return category; }
 
-    public String getDescription() {
-        return description;
-    }
-
-    public String getCategory() {
-        return category.toString();
-    }
-
-    public ItemCategory getCategoryEnum() {
-        return category;
-    }
-
-    public double getPrice() {
-        return price;
-    }
-
-    public int getId() {
-        return id;
-    }
-
+    // Setters (required by Jackson)
+    public void setId(int id) { this.id = id; }
+    public void setPrice(double price) { this.price = price; }
+    public void setName(String name) { this.name = name; }
+    public void setDescription(String description) { this.description = description; }
+    public void setCategory(ItemCategory category) { this.category = category; }
 }
