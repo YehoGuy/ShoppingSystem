@@ -37,6 +37,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
     private static final String USER_API_URL = "http://localhost:8080/api/users";
     private static final String SHOP_API_URL = "http://localhost:8080/api/shops";
+    private static final String ITEM_API_URL = "http://localhost:8080/api/items";
     private ShoppingCartDTO shoppingCart;
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -52,28 +53,6 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         // In a real application, you would retrieve this data from a service or
         // database
         getShoppingCart();
-        ItemDTO item1 = new ItemDTO(1, "Item 1", "Description of Item 1", 10.0, ItemCategory.GROCERY);
-        ItemDTO item2 = new ItemDTO(2, "Item 2", "Description of Item 2", 20.0, ItemCategory.GROCERY);
-        ItemDTO item3 = new ItemDTO(3, "Item 3", "Description of Item 3", 30.0, ItemCategory.GROCERY);
-        ItemDTO item4 = new ItemDTO(4, "Item 4", "Description of Item 4", 40.0, ItemCategory.GROCERY);
-        Map<ItemDTO, Integer> items1 = new HashMap<>();
-        items1.put(item1, 2);
-        items1.put(item2, 1);
-        items1.put(item3, 1);
-        items1.put(item4, 2);
-        Map<ItemDTO, Integer> items2 = new HashMap<>();
-        items2.put(item3, 1);
-        items2.put(item4, 3);
-        items2.put(item1, 1);
-        items2.put(item2, 2);
-        Map<String, Map<ItemDTO, Integer>> cartItems = new HashMap<>();
-        cartItems.put("Shop 1", items1);
-        cartItems.put("Shop 2", items2);
-        Map<String, Double> shopPrices = new HashMap<>();
-        shopPrices.put("Shop 1", 150.0); // Total price for Shop 1
-        shopPrices.put("Shop 2", 200.0); // Total price for Shop 2
-        double totalPrice = 350.0; // Total price for the entire cart
-        ShoppingCartDTO cart = new ShoppingCartDTO(cartItems, totalPrice, shopPrices);
         setSizeFull();
         setSpacing(true);
         setPadding(true);
@@ -100,16 +79,14 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
         add(title);
 
-        cart.getCartItems().forEach((shopName, items) -> {
-            double shopTotal = cart.getShopPrices().getOrDefault(shopName, 0.0);
+        shoppingCart.getCartItems().forEach((shopName, items) -> {
             Button buyBasketButton = new Button("Buy basket from " + shopName);
             buyBasketButton.getStyle().set("background-color", "blue").set("color", "white");
             buyBasketButton.addClickListener(event -> {
                 // Handle the buy action for this shop's basket
                 System.out.println("Buying basket from " + shopName + "...");
             });
-            H3 shopHeader = new H3(shopName + " - total price: " + shopTotal + "₪");
-            VerticalLayout shopHeaderContainer = new VerticalLayout(shopHeader, buyBasketButton);
+            VerticalLayout shopHeaderContainer = new VerticalLayout(buyBasketButton);
             shopHeaderContainer.setWidthFull();
             shopHeaderContainer.setAlignItems(Alignment.CENTER);
             shopHeaderContainer.setJustifyContentMode(JustifyContentMode.BETWEEN);
@@ -155,8 +132,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 .set("bottom", "0")
                 .set("right", "0")
                 .set("margin", "0px");
-        H2 total = new H2("Total: " + cart.getTotalPrice() + "₪");
-        totalContainer.add(total, buyButton);
+        totalContainer.add(buyButton);
         add(buyButtonContainer, totalContainer);
     }
 
@@ -168,6 +144,13 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
     }
 
     private void getShoppingCart() {
+        HashMap<Integer, HashMap<Integer, Integer>> cart = getCartItems();
+        List<Integer> shopsIds = cart.keySet().stream().toList();
+        createShoppingCart(getShopsNames(shopsIds), getAllItems(), cart);
+    }
+
+    @SuppressWarnings("unchecked")
+    private HashMap<Integer, HashMap<Integer, Integer>> getCartItems() {
         try {
             String authToken = (String) VaadinSession.getCurrent().getAttribute("authToken");
             HttpHeaders headers = new HttpHeaders();
@@ -182,24 +165,86 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 HashMap<Integer, HashMap<Integer, Integer>> responseBody = (HashMap<Integer, HashMap<Integer, Integer>>) response
                         .getBody();
                 if (responseBody != null) {
-                    // get shops names
-                    HttpHeaders headers2 = new HttpHeaders();
-                    headers2.setContentType(MediaType.APPLICATION_JSON);
-                    HttpEntity<?> request2 = new HttpEntity<>(null, headers2);
-                    String url2 = SHOP_API_URL + "/getShopsNames";
-                    Map<String, String> params2 = new HashMap<>();
-                    params2.put("shopsIds", responseBody.keySet().toString());
-                    params2.put("token", authToken);
-                    ResponseEntity<?> response2 = restTemplate
-                            .getForEntity(url2, List.class, request2, params2);
-                    if (response2.getStatusCode().is2xxSuccessful()) {
-                        List<String> shopsNames = (List<String>) response2.getBody();
-                        
+                    return responseBody;
                 }
             }
         } catch (Exception e) {
             Notification.show("Error: could not retrieve shopping cart", 5000,
                     Notification.Position.MIDDLE);
         }
+        return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> getShopsNames(List<Integer> shopsIds) {
+        try {
+            String authToken = (String) VaadinSession.getCurrent().getAttribute("authToken");
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<?> request = new HttpEntity<>(null, headers);
+            String url = SHOP_API_URL + "/getShopsNames";
+            Map<String, String> params = new HashMap<>();
+            params.put("shopsIds", shopsIds.toString());
+            params.put("token", authToken);
+            ResponseEntity<?> response = restTemplate
+                    .getForEntity(url, List.class, request, params);
+            if (response.getStatusCode().is2xxSuccessful()) {
+                List<String> shopsNames = (List<String>) response.getBody();
+                if (shopsNames != null) {
+                    return shopsNames;
+                }
+            }
+        } catch (Exception e) {
+            Notification.show("Error: could not retrieve shopping cart", 5000,
+                    Notification.Position.MIDDLE);
+        }
+        return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<ItemDTO> getAllItems() {
+        try {
+            String authToken = (String) VaadinSession.getCurrent().getAttribute("authToken");
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<?> request = new HttpEntity<>(null, headers);
+            String url = ITEM_API_URL + "/all";
+            Map<String, String> params = new HashMap<>();
+            params.put("token", authToken);
+            ResponseEntity<?> response = restTemplate
+                    .getForEntity(url, List.class, request, params);
+            if (response.getStatusCode().is2xxSuccessful()) {
+                List<ItemDTO> itemsNames = (List<ItemDTO>) response.getBody();
+                if (itemsNames != null) {
+                    return itemsNames;
+                }
+            }
+        } catch (Exception e) {
+            Notification.show("Error: could not retrieve shopping cart", 5000,
+                    Notification.Position.MIDDLE);
+        }
+        return null;
+    }
+
+    private void createShoppingCart(List<String> shopsNames, List<ItemDTO> itemsNames,
+            HashMap<Integer, HashMap<Integer, Integer>> cart) {
+        // create shopping cart
+        Map<String, Map<ItemDTO, Integer>> cartItems = new HashMap<>();
+        int i = 0;
+        for (String name : shopsNames) {
+            HashMap<ItemDTO, Integer> items = new HashMap<>();
+            for (Integer itemId : cart.get(i).keySet()) {
+                ItemDTO item = itemsNames.stream()
+                        .filter(i1 -> i1.getId() == itemId)
+                        .findFirst()
+                        .orElse(null);
+                if (item != null) {
+                    items.put(item, cart.get(i).get(itemId));
+                }
+            }
+            cartItems.put(name, items);
+            i++;
+        }
+        shoppingCart = new ShoppingCartDTO(cartItems);
     }
 }
