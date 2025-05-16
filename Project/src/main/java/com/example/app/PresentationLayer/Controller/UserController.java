@@ -1,9 +1,11 @@
 package com.example.app.PresentationLayer.Controller;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -70,6 +72,9 @@ import jakarta.validation.constraints.Size;
  *
  * 24. POST /roles/{shopId}/accept params: token → 204 accept role
  * 25. POST /roles/{shopId}/decline params: token → 204 decline role
+ * 26. PATCH  /{userId}/suspension          params: token, until(ISO-8601)   → 204
+ * 27. GET    /{userId}/suspension          params: token                    → 200 boolean
+ * 28. GET    /suspended                    params: token                    → 200 [ids]
  *
  * Error mapping (all endpoints):
  * 400 – Bad data / validation failure
@@ -564,6 +569,68 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /*    Suspend or unsuspend a user (admin-only token).  
+    *     Pass an ISO-8601 timestamp in `until`.  To unsuspend, omit the param. */
+    @PatchMapping("/{userId}/suspension")
+    public ResponseEntity<Void> setSuspended(
+            @PathVariable @Min(1) int userId,
+            @RequestParam String token,
+            @RequestParam(name = "until", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime suspendedUntil) {
+
+        try {
+            authService.ValidateToken(token);
+            userService.setSuspended(userId, suspendedUntil);   // null = lift suspension
+            return ResponseEntity.noContent().build();
+
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().build();
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /* Check whether the user is currently suspended. */
+    @GetMapping("/{userId}/suspension")
+    public ResponseEntity<?> isSuspended(
+            @PathVariable @Min(1) int userId,
+            @RequestParam String token) {
+
+        try {
+            authService.ValidateToken(token);
+            boolean result = userService.isSuspended(userId);
+            return ResponseEntity.ok(result);
+
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
+    }
+
+    /* List IDs of all users that are presently suspended. */
+    @GetMapping("/suspended")
+    public ResponseEntity<?> listSuspended(@RequestParam String token) {
+
+        try {
+            authService.ValidateToken(token);
+            List<Integer> ids = userService.getSuspendedUsers();
+            return ResponseEntity.ok(ids);
+
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
         }
     }
 
