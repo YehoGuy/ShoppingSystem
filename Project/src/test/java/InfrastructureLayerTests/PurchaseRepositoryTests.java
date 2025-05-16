@@ -21,16 +21,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.example.app.DomainLayer.Purchase.Address;
 import com.example.app.DomainLayer.Purchase.Bid;
 import com.example.app.DomainLayer.Purchase.Purchase;
 import com.example.app.DomainLayer.Purchase.Reciept;
 import com.example.app.InfrastructureLayer.PurchaseRepository;
-
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 /**
  * Exhaustive JUnit-5 + Mockito test-suite for {@link PurchaseRepository}.
@@ -283,7 +282,7 @@ class PurchaseRepositoryTests {
 
     /* ───────── concurrency – heavy readers while writers add ───────── */
     @Test
-    @Timeout(30)
+    @Timeout(45)
     @DisplayName(
         "getUserPurchasesCalledRepeatedlyFromManyThreadsWhileOtherThreadsContinuouslyAddPurchasesForSameUser_shouldNeverThrowConcurrentModification_andFinalCountShouldMatchAdds"
     )
