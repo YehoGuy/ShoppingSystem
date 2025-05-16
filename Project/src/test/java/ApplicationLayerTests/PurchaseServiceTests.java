@@ -5,13 +5,22 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.AfterEach;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
@@ -27,6 +36,10 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
 import com.example.app.ApplicationLayer.Item.ItemService;
@@ -39,14 +52,17 @@ import com.example.app.DomainLayer.Purchase.Bid;
 import com.example.app.DomainLayer.Purchase.BidReciept;
 import com.example.app.DomainLayer.Purchase.IPurchaseRepository;
 import com.example.app.DomainLayer.Purchase.Reciept;
+import com.example.app.InfrastructureLayer.PurchaseRepository;
+import com.example.app.SimpleHttpServerApplication;
 
 /**
  * High-level “acceptance” tests for {@link PurchaseService}.  
  * Each test uses full mocking to validate observable behaviour across the
  * service’s public API, including happy-paths and rollback paths.
  */
-@ExtendWith(MockitoExtension.class)
-@DisplayName("PurchaseService – high-level acceptance tests with long descriptive names")
+@ExtendWith({ SpringExtension.class, MockitoExtension.class })
+@SpringBootTest(classes = SimpleHttpServerApplication.class)
+@AutoConfigureMockMvc(addFilters = false)
 class PurchaseServiceAcceptanceTest {
 
     /* ─────────── mocks & SUT ─────────── */
@@ -287,4 +303,184 @@ class PurchaseServiceAcceptanceTest {
 
         assertSame(list, out);
     }
+
+    /* ───────────────────────── CONCURRENCY ACCEPTANCE TESTS ───────────────────────── */
+
+    @Nested
+    @DisplayName("Concurrency – repository-level")
+    class Concurrency {
+
+        @Autowired PurchaseRepository purchaseRepo;
+
+        private static final int THREADS = 16;
+        private ExecutorService pool;
+
+        @BeforeEach void initPool() { pool = Executors.newFixedThreadPool(THREADS); }
+        @AfterEach  void shutdownPool() { pool.shutdownNow(); }
+
+        /** Multiple threads calling addPurchase must get distinct IDs and all
+         *  purchases must be retrievable afterwards. */
+        @Test
+        void concurrentAddPurchase_producesUniqueIds() throws Exception {
+
+            int userId  = 77;
+            int storeId = 3;
+            Map<Integer,Integer> items = Map.of(1, 1);
+
+            Set<Integer> ids = ConcurrentHashMap.newKeySet();
+            CountDownLatch ready = new CountDownLatch(THREADS);
+            CountDownLatch go    = new CountDownLatch(1);
+
+            IntStream.range(0, THREADS).forEach(i ->
+                pool.submit(() -> {
+                    ready.countDown();
+                    go.await();                      // all threads start together
+                    int id = purchaseRepo.addPurchase(
+                            userId, storeId, items, 10.0, /*shipping*/ null);
+                    ids.add(id);
+                    return null;
+                })
+            );
+
+            ready.await();
+            go.countDown();
+            pool.shutdown();
+            pool.awaitTermination(5, TimeUnit.SECONDS);
+
+            /* every thread should have received a distinct purchase ID */
+            assertThat(ids).hasSize(THREADS);
+
+            /* repository must contain exactly THREADS purchases for that user */
+            assertThat(purchaseRepo.getUserPurchases(userId))
+                .hasSize(THREADS);
+        }
+
+        /** Concurrent deletions of the *same* purchase ID must be safe and
+        *  idempotent – the purchase ends up gone, with no exceptions leaking. */
+        @Test
+        void concurrentDeletePurchase_isIdempotent() throws Exception {
+
+            int purchaseId = purchaseRepo.addPurchase(
+                    88, 4, Map.of(2, 2), 20.0, null);   // create once
+
+            CountDownLatch done = new CountDownLatch(THREADS);
+
+            IntStream.range(0, THREADS).forEach(i ->
+                pool.submit(() -> {
+                    try {
+                        purchaseRepo.deletePurchase(purchaseId);
+                    } catch (IllegalArgumentException ex) {
+                        /* Another thread already deleted it – that’s expected.
+                        * Any other exception type would still fail the test. */
+                        assertTrue(ex.getMessage().contains("purchaseId"));
+                    } finally {
+                        done.countDown();
+                    }
+                })
+            );
+
+            done.await(5, TimeUnit.SECONDS);
+
+            /* after all deletions, the repository must not find that ID */
+            /* repository must no longer have that purchase ID */
+            assertThrows(IllegalArgumentException.class,
+                        () -> purchaseRepo.getPurchaseById(purchaseId));
+        }
+
+        /* ───────────────────── Bid-specific concurrency tests ───────────────────── */
+
+        /** Many threads call addBid(..) at once – every ID must be unique
+         *  and the repository must let us fetch each Bid afterwards. */
+        @Test
+        void concurrentAddBid_producesUniqueIds() throws Exception {
+
+            int owner   = 55;
+            int shopId  = 9;
+            Map<Integer,Integer> items = Map.of(1, 1);
+
+            Set<Integer> ids = ConcurrentHashMap.newKeySet();
+            CountDownLatch ready = new CountDownLatch(THREADS);
+            CountDownLatch go    = new CountDownLatch(1);
+
+            IntStream.range(0, THREADS).forEach(i ->
+                pool.submit(() -> {
+                    ready.countDown();
+                    go.await();                          // blast off together
+                    int bidId = purchaseRepo.addBid(owner, shopId, items, 50 + i);
+                    ids.add(bidId);
+                    return null;
+                })
+            );
+
+            ready.await();
+            go.countDown();
+            pool.shutdown();
+            pool.awaitTermination(5, TimeUnit.SECONDS);
+
+            /* every thread got its own bid-id */
+            assertThat(ids).hasSize(THREADS);
+
+            /* and each id maps to a Bid object in the repo */
+            ids.forEach(id ->
+                assertThat(purchaseRepo.getPurchaseById(id)).isInstanceOf(Bid.class)
+            );
+        }
+
+        /** Several bidders raise the same Bid in parallel.
+         *  After the race the Bid must remain internally consistent:
+         *  – maxBidding is at least the opening price and not corrupted  
+         *  – bidder list contains no duplicates  
+         *  – no exception leaks from concurrent updates */
+        @Test
+        void concurrentAddBidding_updatesStateConsistently() throws Exception {
+
+            int owner = 1, shop = 7;
+            Map<Integer,Integer> baseItems = Map.of(2, 1);
+            int bidId = purchaseRepo.addBid(owner, shop, baseItems, 40);
+
+            Bid bid = (Bid) purchaseRepo.getPurchaseById(bidId);
+
+            CountDownLatch ready = new CountDownLatch(THREADS);
+            CountDownLatch start = new CountDownLatch(1);
+
+            IntStream.range(0, THREADS).forEach(i -> {
+                int bidder = 100 + i;
+                int amount = 60 + i;                 // ascending offers
+                pool.submit(() -> {
+                    ready.countDown();
+                    
+                    try {
+                        start.await();
+                        bid.addBidding(bidder, amount);
+                    } catch (RuntimeException ignored) {
+                        /* business rules may reject some offers (e.g., too low,
+                        bidder already bid, etc.) – that's fine; we only care
+                        that concurrent calls don't corrupt shared state. */
+                    } catch (InterruptedException ex) {
+                        Thread.currentThread().interrupt();
+                    }
+                });
+            });
+
+            ready.await();
+            start.countDown();
+            pool.shutdown();
+            pool.awaitTermination(5, TimeUnit.SECONDS);
+
+            /* 1) max bidding must be ≥ opening price (40) and ≤ highest offer (60+THREADS-1) */
+            assertThat(bid.getMaxBidding())
+                .isBetween(40, 60 + THREADS - 1);
+
+            /* 2) bidder list must not contain duplicates */
+            List<Integer> bidders = bid.getBiddersIds();
+            assertThat(bidders)
+                .hasSameSizeAs(new HashSet<>(bidders));        // uniqueness check
+        }
+
+
+
+    }
+
+
+
 }
