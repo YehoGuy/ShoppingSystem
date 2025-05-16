@@ -70,8 +70,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
         Button buyButton = new Button("Buy entire cart");
         buyButton.addClickListener(event -> {
-            // Handle the buy action here
-            // For example, you can navigate to a payment page or show a confirmation dialog
+            // TODO: connect to backend and buy the entire cart
             System.out.println("Buying entire cart...");
         });
         buyButton.getStyle().set("background-color", "red").set("color", "white");
@@ -83,7 +82,8 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             Button buyBasketButton = new Button("Buy basket from " + shopName);
             buyBasketButton.getStyle().set("background-color", "blue").set("color", "white");
             buyBasketButton.addClickListener(event -> {
-                // Handle the buy action for this shop's basket
+                // TODO: think if we want a buy basket for a single shop option, i dont think we
+                // want it
                 System.out.println("Buying basket from " + shopName + "...");
             });
             VerticalLayout shopHeaderContainer = new VerticalLayout(buyBasketButton);
@@ -106,6 +106,10 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
             grid.setItems(rows);
             grid.addComponentColumn(renderer -> {
+                // TODO: we need to think if we want to connect from here to the backend or not
+                // it can be possible to not connect to the backend and just remove the item
+                // from the
+                // cart, but we need to check that the quantities exist in the shops
                 Button removeButton = new Button(VaadinIcon.MINUS.create());
                 Button addButton = new Button(VaadinIcon.PLUS.create());
                 Button removeCompletlyButton = new Button(VaadinIcon.TRASH.create());
