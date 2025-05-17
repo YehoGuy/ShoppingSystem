@@ -659,8 +659,13 @@ public class ShopController {
     }
 
     @GetMapping("/addDiscountPolicy")
-    public ResponseEntity<?> addDiscountPolicy(String token, int threshold, int itemId, ItemCategory category,
-            double basketValue, Operator operator, int shopId) {
+    public ResponseEntity<?> addDiscountPolicy(@RequestParam String token,
+            @RequestParam int threshold,
+            @RequestParam int itemId,
+            @RequestParam ItemCategory category,
+            @RequestParam double basketValue,
+            @RequestParam Operator operator,
+            @RequestParam int shopId) {
         try {
             shopService.addDiscountPolicy(token, threshold, itemId, category, basketValue, operator, shopId);
             return ResponseEntity.ok().build();
