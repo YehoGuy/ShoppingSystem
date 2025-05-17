@@ -88,6 +88,8 @@ import jakarta.validation.constraints.Min;
  *                                                       → 200  [List<ItemDTO>]
  * 21.  GET    /{shopId}/search                          params: token, name|category|keywords|minPrice|maxPrice|minProductRating
  *                                                       → 200  [List<ItemDTO>]
+ * 
+ * 28. GET    /shops/ByWorkerId                         params: token, workerId
  *
  *  ───────────────────────────── SUPPLY / STOCK CONTROL ───────────────────────────
  * 22.  POST   /{shopId}/items/{itemId}/supply           params: token, quantity
@@ -104,6 +106,9 @@ import jakarta.validation.constraints.Min;
  *  ────────────────────────────── PURCHASE WORK‑FLOW ───────────────────────────────
  * 27.  POST   /{shopId}/purchase/{purchaseId}/ship      params: token, country, city, street, postalCode
  *                                                       → 202
+ * 
+ * 
+ * 
  *
  *  ───────────────────────────── ERROR MAPPING (ALL) ───────────────────────────────
  *    400 – Bad input / validation failure
@@ -623,6 +628,21 @@ public class ShopController {
         try {
             shopService.shipPurchase(token, purchaseId, shopId, country, city, street, postalCode);
             return ResponseEntity.accepted().build();  // 202
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }
+    }
+
+    @GetMapping("/shops/ByWorkerId")
+    public ResponseEntity<?> getShopsByWorkerId(
+            @RequestParam int workerId,
+            @RequestParam String token) {
+        try {
+            List<Shop> shops = shopService.getShopsByWorker(workerId, token);
+            List<ShopDTO> shopDTOs = shops.stream()
+                    .map(ShopDTO::fromDomain)
+                    .toList();
+            return ResponseEntity.ok(shopDTOs);
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
         }
