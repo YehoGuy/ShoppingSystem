@@ -1,3 +1,4 @@
+
 package com.example.app.InfrastructureLayer;
 
 import java.time.LocalDateTime;
@@ -584,7 +585,7 @@ public class UserRepository implements IUserRepository {
             shopIds.add(role.getShopId());
         }
         return shopIds;
-
+    }
     public List<Member> getShopMembers(int shopId) {
         List<Member> members = new ArrayList<>();
         for (User user : userMapping.values()) {
