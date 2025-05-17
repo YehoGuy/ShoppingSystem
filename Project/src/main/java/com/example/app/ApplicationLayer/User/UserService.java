@@ -14,10 +14,10 @@ import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
 import com.example.app.DomainLayer.IUserRepository;
 import com.example.app.DomainLayer.Member;
-import com.example.app.DomainLayer.User;
 import com.example.app.DomainLayer.Purchase.Address;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
+import com.example.app.DomainLayer.User;
 import com.example.app.InfrastructureLayer.PasswordEncoderUtil;
 @Service
 public class UserService {
@@ -1732,6 +1732,24 @@ public class UserService {
         catch (Exception e) {
             LoggerService.logError("getSuspendedUsers", e);
             throw new OurRuntime("getSuspendedUsers: " + e.getMessage(), e);
+        }
+    }
+
+    public List<Integer> getShopIdsByWorkerId(int userId) {
+        try {
+            LoggerService.logMethodExecution("getShopsByWorkerId", userId);
+            List<Integer> shopIds = userRepository.getShopIdsByWorkerId(userId);
+            LoggerService.logMethodExecutionEnd("getShopsByWorkerId", shopIds);
+            return shopIds;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getShopsByUserId", e);
+            throw new OurRuntime("getShopsByUserId: " + e.getMessage(), e);
+        } catch (OurArg e) {
+            LoggerService.logDebug("getShopsByUserId", e);
+            throw new OurArg("getShopsByUserId: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("getShopsByUserId", e, userId);
+            throw new OurRuntime("getShopsByUserId: " + e.getMessage(), e);
         }
     }
 }
