@@ -75,7 +75,7 @@ import jakarta.validation.constraints.Size;
  * 26. PATCH  /{userId}/suspension          params: token, until(ISO-8601)   → 204
  * 27. GET    /{userId}/suspension          params: token                    → 200 boolean
  * 28. GET    /suspended                    params: token                    → 200 [ids]
- * 29. GET    /shops/{shopId}/workers       params: token                    → 200 [ids]
+ * 29. GET    /shops/{shopId}/workers       params: token                    → 200 [MemberDTO]
  *
  * Error mapping (all endpoints):
  * 400 – Bad data / validation failure
@@ -643,7 +643,10 @@ public class UserController {
         try {
             authService.ValidateToken(token);
             List<Member> members = userService.getShopMembers(shopId);
-            return ResponseEntity.ok(members);
+            List<MemberDTO> membersDTO = members.stream()
+                    .map(MemberDTO::fromDomain)
+                    .toList();
+            return ResponseEntity.ok(membersDTO);
 
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
