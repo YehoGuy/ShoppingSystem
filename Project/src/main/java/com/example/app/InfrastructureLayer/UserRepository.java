@@ -573,6 +573,7 @@ public class UserRepository implements IUserRepository {
     }
 
     @Override
+
     public List<Integer> getShopIdsByWorkerId(int userId) {
         Member member = getMemberById(userId);
         if (member == null) {
@@ -583,5 +584,18 @@ public class UserRepository implements IUserRepository {
             shopIds.add(role.getShopId());
         }
         return shopIds;
+
+    public List<Member> getShopMembers(int shopId) {
+        List<Member> members = new ArrayList<>();
+        for (User user : userMapping.values()) {
+            if (user instanceof Member) {
+                Member member = (Member) user;
+                if (member.getRoles().stream().anyMatch(role -> role.getShopId() == shopId)) {
+                    members.add(member);
+                }
+            }
+        }
+        return members;
+
     }
 }

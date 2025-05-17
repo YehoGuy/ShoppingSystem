@@ -68,6 +68,7 @@ public interface IUserRepository {
     void addPermission(int id, PermissionsEnum permission, int shopId);
     void removePermission(int id, PermissionsEnum permission, int shopId);
     List<Integer> getShopIdsByWorkerId(int userId);
+    List<Member> getShopMembers(int shopId);
 
     // Shopping cart operations
     ShoppingCart getShoppingCartById(int userId);
