@@ -70,8 +70,8 @@ public interface IShopRepository {
     /**
      * Sets a discount for a specific item category in the specified shop.
      *
-     * @param shopId    the shop id.
-     * @param category  the item category.
+     * @param shopId     the shop id.
+     * @param category   the item category.
      * @param percentage the discount percentage.
      * @param isDouble   whether to apply the discount as a double discount.
      */
@@ -87,6 +87,7 @@ public interface IShopRepository {
 
     /**
      * removes the discount for a specific item in the specified shop.
+     * 
      * @param shopId
      * @param itemId
      */
@@ -100,7 +101,7 @@ public interface IShopRepository {
      * @param rating     the review rating.
      * @param reviewText the review text.
      */
-    void addReviewToShop(int shopId,int userId, int rating, String reviewText);
+    void addReviewToShop(int shopId, int userId, int rating, String reviewText);
 
     /**
      * Retrieves the average rating of the specified shop.
@@ -184,7 +185,8 @@ public interface IShopRepository {
     boolean checkSupplyAvailabilityAndAqcuire(Integer shopId, Integer itemId, Integer supply);
 
     /**
-     * Decreases the supply count for the given item in the shop by the specified supply value.
+     * Decreases the supply count for the given item in the shop by the specified
+     * supply value.
      *
      * @param shopId the shop id.
      * @param itemId the item id.
@@ -194,13 +196,14 @@ public interface IShopRepository {
 
     /**
      * Checks if the purchase policy allows the given items to be purchased.
-     * This is a placeholder method and should be implemented based on your business logic.
+     * This is a placeholder method and should be implemented based on your business
+     * logic.
      *
      * @param cart  a map of item IDs and their quantities.
      * @param token the token for the user.
      * @return true if the purchase policy allows the items, false otherwise.
      */
-    boolean checkPolicy(HashMap<Integer, HashMap<Integer,Integer>> cart, String token);
+    boolean checkPolicy(HashMap<Integer, HashMap<Integer, Integer>> cart, String token);
 
     /**
      * Retrieves a list of item IDs that belong to the shop identified by shopId.
@@ -224,21 +227,27 @@ public interface IShopRepository {
      */
     void addSupply(Integer shopId, Integer itemId, Integer supply);
 
-    double purchaseItems(Map<Integer, Integer> purchaseLists, Map<Integer, ItemCategory> itemsCategory, Integer shopdId);
+    double purchaseItems(Map<Integer, Integer> purchaseLists, Map<Integer, ItemCategory> itemsCategory,
+            Integer shopdId);
 
     void rollBackPurchase(Map<Integer, Integer> purchaseLists, Integer shopId);
 
     /**
      * Processes a shipment for a purchase.
-     * This method is responsible for handling the logistics of shipping the purchased items
+     * This method is responsible for handling the logistics of shipping the
+     * purchased items
      * to the specified address.
      * 
-     * @param purchaseId   The ID of the purchase associated with the shipment.
-     * @param country      The country where the shipment is to be delivered.
-     * @param city         The city where the shipment is to be delivered.
-     * @param street       The street address where the shipment is to be delivered.
-     * @param postalCode   The postal code of the delivery address.
-     * * @throws IllegalArgumentException if any of the address parameters are null or invalid.
+     * @param purchaseId The ID of the purchase associated with the shipment.
+     * @param country    The country where the shipment is to be delivered.
+     * @param city       The city where the shipment is to be delivered.
+     * @param street     The street address where the shipment is to be delivered.
+     * @param postalCode The postal code of the delivery address.
+     *                   * @throws IllegalArgumentException if any of the address
+     *                   parameters are null or invalid.
      */
     void shipPurchase(int purchaseId, int shopId, String country, String city, String street, String postalCode);
+
+    void addDiscountPolicy(int threshold, int itemId, ItemCategory category, double basketValue, Operator operator,
+            int shopId);
 }
