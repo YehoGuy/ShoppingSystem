@@ -8,10 +8,10 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
+import com.example.app.ApplicationLayer.Item.ItemService;
 import com.example.app.ApplicationLayer.LoggerService;
 import com.example.app.ApplicationLayer.OurArg;
 import com.example.app.ApplicationLayer.OurRuntime;
-import com.example.app.ApplicationLayer.Item.ItemService;
 import com.example.app.ApplicationLayer.Purchase.ShippingMethod;
 import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.Item.Item;
@@ -739,6 +739,29 @@ public class ShopService {
         } catch (Exception e) {
             LoggerService.logError("shipPurchase", e, purchaseId, country, city, street, postalCode);
             throw new OurRuntime("Error shipping purchase " + purchaseId + ": " + e.getMessage(), e);
+        }
+    }
+
+    public List<Shop> getShopsByWorker(int workerId,String token){
+        try {
+            LoggerService.logMethodExecution("getShopsByWorker", workerId);
+            List<Integer> shopIds = userService.getShopIdsByWorkerId(workerId);
+            List<Shop> returnShops = new ArrayList<>();
+            for (Integer shopId : shopIds) {
+                Shop shop = getShop(shopId, token);
+                returnShops.add(shop);
+            }
+            LoggerService.logMethodExecutionEnd("getShopsByWorker", returnShops);
+            return returnShops;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getShopsByWorker", e);
+            throw new OurArg("getShopsByWorker" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getShopsByWorker", e);
+            throw new OurRuntime("getShopsByWorker" + e.getMessage());
+        } catch (Exception e) {
+            LoggerService.logError("getShopsByWorker", e, workerId);
+            throw new OurRuntime("Error retrieving shops by worker " + workerId + ": " + e.getMessage(), e);
         }
     }
 }    

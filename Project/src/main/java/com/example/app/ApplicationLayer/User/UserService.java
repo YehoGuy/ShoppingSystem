@@ -1735,6 +1735,24 @@ public class UserService {
         }
     }
 
+    public List<Integer> getShopIdsByWorkerId(int userId) {
+        try {
+            LoggerService.logMethodExecution("getShopsByWorkerId", userId);
+            List<Integer> shopIds = userRepository.getShopIdsByWorkerId(userId);
+            LoggerService.logMethodExecutionEnd("getShopsByWorkerId", shopIds);
+            return shopIds;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getShopsByUserId", e);
+            throw new OurRuntime("getShopsByUserId: " + e.getMessage(), e);
+        } catch (OurArg e) {
+            LoggerService.logDebug("getShopsByUserId", e);
+            throw new OurArg("getShopsByUserId: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("getShopsByUserId", e, userId);
+            throw new OurRuntime("getShopsByUserId: " + e.getMessage(), e);
+        }
+    }
+
     public List<Member> getShopMembers(int shopId) {
         try {
             LoggerService.logMethodExecution("getShopMembers", shopId);

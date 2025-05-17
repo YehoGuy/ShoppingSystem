@@ -67,6 +67,7 @@ public interface IUserRepository {
     void declineRole(int id, Role role);
     void addPermission(int id, PermissionsEnum permission, int shopId);
     void removePermission(int id, PermissionsEnum permission, int shopId);
+    List<Integer> getShopIdsByWorkerId(int userId);
     List<Member> getShopMembers(int shopId);
 
     // Shopping cart operations

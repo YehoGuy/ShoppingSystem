@@ -1,3 +1,4 @@
+
 package com.example.app.InfrastructureLayer;
 
 import java.time.LocalDateTime;
@@ -573,6 +574,18 @@ public class UserRepository implements IUserRepository {
     }
 
     @Override
+
+    public List<Integer> getShopIdsByWorkerId(int userId) {
+        Member member = getMemberById(userId);
+        if (member == null) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        List<Integer> shopIds = new ArrayList<>();
+        for (Role role : member.getRoles()) {
+            shopIds.add(role.getShopId());
+        }
+        return shopIds;
+    }
     public List<Member> getShopMembers(int shopId) {
         List<Member> members = new ArrayList<>();
         for (User user : userMapping.values()) {
@@ -584,5 +597,6 @@ public class UserRepository implements IUserRepository {
             }
         }
         return members;
+
     }
 }
