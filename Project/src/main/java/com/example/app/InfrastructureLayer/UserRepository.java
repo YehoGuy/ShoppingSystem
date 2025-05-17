@@ -16,11 +16,11 @@ import com.example.app.DomainLayer.Guest;
 import com.example.app.DomainLayer.IUserRepository;
 import com.example.app.DomainLayer.Member;
 import com.example.app.DomainLayer.Notification;
-import com.example.app.DomainLayer.ShoppingCart;
-import com.example.app.DomainLayer.User;
 import com.example.app.DomainLayer.Purchase.Address;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
+import com.example.app.DomainLayer.ShoppingCart;
+import com.example.app.DomainLayer.User;
 
 // Assuming User is a class that has been defined elsewhere in your project
 // and has a method getId() to retrieve the user's ID.
@@ -570,5 +570,19 @@ public class UserRepository implements IUserRepository {
             }
         }
         return suspendedUsers;
+    }
+
+    @Override
+    public List<Member> getShopMembers(int shopId) {
+        List<Member> members = new ArrayList<>();
+        for (User user : userMapping.values()) {
+            if (user instanceof Member) {
+                Member member = (Member) user;
+                if (member.getRoles().stream().anyMatch(role -> role.getShopId() == shopId)) {
+                    members.add(member);
+                }
+            }
+        }
+        return members;
     }
 }
