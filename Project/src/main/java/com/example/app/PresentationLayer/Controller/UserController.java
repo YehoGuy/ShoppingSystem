@@ -24,7 +24,9 @@ import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.Guest;
 import com.example.app.DomainLayer.Member;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
+import com.example.app.DomainLayer.Roles.Role;
 import com.example.app.DomainLayer.User;
+import com.example.app.PresentationLayer.DTO.Role.RoleDTO;
 import com.example.app.PresentationLayer.DTO.User.GuestDTO;
 import com.example.app.PresentationLayer.DTO.User.MemberDTO;
 
@@ -72,10 +74,10 @@ import jakarta.validation.constraints.Size;
  *
  * 24. POST /roles/{shopId}/accept params: token → 204 accept role
  * 25. POST /roles/{shopId}/decline params: token → 204 decline role
- * 26. PATCH  /{userId}/suspension          params: token, until(ISO-8601)   → 204
- * 27. GET    /{userId}/suspension          params: token                    → 200 boolean
- * 28. GET    /suspended                    params: token                    → 200 [ids]
- * 29. GET    /shops/{shopId}/workers       params: token                    → 200 [MemberDTO]
+ * 26. PATCH /{userId}/suspension params: token, until(ISO-8601) → 204
+ * 27. GET /{userId}/suspension params: token → 200 boolean
+ * 28. GET /suspended params: token → 200 [ids]
+ * 29. GET /shops/{shopId}/workers params: token → 200 [MemberDTO]
  *
  * Error mapping (all endpoints):
  * 400 – Bad data / validation failure
@@ -104,17 +106,17 @@ public class UserController {
         try {
             authService.ValidateToken(token);
             User user = userService.getUserById(userId);
-            if(user == null) 
+            if (user == null)
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
-            if(user instanceof Member) {
+            if (user instanceof Member) {
                 Member member = (Member) user;
                 MemberDTO userDTO = MemberDTO.fromDomain(member);
                 return ResponseEntity.ok(userDTO);
-            } else if(user instanceof Guest){
+            } else if (user instanceof Guest) {
                 Guest guest = (Guest) user;
                 GuestDTO userDTO = GuestDTO.fromDomain(guest);
                 return ResponseEntity.ok(userDTO);
-            } else{
+            } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Not member or Guest");
             }
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
@@ -573,19 +575,19 @@ public class UserController {
         }
     }
 
-    /*    Suspend or unsuspend a user (admin-only token).  
-    *     Pass an ISO-8601 timestamp in `until`.  To unsuspend, omit the param. */
+    /*
+     * Suspend or unsuspend a user (admin-only token).
+     * Pass an ISO-8601 timestamp in `until`. To unsuspend, omit the param.
+     */
     @PatchMapping("/{userId}/suspension")
     public ResponseEntity<Void> setSuspended(
             @PathVariable @Min(1) int userId,
             @RequestParam String token,
-            @RequestParam(name = "until", required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-            LocalDateTime suspendedUntil) {
+            @RequestParam(name = "until", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime suspendedUntil) {
 
         try {
             authService.ValidateToken(token);
-            userService.setSuspended(userId, suspendedUntil);   // null = lift suspension
+            userService.setSuspended(userId, suspendedUntil); // null = lift suspension
             return ResponseEntity.noContent().build();
 
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
@@ -648,6 +650,22 @@ public class UserController {
                     .toList();
             return ResponseEntity.ok(membersDTO);
 
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
+    }
+
+    @GetMapping("/getPendingRoles")
+    public ResponseEntity<?> getPendingRoles(@RequestParam String token) {
+        try {
+            List<Role> pendingRoles = userService.getPendingRoles(token);
+            // convert to DTOs if needed
+            List<RoleDTO> pendingRolesDTO = pendingRoles.stream().map(RoleDTO::fromDomain).toList();
+            return ResponseEntity.ok(pendingRolesDTO);
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
         } catch (RuntimeException ex) {
