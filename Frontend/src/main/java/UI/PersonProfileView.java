@@ -82,7 +82,7 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
             add(new Span("You have no roles in any shops."));
         } else {
             for (String shopName : rolesByShop.keySet()) {
-                ShopDTO shop = knownShops.getOrDefault(shopName, new ShopDTO(shopName, Map.of(), Map.of(), List.of()));
+                ShopDTO shop = knownShops.getOrDefault(shopName, new ShopDTO(1,shopName, Map.of(), Map.of(), List.of()));
                 List<rolesDTO> roles = rolesByShop.get(shopName);
                 add(createShopCard(shop, roles));
             }
@@ -195,8 +195,8 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
 
     private Map<String, ShopDTO> mockShopLookup() {
         return Map.of(
-                "Fresh Mart", new ShopDTO("Fresh Mart", Map.of(), Map.of(), List.of()),
-                "Beauty Hub", new ShopDTO("Beauty Hub", Map.of(), Map.of(), List.of()),
-                "ElectroMax", new ShopDTO("ElectroMax", Map.of(), Map.of(), List.of()));
+                "Fresh Mart", new ShopDTO(10,"Fresh Mart", Map.of(), Map.of(), List.of()),
+                "Beauty Hub", new ShopDTO(11,"Beauty Hub", Map.of(), Map.of(), List.of()),
+                "ElectroMax", new ShopDTO(12,"ElectroMax", Map.of(), Map.of(), List.of()));
     }
 }

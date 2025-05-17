@@ -113,7 +113,7 @@ public class ShopSearchView extends VerticalLayout implements BeforeEnterObserve
             shopName.getStyle()
                     .set("cursor", "pointer")
                     .set("margin", "0");
-            shopName.addClickListener(e -> UI.getCurrent().navigate("shop/" + shop.getName()));
+            shopName.addClickListener(e -> UI.getCurrent().navigate("shop/" + shop.getShopId()));
 
             shopLayout.add(shopName);
             shopsContainer.add(shopLayout);

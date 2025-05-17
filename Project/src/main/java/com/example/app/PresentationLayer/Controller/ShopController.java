@@ -154,11 +154,15 @@ public class ShopController {
 
     @GetMapping("/{shopId}")
     public ResponseEntity<?> getShop(
-            @PathVariable @Min(1) int shopId,
+            @PathVariable String shopId,
             @RequestParam String token) {
 
         try {
-            Shop shop = shopService.getShop(shopId, token);
+            int id = Integer.parseInt(shopId);
+            if (id <= 0) {
+                throw new IllegalArgumentException("Shop ID must be a positive integer.");
+            }
+            Shop shop = shopService.getShop(id, token);
             ShopDTO shopDTO = ShopDTO.fromDomain(shop);
             return ResponseEntity.ok(shopDTO);
 

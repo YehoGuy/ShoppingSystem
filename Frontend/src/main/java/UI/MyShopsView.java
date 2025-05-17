@@ -53,33 +53,11 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
         items2.put(new ItemDTO(2, "carrot", "a good carrot", 10.0, ItemCategory.GROCERY), 7);
         items2.put(new ItemDTO(3, "potato", "a good potato", 10.0, ItemCategory.GROCERY), 12);
 
-        allShops.add(new ShopDTO("very very very very long shop name that wont fit", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop A", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop B", items2, items2, reviews2));
-        allShops.add(new ShopDTO("shop C", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop D", items2, items2, reviews2));
-        allShops.add(new ShopDTO("shop E", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop F", items2, items2, reviews2));
-        allShops.add(new ShopDTO("shop G", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop H", items2, items2, reviews2));
-        allShops.add(new ShopDTO("shop I", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop J", items2, items2, reviews2));
-        allShops.add(new ShopDTO("shop K", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop L", items2, items2, reviews2));
-        allShops.add(new ShopDTO("shop M", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop N", items2, items2, reviews2));
-        allShops.add(new ShopDTO("shop O", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop P", items2, items2, reviews2));
-        allShops.add(new ShopDTO("shop Q", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop R", items2, items2, reviews2));
-        allShops.add(new ShopDTO("shop S", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop T", items2, items2, reviews2));
-        allShops.add(new ShopDTO("shop U", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop V", items2, items2, reviews2));
-        allShops.add(new ShopDTO("shop W", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop X", items2, items2, reviews2));
-        allShops.add(new ShopDTO("shop Y", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop Z", items2, items2, reviews2));
+        allShops.add(new ShopDTO(1, "very very very very long shop name that wont fit", items1, items1, reviews1));
+        allShops.add(new ShopDTO(2, "shop A", items1, items1, reviews1));
+        allShops.add(new ShopDTO(3, "shop B", items2, items2, reviews2));
+        allShops.add(new ShopDTO(4, "shop C", items1, items1, reviews1));
+        allShops.add(new ShopDTO(5, "shop D", items2, items2, reviews2));  
 
         filteredShops.addAll(allShops); // Initially, show all shops
 
