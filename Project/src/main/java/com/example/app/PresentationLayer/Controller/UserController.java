@@ -78,6 +78,8 @@ import jakarta.validation.constraints.Size;
  * 27. GET /{userId}/suspension params: token → 200 boolean
  * 28. GET /suspended params: token → 200 [ids]
  * 29. GET /shops/{shopId}/workers params: token → 200 [MemberDTO]
+ * 30. GET /getPendingRoles params: token → 200 [RoleDTO]
+ * 31. GET /allusers params: token → 200 [MemberDTO]
  *
  * Error mapping (all endpoints):
  * 400 – Bad data / validation failure
@@ -132,6 +134,30 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
         }
     }
+
+    @GetMapping("/allmembers")
+    public ResponseEntity<?> getAllMembers(@RequestParam String token){
+        try {
+            authService.ValidateToken(token);
+            List<Member> members = userService.getAllMembers();
+            List<MemberDTO> membersDTO = members.stream()
+                    .map(MemberDTO::fromDomain)
+                    .toList();
+            return ResponseEntity.ok(membersDTO);
+
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
+        
+    }
+
+    
 
     @PostMapping("/register")
     public ResponseEntity<String> register(

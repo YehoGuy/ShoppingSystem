@@ -610,4 +610,9 @@ public class UserRepository implements IUserRepository {
         }
         return member.getPendingRoles(); // Assuming Member has a method to get pending roles
     }
+
+    public List<Member> getAllMembers() {
+        return new ArrayList<Member>(userMapping.values().stream().filter(user -> user instanceof Member)
+                .map(user -> (Member) user).toList());
+    }
 }
