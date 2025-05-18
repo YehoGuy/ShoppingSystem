@@ -3,7 +3,7 @@ package ApplicationLayerTests;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
+import org.mockito.Mock;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
 import com.example.app.ApplicationLayer.Item.ItemService;
@@ -47,7 +47,7 @@ public class MessageServiceTests {
         shopService = new ShopService(shopRepository);
     
         messageService.setService(authTokenService, userService, shopService); // Set the services for the message service);
-        shopService.setServices(authTokenService, new ItemService(new ItemRepository()), userService); // Set the user service for the shop service
+        shopService.setServices(authTokenService, new ItemService(new ItemRepository(),authTokenService,userService), userService); // Set the user service for the shop service
 
         // Add a test user and shop to the repositories
         userRepository.addMember("testUser", "password", "a@a", "b", "c");
