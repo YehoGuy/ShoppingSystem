@@ -37,7 +37,7 @@ public class UserRepository implements IUserRepository {
         this.userMapping = new ConcurrentHashMap<>();
         this.userIdCounter = new AtomicInteger(0); // Initialize the user ID counter
         this.managers = new CopyOnWriteArrayList<>(); // Initialize the managers list
-        addMember("admin","admin","admin@mail.com", "0","admin st.");
+        addMember("admin", "admin", "admin@mail.com", "0", "admin st.");
         managers.add(isUsernameAndPasswordValid("admin", "admin"));
     }
 
@@ -64,18 +64,18 @@ public class UserRepository implements IUserRepository {
         }
     }
 
-    public boolean isAdmin(Integer id){
+    public boolean isAdmin(Integer id) {
         return managers.contains(id);
     }
 
-    public void addAdmin(Integer id) throws RuntimeException{
-        if(managers.contains(id))
+    public void addAdmin(Integer id) throws RuntimeException {
+        if (managers.contains(id))
             throw new OurRuntime("All ready an admin");
         managers.add(id);
     }
 
-    public void removeAdmin(Integer id) throws RuntimeException{
-        if(id == isUsernameAndPasswordValid("admin", "admin"))
+    public void removeAdmin(Integer id) throws RuntimeException {
+        if (id == isUsernameAndPasswordValid("admin", "admin"))
             throw new OurRuntime("cant remove admin from the user who created the system");
         managers.remove(id);
     }
@@ -88,19 +88,21 @@ public class UserRepository implements IUserRepository {
         int id = userIdCounter.incrementAndGet(); // Generate a new ID for the guest
         Guest guest = new Guest(id); // Assuming Guest is a subclass of User
         userMapping.put(id, guest); // Add the guest to the mapping
-        if(!userMapping.containsKey(id) || userMapping.get(id) == null) {
+        if (!userMapping.containsKey(id) || userMapping.get(id) == null) {
             throw new IllegalArgumentException("Failed to create guest with ID " + id);
         }
         return id; // Return the ID of the newly created guest
     }
 
     public void addMember(String username, String password, String email, String phoneNumber, String address) {
-        if(!email.contains("@") || email.isEmpty()){
+        if (!email.contains("@") || email.isEmpty()) {
             throw new OurRuntime("Invalid email address.");
         }
 
         int id = userIdCounter.incrementAndGet(); // Generate a new ID for the member
-        User member = new Member(id, username, password, email, phoneNumber, address); // Assuming User has a constructor with these parameters
+        User member = new Member(id, username, password, email, phoneNumber, address); // Assuming User has a
+                                                                                       // constructor with these
+                                                                                       // parameters
         userMapping.put(id, member); // Add the member to the mapping
     }
 
@@ -168,20 +170,21 @@ public class UserRepository implements IUserRepository {
             throw new OurRuntime("User with ID " + id + " is not a Member.");
         }
     }
-    
+
     public int isUsernameAndPasswordValid(String username, String password) {
         for (User user : userMapping.values()) {
             if (user instanceof Member) {
                 Member member = (Member) user;
-                if (member.getUsername().equals(username) && passwordEncoderUtil.matches(password, member.getPassword())) {
+                if (member.getUsername().equals(username)
+                        && passwordEncoderUtil.matches(password, member.getPassword())) {
                     return member.getMemberId(); // Return the ID of the member if username and password match
                 }
             }
         }
         return -1; // Return -1 if no match is found
     }
-    
-    public boolean isUsernameTaken (String username) {
+
+    public boolean isUsernameTaken(String username) {
         for (User user : userMapping.values()) {
             if (user instanceof Member) {
                 Member member = (Member) user;
@@ -232,32 +235,31 @@ public class UserRepository implements IUserRepository {
 
     @Override
     public List<Member> getMembersList() {
-            List<Member> memberUsers = new ArrayList<>();
-            for (User user : userMapping.values()) {
-                if (user instanceof Member) {
-                    memberUsers.add((Member) user);
-                }
+        List<Member> memberUsers = new ArrayList<>();
+        for (User user : userMapping.values()) {
+            if (user instanceof Member) {
+                memberUsers.add((Member) user);
             }
-            return memberUsers;
         }
+        return memberUsers;
+    }
 
     public void clear() {
         userMapping.clear();
     }
 
-
     public boolean isOwner(int id, int shopId) {
-        if(getMembersList().stream().anyMatch(m -> m.getMemberId() == id &&
-             m.getRoles().stream().anyMatch(r -> r.isOwner() && r.getShopId() == shopId))) {
-                return true;
+        if (getMembersList().stream().anyMatch(m -> m.getMemberId() == id &&
+                m.getRoles().stream().anyMatch(r -> r.isOwner() && r.getShopId() == shopId))) {
+            return true;
         }
         return false;
     }
 
     public boolean isFounder(int id, int shopId) {
-        if(getMembersList().stream().anyMatch(m -> m.getMemberId() == id &&
-             m.getRoles().stream().anyMatch(r -> r.isFounder() && r.getShopId() == shopId))) {
-                return true; 
+        if (getMembersList().stream().anyMatch(m -> m.getMemberId() == id &&
+                m.getRoles().stream().anyMatch(r -> r.isFounder() && r.getShopId() == shopId))) {
+            return true;
         }
         return false;
     }
@@ -285,7 +287,7 @@ public class UserRepository implements IUserRepository {
         }
         User user = userMapping.get(userId);
         ShoppingCart shoppingCart = user.getShoppingCart();
-        shoppingCart.addItem(shopId, itemId, quantity); 
+        shoppingCart.addItem(shopId, itemId, quantity);
     }
 
     public void removeItemFromShoppingCart(int userId, int shopId, int itemId) {
@@ -294,7 +296,7 @@ public class UserRepository implements IUserRepository {
         }
         User user = userMapping.get(userId);
         ShoppingCart shoppingCart = user.getShoppingCart();
-        shoppingCart.removeItem(shopId, itemId); 
+        shoppingCart.removeItem(shopId, itemId);
     }
 
     public void updateItemQuantityInShoppingCart(int userId, int shopId, int itemId, int quantity) {
@@ -307,7 +309,7 @@ public class UserRepository implements IUserRepository {
         User user = userMapping.get(userId);
         ShoppingCart shoppingCart = user.getShoppingCart();
         shoppingCart.removeItem(shopId, shopId);
-        shoppingCart.addItem(shopId, itemId, quantity); 
+        shoppingCart.addItem(shopId, itemId, quantity);
     }
 
     public void clearShoppingCart(int userId) {
@@ -316,7 +318,7 @@ public class UserRepository implements IUserRepository {
         }
         User user = userMapping.get(userId);
         ShoppingCart shoppingCart = user.getShoppingCart();
-        shoppingCart.clearCart(); 
+        shoppingCart.clearCart();
     }
 
     public Map<Integer, Integer> getBasket(int userId, int shopId) {
@@ -325,7 +327,7 @@ public class UserRepository implements IUserRepository {
         }
         User user = userMapping.get(userId);
         ShoppingCart shoppingCart = user.getShoppingCart();
-        return shoppingCart.getBasket(shopId); 
+        return shoppingCart.getBasket(shopId);
     }
 
     public void createBasket(int userId, int shopId) {
@@ -334,7 +336,7 @@ public class UserRepository implements IUserRepository {
         }
         User user = userMapping.get(userId);
         ShoppingCart shoppingCart = user.getShoppingCart();
-        shoppingCart.addBasket(shopId); 
+        shoppingCart.addBasket(shopId);
     }
 
     public void setPermissions(int userId, int shopId, Role role, PermissionsEnum[] permissions) {
@@ -368,8 +370,8 @@ public class UserRepository implements IUserRepository {
             }
         }
         for (Role pendingRole : member.getPendingRoles())
-            if (pendingRole.getShopId() == role.getShopId()) 
-                    throw new OurRuntime("User with ID " + userId + " already has this role pending.");
+            if (pendingRole.getShopId() == role.getShopId())
+                throw new OurRuntime("User with ID " + userId + " already has this role pending.");
         member.addRoleToPending(role); // Assuming Member has a method to add a role
     }
 
@@ -541,13 +543,13 @@ public class UserRepository implements IUserRepository {
         if (member == null) {
             throw new OurRuntime("User with ID " + userId + " doesn't exist.");
         }
-        member.setSuspended(suspended); 
+        member.setSuspended(suspended);
     }
 
     @Override
     public boolean isSuspended(int userId) {
         Member member;
-        try{
+        try {
             member = getMemberById(userId);
         } catch (Exception e) {
             return false;
@@ -556,11 +558,11 @@ public class UserRepository implements IUserRepository {
         if (member == null) {
             throw new OurRuntime("User with ID " + userId + " doesn't exist.");
         }
-        return member.isSuspended(); 
+        return member.isSuspended();
     }
 
     @Override
-    public List<Integer> getSuspendedUsers(){
+    public List<Integer> getSuspendedUsers() {
         List<Integer> suspendedUsers = new ArrayList<>();
         for (User user : userMapping.values()) {
             if (user instanceof Member) {
@@ -586,6 +588,7 @@ public class UserRepository implements IUserRepository {
         }
         return shopIds;
     }
+
     public List<Member> getShopMembers(int shopId) {
         List<Member> members = new ArrayList<>();
         for (User user : userMapping.values()) {
@@ -598,5 +601,13 @@ public class UserRepository implements IUserRepository {
         }
         return members;
 
+    }
+
+    public List<Role> getPendingRoles(int userId) {
+        Member member = getMemberById(userId);
+        if (member == null) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        return member.getPendingRoles(); // Assuming Member has a method to get pending roles
     }
 }
