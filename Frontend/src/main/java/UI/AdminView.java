@@ -2,7 +2,6 @@ package UI;
 
 import DTOs.MemberDTO;
 import DTOs.ShopDTO;
-
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
@@ -14,24 +13,21 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.*;
+import org.springframework.web.client.RestTemplate;
 
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import org.springframework.http.ResponseEntity;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Route(value = "admin", layout = AppLayoutBasic.class)
 public class AdminView extends VerticalLayout implements BeforeEnterObserver {
 
     private Grid<UserGridRow> userGrid;
     private Grid<ShopGridRow> shopGrid;
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final RestTemplate restTemplate = new RestTemplate();
+    private final String BASE_URL = "http://localhost:8080";
 
     public static class UserGridRow {
         private int id;
@@ -122,16 +118,20 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
     private void loadUsers() {
         try {
             String token = getToken();
-            String endpoint = "/api/users/allmembers?token=" + token;
-            ResponseEntity<MemberDTO[]> response = sendGetRequest(endpoint, new TypeReference<>() {});
-            List<MemberDTO> members = response.getBody() != null ? Arrays.asList(response.getBody()) : Collections.emptyList();
-            if (members.isEmpty()) {
-                Notification.show("No users found");
-                return;
-            }
+            HttpHeaders headers = getHeaders(token);
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+            String url = BASE_URL + "/api/users/allmembers";
+
+            ResponseEntity<MemberDTO[]> response = restTemplate.exchange(
+                    url, HttpMethod.GET, request, MemberDTO[].class);
+
+            List<MemberDTO> members = response.getBody() != null ?
+                    Arrays.asList(response.getBody()) : Collections.emptyList();
+
             List<UserGridRow> rows = members.stream()
                     .map(m -> new UserGridRow(m.memberId(), m.username(), m.email()))
                     .collect(Collectors.toList());
+
             userGrid.setItems(rows);
         } catch (Exception e) {
             Notification.show("Failed to load users: " + e.getMessage());
@@ -141,17 +141,20 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
     private void loadShops() {
         try {
             String token = getToken();
-            String endpoint = "/api/shops/all?token=" + token;
-            ResponseEntity<ShopDTO[]> response = sendGetRequest(endpoint, new TypeReference<>() {});
+            HttpHeaders headers = getHeaders(token);
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+            String url = BASE_URL + "/api/shops/all";
 
-            List<ShopDTO> shops = response.getBody() != null ? Arrays.asList(response.getBody()) : Collections.emptyList();
-                if (shops.isEmpty()) {
-                        Notification.show("No shops found");
-                        return;
-                }
+            ResponseEntity<ShopDTO[]> response = restTemplate.exchange(
+                    url, HttpMethod.GET, request, ShopDTO[].class);
+
+            List<ShopDTO> shops = response.getBody() != null ?
+                    Arrays.asList(response.getBody()) : Collections.emptyList();
+
             List<ShopGridRow> rows = shops.stream()
                     .map(s -> new ShopGridRow(s.getShopId(), s.getName()))
                     .collect(Collectors.toList());
+
             shopGrid.setItems(rows);
         } catch (Exception e) {
             Notification.show("Failed to load shops: " + e.getMessage());
@@ -159,70 +162,55 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
     }
 
     private void promoteUserToAdmin(int userId) {
-        String token = getToken();
-        String url = "/api/users/" + userId + "/admin?token=" + token;
-        sendPostRequest(url);
-        Notification.show("Promoted user " + userId + " to admin");
+        try {
+            String token = getToken();
+            HttpHeaders headers = getHeaders(token);
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+            String url = BASE_URL + "/api/users/" + userId + "/admin";
+
+            restTemplate.postForEntity(url, request, Void.class);
+            Notification.show("User " + userId + " promoted to admin");
+        } catch (Exception e) {
+            Notification.show("Promotion failed: " + e.getMessage());
+        }
     }
 
     private void suspendUser(int userId) {
-        String token = getToken();
-        String url = "/api/users/" + userId + "/suspension?token=" + token + "&until=" + LocalDateTime.now().plusDays(30);
-        sendPatchRequest(url);
-        Notification.show("Suspended user " + userId + " for 30 days");
+        try {
+            String token = getToken();
+            HttpHeaders headers = getHeaders(token);
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+            String url = BASE_URL + "/api/users/" + userId + "/suspension?until=" + LocalDateTime.now().plusDays(30);
+
+            restTemplate.exchange(url, HttpMethod.PATCH, request, Void.class);
+            Notification.show("User " + userId + " suspended");
+        } catch (Exception e) {
+            Notification.show("Suspension failed: " + e.getMessage());
+        }
     }
 
     private void removeShop(int shopId) {
-        String token = getToken();
-        String url = "/api/shops/" + shopId + "?token=" + token;
-        sendDeleteRequest(url);
-        Notification.show("Removed shop " + shopId);
+        try {
+            String token = getToken();
+            HttpHeaders headers = getHeaders(token);
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+            String url = BASE_URL + "/api/shops/" + shopId +"?token=" + token;///////////////////////////
+            
+
+            restTemplate.exchange(url, HttpMethod.DELETE, request, Void.class);
+            Notification.show("Shop " + shopId + " removed");
+        } catch (Exception e) {
+            Notification.show("Failed to remove shop: " + e.getMessage());
+        }
     }
 
-    // Token helper
+    private HttpHeaders getHeaders(String token) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + token);
+        return headers;
+    }
+
     private String getToken() {
         return (String) VaadinSession.getCurrent().getAttribute("authToken");
-    }
-
-    // Network helpers
-    private <T> T sendGetRequest(String path, TypeReference<T> typeRef) throws Exception {
-        URL url = new URL("http://localhost:8080" + path);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-        return mapper.readValue(conn.getInputStream(), typeRef);
-    }
-
-    private void sendPostRequest(String path) {
-        try {
-            URL url = new URL("http://localhost:8080" + path);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("POST");
-            conn.getResponseCode();
-        } catch (Exception e) {
-            Notification.show("POST failed: " + e.getMessage());
-        }
-    }
-
-    private void sendPatchRequest(String path) {
-        try {
-            URL url = new URL("http://localhost:8080" + path);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("PATCH");
-            conn.setDoOutput(true);
-            conn.getResponseCode();
-        } catch (Exception e) {
-            Notification.show("PATCH failed: " + e.getMessage());
-        }
-    }
-
-    private void sendDeleteRequest(String path) {
-        try {
-            URL url = new URL("http://localhost:8080" + path);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("DELETE");
-            conn.getResponseCode();
-        } catch (Exception e) {
-            Notification.show("DELETE failed: " + e.getMessage());
-        }
     }
 }
