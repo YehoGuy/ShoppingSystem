@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -971,5 +972,154 @@ public void testRollbackOnDiscountFailure_Success() throws Exception {
             exB.get().getMessage().contains("Operator cannot be null"),
             "Expected message to indicate null-operator, but was: " + exB.get().getMessage()
         );
+    }
+
+     @Test
+    void testGetPurchasePolicies_ReturnsNull() {
+        assertNull(shop.getPurchasePolicies());
+    }
+
+    @Test
+    void testGetReviews_Unmodifiable() {
+        shop.addReview(1, 5, "Great");
+        assertThrows(UnsupportedOperationException.class,
+            () -> shop.getReviews().add(new ShopReview(2, 3, "Oops")));
+    }
+
+    @Test
+    void testGetItemQuantity_AbsentAndPresent() {
+        assertEquals(0, shop.getItemQuantity(123));
+        shop.addItem(123, 4);
+        assertEquals(4, shop.getItemQuantity(123));
+    }
+
+    @Test
+    void testRemoveItemQuantity_SuccessAndRemoval() {
+        shop.addItem(10, 5);
+        shop.removeItemQuantity(10, 3);
+        assertEquals(2, shop.getItemQuantity(10));
+        // remove the rest
+        shop.removeItemQuantity(10, 2);
+        assertEquals(0, shop.getItemQuantity(10));
+    }
+
+    @Test
+    void testRemoveItemQuantity_Invalid() {
+        assertThrows(IllegalArgumentException.class,
+            () -> shop.removeItemQuantity(1, -1));
+        assertThrows(IllegalArgumentException.class,
+            () -> shop.removeItemQuantity(99, 1));
+    }
+
+    @Test
+    void testGetItemIds_Sanity() {
+        shop.addItem(1,1);
+        shop.addItem(2,1);
+        assertTrue(shop.getItemIds().containsAll(java.util.List.of(1,2)));
+    }
+
+    @Test
+    void testUpdateItemPriceAndGetPrice() {
+        shop.addItem(50, 2);
+        assertEquals(0, shop.getItemPrice(50));
+        shop.updateItemPrice(50, 30);
+        assertEquals(30, shop.getItemPrice(50));
+    }
+
+    @Test
+    void testUpdateItemPrice_Invalid() {
+        assertThrows(IllegalArgumentException.class,
+            () -> shop.updateItemPrice(5, -10));
+        assertThrows(IllegalArgumentException.class,
+            () -> shop.updateItemPrice(999, 20));
+    }
+
+    @Test
+    void testGetTotalPrice_MissingAndPresent() {
+        shop.addItem(100, 2);
+        shop.updateItemPrice(100, 5);   // total = 10
+        shop.addItem(101, 3);           // no price set = 0
+        Map<Integer,Integer> cart = Map.of(100,2, 101,3);
+        assertEquals(10, shop.getTotalPrice(cart));
+    }
+
+    @Test
+    void testRemoveGlobalDiscount_NoOp() {
+        // no exception if none set
+        shop.removeGlobalDiscount();
+    }
+
+    @Test
+    void testRemoveDiscountForItem_NoOp() {
+        shop.removeDiscountForItem(42);
+    }
+
+    @Test
+    void testRemoveCategoryDiscount_NoOp() {
+        shop.removeCategoryDiscount(ItemCategory.BOOKS);
+    }
+
+    @Test
+    void testAddPolicy_FirstAndCompositeBranches() {
+        // first call: threshold-only
+        assertDoesNotThrow(() ->
+            shop.addPolicy(2, 10, null, 0.0, null)
+        );
+        // second without operator should fail
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+            shop.addPolicy(1, 10, null, 0.0, null)
+        );
+        assertTrue(ex.getMessage().contains("Operator cannot be null"));
+
+        // second with operator works
+        Shop s2 = new Shop(2, "X", shippingMethod);
+        assertDoesNotThrow(() -> {
+            s2.addPolicy(2, 20, null, 0.0, null);
+            s2.addPolicy(3, 20, null, 0.0, Operator.AND);
+        });
+
+        // third without operator on same shop should now fail on "policyComposite not null"
+        IllegalArgumentException ex2 = assertThrows(IllegalArgumentException.class, () ->
+            s2.addPolicy(4, 20, null, 0.0, null)
+        );
+        assertTrue(ex2.getMessage().contains("adding discount+policy in progress"));
+
+        // third with operator OK
+        assertDoesNotThrow(() ->
+            s2.addPolicy(5, 20, null, 0.0, Operator.OR)
+        );
+    }
+
+    @Test
+    void testShopReview_toString() {
+        ShopReview r = new ShopReview(7, 4, "Nice");
+        String s = r.toString();
+        assertTrue(s.contains("rating=4"));
+        assertTrue(s.contains("reviewText='Nice'"));
+    }
+
+    @Test
+    void testOperatorEnum() {
+        assertEquals(Operator.AND, Operator.valueOf("AND"));
+        assertEquals(3, Operator.values().length);
+    }
+
+    @Test
+    void testPurchaseItems_InsufficientStock_Rollback() {
+        shop.addItem(200, 1);
+        Map<Integer,Integer> cart = Map.of(200, 2);
+        assertThrows(IllegalArgumentException.class, () ->
+            shop.purchaseItems(cart, Collections.emptyMap())
+        );
+        // original stock should remain
+        assertEquals(1, shop.getItemQuantity(200));
+    }
+
+    @Test
+    void testRollBackPurchase() {
+        shop.addItem(300, 5);
+        // simulate rollback of 3 units
+        shop.rollBackPurchase(Map.of(300, 3));
+        assertEquals(8, shop.getItemQuantity(300));
     }
 }       
