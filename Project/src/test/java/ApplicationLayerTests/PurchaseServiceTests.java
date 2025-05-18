@@ -63,7 +63,7 @@ import com.example.app.SimpleHttpServerApplication;
 @ExtendWith({ SpringExtension.class, MockitoExtension.class })
 @SpringBootTest(classes = SimpleHttpServerApplication.class)
 @AutoConfigureMockMvc(addFilters = false)
-class PurchaseServiceAcceptanceTest {
+class PurchaseServiceAcceptanceTests{
 
     /* ─────────── mocks & SUT ─────────── */
     @Mock IPurchaseRepository repo;
@@ -79,10 +79,8 @@ class PurchaseServiceAcceptanceTest {
 
     @BeforeEach
     void setUp() {
-        service = new PurchaseService(repo);
-        service.setServices(auth, users, items, shops, msg);
+        service = new PurchaseService(repo, auth, users, shops, items, msg);
     }
-
     /* ══════════════════════════════════════════════════════════════
        checkoutCart tests
        ══════════════════════════════════════════════════════════════ */
