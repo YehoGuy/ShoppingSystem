@@ -29,10 +29,10 @@ public class UserService {
 
     private PasswordEncoderUtil passwordEncoder;
 
-    public UserService(IUserRepository  userRepository,
-                       AuthTokenService authTokenService) {
+    public UserService(IUserRepository userRepository,
+            AuthTokenService authTokenService) {
         this.passwordEncoder = new PasswordEncoderUtil();
-        this.userRepository  = userRepository;
+        this.userRepository = userRepository;
         this.authTokenService = authTokenService;
     }
 
@@ -328,8 +328,7 @@ public class UserService {
     }
 
     public String loginAsMember(String username, String password, String token_if_guest) {
-        password = passwordEncoder.encode(password); // Encode the password using the PasswordEncoderUtil
-        LoggerService.logMethodExecution("loginAsMember", username, password, token_if_guest);
+        LoggerService.logMethodExecution("loginAsMember", username, passwordEncoder.encode(password), token_if_guest);
         String token = null;
         try {
             if (username == null || password == null) {
@@ -343,8 +342,7 @@ public class UserService {
             int loginAsMember_id = userRepository.isUsernameAndPasswordValid(username, password);
             if (loginAsMember_id > 0) { // valid login attempt
                 if (token_if_guest == "") { // if the user is not a guest, it's their initial login
-                    token = authTokenService.Login(username, password, loginAsMember_id); // Generate a token for the
-                                                                                          // member
+                    token = authTokenService.Login(username, passwordEncoder.encode(password), loginAsMember_id);
                     LoggerService.logMethodExecutionEnd("loginAsMember", loginAsMember_id);
                     return token; // Return the ID of the logged-in member
                 } else {
@@ -355,8 +353,7 @@ public class UserService {
                     member.mergeShoppingCart(guest.getShoppingCart());
                     // remove the guest user from the data
                     userRepository.removeUserById(id);
-                    token = authTokenService.Login(username, password, loginAsMember_id); // Generate a token for the
-                                                                                          // member
+                    token = authTokenService.Login(username, passwordEncoder.encode(password), loginAsMember_id);
                     LoggerService.logMethodExecutionEnd("loginAsMember", loginAsMember_id);
                     return token;
                 }
