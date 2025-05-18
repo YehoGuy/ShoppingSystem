@@ -729,8 +729,7 @@ public void testRollbackOnDiscountFailure_Success() throws Exception {
         AuthTokenService ats = mock(AuthTokenService.class);
         ItemService is = mock(ItemService.class);
         UserService us = mock(UserService.class);
-        ShopService ss = new ShopService(repo);
-        ss.setServices(ats, is, us);
+        ShopService ss = new ShopService(repo, ats, us, is);
 
         // invalid token should be rejected
         when(ats.ValidateToken("bad")).thenThrow(new RuntimeException("Invalid token"));

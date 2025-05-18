@@ -17,19 +17,19 @@ import com.example.app.DomainLayer.Shop.Shop;
 @Service
 public class MessageService {
 
-    public IMessageRepository messageRepository;
-    private AuthTokenService authTokenService;
-    private UserService userService;
-    private ShopService shopService;
+    private final IMessageRepository messageRepository;
+    private final AuthTokenService   authTokenService;
+    private final UserService        userService;
+    private final ShopService        shopService;
 
-    public MessageService(IMessageRepository messageRepository) {
+    public MessageService(IMessageRepository messageRepository,
+                          AuthTokenService   authTokenService,
+                          UserService        userService,
+                          ShopService        shopService) {
         this.messageRepository = messageRepository;
-    }
-
-    public void setService(AuthTokenService authTokenService, UserService userService, ShopService shopService) {
-        this.authTokenService = authTokenService;
-        this.userService = userService;
-        this.shopService = shopService;
+        this.authTokenService  = authTokenService;
+        this.userService       = userService;
+        this.shopService       = shopService;
     }
 
     public String sendMessageToUser(String token, int receiverId, String content, int previousMessageId) {

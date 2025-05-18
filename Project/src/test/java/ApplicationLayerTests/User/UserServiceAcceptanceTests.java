@@ -45,9 +45,8 @@ public class UserServiceAcceptanceTests {
     void setUp() {
         mocks = MockitoAnnotations.openMocks(this);
         userRepository.setEncoderToTest(true); // Set the encoder to test mode
-        userService = spy(new UserService(userRepository));
+        userService = spy(new UserService(userRepository, authTokenService));
         userService.setEncoderToTest(true); // Set the encoder to test mode
-        userService.setServices(authTokenService);
     }
 
     @AfterEach

@@ -19,23 +19,18 @@ import com.example.app.DomainLayer.Roles.PermissionsEnum;
 @Service
 public class ItemService {
 
+    // ===== dependencies =====
     private final IItemRepository itemRepository;
-    private AuthTokenService authTokenService;
-    private UserService userService;
+    private final AuthTokenService authTokenService;
+    private final UserService     userService;
 
-    /**
-     * Constructor for ItemService.
-     *
-     * @param itemRepository an instance of IItemRepository that handles storage of Item instances.
-     */
-    public ItemService(IItemRepository itemRepository) {
-        this.itemRepository = itemRepository;
-      
-    }
-
-    public void setServices(AuthTokenService authTokenService, UserService userService) {
+    // ===== constructor DI =====
+    public ItemService(IItemRepository itemRepository,
+                       AuthTokenService authTokenService,
+                       UserService userService) {
+        this.itemRepository   = itemRepository;
         this.authTokenService = authTokenService;
-        this.userService = userService;
+        this.userService      = userService;
     }
 
     /**
