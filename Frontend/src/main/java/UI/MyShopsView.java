@@ -1,192 +1,163 @@
 package UI;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.router.Route;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-
-import DTOs.ItemDTO;
-import DTOs.ShopDTO;
-import DTOs.ShopReviewDTO;
-import Domain.ItemCategory;
-
-import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
+import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinSession;
+
+import DTOs.ShopDTO;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
 
 @Route(value = "myshops", layout = AppLayoutBasic.class)
 public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
 
-    private List<ShopDTO> allShops = new ArrayList<>(); // Store the full list of shops
-    private List<ShopDTO> filteredShops = new ArrayList<>(); // Store the filtered list
+    private static final String BASE_URL = "http://localhost:8080/api/shops";
+    private static final String GET_ALL = BASE_URL + "/all";
+    private static final String CREATE  = BASE_URL + "/create";
+
+    private final RestTemplate restTemplate = new RestTemplate();
+    private List<ShopDTO> allShops;
+    private VerticalLayout shopsContainer;
+    private TextField searchField;
+
+    public MyShopsView() {
+        setSizeFull();
+        setPadding(true);
+        setSpacing(true);
+
+        // Title
+        add(new H1("🏠 My Shops"));
+
+        // Search and Add button
+        searchField = new TextField();
+        searchField.setPlaceholder("🔍 Search shops...");
+        searchField.setWidth("300px");
+        searchField.addValueChangeListener(e -> filterAndDisplay());
+
+        Button addBtn = new Button("➕ Add New Shop", e -> openCreateDialog());
+        HorizontalLayout header = new HorizontalLayout(searchField, addBtn);
+        header.setAlignItems(Alignment.CENTER);
+        add(header);
+
+        // Shops container
+        shopsContainer = new VerticalLayout();
+        shopsContainer.setSizeFull();
+        shopsContainer.getStyle()
+            .set("overflow", "auto")
+            .set("padding", "10px")
+            .set("gap", "10px");
+        add(shopsContainer);
+
+        // Initial load
+        loadShops();
+    }
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
-        if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
-            event.forwardTo("");
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            event.forwardTo("login");
         }
     }
 
-    public MyShopsView() {
-
-        List<ShopReviewDTO> reviews1 = new ArrayList<>();
-        reviews1.add(new ShopReviewDTO(1, 5, "Great service!", "shop A"));
-        reviews1.add(new ShopReviewDTO(2, 4, "Good selection of products.", "shop A"));
-        List<ShopReviewDTO> reviews2 = new ArrayList<>();
-        reviews2.add(new ShopReviewDTO(3, 3, "Average experience.", "shop B"));
-        reviews2.add(new ShopReviewDTO(4, 2, "Not very helpful staff.", "shop B"));
-        Map<ItemDTO, Integer> items1 = new HashMap<>();
-        items1.put(new ItemDTO(0, "banana", "a good banana", 10.0, ItemCategory.GROCERY), 5);
-        items1.put(new ItemDTO(1, "apple", "a good apple", 10.0, ItemCategory.GROCERY), 10);
-        Map<ItemDTO, Integer> items2 = new HashMap<>();
-        items2.put(new ItemDTO(2, "carrot", "a good carrot", 10.0, ItemCategory.GROCERY), 7);
-        items2.put(new ItemDTO(3, "potato", "a good potato", 10.0, ItemCategory.GROCERY), 12);
-
-        allShops.add(new ShopDTO("very very very very long shop name that wont fit", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop A", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop B", items2, items2, reviews2));
-        allShops.add(new ShopDTO("shop C", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop D", items2, items2, reviews2));
-        allShops.add(new ShopDTO("shop E", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop F", items2, items2, reviews2));
-        allShops.add(new ShopDTO("shop G", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop H", items2, items2, reviews2));
-        allShops.add(new ShopDTO("shop I", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop J", items2, items2, reviews2));
-        allShops.add(new ShopDTO("shop K", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop L", items2, items2, reviews2));
-        allShops.add(new ShopDTO("shop M", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop N", items2, items2, reviews2));
-        allShops.add(new ShopDTO("shop O", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop P", items2, items2, reviews2));
-        allShops.add(new ShopDTO("shop Q", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop R", items2, items2, reviews2));
-        allShops.add(new ShopDTO("shop S", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop T", items2, items2, reviews2));
-        allShops.add(new ShopDTO("shop U", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop V", items2, items2, reviews2));
-        allShops.add(new ShopDTO("shop W", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop X", items2, items2, reviews2));
-        allShops.add(new ShopDTO("shop Y", items1, items1, reviews1));
-        allShops.add(new ShopDTO("shop Z", items2, items2, reviews2));
-
-        filteredShops.addAll(allShops); // Initially, show all shops
-
-        setSizeFull();
-        setAlignItems(Alignment.CENTER);
-        setJustifyContentMode(JustifyContentMode.CENTER);
-
-        add(new H1("My Shops")); // Add a title
-
-        Button addShopButton = new Button("Add New Shop");
-        addShopButton.addClickListener(e -> {
-            Dialog dialog = new Dialog();
-            dialog.setModal(true);
-            dialog.setDraggable(true);
-
-            TextField nameField = new TextField("Shop Name");
-            nameField.setWidth("100%");
-
-            Button confirmButton = new Button("Create Shop", event -> {
-                String shopName = nameField.getValue();
-                if (!shopName.isEmpty()) {
-                    // Add shop creation logic here
-                    dialog.close();
-                }
-            });
-
-            Button cancelButton = new Button("Cancel", event -> dialog.close());
-
-            dialog.add(new VerticalLayout(
-                    nameField,
-                    new HorizontalLayout(confirmButton, cancelButton)));
-
-            dialog.open();
-        });
-        addShopButton.getStyle()
-                .set("margin-left", "10px")
-                .set("background-color", "#007bff")
-                .set("color", "white");
-
-        TextField searchField = new TextField();
-        searchField.setPlaceholder("Search shops...");
-        searchField.addValueChangeListener(e -> filterShops(e.getValue()));
-        searchField.setWidth("300px");
-
-        // Create a horizontal layout for title and button
-        HorizontalLayout headerLayout = new HorizontalLayout(searchField, new Span(), addShopButton);
-        headerLayout.setAlignItems(Alignment.CENTER);
-        add(headerLayout);
-
-        VerticalLayout shopsContainer = new VerticalLayout();
-        shopsContainer.setWidth("80%");
-        shopsContainer.setHeight("70vh"); // 70% of the vertical height of the page
-        shopsContainer.getStyle()
-                .set("overflow", "auto")
-                .set("display", "grid")
-                .set("grid-template-columns", "repeat(4, 1fr)")
-                .set("gap", "20px")
-                .set("padding", "20px");
-
-        // Display shops initially
-        // Create a button for adding a new shop
-
-        displayShops(filteredShops, shopsContainer);
-
-        // Add the scrollable shops container
-        add(shopsContainer);
-    }
-
-    private void filterShops(String query) {
-        filteredShops.clear(); // Clear current filtered list
-        for (ShopDTO shop : allShops) {
-            if (shop.getName().toLowerCase().contains(query.toLowerCase())) {
-                filteredShops.add(shop);
+    private void loadShops() {
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        try {
+            ResponseEntity<ShopDTO[]> resp = restTemplate.getForEntity(GET_ALL + "?token=" + token, ShopDTO[].class);
+            if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
+                allShops = Arrays.asList(resp.getBody());
+                filterAndDisplay();
+            } else {
+                Notification.show("⚠️ Failed to load shops: " + resp.getStatusCode());
             }
+        } catch (Exception ex) {
+            Notification.show("❗ Error loading shops: " + ex.getMessage());
         }
-        // Update the displayed list based on the filtered shops
-        displayShops(filteredShops, (VerticalLayout) getChildren().toArray()[2]);
     }
 
-    private void displayShops(List<ShopDTO> shops, VerticalLayout shopsContainer) {
-        shopsContainer.removeAll(); // Clear existing components before re-rendering
+    private void openCreateDialog() {
+        Dialog dialog = new Dialog();
+        dialog.setModal(true);
 
-        // Display filtered shops
-        shops.forEach(shop -> {
-            VerticalLayout shopLayout = new VerticalLayout();
-            shopLayout.setWidth("100%");
-            shopLayout.getStyle().set("border", "1px solid #ccc").set("padding", "15px");
+        TextField nameField = new TextField("Shop Name");
+        nameField.setWidth("100%");
 
-            Span shopName = new Span(shop.getName());
-            shopName.getStyle()
-                    .set("color", "#007bff") // Bootstrap blue
-                    .set("cursor", "pointer")
-                    .set("text-decoration", "none")
-                    .set("font-size", "20px")
-                    .set("font-weight", "600")
-                    .set("transition", "color 0.2s");
-
-            shopName.addClickListener(e -> {
-                UI.getCurrent().navigate("editShop/" + shop.getName());
-            });
-            shopName.getElement().executeJs(
-                    "this.addEventListener('mouseover', () => this.style.color = '#0056b3');" +
-                            "this.addEventListener('mouseout', () => this.style.color = '#007bff');");
-
-            shopLayout.add(shopName);
-            shopsContainer.add(shopLayout);
+        Button create = new Button("Create", e -> {
+            String name = nameField.getValue().trim();
+            if (!name.isEmpty()) {
+                createShop(name);
+                dialog.close();
+            }
         });
+        Button cancel = new Button("Cancel", e -> dialog.close());
+
+        dialog.add(new VerticalLayout(nameField, new HorizontalLayout(create, cancel)));
+        dialog.open();
     }
 
+    private void createShop(String name) {
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        try {
+            String url = CREATE + "?token=" + token + "&name=" + URLEncoder.encode(name, StandardCharsets.UTF_8);
+            ResponseEntity<ShopDTO> resp = restTemplate.postForEntity(url, null, ShopDTO.class);
+            if (resp.getStatusCode() == HttpStatus.CREATED) {
+                Notification.show("✅ Shop created: " + name);
+                loadShops();
+            } else {
+                Notification.show("⚠️ Could not create shop: " + resp.getStatusCode());
+            }
+        } catch (Exception ex) {
+            Notification.show("❗ Error creating shop: " + ex.getMessage());
+        }
+    }
+
+    private void filterAndDisplay() {
+        String q = searchField.getValue();
+        List<ShopDTO> filtered = allShops.stream()
+            .filter(s -> s.getName().toLowerCase().contains(q.toLowerCase()))
+            .toList();
+        displayShops(filtered);
+    }
+
+    private void displayShops(List<ShopDTO> shops) {
+        shopsContainer.removeAll();
+        if (shops.isEmpty()) {
+            shopsContainer.add(new Paragraph("No shops found."));
+            return;
+        }
+        for (ShopDTO s : shops) {
+            HorizontalLayout row = new HorizontalLayout();
+            row.setWidthFull();
+            
+            Span name = new Span("🏷️ " + s.getName());
+            name.getStyle()
+                .set("cursor", "pointer")
+                .set("font-weight", "600")
+                .set("font-size", "18px");
+            name.addClickListener(evt -> UI.getCurrent().navigate("shop/" + s.getName()));
+
+            Button view = new Button("🔍 View", e -> UI.getCurrent().navigate("shop/" + s.getName()));
+
+            row.add(name, view);
+            shopsContainer.add(row);
+        }
+    }
 }
