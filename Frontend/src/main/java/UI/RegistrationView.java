@@ -14,11 +14,14 @@ import com.vaadin.flow.server.VaadinSession;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.swing.GroupLayout.Alignment;
 
 @Route("register")
 public class RegistrationView extends VerticalLayout {
