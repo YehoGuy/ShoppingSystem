@@ -44,6 +44,9 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         }
     }
 
+    
+
+
     @Override
     public void setParameter(com.vaadin.flow.router.BeforeEvent event, @OptionalParameter String shopId) {
         if (shopId == null || shopId.isEmpty()) {
@@ -53,7 +56,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         // DEMO mode (case-insensitive)
         if ("demo".equalsIgnoreCase(shopId)) {
             shop   = createDemoShop();
-            prices = shop.getPrices();
+            prices = ShopDTO.itemPricesToMapConverter(shop.getItems(), shop.getItemPrices());
             buildPage();
             return;
         }
@@ -63,7 +66,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
             ResponseEntity<ShopDTO> resp = restTemplate.getForEntity(url, ShopDTO.class);
             if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
                 shop = resp.getBody();
-                prices = shop.getPrices();
+                prices = ShopDTO.itemPricesToMapConverter(shop.getItems(), shop.getItemPrices());
                 buildPage();
             } else {
                 Notification.show("⚠️ Failed to load shop: " + resp.getStatusCode());
@@ -80,7 +83,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         ShopDTO demo = new ShopDTO();
         demo.setName("Demo Shop 🏪");
         Map<ItemDTO,Integer> items = new HashMap<>();
-        Map<ItemDTO,Integer> demoPrices = new HashMap<>();
+        Map<Integer ,Integer> demoPrices = new HashMap<>();
         List<ShopReviewDTO> reviews = new ArrayList<>();
 
         ItemDTO item1 = new ItemDTO();
@@ -89,7 +92,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         item1.setPrice(5);
         item1.setDescription("A hot brewed coffee.");
         items.put(item1, 20);
-        demoPrices.put(item1, (int) item1.getPrice());
+        demoPrices.put(item1.getId(), (int) item1.getPrice());
 
         ItemDTO item2 = new ItemDTO();
         item2.setId(2);
@@ -97,14 +100,19 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         item2.setPrice(8);
         item2.setDescription("A tasty sandwich.");
         items.put(item2, 15);
-        demoPrices.put(item2, (int) item2.getPrice());
+        demoPrices.put(item2.getId(), (int) item2.getPrice());
 
         reviews.add(new ShopReviewDTO(1, 5, "👍 Great items!", "demo shop"));
         reviews.add(new ShopReviewDTO(2, 4, "😊 Nice selection.", "demo shop"));
+        
 
-        demo.setItems(items);
-        demo.setPrices(demoPrices);
+        
+
+        demo.setItems(items.keySet().stream().toList());
+        demo.setItemPrices(demoPrices);
         demo.setReviews(reviews);
+
+
         return demo;
     }
 
@@ -124,7 +132,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         add(new H2("📦 Items"));
         VerticalLayout itemsLayout = new VerticalLayout();
         itemsLayout.setWidthFull();
-        for (Map.Entry<ItemDTO, Integer> entry : shop.getItems().entrySet()) {
+        for (Map.Entry<ItemDTO, Integer> entry : ShopDTO.itemQuantitiesToMapConverter(shop.getItems(), shop.getItemPrices()).entrySet()) {
             ItemDTO item = entry.getKey();
             int available = entry.getValue();
             HorizontalLayout row = new HorizontalLayout();

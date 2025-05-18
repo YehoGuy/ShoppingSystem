@@ -25,8 +25,8 @@ public class ItemDTO {
     public double getPrice() { return price; }
     public String getName() { return name; }
     public String getDescription() { return description; }
-    public String getCategory() { return category.toString(); }
-    public ItemCategory getCategoryEnum() { return category; }
+    public String getCategoryString() { return category.toString(); }
+    public ItemCategory getCategory() { return category; }
 
     // Setters (required by Jackson)
     public void setId(int id) { this.id = id; }

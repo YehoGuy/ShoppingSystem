@@ -169,7 +169,7 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
 
             Span description = new Span(item.getDescription());
             Span price = new Span("💰 Price: $" + item.getPrice());
-            Span category = new Span("📦 Category: " + item.getCategory());
+            Span category = new Span("📦 Category: " + item.getCategoryString());
 
             Button buyButton = new Button("Buy");
             buyButton.getStyle().set("margin-top", "10px");
