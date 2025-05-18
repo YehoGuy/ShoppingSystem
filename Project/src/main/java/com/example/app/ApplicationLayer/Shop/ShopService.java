@@ -26,18 +26,18 @@ import com.example.app.DomainLayer.Shop.Shop;
 @Service
 public class ShopService {
     private final IShopRepository shopRepository;
-    private AuthTokenService authTokenService;
-    private ItemService itemService;
-    private UserService userService;
+    private final AuthTokenService authTokenService;
+    private final UserService      userService;
+    private final ItemService      itemService;
 
-    public ShopService(IShopRepository shopRepository) {
-        this.shopRepository = shopRepository;
-    }
-
-    public void setServices(AuthTokenService authTokenService, ItemService itemService, UserService userService) {
+    public ShopService(IShopRepository shopRepository,
+                       AuthTokenService authTokenService,
+                       UserService      userService,
+                       ItemService      itemService) {
+        this.shopRepository  = shopRepository;
         this.authTokenService = authTokenService;
-        this.itemService = itemService;
-        this.userService = userService;
+        this.userService      = userService;
+        this.itemService      = itemService;
     }
 
     public Shop createShop(String name, PurchasePolicy purchasePolicy, ShippingMethod shippingMethod, String token) {

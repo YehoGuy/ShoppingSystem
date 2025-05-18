@@ -43,10 +43,8 @@ public class MessageServiceTests {
         userRepository = new UserRepository();
         userService = new UserService(userRepository);
         shopRepository = new ShopRepository();
-        shopService = new ShopService(shopRepository);
+        shopService = new ShopService(shopRepository, authTokenService, userService, new ItemService(new ItemRepository(),authTokenService,userService));
         messageService = new MessageService(new MessageRepository(),authTokenService, userService, shopService);
-    
-        shopService.setServices(authTokenService, new ItemService(new ItemRepository(),authTokenService,userService), userService); // Set the user service for the shop service
 
         // Add a test user and shop to the repositories
         userRepository.addMember("testUser", "password", "a@a", "b", "c");
