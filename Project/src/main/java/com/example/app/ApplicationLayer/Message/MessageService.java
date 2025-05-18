@@ -143,16 +143,12 @@ public class MessageService {
         }
     }
 
-    public String getMessagesBySenderId(String token, int senderId) {
+    public List<Message> getMessagesBySenderId(String token, int senderId) {
         try {
             LoggerService.logMethodExecution("getMessagesBySenderId", token, senderId);
-            String output = "Messages sent by user " + senderId + ":\n";
             List<Message> messages = messageRepository.getMessagesBySenderId(senderId);
-            for (Message message : messages) {
-                output += message.toString() + "\n";
-            }
             LoggerService.logMethodExecutionEnd("getMessagesBySenderId", "Messages retrieved successfully.");
-            return output;
+            return messages;
         } catch (OurArg e) {
             LoggerService.logDebug("getMessagesBySenderId", e);
             throw new OurRuntime("getMessagesBySenderId", e);
@@ -165,16 +161,12 @@ public class MessageService {
         }
     }
 
-    public String getMessagesByReceiverId(String token, int receiverId) {
+    public List<Message> getMessagesByReceiverId(String token, int receiverId) {
         try {
             LoggerService.logMethodExecution("getMessagesByReceiverId", token, receiverId);
-            String output = "Messages received by user " + receiverId + ":\n";
             List<Message> messages = messageRepository.getMessagesByReceiverId(receiverId);
-            for (Message message : messages) {
-                output += message.toString() + "\n";
-            }
             LoggerService.logMethodExecutionEnd("getMessagesByReceiverId", "Messages retrieved successfully.");
-            return output;
+            return messages;
         } catch (OurArg e) {
             LoggerService.logDebug("getMessagesByReceiverId", e);
             throw new OurRuntime("getMessagesByReceiverId", e);

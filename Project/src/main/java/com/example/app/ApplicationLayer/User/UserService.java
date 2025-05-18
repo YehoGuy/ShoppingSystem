@@ -144,7 +144,7 @@ public class UserService {
         }
     }
 
-    public void addMember(String username, String password, String email, String phoneNumber, String address) {
+    public String addMember(String username, String password, String email, String phoneNumber, String address) {
         try {
             isValidDetails(username, password, email, phoneNumber); // Validate the input details
             if (userRepository.isUsernameAndPasswordValid(username, password) != -1) {
@@ -153,8 +153,10 @@ public class UserService {
             }
             password = passwordEncoder.encode(password); // Encode the password using the PasswordEncoderUtil
             LoggerService.logMethodExecution("addMember", username, password, email, phoneNumber, address);
-            userRepository.addMember(username, password, email, phoneNumber, address);
+            int userId = userRepository.addMember(username, password, email, phoneNumber, address);
+            String token = authTokenService.Login(username, password,userId);
             LoggerService.logMethodExecutionEndVoid("addMember");
+            return token; // Return the generated token
         } catch (OurRuntime e) {
             LoggerService.logDebug("addMember", e);
             throw new OurRuntime("addMember: " + e.getMessage(), e); // Rethrow the custom exception
@@ -1617,12 +1619,13 @@ public class UserService {
     }
 
     // Call it after login or when getting notifiactions when user is logged in
-    public void getNotificationsAndClear(String token) {
+    public List<String> getNotificationsAndClear(String token) {
         try {
             LoggerService.logMethodExecution("getNotificationsAndClear", token);
             int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
-            userRepository.getNotificationsAndClear(userId);
+            List<String> notificatList = userRepository.getNotificationsAndClear(userId);
             LoggerService.logMethodExecutionEndVoid("getNotificationsAndClear");
+            return notificatList;
         } catch (OurRuntime e) {
             LoggerService.logDebug("getNotificationsAndClear", e);
             throw new OurRuntime("getNotificationsAndClear: " + e.getMessage(), e); // Rethrow the custom exception

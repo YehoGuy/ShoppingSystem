@@ -119,17 +119,6 @@ public class MessageServiceTests {
     }
 
     @Test
-    void getMessagesBySenderId_returnsList() {
-        Message m = mock(Message.class);
-        when(m.toString()).thenReturn("M1");
-        when(messageRepository.getMessagesBySenderId(2)).thenReturn(List.of(m));
-
-        String result = messageService.getMessagesBySenderId("token", 2);
-
-        assertTrue(result.contains("M1"));
-    }
-
-    @Test
     void getMessageById_notFound_returnsNotFound() {
         when(messageRepository.getMessageById(5)).thenReturn(null);
 

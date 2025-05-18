@@ -140,8 +140,10 @@ public class UserController {
             @RequestParam @NotBlank String phoneNumber,
             @RequestParam @NotBlank String address) {
         try {
-            userService.addMember(username, password, email, phoneNumber, address);
-            String token = authService.generateAuthToken(username);
+            String token = userService.addMember(username, password, email, phoneNumber, address);
+            if (token == null) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("Username already taken");
+            }
             return ResponseEntity.status(HttpStatus.CREATED).body(token);
 
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
@@ -659,18 +661,29 @@ public class UserController {
     }
 
     @GetMapping("/getPendingRoles")
-    public ResponseEntity<?> getPendingRoles(@RequestParam String token) {
+    public ResponseEntity<List<RoleDTO>> getPendingRoles(@RequestParam("authToken") String token) {
         try {
             List<Role> pendingRoles = userService.getPendingRoles(token);
-            // convert to DTOs if needed
-            List<RoleDTO> pendingRolesDTO = pendingRoles.stream().map(RoleDTO::fromDomain).toList();
+            List<RoleDTO> pendingRolesDTO = pendingRoles.stream()
+                                                        .map(RoleDTO::fromDomain)
+                                                        .toList();
             return ResponseEntity.ok(pendingRolesDTO);
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().body(ex.getMessage());
+            return ResponseEntity.badRequest().body(null);
         } catch (RuntimeException ex) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
         } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @GetMapping("/notifications")
+    public ResponseEntity<List<String>> getNotifications(@RequestParam("authToken") String token) {
+        try {
+            List<String> notes = userService.getNotificationsAndClear(token);
+            return ResponseEntity.ok(notes);
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

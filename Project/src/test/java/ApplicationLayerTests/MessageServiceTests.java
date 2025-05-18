@@ -56,13 +56,13 @@ public class MessageServiceTests {
     @Test
     void testSendMessageToUser() {
         // Test sending a message to a user
-        assertEquals("Message sent successfully!", messageService.sendMessageToUser(token1, 2, "Hello", 0));
+        assertEquals("Message sent successfully!", messageService.sendMessageToUser(token1, 2, "Hello", -1));
     }
 
     @Test
     void testSendMessageToShop() {
         // Test sending a message to a shop
-        assertEquals("Message sent successfully!", messageService.sendMessageToShop(token1, 1, "Hello", 0));
+        assertEquals("Message sent successfully!", messageService.sendMessageToShop(token1, 1, "Hello", -1));
     }
 
     @Test
@@ -86,7 +86,7 @@ public class MessageServiceTests {
     @Test
     void testSendMessageToShopWithEmptyText() {
         // Test sending a message with empty text to a shop
-        assertEquals("Error sending message to shop: MosheTheDebugException thrown! mesage: unable to send - message is empty. objects involved: []", messageService.sendMessageToShop(token1, 1, "", 0));
+        assertEquals("Error sending message to shop: MosheTheDebugException thrown! mesage: unable to send - message is empty. objects involved: []", messageService.sendMessageToShop(token1, 1, "", -1));
     }
 
     @Test
