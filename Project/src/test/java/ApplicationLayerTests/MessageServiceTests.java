@@ -38,15 +38,14 @@ public class MessageServiceTests {
     @BeforeEach
     void setUp() {
         // Initialize the message service and repository before each test
-        messageService = new MessageService(new MessageRepository());
         authTokenRepository = new AuthTokenRepository();
         authTokenService = new AuthTokenService(authTokenRepository);
         userRepository = new UserRepository();
         userService = new UserService(userRepository);
         shopRepository = new ShopRepository();
         shopService = new ShopService(shopRepository);
+        messageService = new MessageService(new MessageRepository(),authTokenService, userService, shopService);
     
-        messageService.setService(authTokenService, userService, shopService); // Set the services for the message service);
         shopService.setServices(authTokenService, new ItemService(new ItemRepository(),authTokenService,userService), userService); // Set the user service for the shop service
 
         // Add a test user and shop to the repositories
