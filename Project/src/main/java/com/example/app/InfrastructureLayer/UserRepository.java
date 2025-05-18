@@ -37,7 +37,8 @@ public class UserRepository implements IUserRepository {
         this.userMapping = new ConcurrentHashMap<>();
         this.userIdCounter = new AtomicInteger(0); // Initialize the user ID counter
         this.managers = new CopyOnWriteArrayList<>(); // Initialize the managers list
-        addMember("admin", "admin", "admin@mail.com", "0", "admin st.");
+        PasswordEncoderUtil passwordEncoderUtil = new PasswordEncoderUtil();
+        addMember("admin", passwordEncoderUtil.encode("admin"), "admin@mail.com", "0", "admin st.");
         managers.add(isUsernameAndPasswordValid("admin", "admin"));
     }
 
