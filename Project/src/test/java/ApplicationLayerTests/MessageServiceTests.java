@@ -41,7 +41,7 @@ public class MessageServiceTests {
         authTokenRepository = new AuthTokenRepository();
         authTokenService = new AuthTokenService(authTokenRepository);
         userRepository = new UserRepository();
-        userService = new UserService(userRepository);
+        userService = new UserService(userRepository, authTokenService);
         shopRepository = new ShopRepository();
         shopService = new ShopService(shopRepository, authTokenService, userService, new ItemService(new ItemRepository(),authTokenService,userService));
         messageService = new MessageService(new MessageRepository(),authTokenService, userService, shopService);

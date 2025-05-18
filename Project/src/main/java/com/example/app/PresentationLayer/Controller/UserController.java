@@ -96,7 +96,6 @@ public class UserController {
     public UserController(UserService userService, AuthTokenService authService) {
         this.userService = userService;
         this.authService = authService;
-        this.userService.setServices(authService);
     }
 
     @GetMapping("/{userId}")

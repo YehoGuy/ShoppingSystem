@@ -29,9 +29,11 @@ public class UserService {
 
     private PasswordEncoderUtil passwordEncoder;
 
-    public UserService(IUserRepository userRepository) {
-        this.userRepository = userRepository;
-        passwordEncoder = userRepository.passwordEncoderUtil;
+    public UserService(IUserRepository  userRepository,
+                       AuthTokenService authTokenService) {
+        this.passwordEncoder = new PasswordEncoderUtil();
+        this.userRepository  = userRepository;
+        this.authTokenService = authTokenService;
     }
 
     public boolean isAdmin(Integer id) {
@@ -122,10 +124,6 @@ public class UserService {
             LoggerService.logError("getAllAdmins", e, token);
             throw new OurRuntime("getAllAdmins: " + e.getMessage(), e);
         }
-    }
-
-    public void setServices(AuthTokenService authTokenService) {
-        this.authTokenService = authTokenService;
     }
 
     public User getUserById(int id) {
