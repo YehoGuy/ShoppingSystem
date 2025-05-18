@@ -33,7 +33,7 @@ public interface IUserRepository {
     boolean isGuestById(int id);
 
     // Member management
-    void addMember(String username,
+    int addMember(String username,
             String password,
             String email,
             String phoneNumber,
@@ -124,7 +124,7 @@ public interface IUserRepository {
 
     void addNotification(int userId, String title, String message);
 
-    List<Notification> getNotificationsAndClear(int userId);
+    List<String> getNotificationsAndClear(int userId);
 
     public List<Member> getOwners(int shopId);
 

@@ -1,5 +1,8 @@
 package com.example.app.PresentationLayer.Controller;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -13,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.app.ApplicationLayer.Message.MessageService;
+import com.example.app.DomainLayer.Message;
+import com.example.app.PresentationLayer.DTO.Message.MessageDTO;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -49,7 +54,7 @@ public class MessageController {
             @RequestParam @NotBlank String authToken,
             @RequestParam @Min(1) int receiverId,
             @RequestParam @NotBlank String content,
-            @RequestParam @Min(0) int previousMessageId) {
+            @RequestParam @Min(-1) int previousMessageId) {
         String result = messageService.sendMessageToUser(authToken, receiverId, content, previousMessageId);
         if (result.startsWith("Error")) {
             return ResponseEntity.badRequest().body(result);
@@ -102,19 +107,21 @@ public class MessageController {
     }
 
     @GetMapping("/sender/{senderId}")
-    public ResponseEntity<String> getBySender(
-            @RequestParam @NotBlank String authToken,
-            @PathVariable @Min(1) int senderId) {
-        String result = messageService.getMessagesBySenderId(authToken, senderId);
-        return ResponseEntity.ok(result);
+    public ResponseEntity<List<MessageDTO>> getBySender(@RequestParam("authToken") String authToken, @PathVariable int senderId) {
+        List<Message> msgs = messageService.getMessagesBySenderId(authToken, senderId);
+        List<MessageDTO> messageDTOs = msgs.stream()
+                                    .map(MessageDTO::fromDomain)
+                                    .collect(Collectors.toList());
+        return ResponseEntity.ok(messageDTOs);
     }
 
     @GetMapping("/receiver/{receiverId}")
-    public ResponseEntity<String> getByReceiver(
-            @RequestParam @NotBlank String authToken,
-            @PathVariable @Min(1) int receiverId) {
-        String result = messageService.getMessagesByReceiverId(authToken, receiverId);
-        return ResponseEntity.ok(result);
+    public ResponseEntity<List<MessageDTO>> getByReceiver(@RequestParam("authToken") String authToken, @PathVariable int receiverId) {
+        List<Message> msgs = messageService.getMessagesByReceiverId(authToken, receiverId);
+        List<MessageDTO> messageDTOs = msgs.stream()
+                                    .map(MessageDTO::fromDomain)
+                                    .collect(Collectors.toList());
+        return ResponseEntity.ok(messageDTOs);
     }
 
     @GetMapping("/{messageId}")
@@ -138,4 +145,7 @@ public class MessageController {
         }
         return ResponseEntity.ok(result);
     }
+
+    
+
 }

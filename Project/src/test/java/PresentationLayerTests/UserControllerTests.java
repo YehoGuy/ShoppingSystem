@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -103,7 +104,7 @@ public class UserControllerTests {
     class Register {
         @Test
         void success_returns201() throws Exception {
-            doNothing().when(userService).addMember(anyString(), anyString(), anyString(), anyString(), anyString());
+            doReturn("iLoveYourMama").when(userService).addMember(anyString(), anyString(), anyString(), anyString(), anyString());
 
             mvc.perform(post("/api/users/register")
                     .param("username","u123")
