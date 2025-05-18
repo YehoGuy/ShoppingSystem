@@ -39,7 +39,7 @@ public class UserRepository implements IUserRepository {
         this.managers = new CopyOnWriteArrayList<>(); // Initialize the managers list
         PasswordEncoderUtil passwordEncoderUtil = new PasswordEncoderUtil();
         addMember("admin", passwordEncoderUtil.encode("admin"), "admin@mail.com", "0", "admin st.");
-        managers.add(isUsernameAndPasswordValid("admin", "admin"));
+        managers.add(isUsernameAndPasswordValid("admin", passwordEncoderUtil.encode("admin")));
     }
 
     public void setEncoderToTest(boolean b) {
