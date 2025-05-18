@@ -660,6 +660,23 @@ public class UserController {
         }
     }
 
+    @GetMapping("/getAcceptedRoles")
+    public ResponseEntity<?> getAcceptedRoles(@RequestParam("authToken") String token) {
+        try {
+            List<Role> acceptedRoles = userService.getAcceptedRoles(token);
+            List<RoleDTO> acceptedRolesDTO = acceptedRoles.stream()
+                                                        .map(RoleDTO::fromDomain)
+                                                        .toList();
+            return ResponseEntity.ok(acceptedRolesDTO);
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(null);
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
     @GetMapping("/getPendingRoles")
     public ResponseEntity<List<RoleDTO>> getPendingRoles(@RequestParam("authToken") String token) {
         try {

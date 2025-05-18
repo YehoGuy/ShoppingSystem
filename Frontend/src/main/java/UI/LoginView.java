@@ -9,6 +9,9 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
+
+import java.nio.charset.StandardCharsets;
+
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -22,6 +25,7 @@ public class LoginView extends VerticalLayout {
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final String BASE_URL = "http://localhost:8080/api/users";
+    private final String AUTH_URL = "http://localhost:8080/api/auth";
 
     public LoginView() {
         setSizeFull();
@@ -39,6 +43,7 @@ public class LoginView extends VerticalLayout {
                 VaadinSession.getCurrent().setAttribute("username", username);
                 loginForm.setError(false);
                 Notification.show("Login successful!");
+                setUserId();
                 getUI().ifPresent(ui -> ui.navigate("home"));
             } catch (Exception ex) {
                 loginForm.setError(true);
@@ -107,4 +112,26 @@ public class LoginView extends VerticalLayout {
         i18n.getErrorMessage().setMessage("Invalid credentials. Please try again.");
         return i18n;
     }
+
+    private void setUserId() {
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            return;
+        }
+
+        // build the URL with the authToken as a query‐param
+        String url = AUTH_URL + "/validate?authToken=" + token;
+
+        // simply use GET—no HttpHeaders object needed
+        ResponseEntity<Integer> response = restTemplate.getForEntity(url, Integer.class);
+
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            VaadinSession.getCurrent().setAttribute("userId", response.getBody());
+        } else {
+            throw new RuntimeException(
+                "Failed to retrieve user ID: HTTP " + response.getStatusCode().value()
+            );
+        }
+    }
 }
+

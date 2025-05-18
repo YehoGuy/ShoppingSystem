@@ -604,6 +604,14 @@ public class UserRepository implements IUserRepository {
 
     }
 
+    public List<Role> getAcceptedRoles(int userId) {
+        Member member = getMemberById(userId);
+        if (member == null) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        return member.getRoles(); // Assuming Member has a method to get roles
+    }
+
     public List<Role> getPendingRoles(int userId) {
         Member member = getMemberById(userId);
         if (member == null) {
@@ -611,4 +619,6 @@ public class UserRepository implements IUserRepository {
         }
         return member.getPendingRoles(); // Assuming Member has a method to get pending roles
     }
+
+
 }

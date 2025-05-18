@@ -135,4 +135,6 @@ public interface IUserRepository {
     List<Integer> getSuspendedUsers(); // Get a list of suspended users
 
     List<Role> getPendingRoles(int userId);
+
+    List<Role> getAcceptedRoles(int userId);
 }
