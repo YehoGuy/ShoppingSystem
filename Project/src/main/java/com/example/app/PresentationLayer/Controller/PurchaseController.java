@@ -246,4 +246,30 @@ public class PurchaseController {
                     .body("Internal server error"); // 500
         }
     }
+
+    /** 6. GET all purchases made *in* a specific store */
+    @GetMapping("/shops/{shopId}")
+    public ResponseEntity<?> getStorePurchases(
+            @PathVariable @Min(1) int shopId,
+            @RequestParam String authToken) {
+        try {
+            List<RecieptDTO> receipts = purchaseService
+                .getStorePurchases(authToken, shopId) // returns List<Reciept> in domain
+                .stream()
+                .map(RecieptDTO::fromDomain)          // map to DTO
+                .toList();
+            return ResponseEntity.ok(receipts);     // 200 + JSON array
+
+        } catch (ConstraintViolationException|IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());            // 400
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage()); // 404
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());  // 409
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body("Internal server error");                 // 500
+        }
+    }
+
 }
