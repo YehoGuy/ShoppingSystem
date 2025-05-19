@@ -3,11 +3,13 @@ package UI;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.GroupLayout.Alignment;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.H1;
@@ -24,6 +26,7 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 
 import DTOs.ItemDTO;
+import DTOs.ItemReviewDTO;
 import Domain.ItemCategory;
 
 @Route(value = "items", layout = AppLayoutBasic.class)
@@ -31,11 +34,6 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
     private List<ItemDTO> allItems = new ArrayList<>();
     private List<ItemDTO> filteredItems = new ArrayList<>();
     private VerticalLayout itemsContainer; // <--- FIELD REFERENCE
-
-    private ComboBox<ItemCategory> categoryFilter;
-    private NumberField minPriceField;
-    private NumberField maxPriceField;
-    private NumberField minRatingField;
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final String URL = "http://localhost:8080/api/items";
@@ -60,8 +58,6 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
         title.getStyle().set("margin-bottom", "10px");
         add(title);
 
-        VerticalLayout filtersLayout = setupFilters();
-
         TextField searchField = new TextField();
         searchField.setPlaceholder("Search items...");
         searchField.addValueChangeListener(e -> searchItems(e.getValue()));
@@ -73,7 +69,7 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
         itemsContainer.setHeight("70vh");
         itemsContainer.getStyle().set("overflow", "auto");
 
-        HorizontalLayout content = new HorizontalLayout(filtersLayout, itemsContainer);
+        HorizontalLayout content = new HorizontalLayout(itemsContainer);
         content.setWidthFull();
         content.setHeightFull();
         content.setFlexGrow(1, itemsContainer);
@@ -83,53 +79,36 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
     }
 
     private void getItems() {
-        String url = URL + "/all";
-        ResponseEntity<ItemDTO[]> response = restTemplate.getForEntity(url, ItemDTO[].class);
+        String url = URL + "/all?token=" + VaadinSession.getCurrent().getAttribute("authToken");
+        ResponseEntity<List<ItemDTO>> response = restTemplate.exchange(
+                url,
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<List<ItemDTO>>() {
+                });
+
         if (response.getStatusCode() == HttpStatus.OK) {
-            ItemDTO[] items = response.getBody();
-            if (items != null) {
-                allItems.clear();
-                for (ItemDTO item : items) {
-                    allItems.add(item);
-                }
-                filteredItems.addAll(allItems); // Initially, show all items
+            List<ItemDTO> items = response.getBody();
+            allItems.clear();
+            if (items != null && !items.isEmpty()) {
+                allItems.addAll(items);
+                filteredItems.addAll(allItems);
+            } else {
+                // add mock items for demo purposes
+                ItemDTO item1 = new ItemDTO();
+                item1.setId(1);
+                item1.setName("Demo Item 1");
+                item1.setDescription("This is a demo item.");
+                item1.setCategory("GROCERY");
+                item1.setAverageRating(4.5);
+                item1.setReviews(new ArrayList<>());
+                allItems.add(item1);
+                filteredItems.add(item1);
             }
         } else {
             Notification.show("Failed to fetch items: " + response.getStatusCode());
         }
-    }
 
-    private VerticalLayout setupFilters() {
-        categoryFilter = new ComboBox<>("Category");
-        categoryFilter.setItems(ItemCategory.values());
-        categoryFilter.setClearButtonVisible(true);
-
-        minPriceField = new NumberField("Min Price");
-        minPriceField.setPlaceholder("e.g. 1.0");
-        minPriceField.setWidth("100px");
-
-        maxPriceField = new NumberField("Max Price");
-        maxPriceField.setPlaceholder("e.g. 20.0");
-        maxPriceField.setWidth("100px");
-
-        minRatingField = new NumberField("Min Rating");
-        minRatingField.setPlaceholder("e.g. 3.0");
-        minRatingField.setWidth("100px");
-
-        Button applyFiltersButton = new Button("Apply Filters", e -> getFilteredItems());
-
-        VerticalLayout filtersLayout = new VerticalLayout(
-                categoryFilter, minPriceField, maxPriceField, minRatingField, applyFiltersButton);
-        filtersLayout.setSpacing(true);
-        filtersLayout.setPadding(true);
-        filtersLayout.setWidth("250px");
-        add(filtersLayout);
-        return filtersLayout; // Return the layout for further use if needed
-    }
-
-    private void getFilteredItems() {
-        // set items to a new list, now i cant do it because i need WAF for it.
-        return; // This should be replaced with a call to the WAF to get the items
     }
 
     // search by name
@@ -168,17 +147,39 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
             name.getStyle().set("font-size", "18px").set("font-weight", "600");
 
             Span description = new Span(item.getDescription());
-            Span price = new Span("💰 Price: $" + item.getPrice());
-            Span category = new Span("📦 Category: " + item.getCategoryString());
+            Span category = new Span("📦 Category: " + item.getCategory());
+            Span averageRating = new Span("⭐ Average Rating: " + item.getAverageRating());
 
-            Button buyButton = new Button("Buy");
-            buyButton.getStyle().set("margin-top", "10px");
-            buyButton.addClickListener(e -> {
-                // Placeholder: implement actual purchase logic later
-                Notification.show("You bought: " + item.getName());
+            VerticalLayout reviewsLayout = new VerticalLayout();
+            reviewsLayout.setVisible(false); // hidden by default
+
+            // Add reviews to the layout
+            for (ItemReviewDTO review : item.getReviews()) {
+                VerticalLayout singleReview = new VerticalLayout();
+                singleReview.add(
+                        new Span("Rating: " + review.getRating()),
+                        new Span("Comment: " + review.getReviewText()));
+                singleReview.getStyle().set("border", "1px solid #ccc");
+                singleReview.getStyle().set("padding", "10px");
+                singleReview.getStyle().set("margin-bottom", "10px");
+                reviewsLayout.add(singleReview);
+            }
+
+            // Show more button
+            Button showMoreButton = new Button("Show Reviews");
+            showMoreButton.addClickListener(event -> {
+                boolean currentlyVisible = reviewsLayout.isVisible();
+                reviewsLayout.setVisible(!currentlyVisible);
+                showMoreButton.setText(currentlyVisible ? "Show Reviews" : "Hide Reviews");
             });
 
-            itemCard.add(name, description, price, category, buyButton);
+            itemCard.add(
+                    name,
+                    description,
+                    category,
+                    averageRating,
+                    reviewsLayout,
+                    showMoreButton);
             itemsContainer.add(itemCard);
         }
     }
