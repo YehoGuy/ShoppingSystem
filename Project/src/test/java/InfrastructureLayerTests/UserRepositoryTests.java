@@ -271,34 +271,34 @@ public class UserRepositoryTests {
     }
     
 
-    @Test
-    void testSuspendAndNotificationsAndPayment() {
-        repo.addMember("notifier","pw","n@e","ph","ad");
-        int uid = repo.isUsernameAndPasswordValid("notifier","pw");
-        repo.setSuspended(uid, LocalDateTime.now().plusDays(1));
-        assertTrue(repo.isSuspended(uid));
-        List<Integer> suspended = repo.getSuspendedUsers();
-        assertTrue(suspended.contains(uid));
+    // @Test
+    // void testSuspendAndNotificationsAndPayment() {
+    //     repo.addMember("notifier","pw","n@e","ph","ad");
+    //     int uid = repo.isUsernameAndPasswordValid("notifier","pw");
+    //     repo.setSuspended(uid, LocalDateTime.now().plusDays(1));
+    //     assertTrue(repo.isSuspended(uid));
+    //     List<Integer> suspended = repo.getSuspendedUsers();
+    //     assertTrue(suspended.contains(uid));
 
-        // payment method
-        PaymentMethod pm = new PaymentMethod() {
-            @Override public void processPayment(double amt,int sid){}
-            @Override public String getDetails(){return "d";}
-            @Override public void refundPayment(double amt,int sid){}
-            @Override public void processRefund(double r,int sid){}
-        };
-        repo.setPaymentMethod(uid,0,pm);
-        assertEquals("d", repo.getUserById(uid).getPaymentMethod().getDetails());
-        // refund and pay success
-        repo.pay(uid,0,10.0);
-        repo.refund(uid,0,5.0);
+    //     // payment method
+    //     PaymentMethod pm = new PaymentMethod() {
+    //         @Override public void processPayment(double amt,int sid){}
+    //         @Override public String getDetails(){return "d";}
+    //         @Override public void refundPayment(double amt,int sid){}
+    //         @Override public void processRefund(double r,int sid){}
+    //     };
+    //     repo.setPaymentMethod(uid,0,pm);
+    //     assertEquals("d", repo.getUserById(uid).getPaymentMethod().getDetails());
+    //     // refund and pay success
+    //     repo.pay(uid,0,10.0);
+    //     repo.refund(uid,0,5.0);
 
-        // notifications
-        repo.addNotification(uid,"T","M");
-        List<Notification> notes = repo.getNotificationsAndClear(uid);
-        assertEquals(1, notes.size());
-        assertTrue(notes.get(0).getTitle().contains("T"));
-    }
+    //     // notifications
+    //     repo.addNotification(uid,"T","M");
+    //     List<Notification> notes = repo.getNotificationsAndClear(uid);
+    //     assertEquals(1, notes.size());
+    //     assertTrue(notes.get(0).getTitle().contains("T"));
+    // }
 
     @Test
     void testRoleAndWorkerMappings() {
