@@ -8,6 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.example.app.DomainLayer.Item.Item;
+import com.example.app.DomainLayer.Item.ItemCategory;
 import com.example.app.DomainLayer.Item.ItemReview;
 import com.example.app.InfrastructureLayer.ItemRepository;
 
@@ -80,5 +81,45 @@ public class ItemRepositoryTests {
         assertThrows(IllegalArgumentException.class, () -> repo.getItemReviews(badId));
         assertThrows(IllegalArgumentException.class, () -> repo.getItemAverageRating(badId));
         assertThrows(IllegalArgumentException.class, () -> repo.deleteItem(badId));
+    }
+
+    @Test
+    void testCreateGetAll() {
+        int id1 = repo.createItem("n1","d1",ItemCategory.ELECTRONICS.ordinal());
+        int id2 = repo.createItem("n2","d2",ItemCategory.BOOKS.ordinal());
+        assertEquals(id1, repo.getItem(id1).getId());
+        List<Item> all = repo.getAllItems();
+        assertTrue(all.size() >= 2);
+    }
+
+    @Test
+    void testReviewAndAverage() {
+        int id = repo.createItem("x","y",0);
+        repo.addReviewToItem(id,5,"good");
+        repo.addReviewToItem(id,3,"ok");
+        List<ItemReview> revs = repo.getItemReviews(id);
+        assertEquals(2, revs.size());
+        assertEquals(4.0, repo.getItemAverageRating(id));
+    }
+
+    @Test
+    void testReviewInvalidItem_Throws() {
+        assertThrows(IllegalArgumentException.class, () -> repo.addReviewToItem(999,5,"r"));
+        assertThrows(IllegalArgumentException.class, () -> repo.getItemReviews(999));
+        assertThrows(IllegalArgumentException.class, () -> repo.getItemAverageRating(999));
+    }
+
+    @Test
+    void testDeleteAndGetByIdsAndCategory() {
+        int id = repo.createItem("z","w",ItemCategory.CLOTHING.ordinal());
+        repo.deleteItem(id);
+        assertThrows(IllegalArgumentException.class, () -> repo.deleteItem(id));
+        List<Item> some = repo.getItemsByIds(List.of(id, -1));
+        assertTrue(some.isEmpty());
+        // category
+        int e = repo.createItem("e","d",ItemCategory.ELECTRONICS.ordinal());
+        List<Integer> elect = repo.getItemsByCategory(ItemCategory.ELECTRONICS);
+        assertTrue(elect.contains(e));
+        assertTrue(repo.getItemsByCategory(null).isEmpty());
     }
 }
