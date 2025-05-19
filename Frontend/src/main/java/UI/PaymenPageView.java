@@ -10,6 +10,8 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
+import com.vaadin.flow.router.BeforeEvent;
+import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.server.VaadinSession;
 
 import org.springframework.boot.autoconfigure.security.SecurityProperties.User;
@@ -21,10 +23,10 @@ import org.springframework.web.client.RestTemplate;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PaymenPageView extends VerticalLayout implements HasUrlParameter<Integer>, BeforeEnterObserver {
+public class PaymenPageView extends VerticalLayout implements  BeforeEnterObserver {
     
     private final PaymentMethodDTO paymentMethod;
-    private final int id;
+
     private double totalAmount = 0.0;
     private final RestTemplate restTemplate = new RestTemplate();
     private final String BASE_URL = "http://localhost:8080/api/";
@@ -33,7 +35,6 @@ public class PaymenPageView extends VerticalLayout implements HasUrlParameter<In
     private String street;
     private String houseNumber;
     private String zipCode;
-    private String authToken;
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
@@ -42,7 +43,8 @@ public class PaymenPageView extends VerticalLayout implements HasUrlParameter<In
         }
     }
 
-    public PaymenPageView(int totalAmount, String country, String city, String street, String houseNumber, String zipCode) {
+
+    public PaymenPageView(double totalAmount, String country, String city, String street, String houseNumber, String zipCode) {
 
         paymentMethod = getUserPaymentMethod();
         
@@ -52,7 +54,6 @@ public class PaymenPageView extends VerticalLayout implements HasUrlParameter<In
         this.street = street;
         this.houseNumber = houseNumber;
         this.zipCode = zipCode;
-        this.authToken = (String) VaadinSession.getCurrent().getAttribute("authToken");
 
 
         setUpLayout();
@@ -60,8 +61,17 @@ public class PaymenPageView extends VerticalLayout implements HasUrlParameter<In
 
 
     private PaymentMethodDTO getUserPaymentMethod() {
-        String url = BASE_URL + "payment-methods";
-        restTemplate.
+        String token = getToken();
+        String url = BASE_URL + "payment-method?authToken=" + token;
+
+        ResponseEntity<PaymentMethodDTO> response = restTemplate.getForEntity(url, PaymentMethodDTO.class);
+        if (response.getStatusCode() == HttpStatus.OK) {
+            PaymentMethodDTO paymentMethod = response.getBody();
+            if (paymentMethod != null) {
+                return paymentMethod; // Return the first payment method
+            }
+        }
+        return null; // Handle case where no payment methods are available
     }
 
     private void setUpLayout() {
@@ -88,11 +98,11 @@ public class PaymenPageView extends VerticalLayout implements HasUrlParameter<In
         buttonLayout.getStyle().set("padding", "10px");
         buttonLayout.getStyle().set("background-color", "#f9f9f9");
 
-        for (PaymentMethodDTO method : paymentMethods) {
-            Button methodButton = new Button(method.getMethodName(), event -> processPayment(method));
-            methodButton.setWidthFull();
-            buttonLayout.add(methodButton);
-        }
+        
+        Button methodButton = new Button(paymentMethod.getMethodDetails(), event -> processPayment(paymentMethod));
+        methodButton.setWidthFull();
+        buttonLayout.add(methodButton);
+        
 
         Div scroller = new Div(buttonLayout);
         scroller.getStyle().set("overflow-y", "auto");
@@ -105,11 +115,6 @@ public class PaymenPageView extends VerticalLayout implements HasUrlParameter<In
     private void processPayment(PaymentMethodDTO method) {
         try {
             String token = getToken();
-            String country = "USA";
-            String city = "New York";
-            String street = "5th Ave";
-            String houseNumber = "10";
-
             String url = BASE_URL + "/checkout" +
                     "?authToken=" + token +
                     "&country=" + country +
@@ -120,9 +125,9 @@ public class PaymenPageView extends VerticalLayout implements HasUrlParameter<In
             ResponseEntity<String> response = restTemplate.postForEntity(url, null, String.class);
 
             if (response.getStatusCode() == HttpStatus.CREATED) {
-                Notification.show("Payment successful: " + method.getMethodName());
+                Notification.show("Payment successful");
             } else {
-                Notification.show("Payment failed: " + response.getStatusCode());
+                Notification.show("Payment failed:");
             }
         } catch (Exception e) {
             Notification.show("Payment error: " + e.getMessage());
