@@ -1,6 +1,6 @@
 package com.example.app.PresentationLayer.DTO.Message;
 
-
+import com.example.app.DomainLayer.Message;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 
@@ -17,8 +17,8 @@ public record MessageDTO(
         int previousMessageId,
         boolean deleted) {
 
-    /* ---------- Domain ➜ DTO ---------- /
-    public static MessageDTO fromDomain(DomainLayer.Message m) {
+    //---------- Domain ➜ DTO ---------- /
+    public static MessageDTO fromDomain(Message m) {
         return new MessageDTO(
                 m.getMessageId(),
                 m.getSenderId(),
@@ -30,7 +30,7 @@ public record MessageDTO(
                 m.isDeleted());
     }
 
-    / ---------- DTO ➜ Domain ---------- */
+    /*  ---------- DTO ➜ Domain ---------- */
     public com.example.app.DomainLayer.Message toDomain() {
         com.example.app.DomainLayer.Message m = new com.example.app.DomainLayer.Message(
                 messageId,

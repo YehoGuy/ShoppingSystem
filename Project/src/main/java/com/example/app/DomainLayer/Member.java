@@ -247,10 +247,13 @@ public class Member extends User {
      * Atomically returns all pending notifications and clears them,
      * without losing any that arrive concurrently.
      */
-    public List<Notification> getNotificationsAndClear() {
+    public List<String> getNotificationsAndClear() {
         synchronized (notificationsLock) {
             // snapshot current list
-            List<Notification> snapshot = new ArrayList<>(notifications);
+            List<String> snapshot = new ArrayList<>();
+            for (Notification notification : notifications) {
+                snapshot.add(notification.toString());
+            }
             // clear the underlying list
             notifications.clear();
             // return what was there

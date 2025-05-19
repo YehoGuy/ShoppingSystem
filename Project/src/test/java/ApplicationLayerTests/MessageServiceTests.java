@@ -3,7 +3,7 @@ package ApplicationLayerTests;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
+import org.mockito.Mock;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
 import com.example.app.ApplicationLayer.Item.ItemService;
@@ -38,16 +38,13 @@ public class MessageServiceTests {
     @BeforeEach
     void setUp() {
         // Initialize the message service and repository before each test
-        messageService = new MessageService(new MessageRepository());
         authTokenRepository = new AuthTokenRepository();
         authTokenService = new AuthTokenService(authTokenRepository);
         userRepository = new UserRepository();
-        userService = new UserService(userRepository);
+        userService = new UserService(userRepository, authTokenService);
         shopRepository = new ShopRepository();
-        shopService = new ShopService(shopRepository);
-    
-        messageService.setService(authTokenService, userService, shopService); // Set the services for the message service);
-        shopService.setServices(authTokenService, new ItemService(new ItemRepository()), userService); // Set the user service for the shop service
+        shopService = new ShopService(shopRepository, authTokenService, userService, new ItemService(new ItemRepository(),authTokenService,userService));
+        messageService = new MessageService(new MessageRepository(),authTokenService, userService, shopService);
 
         // Add a test user and shop to the repositories
         userRepository.addMember("testUser", "password", "a@a", "b", "c");
@@ -59,13 +56,13 @@ public class MessageServiceTests {
     @Test
     void testSendMessageToUser() {
         // Test sending a message to a user
-        assertEquals("Message sent successfully!", messageService.sendMessageToUser(token1, 2, "Hello", 0));
+        assertEquals("Message sent successfully!", messageService.sendMessageToUser(token1, 2, "Hello", -1));
     }
 
     @Test
     void testSendMessageToShop() {
         // Test sending a message to a shop
-        assertEquals("Message sent successfully!", messageService.sendMessageToShop(token1, 1, "Hello", 0));
+        assertEquals("Message sent successfully!", messageService.sendMessageToShop(token1, 1, "Hello", -1));
     }
 
     @Test
@@ -89,7 +86,7 @@ public class MessageServiceTests {
     @Test
     void testSendMessageToShopWithEmptyText() {
         // Test sending a message with empty text to a shop
-        assertEquals("Error sending message to shop: MosheTheDebugException thrown! mesage: unable to send - message is empty. objects involved: []", messageService.sendMessageToShop(token1, 1, "", 0));
+        assertEquals("Error sending message to shop: MosheTheDebugException thrown! mesage: unable to send - message is empty. objects involved: []", messageService.sendMessageToShop(token1, 1, "", -1));
     }
 
     @Test

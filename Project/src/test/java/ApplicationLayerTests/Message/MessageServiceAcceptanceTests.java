@@ -1,7 +1,11 @@
 package ApplicationLayerTests.Message;
 
+import java.time.LocalDate;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
@@ -10,14 +14,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.LocalDate;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import com.example.app.ApplicationLayer.AuthTokenService;
-import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Message.MessageService;
+import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Shop.ShopService;
 import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.IMessageRepository;
@@ -36,8 +35,7 @@ public class MessageServiceAcceptanceTests {
         authTokenService = mock(AuthTokenService.class);
         userService = mock(UserService.class);
         shopService = mock(ShopService.class);
-        messageService = new MessageService(messageRepository);
-        messageService.setService(authTokenService, userService, shopService);
+        messageService = new MessageService(messageRepository,authTokenService, userService, shopService);
     }
 
     @Test

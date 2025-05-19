@@ -148,7 +148,7 @@ public class MessageRepository implements IMessageRepository {
     }
 
     public boolean isMessagePrevious(int previousMessageId, int senderId, int receiverId) {
-        if (previousMessageId == 0)
+        if (previousMessageId == -1)
             return true;
         Message message = messages.get(previousMessageId); // Get the message with the specified ID
         if (message != null) {

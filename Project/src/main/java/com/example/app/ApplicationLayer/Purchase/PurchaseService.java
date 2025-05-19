@@ -7,11 +7,11 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
+import com.example.app.ApplicationLayer.Item.ItemService;
 import com.example.app.ApplicationLayer.LoggerService;
+import com.example.app.ApplicationLayer.Message.MessageService;
 import com.example.app.ApplicationLayer.OurArg;
 import com.example.app.ApplicationLayer.OurRuntime;
-import com.example.app.ApplicationLayer.Item.ItemService;
-import com.example.app.ApplicationLayer.Message.MessageService;
 import com.example.app.ApplicationLayer.Shop.ShopService;
 import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.Purchase.Address;
@@ -30,8 +30,18 @@ public class PurchaseService {
     private ShopService shopService;
     private MessageService messageService;
 
-    public PurchaseService(IPurchaseRepository purchaseRepository) {
+    public PurchaseService(IPurchaseRepository purchaseRepository,
+                           AuthTokenService    authTokenService,
+                           UserService         userService,
+                           ShopService         shopService,
+                           ItemService         itemService,
+                           MessageService      messageService) {
+        this.messageService     = messageService;
         this.purchaseRepository = purchaseRepository;
+        this.authTokenService   = authTokenService;
+        this.userService        = userService;
+        this.shopService        = shopService;
+        this.itemService        = itemService;
     }
 
     public void setServices(AuthTokenService authTokenService, UserService userService, ItemService itemService, ShopService shopService, MessageService messageService) {

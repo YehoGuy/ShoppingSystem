@@ -94,7 +94,7 @@ public class UserRepository implements IUserRepository {
         return id; // Return the ID of the newly created guest
     }
 
-    public void addMember(String username, String password, String email, String phoneNumber, String address) {
+    public int addMember(String username, String password, String email, String phoneNumber, String address) {
         if (!email.contains("@") || email.isEmpty()) {
             throw new OurRuntime("Invalid email address.");
         }
@@ -104,6 +104,7 @@ public class UserRepository implements IUserRepository {
                                                                                        // constructor with these
                                                                                        // parameters
         userMapping.put(id, member); // Add the member to the mapping
+        return id; // Return the ID of the newly created member
     }
 
     public void updateMemberUsername(int id, String username) {
@@ -516,7 +517,7 @@ public class UserRepository implements IUserRepository {
     }
 
     @Override
-    public List<Notification> getNotificationsAndClear(int userId) {
+    public List<String> getNotificationsAndClear(int userId) {
         Member member = getMemberById(userId);
         if (member == null) {
             throw new OurRuntime("User with ID " + userId + " doesn't exist.");
@@ -603,6 +604,14 @@ public class UserRepository implements IUserRepository {
 
     }
 
+    public List<Role> getAcceptedRoles(int userId) {
+        Member member = getMemberById(userId);
+        if (member == null) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        return member.getRoles(); // Assuming Member has a method to get roles
+    }
+
     public List<Role> getPendingRoles(int userId) {
         Member member = getMemberById(userId);
         if (member == null) {
@@ -615,4 +624,5 @@ public class UserRepository implements IUserRepository {
         return new ArrayList<Member>(userMapping.values().stream().filter(user -> user instanceof Member)
                 .map(user -> (Member) user).toList());
     }
+
 }

@@ -45,9 +45,8 @@ public class UserServiceAcceptanceTests {
     void setUp() {
         mocks = MockitoAnnotations.openMocks(this);
         userRepository.setEncoderToTest(true); // Set the encoder to test mode
-        userService = spy(new UserService(userRepository));
+        userService = spy(new UserService(userRepository, authTokenService));
         userService.setEncoderToTest(true); // Set the encoder to test mode
-        userService.setServices(authTokenService);
     }
 
     @AfterEach
@@ -111,7 +110,7 @@ public class UserServiceAcceptanceTests {
     void testRegisterSuccess() {
         String username = "uusseerr11", pwd = "Password111!", email = "user@gmail.com", phone = "0123456789", addr = "addr";
         when(userRepository.isUsernameAndPasswordValid(username,pwd)).thenReturn(-1);
-        doNothing().when(userRepository).addMember(username, pwd, email, phone, addr);
+        doReturn(2).when(userRepository).addMember(username, pwd, email, phone, addr);
 
         userService.addMember(username, pwd, email, phone, addr);
         when(userRepository.isUsernameAndPasswordValid(username,pwd)).thenReturn(5);

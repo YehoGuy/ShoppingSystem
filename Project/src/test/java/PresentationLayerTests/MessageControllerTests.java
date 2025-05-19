@@ -13,8 +13,12 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 import com.example.app.ApplicationLayer.Message.MessageService;
+import com.example.app.DomainLayer.Message;
 import com.example.app.PresentationLayer.Controller.MessageController;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -23,6 +27,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.Arrays;
+import java.util.List;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 
 /**
  * Comprehensive slice tests for MessageController.
@@ -179,13 +188,23 @@ public class MessageControllerTests {
     class GetBySenderTests {
         @Test
         void success_returns200AndMessages() throws Exception {
-            when(messageService.getMessagesBySenderId("tok", 3))
-                    .thenReturn("m1,m2");
+        Message m1 = new Message(1, 3, 4, "Hello", "2025-05-07T13:45:30Z", true, 0);
+        Message m2 = new Message(2, 3, 4, "Hello", "2025-05-07T13:45:30Z", true, 0);
+        when(messageService.getMessagesBySenderId("tok", 3))
+                .thenReturn(Arrays.asList(m1, m2));
 
-            mvc.perform(get("/api/messages/sender/3")
-                    .param("authToken", "tok"))
-                    .andExpect(status().isOk())
-                    .andExpect(content().string("m1,m2"));
+        mvc.perform(get("/api/messages/sender/3")
+                .param("authToken", "tok"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].messageId",   is(1)))
+                .andExpect(jsonPath("$[0].senderId",    is(3)))
+                .andExpect(jsonPath("$[0].receiverId",  is(4)))
+                .andExpect(jsonPath("$[0].content",     is("Hello")))
+                .andExpect(jsonPath("$[1].messageId",   is(2)))
+                .andExpect(jsonPath("$[1].senderId",    is(3)))
+                .andExpect(jsonPath("$[1].receiverId",  is(4)))
+                .andExpect(jsonPath("$[1].content",     is("Hello")));
         }
     }
 
@@ -194,13 +213,23 @@ public class MessageControllerTests {
     class GetByReceiverTests {
         @Test
         void success_returns200AndMessages() throws Exception {
-            when(messageService.getMessagesByReceiverId("tok", 4))
-                    .thenReturn("mA,mB");
+                Message mA = new Message(1, 3, 4, "Hello", "2025-05-07T13:45:30Z", true, 0);
+                Message mB = new Message(2, 3, 4, "Hello", "2025-05-07T13:45:30Z", true, 0);
+                when(messageService.getMessagesByReceiverId("tok", 4))
+                        .thenReturn(Arrays.asList(mA, mB));
 
-            mvc.perform(get("/api/messages/receiver/4")
-                    .param("authToken", "tok"))
-                    .andExpect(status().isOk())
-                    .andExpect(content().string("mA,mB"));
+                 mvc.perform(get("/api/messages/receiver/4")
+                .param("authToken", "tok"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].messageId",   is(1)))
+                .andExpect(jsonPath("$[0].senderId",    is(3)))
+                .andExpect(jsonPath("$[0].receiverId",  is(4)))
+                .andExpect(jsonPath("$[0].content",     is("Hello")))
+                .andExpect(jsonPath("$[1].messageId",   is(2)))
+                .andExpect(jsonPath("$[1].senderId",    is(3)))
+                .andExpect(jsonPath("$[1].receiverId",  is(4)))
+                .andExpect(jsonPath("$[1].content",     is("Hello")));
         }
     }
 
