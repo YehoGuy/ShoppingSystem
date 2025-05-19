@@ -151,10 +151,9 @@ public class UserService {
                 LoggerService.logError("addMember", new OurArg("Username is already taken."));
                 throw new OurArg("Username is already taken.");
             }
-            // it is encoded down in repo!
-            // password = passwordEncoder.encode(password); // Encode the password using the PasswordEncoderUtil
+            String encodedPassword = passwordEncoder.encode(password); // Encode the password using the PasswordEncoderUtil
             LoggerService.logMethodExecution("addMember", username, password, email, phoneNumber, address);
-            int userId = userRepository.addMember(username, password, email, phoneNumber, address);
+            int userId = userRepository.addMember(username, encodedPassword, email, phoneNumber, address);
             String token = authTokenService.Login(username, password,userId);
             LoggerService.logMethodExecutionEndVoid("addMember");
             return token; // Return the generated token
