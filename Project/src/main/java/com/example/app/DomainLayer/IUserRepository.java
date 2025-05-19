@@ -120,6 +120,8 @@ public interface IUserRepository {
     // Password encoding
     PasswordEncoderUtil passwordEncoderUtil = new PasswordEncoderUtil(); // Use the password encoder utility
 
+    public PasswordEncoderUtil getPasswordEncoderUtil(); // Get the password encoder utility
+
     void setEncoderToTest(boolean isTest); // Set the encoder to test mode
 
     void addNotification(int userId, String title, String message);
