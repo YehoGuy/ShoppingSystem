@@ -2,6 +2,7 @@ package ApplicationLayerTests.User;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -10,6 +11,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,11 +26,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
+import com.example.app.ApplicationLayer.OurArg;
 import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
 import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.Member;
 import com.example.app.DomainLayer.User;
+import com.example.app.DomainLayer.Roles.PermissionsEnum;
+import com.example.app.DomainLayer.Roles.Role;
 import com.example.app.InfrastructureLayer.AuthTokenRepository;
 import com.example.app.InfrastructureLayer.UserRepository;
 
@@ -582,6 +587,166 @@ public class UserServiceTest {
         );
         assertTrue(ex.getMessage().contains("messageUserNotification"));
     }
+
+    // --- validation helpers ---
+    @Test
+    void testIsValidUsernameEmailPhonePasswordAndDetails() {
+        // username
+        assertTrue(userService.isValidUsername("user_123"));
+        assertFalse(userService.isValidUsername("ab"));        // too short
+        assertFalse(userService.isValidUsername("bad!name"));  // invalid char
+
+        // email
+        assertTrue(userService.isValidEmail("x@y.com"));
+        assertFalse(userService.isValidEmail("no-at-sign"));
+
+        // phone
+        assertTrue(userService.isValidPhoneNumber("+123-456789"));
+        assertFalse(userService.isValidPhoneNumber("1234"));  // too short
+
+        // password (always true in test mode)
+        assertTrue(userService.isValidPassword("anything"));
+
+        // combined details
+        OurRuntime ex = assertThrows(OurRuntime.class, () ->
+            userService.isValidDetails("ab", "", "bademail", "1234")
+        );
+        String msg = ex.getMessage();
+        assertTrue(msg.contains("Invalid Username."));
+        assertTrue(msg.contains("Invalid Phone Number."));
+        assertTrue(msg.contains("Invalid Email."));
+    }
+
+    // --- getAllAdmins ACL ---
+    @Test
+    void testGetAllAdminsSuccessAndFailure() {
+        // admin can
+        String adminToken = userService.loginAsMember("admin", "admin", "");
+        List<Integer> admins = userService.getAllAdmins(adminToken);
+        int adminId = userRepository.isUsernameAndPasswordValid("admin", "admin");
+        assertTrue(admins.contains(adminId));
+
+        // non-admin cannot
+        userService.addMember("bob","pwd","b@b.com","0123456789","addr");
+        int bobId = userRepository.isUsernameAndPasswordValid("bob","pwd");
+        String bobToken = authTokenService.Login("bob","pwd", bobId);
+        assertThrows(OurRuntime.class, () ->
+            userService.getAllAdmins(bobToken)
+        );
+    }
+
+    // --- loginAsMember merges guest cart ---
+    @Test
+    void testLoginAsMemberMergesGuestCart() {
+        // create a guest, add to cart
+        String guestToken = userService.loginAsGuest();
+        int guestId = authTokenRepository.getUserIdByToken(guestToken);
+        userService.addItemToShoppingCart(guestToken, 1, 101, 2);
+
+        // create a real member
+        userService.addMember("alice","pwd","a@a.com","0123456789","addr");
+        int aliceId = userRepository.isUsernameAndPasswordValid("alice","pwd");
+
+        // login as member, merging
+        String aliceToken = userService.loginAsMember("alice","pwd", guestToken);
+        assertEquals(aliceId, authTokenRepository.getUserIdByToken(aliceToken));
+        assertFalse(userRepository.isGuestById(guestId), "old guest should be removed");
+
+        Map<Integer,Integer> basket = userService.getBasketItems(aliceToken, 1);
+        assertEquals(2, basket.get(101).intValue());
+    }
+
+    // --- shopping cart ops by userId ---
+    @Test
+    void testGetClearAndRestoreUserShoppingCartById() {
+        userService.addMember("tom","pwd","t@t.com","0123456789","addr");
+        int tomId = userRepository.isUsernameAndPasswordValid("tom","pwd");
+
+        // seed via repository directly
+        userRepository.addItemToShoppingCart(tomId, 2, 201, 3);
+        HashMap<Integer, HashMap<Integer,Integer>> cart = userService.getUserShoppingCartItems(tomId);
+        assertEquals(3, cart.get(2).get(201).intValue());
+
+        // clear → the entire cart should now be empty
+        userService.clearUserShoppingCart(tomId);
+        HashMap<Integer, HashMap<Integer,Integer>> empty = userService.getUserShoppingCartItems(tomId);
+        assertTrue(empty.isEmpty(), "After clearing, no baskets should remain");
+
+        // restore
+        HashMap<Integer, HashMap<Integer,Integer>> restore = new HashMap<>();
+        HashMap<Integer,Integer> items = new HashMap<>();
+        items.put(202, 4);
+        restore.put(3, items);
+        userService.restoreUserShoppingCart(tomId, restore);
+        HashMap<Integer, HashMap<Integer,Integer>> after = userService.getUserShoppingCartItems(tomId);
+        assertEquals(4, after.get(3).get(202).intValue());
+    }
+
+
+    // --- getUserPaymentMethod and setPaymentMethod ---
+    @Test
+    void testGetUserPaymentMethod() {
+        userService.addMember("sam","pwd","s@m.com","0123456789","addr");
+        int samId = userRepository.isUsernameAndPasswordValid("sam","pwd");
+        assertNull(userService.getUserPaymentMethod(samId));
+
+        String samToken = userService.loginAsMember("sam","pwd", "");
+        PaymentMethod pm = Mockito.mock(PaymentMethod.class);
+        userService.setPaymentMethod(samToken, pm, 5);
+        assertEquals(pm, userService.getUserPaymentMethod(samId));
+    }
+
+    // --- suspend and suspendedUsers ---
+    @Test
+    void testSetAndGetSuspended() {
+        userService.addMember("lucy","pwd","l@l.com","0123456789","addr");
+        int lucyId = userRepository.isUsernameAndPasswordValid("lucy","pwd");
+        LocalDateTime until = LocalDateTime.now().plusDays(2);
+        userService.setSuspended(lucyId, until);
+        assertTrue(userService.isSuspended(lucyId));
+        List<Integer> sus = userService.getSuspendedUsers();
+        assertTrue(sus.contains(lucyId));
+    }
+
+    // --- logout issues a new guest token ---
+    @Test
+    void testLogoutIssuesNewGuestToken() {
+        String guest1 = userService.loginAsGuest();
+        String guest2 = userService.logout(guest1);
+        assertNotNull(guest2);
+        int newGuestId = authTokenRepository.getUserIdByToken(guest2);
+        assertTrue(userRepository.isGuestById(newGuestId));
+    }
+
+    // --- validateMemberId edge cases ---
+    @Test
+    void testValidateMemberIdNonPositiveAndNonMember() {
+        assertThrows(OurArg.class, () -> userService.validateMemberId(0));
+        String guestToken = userService.loginAsGuest();
+        int guestId = authTokenRepository.getUserIdByToken(guestToken);
+        assertThrows(OurArg.class, () -> userService.validateMemberId(guestId));
+    }
+
+    // --- getPermitionsByShop positive & negative ---
+    @Test
+    void testGetPermitionsByShop() {
+        // make 'admin' owner of shop 77
+        String adminToken = userService.loginAsMember("admin","admin","");
+        int adminId = userRepository.isUsernameAndPasswordValid("admin","admin");
+        Role ownerRole = new Role(adminId, 77, new PermissionsEnum[]{ PermissionsEnum.manageOwners });
+        ownerRole.setOwnersPermissions();
+        userRepository.addRoleToPending(adminId, ownerRole);
+        userRepository.acceptRole(adminId, ownerRole);
+
+        // should succeed
+        Map<Integer, PermissionsEnum[]> perms = userService.getPermitionsByShop(adminToken, 77);
+        assertTrue(perms.containsKey(adminId));
+
+        // non-owner
+        String guestToken = userService.loginAsGuest();
+        assertThrows(OurArg.class, () -> userService.getPermitionsByShop(guestToken, 77));
+    }
+
 
 /*
     @Test
