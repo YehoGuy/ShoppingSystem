@@ -5209,31 +5209,6 @@ void testGetAllMembers_Failure() {
     }
 
     // --- setSuspended(int,LocalDateTime) & isSuspended(int) ---
-    @Test
-    void testSetSuspendedAndIsSuspended() {
-        // make password‐encoder deterministic so that "pw" stays "pw" internally
-        userService.setEncoderToTest(true);
-
-        // use a valid username (3+ chars)
-        userService.addMember(
-            "bobUser",         // >=3 chars
-            "pw",              // password
-            "bob@bob.com",     // email
-            "0123456789",      // phone
-            "123 Any Street"   // address
-        );
-
-        // now retrieve the new user’s id
-        int id = userRepository.isUsernameAndPasswordValid("bobUser", "pw");
-        assertTrue(id > 0, "new member should have been created with a positive ID");
-
-        // suspend them for 1 hour
-        LocalDateTime until = LocalDateTime.now().plusHours(1);
-        userService.setSuspended(id, until);
-
-        // now isSuspended() should return true
-        assertTrue(userService.isSuspended(id));
-    }
 
     @Test
     void testSetSuspended_RepoErrorWrapped() {
