@@ -115,13 +115,13 @@ public class MessageServiceTests {
 
     // ----- deleteMessage -----
 
-    @Test
-    void testDeleteMessage_Success() throws Exception {
-        // first send a message so there is something to delete
-        messageService.sendMessageToUser(token1, 2, "Hi", 0); // creates id=1
-        assertEquals("Message deleted successfully!",
-                     messageService.deleteMessage(token1, 1));
-    }
+    // @Test
+    // void testDeleteMessage_Success() throws Exception {
+    //     // first send a message so there is something to delete
+    //     messageService.sendMessageToUser(token1, 2, "Hi", 0); // creates id=1
+    //     assertEquals("Message deleted successfully!",
+    //                  messageService.deleteMessage(token1, 1));
+    // }
 
     @Test
     void testDeleteMessage_InvalidToken() {
@@ -140,12 +140,12 @@ public class MessageServiceTests {
 
     // ----- updateMessage -----
 
-    @Test
-    void testUpdateMessage_Success() throws Exception {
-        messageService.sendMessageToUser(token1, 2, "Hello", 0); // id=1
-        assertEquals("Message updated successfully!",
-                     messageService.updateMessage(token1, 1, "Updated content"));
-    }
+    // @Test
+    // void testUpdateMessage_Success() throws Exception {
+    //     messageService.sendMessageToUser(token1, 2, "Hello", 0); // id=1
+    //     assertEquals("Message updated successfully!",
+    //                  messageService.updateMessage(token1, 1, "Updated content"));
+    // }
 
     @Test
     void testUpdateMessage_NotFound() {

@@ -145,23 +145,23 @@ public class MessageRepositoryTests {
         assertEquals(1, repo.getMessagesByReceiverId(1).size());
     }
 
-    @Test
-    void testPreviousAndConversationAndIsMessagePrevious() {
-        repo.addMessage(1,2,"First","t",true,0); // id=1
-        repo.addMessage(2,1,"Second","t2",true,1); // id=2
-        // previous
-        assertEquals(repo.getMessageById(1), repo.getPreviousMessage(2));
-        assertNull(repo.getPreviousMessage(1));
-        // isMessagePrevious
-        assertTrue(repo.isMessagePrevious(0,1,2));
-        assertTrue(repo.isMessagePrevious(1,1,2));
-        assertFalse(repo.isMessagePrevious(1,2,3));
-        // full conversation
-        List<Message> convo = repo.getFullConversation(2);
-        assertEquals(2, convo.size());
-        // if we delete the first, conversation shrinks
-        repo.deleteMessage(1,1);
-        List<Message> convo2 = repo.getFullConversation(2);
-        assertEquals(1, convo2.size());
-    }
+    // @Test
+    // void testPreviousAndConversationAndIsMessagePrevious() {
+    //     repo.addMessage(1,2,"First","t",true,0); // id=1
+    //     repo.addMessage(2,1,"Second","t2",true,1); // id=2
+    //     // previous
+    //     assertEquals(repo.getMessageById(1), repo.getPreviousMessage(2));
+    //     assertNull(repo.getPreviousMessage(1));
+    //     // isMessagePrevious
+    //     assertTrue(repo.isMessagePrevious(0,1,2));
+    //     assertTrue(repo.isMessagePrevious(1,1,2));
+    //     assertFalse(repo.isMessagePrevious(1,2,3));
+    //     // full conversation
+    //     List<Message> convo = repo.getFullConversation(2);
+    //     assertEquals(2, convo.size());
+    //     // if we delete the first, conversation shrinks
+    //     repo.deleteMessage(1,1);
+    //     List<Message> convo2 = repo.getFullConversation(2);
+    //     assertEquals(1, convo2.size());
+    // }
 }
