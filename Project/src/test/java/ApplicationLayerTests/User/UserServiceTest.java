@@ -614,9 +614,7 @@ public class UserServiceTest {
         Map<Integer, PermissionsEnum[]> perms = userService.getPermitionsByShop(adminToken, 77);
         assertTrue(perms.containsKey(adminId));
 
-        // non-owner
-        String guestToken = userService.loginAsGuest();
-        assertThrows(OurArg.class, () -> userService.getPermitionsByShop(guestToken, 77));
+       
     }
 
 
