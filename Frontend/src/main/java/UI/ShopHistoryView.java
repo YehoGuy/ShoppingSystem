@@ -1,167 +1,125 @@
 package UI;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
-import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.component.details.Details;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.page.History;
-
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
-import com.vaadin.flow.server.VaadinSession;
-import com.vaadin.flow.router.BeforeEnterEvent;
-import com.vaadin.flow.router.BeforeEnterObserver;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+
+import DTOs.RecieptDTO;
 
 @Route(value = "history", layout = AppLayoutBasic.class)
-public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<String>, BeforeEnterObserver {
-    private final List<ShopHistoryItem> shopHistoryItems = new ArrayList<>();
-    private String shopName;
-    private VerticalLayout Reciepts;
+public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<Integer>, BeforeEnterObserver {
 
-    @Override
-    public void beforeEnter(BeforeEnterEvent event) {
-        if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
-            event.forwardTo("");
-        }
-    }
+    private static final String PURCHASE_HISTORY_URL = "http://localhost:8080/api/purchases/shops";
+
+    private final RestTemplate rest = new RestTemplate();
+    private final VerticalLayout receiptsLayout = new VerticalLayout();
+    private String token;
+    private int shopId;
 
     public ShopHistoryView() {
         setSizeFull();
-
         setAlignItems(Alignment.CENTER);
-        setJustifyContentMode(JustifyContentMode.CENTER);
-
-        Reciepts = new VerticalLayout();
-        Reciepts.setWidthFull();
-        Reciepts.setAlignItems(Alignment.CENTER);
-        Reciepts.setJustifyContentMode(JustifyContentMode.CENTER);
-        Reciepts.setSpacing(true);
-        Reciepts.setPadding(true);
-        add(Reciepts);
+        setJustifyContentMode(JustifyContentMode.START);
+        receiptsLayout.setWidthFull();
+        receiptsLayout.setSpacing(true);
+        receiptsLayout.setPadding(true);
+        add(receiptsLayout);
     }
 
     @Override
-    public void setParameter(BeforeEvent event, String parameter) {
-        this.shopName = parameter;
-
-        shopHistoryItems.add(new ShopHistoryItem(
-                Map.of("Apple", 3, "Orange", 2, "Banana", 5),
-                25.50,
-                5.00,
-                "2024-01-15",
-                "John Doe"));
-
-        shopHistoryItems.add(new ShopHistoryItem(
-                Map.of("Milk", 2, "Bread", 1, "Eggs", 12),
-                18.75,
-                2.50,
-                "2024-01-14",
-                "Jane Smith"));
-
-        shopHistoryItems.add(new ShopHistoryItem(
-                Map.of("Coffee", 1, "Sugar", 2, "Cream", 1),
-                15.99,
-                1.00,
-                "2024-01-13",
-                "Bob Wilson"));
-
-        for (ShopHistoryItem item : shopHistoryItems) {
-            addItem(item);
+    public void beforeEnter(BeforeEnterEvent event) {
+        token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            event.forwardTo("login");
+            return;
         }
     }
 
-    private void addItem(ShopHistoryItem item) {
-        // Create a Card component to contain everything
+    @Override
+    public void setParameter(BeforeEvent event, Integer parameter) {
+        this.shopId = parameter;
+        loadReceipts();
+    }
+
+    private void loadReceipts() {
+        receiptsLayout.removeAll();
+
+        String url = PURCHASE_HISTORY_URL + "/" + shopId + "?authToken=" + VaadinSession.getCurrent().getAttribute("authToken");
+        try {
+            ResponseEntity<RecieptDTO[]> resp = rest.getForEntity(url, RecieptDTO[].class);
+            if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
+                RecieptDTO[] receipts = resp.getBody();
+                if (receipts.length == 0) {
+                    receiptsLayout.add(new H3("No purchase history for this shop."));
+                } else {
+                    for (RecieptDTO r : receipts) {
+                        addReceiptCard(r);
+                    }
+                }
+            } else {
+                receiptsLayout.add(new H3("Failed to load history: HTTP " + resp.getStatusCode()));
+            }
+        } catch (Exception ex) {
+            receiptsLayout.add(new H3("Error loading history: " + ex.getMessage()));
+        }
+    }
+
+    private void addReceiptCard(RecieptDTO r) {
+        // card container
         com.vaadin.flow.component.html.Section card = new com.vaadin.flow.component.html.Section();
         card.addClassNames(
-                LumoUtility.Background.CONTRAST_5,
-                LumoUtility.BorderRadius.LARGE,
-                LumoUtility.BoxShadow.SMALL,
-                LumoUtility.Padding.LARGE);
+            LumoUtility.Background.CONTRAST_5,
+            LumoUtility.BorderRadius.LARGE,
+            LumoUtility.BoxShadow.SMALL,
+            LumoUtility.Padding.LARGE
+        );
         card.setWidth("80%");
 
-        VerticalLayout layout = new VerticalLayout();
-        layout.setWidthFull();
-        layout.setJustifyContentMode(JustifyContentMode.CENTER);
-        layout.setSpacing(true);
-        layout.setPadding(true);
+        // header info
+        H3 buyer       = new H3("Buyer ID: "     + r.getUserId());
+        H3 totalPrice  = new H3("Total Price: $" + r.getPrice());
+        H3 completed   = new H3("Completed: "     + r.isCompleted());
+        String ts      = r.getTimestampOfRecieptGeneration()
+                           .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        H3 date        = new H3("Date: "          + ts);
 
-        H3 name = new H3("Buyer: " + item.getBuyerName());
-        H3 totalPrice = new H3("Total Price: " + item.getPrice());
-        H3 totalDiscount = new H3("Total Discount: " + item.getDiscount());
-        H3 date = new H3("Date: " + item.getDate());
+        HorizontalLayout header = new HorizontalLayout(buyer, totalPrice, completed, date);
+        header.setWidthFull();
+        header.getStyle().set("spacing", "var(--lumo-space-m)");
+        header.getStyle().set("padding", "var(--lumo-space-m)");
 
-        HorizontalLayout lay = new HorizontalLayout();
-        lay.add(name);
-        lay.add(totalPrice);
-        lay.add(totalDiscount);
-        lay.add(date);
-        lay.setSpacing(true);
-        lay.setWidthFull();
-        lay.getStyle().set("spacing", "var(--lumo-space-m)");
-        lay.getStyle().set("padding", "var(--lumo-space-m)");
-
-        layout.add(lay);
-
-        Grid<Map.Entry<String, Integer>> grid = new Grid<>();
-        grid.addColumn(Map.Entry::getKey).setHeader("Item");
+        // items grid
+        Grid<Map.Entry<Integer,Integer>> grid = new Grid<>();
+        grid.addColumn(Map.Entry::getKey).setHeader("Item ID");
         grid.addColumn(Map.Entry::getValue).setHeader("Quantity");
-        grid.setItems(item.getItems().entrySet());
+        grid.setItems(r.getItems().entrySet());
         grid.setWidthFull();
-        grid.getColumns().forEach(column -> column.setAutoWidth(true));
+        grid.getColumns().forEach(c -> c.setAutoWidth(true));
 
         Details details = new Details("View Items", grid);
         details.setWidthFull();
-        layout.add(details);
 
-        // Add the layout to the card and the card to Receipts
-        card.add(layout);
-        Reciepts.add(card);
+        // assemble
+        VerticalLayout box = new VerticalLayout(header, details);
+        box.setWidthFull();
+        card.add(box);
+        receiptsLayout.add(card);
     }
 
-    public static class ShopHistoryItem {
-        private Map<String, Integer> items;
-        private double price;
-        private String date;
-        private String buyerName;
-        private double discount;
-
-        public ShopHistoryItem(Map<String, Integer> items, double price, double discount, String date,
-                String buyerName) {
-            this.items = items;
-            this.price = price;
-            this.date = date;
-            this.buyerName = buyerName;
-            this.discount = discount;
-        }
-
-        public Map<String, Integer> getItems() {
-            return items;
-        }
-
-        public double getDiscount() {
-            return discount;
-        }
-
-        public double getPrice() {
-            return price;
-        }
-
-        public String getDate() {
-            return date;
-        }
-
-        public String getBuyerName() {
-            return buyerName;
-        }
-    }
 }
