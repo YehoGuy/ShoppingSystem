@@ -1,5 +1,6 @@
 package com.example.app.ApplicationLayer.Purchase;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,9 @@ import com.example.app.DomainLayer.Purchase.BidReciept;
 import com.example.app.DomainLayer.Purchase.IPurchaseRepository;
 import com.example.app.DomainLayer.Purchase.Purchase;
 import com.example.app.DomainLayer.Purchase.Reciept;
+import com.example.app.DomainLayer.Roles.PermissionsEnum;
+
+import jakarta.validation.constraints.Min;
 @Service
 public class PurchaseService {
 
@@ -236,4 +240,31 @@ public class PurchaseService {
             throw new OurRuntime("Error retrieving user purchases: " + e.getMessage(), e);
         }
     }
+
+    public List<Reciept> getStorePurchases(String authToken, int shopId) {   
+        try {
+            LoggerService.logMethodExecution("getStorePurchases", authToken, shopId);
+            int userId = authTokenService.ValidateToken(authToken);
+            PermissionsEnum[] permissions = userService.getPermitionsByShop(authToken, shopId).get(userId);
+            for(PermissionsEnum permission : permissions) {
+                if (permission == PermissionsEnum.getHistory) {
+                    LoggerService.logMethodExecutionEnd("getStorePurchases", null);
+                    return purchaseRepository.getStorePurchases(shopId);
+                }
+            }
+            List<Reciept> list = purchaseRepository.getStorePurchases(shopId);
+            LoggerService.logMethodExecutionEnd("getStorePurchases", list);
+            return list;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getStorePurchases", e);
+            throw new OurArg("getStorePurchases: " + e.getMessage(), e);
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getStorePurchases", e);
+            throw new OurRuntime("getStorePurchases: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("getStorePurchases", e, authToken, shopId);
+            throw new OurRuntime("Error retrieving store purchases: " + e.getMessage(), e);
+        }
+    }
+    
 }

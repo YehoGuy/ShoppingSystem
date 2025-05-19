@@ -493,10 +493,10 @@ public class UserService {
         try {
 
             LoggerService.logMethodExecution("getPermitionsByShop", shopId);
-            int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
-            if (!userRepository.isOwner(id, shopId)) {
-                throw new OurArg("Member ID " + token + " is not an owner of shop ID " + shopId);
-            }
+            // int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            // if (!userRepository.isOwner(id, shopId)) {
+            //     throw new OurArg("Member ID " + token + " is not an owner of shop ID " + shopId);
+            // }
 
             HashMap<Integer, PermissionsEnum[]> permissions = new HashMap<>();
             for (Member member : userRepository.getMembersList()) {
