@@ -25,46 +25,46 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 
 /**
- *  Base path: /api/items         (JSON in / JSON out)
+ * Base path: /api/items (JSON in / JSON out)
  *
- * 1. POST   /create
- *    Params : shopId, name, description, category, token
- *    Success: 201 →  123          (new item ID)
+ * 1. POST /create
+ * Params : shopId, name, description, category, token
+ * Success: 201 → 123 (new item ID)
  *
- * 2. GET    /{itemId}
- *    Params : token
- *    Success: 200 →  ItemDTO as JSON
+ * 2. GET /{itemId}
+ * Params : token
+ * Success: 200 → ItemDTO as JSON
  *
- * 3. GET    /all
- *    Params : token
- *    Success: 200 →  [ItemDTO,...]
+ * 3. GET /all
+ * Params : token
+ * Success: 200 → [ItemDTO,...]
  *
- * 4. POST   /{itemId}/reviews
- *    Params : rating, reviewText, token
- *    Success: 202 (empty)
+ * 4. POST /{itemId}/reviews
+ * Params : rating, reviewText, token
+ * Success: 202 (empty)
  *
- * 5. GET    /{itemId}/reviews
- *    Params : token
- *    Success: 200 → [ItemReviewDTO,...]
+ * 5. GET /{itemId}/reviews
+ * Params : token
+ * Success: 200 → [ItemReviewDTO,...]
  *
- * 6. GET    /{itemId}/rating
- *    Params : token
- *    Success: 200 →  4.5         (average rating)
+ * 6. GET /{itemId}/rating
+ * Params : token
+ * Success: 200 → 4.5 (average rating)
  *
- * 7. POST   /by-ids
- *    Body   : [1,2,3]
- *    Params : token
- *    Success: 200 → [ItemDTO,...]
+ * 7. POST /by-ids
+ * Body : [1,2,3]
+ * Params : token
+ * Success: 200 → [ItemDTO,...]
  *
- * 8. GET    /category
- *    Params : category, token
- *    Success: 200 → [1,5,7]      (item IDs)
+ * 8. GET /category
+ * Params : category, token
+ * Success: 200 → [1,5,7] (item IDs)
  *
  * Error mapping (all endpoints):
- *   400 – Bad data / validation failure
- *   404 – Entity not found
- *   409 – Business rule conflict (e.g., no permission)
- *   500 – Internal server error
+ * 400 – Bad data / validation failure
+ * 404 – Entity not found
+ * 409 – Business rule conflict (e.g., no permission)
+ * 500 – Internal server error
  */
 @RestController
 @RequestMapping("/api/items")
@@ -90,14 +90,14 @@ public class ItemController {
             return ResponseEntity.status(HttpStatus.CREATED).body(id);
 
         } catch (IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().body(ex.getMessage());            // 400
+            return ResponseEntity.badRequest().body(ex.getMessage()); // 400
 
         } catch (RuntimeException ex) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());  // 409
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
 
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .body("Internal server error");               // 500
+                    .body("Internal server error"); // 500
         }
     }
 
@@ -112,16 +112,16 @@ public class ItemController {
             return ResponseEntity.ok(itemDTO);
 
         } catch (IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().body(ex.getMessage());            // 400
+            return ResponseEntity.badRequest().body(ex.getMessage()); // 400
 
         } catch (OurRuntime ex) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());  // 409
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
 
-        } catch(RuntimeException ex){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());  // 409
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .body("Internal server error");               // 500
+                    .body("Internal server error"); // 500
         }
     }
 
@@ -131,8 +131,11 @@ public class ItemController {
             @RequestParam @NotBlank String token) {
         try {
             List<Item> items = itemService.getAllItems(token);
-            List<ItemDTO> itemDTOs = items.stream().map(ItemDTO::fromDomain).toList();
-            return ResponseEntity.ok(itemDTOs);
+            ItemDTO[] dtos = new ItemDTO[items.size()];
+            for (int i = 0; i < items.size(); i++) {
+                dtos[i] = ItemDTO.fromDomain(items.get(i));
+            }
+            return ResponseEntity.ok(dtos);
 
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
@@ -140,8 +143,8 @@ public class ItemController {
         } catch (OurRuntime ex) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
 
-        } catch(RuntimeException ex){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());  // 409
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
         }
@@ -156,16 +159,16 @@ public class ItemController {
             @RequestParam String token) {
         try {
             itemService.addReviewToItem(itemId, rating, reviewText, token);
-            return ResponseEntity.accepted().build();                          // 202
+            return ResponseEntity.accepted().build(); // 202
 
         } catch (IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().build();                         // 400
+            return ResponseEntity.badRequest().build(); // 400
 
         } catch (OurRuntime ex) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();          // 409
+            return ResponseEntity.status(HttpStatus.CONFLICT).build(); // 409
 
-        } catch(RuntimeException ex){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());  // 409
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build(); // 500
         }
@@ -177,20 +180,21 @@ public class ItemController {
             @PathVariable @Min(0) int itemId,
             @RequestParam @NotBlank String token) {
         try {
-            List<ItemReviewDTO> reviews = itemService.getItemReviews(itemId, token).stream().map(ItemReviewDTO::fromDomain).toList();
+            List<ItemReviewDTO> reviews = itemService.getItemReviews(itemId, token).stream()
+                    .map(ItemReviewDTO::fromDomain).toList();
             return ResponseEntity.ok(reviews);
 
         } catch (IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().body(ex.getMessage());            // 400
+            return ResponseEntity.badRequest().body(ex.getMessage()); // 400
 
         } catch (OurRuntime ex) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());  // 409
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
 
-        } catch(RuntimeException ex){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());  // 409
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .body("Internal server error");               // 500
+                    .body("Internal server error"); // 500
         }
     }
 
@@ -213,7 +217,7 @@ public class ItemController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .body("Internal server error");               // 500
+                    .body("Internal server error"); // 500
         }
     }
 
@@ -233,11 +237,11 @@ public class ItemController {
         } catch (OurRuntime ex) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
 
-        } catch(RuntimeException ex){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());  // 409
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .body("Internal server error");               // 500
+                    .body("Internal server error"); // 500
         }
     }
 
@@ -260,7 +264,7 @@ public class ItemController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .body("Internal server error");               // 500
+                    .body("Internal server error"); // 500
         }
     }
 
