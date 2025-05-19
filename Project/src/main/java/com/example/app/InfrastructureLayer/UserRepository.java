@@ -31,23 +31,25 @@ public class UserRepository implements IUserRepository {
     // A map to store users with their IDs as keys
     private ConcurrentHashMap<Integer, com.example.app.DomainLayer.User> userMapping;
     private List<Integer> managers;
+    private PasswordEncoderUtil passwordEncoderUtil;
     AtomicInteger userIdCounter;
 
     public UserRepository() {
         this.userMapping = new ConcurrentHashMap<>();
         this.userIdCounter = new AtomicInteger(0); // Initialize the user ID counter
         this.managers = new CopyOnWriteArrayList<>(); // Initialize the managers list
-        PasswordEncoderUtil passwordEncoderUtil = new PasswordEncoderUtil();
+        this.passwordEncoderUtil = new PasswordEncoderUtil();
+        // TODO: V should be removed when adding database 
         addMember("admin", passwordEncoderUtil.encode("admin"), "admin@mail.com", "0", "admin st.");
         managers.add(isUsernameAndPasswordValid("admin", "admin"));
     }
 
     public PasswordEncoderUtil getPasswordEncoderUtil() {
-        return passwordEncoderUtil; // Return the password encoder utility
+        return this.passwordEncoderUtil; // Return the password encoder utility
     }
 
     public void setEncoderToTest(boolean b) {
-        passwordEncoderUtil.setIsTest(b); // Set the encoder to test mode
+        this.passwordEncoderUtil.setIsTest(b); // Set the encoder to test mode
     }
 
     public User getUserById(int id) {
