@@ -26,9 +26,16 @@ public class PasswordEncoderUtil {
 
     public boolean matches(String rawPassword, String encodedPassword) {
         if (isTest) {
-            return rawPassword.equals(encodedPassword); // In test mode, compare raw passwords directly
+            // First try plain equality (for test-mode plain inserts)
+            if (rawPassword.equals(encodedPassword)) {
+                return true;
+            }
+            // Fallback to BCrypt check (so seeded/admin passwords still work)
+            return passwordEncoder.matches(rawPassword, encodedPassword);
         }
-        return passwordEncoder.matches(rawPassword, encodedPassword); // Check if the raw password matches the encoded password
+        // Normal production mode
+        return passwordEncoder.matches(rawPassword, encodedPassword);
     }
+
     
 }
