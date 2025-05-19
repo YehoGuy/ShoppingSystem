@@ -131,21 +131,22 @@ public class MessageRepository implements IMessageRepository {
 
     @Override
     public List<Message> getFullConversation(int messageId) {
-        List<Message> conversation = new ArrayList<>(); // List to store the full conversation
-        Message message = messages.get(messageId); // Get the message with the specified ID
-        if (message != null) {
-            conversation.add(message); // Add the current message to the conversation list
-            while (message.getPreviousMessageId() != -1) { // Loop until there are no more previous messages
-                message = getPreviousMessageNotMatterWhat(messageId); // Get the previous message
-                if (message != null && !message.isDeleted()) {
-                    conversation.add(message); // Add the previous message to the conversation list
-                } else {
-                    break; // Break if the previous message is not found
-                }
+        List<Message> conversation = new ArrayList<>();
+        Message current = messages.get(messageId);
+        while (current != null) {
+            // only include non-deleted messages
+            if (!current.isDeleted()) {
+                conversation.add(current);
             }
+            int prevId = current.getPreviousMessageId();
+            if (prevId == -1) {
+                break;   // no more history
+            }
+            current = messages.get(prevId);
         }
-        return conversation; // Return the full conversation as a list of messages
+        return conversation;
     }
+
 
     public boolean isMessagePrevious(int previousMessageId, int senderId, int receiverId) {
         if (previousMessageId == -1)

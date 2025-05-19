@@ -1,63 +1,118 @@
 package DTOs;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
-
 public class MemberDTO {
-    
-    private int memberId; // Unique identifier for the member
-    private String username; // Username of the member
-    private String password; // Password of the member
-    private String email; // Email address of the member
-    private String phoneNumber; // Phone number of the member
-    private List<rolesDTO> roles; // List of roles associated with the user
-    private List<Integer> orderHistory;// List of order IDs
-    private List<rolesDTO> pending_roles; // List of pending roles not yet confirmed/declined by the user
 
-    public MemberDTO(int memberId, String username, String password, String email, String phoneNumber, List<rolesDTO> roles,
-            List<Integer> orderHistory, List<rolesDTO> pending_roles) {
+    private int memberId;
+    private String username;
+    private String email;
+    private String phoneNumber;
+    private LocalDateTime suspendedUntil;
+    private AddressDTO address;
+    private List<rolesDTO> roles;
+    private List<rolesDTO> pendingRoles;
+    private List<Integer> orderHistory;
+    private ShoppingCartDTO shoppingCart;
+
+    public MemberDTO() {}
+
+    public MemberDTO(int memberId, String username, String email, String phoneNumber,
+                     LocalDateTime suspendedUntil, AddressDTO address,
+                     List<rolesDTO> roles, List<rolesDTO> pendingRoles,
+                     List<Integer> orderHistory, ShoppingCartDTO shoppingCart) {
         this.memberId = memberId;
         this.username = username;
-        this.password = password;
         this.email = email;
         this.phoneNumber = phoneNumber;
-        
+        this.suspendedUntil = suspendedUntil;
+        this.address = address;
         this.roles = roles;
+        this.pendingRoles = pendingRoles;
         this.orderHistory = orderHistory;
-        this.pending_roles = pending_roles;
-
-
+        this.shoppingCart = shoppingCart;
     }
+    
 
-    public int getMemberId() {
+public int getMemberId() {
         return memberId;
-    }
+}
 
-    public String getUsername() {
+public void setMemberId(int memberId) {
+        this.memberId = memberId;
+}
+
+public String getUsername() {
         return username;
-    }
+}
 
-    public String getPassword() {
-        return password;
-    }
+public void setUsername(String username) {
+        this.username = username;
+}
 
-    public String getEmail() {
+public String getEmail() {
         return email;
-    }
+}
 
-    public String getPhoneNumber() {
+public void setEmail(String email) {
+        this.email = email;
+}
+
+public String getPhoneNumber() {
         return phoneNumber;
-    }
+}
 
-    public List<rolesDTO> getRoles() {
+public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+}
+
+public LocalDateTime getSuspendedUntil() {
+        return suspendedUntil;
+}
+
+public void setSuspendedUntil(LocalDateTime suspendedUntil) {
+        this.suspendedUntil = suspendedUntil;
+}
+
+public AddressDTO getAddress() {
+        return address;
+}
+
+public void setAddress(AddressDTO address) {
+        this.address = address;
+}
+
+public List<rolesDTO> getRoles() {
         return roles;
-    }
+}
 
-    public List<Integer> getOrderHistory() {
+public void setRoles(List<rolesDTO> roles) {
+        this.roles = roles;
+}
+
+public List<rolesDTO> getPendingRoles() {
+        return pendingRoles;
+}
+
+public void setPendingRoles(List<rolesDTO> pendingRoles) {
+        this.pendingRoles = pendingRoles;
+}
+
+public List<Integer> getOrderHistory() {
         return orderHistory;
-    }
+}
 
-    public List<rolesDTO> getPendingRoles() {
-        return pending_roles;
-    }
+public void setOrderHistory(List<Integer> orderHistory) {
+        this.orderHistory = orderHistory;
+}
+
+public ShoppingCartDTO getShoppingCart() {
+        return shoppingCart;
+}
+
+public void setShoppingCart(ShoppingCartDTO shoppingCart) {
+        this.shoppingCart = shoppingCart;
+}
+    
 }

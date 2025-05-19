@@ -23,6 +23,7 @@ import com.example.app.ApplicationLayer.AuthTokenService;
 import com.example.app.PresentationLayer.Controller.AuthController;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -163,7 +164,7 @@ class AuthControllerTests {
         void success_returns200AndUserId() throws Exception {
             when(authService.ValidateToken(eq("tok"))).thenReturn(77);
 
-            mvc.perform(post("/api/auth/validate").param("authToken", "tok"))
+            mvc.perform(get("/api/auth/validate").param("authToken", "tok"))
                     .andExpect(status().isOk())
                     .andExpect(content().string("77"));
         }
@@ -173,7 +174,7 @@ class AuthControllerTests {
             when(authService.ValidateToken(eq("tok")))
                     .thenThrow(new NoSuchElementException());
 
-            mvc.perform(post("/api/auth/validate").param("authToken", "tok"))
+            mvc.perform(get("/api/auth/validate").param("authToken", "tok"))
                     .andExpect(status().isNotFound());
         }
 
@@ -182,7 +183,7 @@ class AuthControllerTests {
             when(authService.ValidateToken(eq("tok")))
                     .thenThrow(new ExpiredJwtException(null, null, "exp"));
 
-            mvc.perform(post("/api/auth/validate").param("authToken", "tok"))
+            mvc.perform(get("/api/auth/validate").param("authToken", "tok"))
                     .andExpect(status().isUnauthorized());
         }
 
@@ -191,7 +192,7 @@ class AuthControllerTests {
             when(authService.ValidateToken(eq("tok")))
                     .thenThrow(new IllegalArgumentException());
 
-            mvc.perform(post("/api/auth/validate").param("authToken", "tok"))
+            mvc.perform(get("/api/auth/validate").param("authToken", "tok"))
                     .andExpect(status().isBadRequest());
         }
 
@@ -200,7 +201,7 @@ class AuthControllerTests {
             when(authService.ValidateToken(eq("tok")))
                     .thenThrow(new RuntimeException("invalid"));
 
-            mvc.perform(post("/api/auth/validate").param("authToken", "tok"))
+            mvc.perform(get("/api/auth/validate").param("authToken", "tok"))
                     .andExpect(status().isUnauthorized());
         }
     }

@@ -12,12 +12,6 @@ import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 import com.vaadin.flow.server.VaadinSession;
 
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,6 +21,7 @@ import javax.swing.GroupLayout.Alignment;
 public class RegistrationView extends VerticalLayout {
 
     private static final String REGISTER_API_URL = "http://localhost:8080/api/users/register";
+    private static final String AUTH_URL = "http://localhost:8080/api/auth";
     private final RestTemplate restTemplate = new RestTemplate();
 
     public RegistrationView() {
@@ -81,6 +76,7 @@ public class RegistrationView extends VerticalLayout {
                     session.setAttribute("authToken", response.getBody());
 
                     Notification.show("Registration successful!");
+                    setUserId();
                     getUI().ifPresent(ui -> ui.navigate("home"));
                 } else {
                     Notification.show("Registration failed (" + response.getStatusCode() + ")");
@@ -93,5 +89,26 @@ public class RegistrationView extends VerticalLayout {
         Button back = new Button("Back", e -> getUI().ifPresent(ui -> ui.navigate("")));
 
         add(new H2("Register"), username, email, password, phone, address, register, back);
+    }
+
+    private void setUserId() {
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            return;
+        }
+
+        // build the URL with the authToken as a query‐param
+        String url = AUTH_URL + "/validate?authToken=" + token;
+
+        // simply use GET—no HttpHeaders object needed
+        ResponseEntity<Integer> response = restTemplate.getForEntity(url, Integer.class);
+
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            VaadinSession.getCurrent().setAttribute("userId", response.getBody());
+        } else {
+            throw new RuntimeException(
+                "Failed to retrieve user ID: HTTP " + response.getStatusCode().value()
+            );
+        }
     }
 }

@@ -457,7 +457,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
         List<ItemDTO> filteredItems = new ArrayList<>(allItems);
 
         if (categoryFilter.getValue() != null) {
-            filteredItems.removeIf(item -> !item.getCategory().equals(categoryFilter.getValue()));
+            filteredItems.removeIf(item -> !item.getCategoryString().equals(categoryFilter.getValue()));
         }
 
         if (minPriceField.getValue() != null) {
@@ -511,8 +511,8 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Stri
             TextField descField = new TextField("Description", item.getDescription());
             descField.setValue(item.getDescription());
             descField.setReadOnly(true);
-            TextField categoryField = new TextField("Category", String.valueOf(item.getCategory()));
-            categoryField.setValue(String.valueOf(item.getCategory()));
+            TextField categoryField = new TextField("Category", String.valueOf(item.getCategoryString()));
+            categoryField.setValue(String.valueOf(item.getCategoryString()));
             categoryField.setReadOnly(true);
             NumberField priceField = new NumberField("Price");
             priceField.setValue(shop.getPrices().getOrDefault(item, 0).doubleValue());

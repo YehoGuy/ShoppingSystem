@@ -49,6 +49,7 @@ import com.example.app.DomainLayer.Item.ItemCategory;
 import com.example.app.DomainLayer.Item.ItemReview;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Shop.IShopRepository;
+import com.example.app.DomainLayer.Shop.Operator;
 import com.example.app.DomainLayer.Shop.PurchasePolicy;
 import com.example.app.DomainLayer.Shop.Shop;
 import com.example.app.DomainLayer.Shop.ShopReview;
@@ -1575,158 +1576,458 @@ class ShopServiceAcceptanceTests {
         assertTrue(ex.getMessage().contains("ship fail"));
     }
     
-        // getItemQuantityFromShop → authToken throws OurArg
-        @Test
-        void testGetItemQuantityFromShop_InvalidTokenOurArg() throws Exception {
-            when(authTokenService.ValidateToken("bad")).thenThrow(new OurArg("no auth"));
-            OurArg ex = assertThrows(OurArg.class,
-                () -> shopService.getItemQuantityFromShop(1, 2, "bad"));
-            assertTrue(ex.getMessage().contains("getItemQuantityFromShop"));
-        }
-    
-        // getItemQuantityFromShop → repo throws RuntimeException
-        @Test
-        void testGetItemQuantityFromShop_RepoError() throws Exception {
-            String tok = "t";
-            when(authTokenService.ValidateToken(tok)).thenReturn(1);
-            when(shopRepository.getItemQuantityFromShop(1, 2))
-                .thenThrow(new RuntimeException("db fail"));
-            RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> shopService.getItemQuantityFromShop(1, 2, tok));
-            assertTrue(ex.getMessage().contains("Error retrieving quantity"));
-        }
-    
-        // searchItemsInShop → shop.getItemPrice throws OurArg inside filterItemsInShop
-        @Test
-        void testSearchItemsInShop_ItemPriceOurArg_Failure() throws Exception {
-            String tok = "t";
-            int shopId = 1;
-            Item it = new Item(1, "X", "Y", 0);
-    
-            when(authTokenService.ValidateToken(tok)).thenReturn(1);
-            Shop spyShop = spy(new Shop(shopId, "S", shippingMethod));
-            when(shopRepository.getShop(shopId)).thenReturn(spyShop);
-            when(shopRepository.getItemsByShop(shopId)).thenReturn(List.of(1));
-            when(itemService.getItemsByIds(List.of(1), tok)).thenReturn(List.of(it));
-            doThrow(new OurArg("price error"))
-                .when(spyShop).getItemPrice(1);
-    
-            OurArg ex = assertThrows(OurArg.class,
-                () -> shopService.searchItemsInShop(shopId, null, null, null, null, null, null, tok));
-            assertTrue(ex.getMessage().contains("filterItemsInShop"));
-        }
-    
-        // checkSupplyAvailability → authToken throws OurArg
-        @Test
-        void testCheckSupplyAvailability_InvalidTokenOurArg() throws Exception {
-            when(authTokenService.ValidateToken("bad")).thenThrow(new OurArg("no auth"));
-            OurArg ex = assertThrows(OurArg.class,
-                () -> shopService.checkSupplyAvailability(1, 2, "bad"));
-            assertTrue(ex.getMessage().contains("checkSupplyAvailability"));
-        }
-    
-        // checkSupplyAvailability → repo throws RuntimeException
-        @Test
-        void testCheckSupplyAvailability_RepoErrorOurRuntime() throws Exception {
-            String tok = "t";
-            when(authTokenService.ValidateToken(tok)).thenReturn(1);
-            when(shopRepository.checkSupplyAvailability(1, 2))
-                .thenThrow(new IllegalStateException("db fail"));
-            OurRuntime ex = assertThrows(OurRuntime.class,
-                () -> shopService.checkSupplyAvailability(1, 2, tok));
-            assertTrue(ex.getMessage().contains("Error checking supply"));
-        }
-    
-        // checkSupplyAvailabilityAndAcquire → repo throws OurArg
-        @Test
-        void testCheckSupplyAvailabilityAndAcquire_RepoOurArg() {
-            when(shopRepository.checkSupplyAvailabilityAndAqcuire(1, 2, 3))
-                .thenThrow(new OurArg("fail"));
-            OurArg ex = assertThrows(OurArg.class,
-                () -> shopService.checkSupplyAvailabilityAndAcquire(1, 2, 3));
-            assertTrue(ex.getMessage().contains("checkSupplyAvailabilityAndAqcuire"));
-        }
-    
-        // checkSupplyAvailabilityAndAcquire → repo throws RuntimeException
-        @Test
-        void testCheckSupplyAvailabilityAndAcquire_RepoOurRuntime() {
-            when(shopRepository.checkSupplyAvailabilityAndAqcuire(1, 2, 3))
-                .thenThrow(new RuntimeException("fail"));
-            OurRuntime ex = assertThrows(OurRuntime.class,
-                () -> shopService.checkSupplyAvailabilityAndAcquire(1, 2, 3));
-            assertTrue(ex.getMessage().contains("Error checking supply"));
-        }
-    
-        // getItemsByShop → authToken throws OurArg
-        @Test
-        void testGetItemsByShop_InvalidTokenOurArg() throws Exception {
-            when(authTokenService.ValidateToken("bad")).thenThrow(new OurArg("no auth"));
-            OurArg ex = assertThrows(OurArg.class,
-                () -> shopService.getItemsByShop(1, "bad"));
-            assertTrue(ex.getMessage().contains("getItems"));
-        }
-    
-        // getItemsByShop → repo throws RuntimeException
-        @Test
-        void testGetItemsByShop_RepoErrorOurRuntime() throws Exception {
-            String tok = "t";
-            when(authTokenService.ValidateToken(tok)).thenReturn(1);
-            when(shopRepository.getItemsByShop(2))
-                .thenThrow(new IllegalStateException("db error"));
-            RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> shopService.getItemsByShop(2, tok));
-            assertTrue(ex.getMessage().contains("Error retrieving items"));
-        }
-    
-        // getItems (global) → authToken throws OurArg
-        @Test
-        void testGetItems_InvalidTokenOurArg() throws Exception {
-            when(authTokenService.ValidateToken("bad")).thenThrow(new OurArg("no auth"));
-            OurArg ex = assertThrows(OurArg.class,
-                () -> shopService.getItems("bad"));
-            assertTrue(ex.getMessage().contains("getItems"));
-        }
-    
-        // getItems (global) → repo throws RuntimeException
-        @Test
-        void testGetItems_RepoOurRuntime() throws Exception {
-            String tok = "t";
-            when(authTokenService.ValidateToken(tok)).thenReturn(1);
-            when(shopRepository.getItems())
-                .thenThrow(new IllegalStateException("db fail"));
-            OurRuntime ex = assertThrows(OurRuntime.class,
-                () -> shopService.getItems(tok));
-            assertTrue(ex.getMessage().contains("Error retrieving all items"));
-        }
-    
-        // getItems (global) → itemService throws OurArg
-        @Test
-        void testGetItems_ItemServiceOurArg() throws Exception {
-            String tok = "t";
-            when(authTokenService.ValidateToken(tok)).thenReturn(1);
-            when(shopRepository.getItems()).thenReturn(List.of(1));
-            when(itemService.getItemsByIds(List.of(1), tok))
-                .thenThrow(new OurArg("item error"));
-            OurArg ex = assertThrows(OurArg.class,
-                () -> shopService.getItems(tok));
-            assertTrue(ex.getMessage().contains("getItems"));
-            assertTrue(ex.getMessage().contains("item error"));
-        }
-    
-        // searchItems → filterItemsInShop throws RuntimeException, bubbles up as OurRuntime
-        @Test
-        void testSearchItems_FilterItemsError() throws Exception {
-            String tok = "t";
-            when(authTokenService.ValidateToken(tok)).thenReturn(1);
-            Shop s = new Shop(1, "S", shippingMethod);
-            when(shopRepository.getAllShops()).thenReturn(List.of(s));
-            when(shopRepository.getItemsByShop(1)).thenReturn(List.of(1));
-            when(itemService.getItemsByIds(List.of(1), tok))
-                .thenThrow(new RuntimeException("item fail"));
-            
-            RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> shopService.searchItems(null, null, null, null, null, null, null, tok));
-            assertTrue(ex.getMessage().contains("searchItems"));
-        }
-    
+    // getItemQuantityFromShop → authToken throws OurArg
+    @Test
+    void testGetItemQuantityFromShop_InvalidTokenOurArg() throws Exception {
+        when(authTokenService.ValidateToken("bad")).thenThrow(new OurArg("no auth"));
+        OurArg ex = assertThrows(OurArg.class,
+            () -> shopService.getItemQuantityFromShop(1, 2, "bad"));
+        assertTrue(ex.getMessage().contains("getItemQuantityFromShop"));
+    }
+
+    // getItemQuantityFromShop → repo throws RuntimeException
+    @Test
+    void testGetItemQuantityFromShop_RepoError() throws Exception {
+        String tok = "t";
+        when(authTokenService.ValidateToken(tok)).thenReturn(1);
+        when(shopRepository.getItemQuantityFromShop(1, 2))
+            .thenThrow(new RuntimeException("db fail"));
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> shopService.getItemQuantityFromShop(1, 2, tok));
+        assertTrue(ex.getMessage().contains("Error retrieving quantity"));
+    }
+
+    // searchItemsInShop → shop.getItemPrice throws OurArg inside filterItemsInShop
+    @Test
+    void testSearchItemsInShop_ItemPriceOurArg_Failure() throws Exception {
+        String tok = "t";
+        int shopId = 1;
+        Item it = new Item(1, "X", "Y", 0);
+
+        when(authTokenService.ValidateToken(tok)).thenReturn(1);
+        Shop spyShop = spy(new Shop(shopId, "S", shippingMethod));
+        when(shopRepository.getShop(shopId)).thenReturn(spyShop);
+        when(shopRepository.getItemsByShop(shopId)).thenReturn(List.of(1));
+        when(itemService.getItemsByIds(List.of(1), tok)).thenReturn(List.of(it));
+        doThrow(new OurArg("price error"))
+            .when(spyShop).getItemPrice(1);
+
+        OurArg ex = assertThrows(OurArg.class,
+            () -> shopService.searchItemsInShop(shopId, null, null, null, null, null, null, tok));
+        assertTrue(ex.getMessage().contains("filterItemsInShop"));
+    }
+
+    // checkSupplyAvailability → authToken throws OurArg
+    @Test
+    void testCheckSupplyAvailability_InvalidTokenOurArg() throws Exception {
+        when(authTokenService.ValidateToken("bad")).thenThrow(new OurArg("no auth"));
+        OurArg ex = assertThrows(OurArg.class,
+            () -> shopService.checkSupplyAvailability(1, 2, "bad"));
+        assertTrue(ex.getMessage().contains("checkSupplyAvailability"));
+    }
+
+    // checkSupplyAvailability → repo throws RuntimeException
+    @Test
+    void testCheckSupplyAvailability_RepoErrorOurRuntime() throws Exception {
+        String tok = "t";
+        when(authTokenService.ValidateToken(tok)).thenReturn(1);
+        when(shopRepository.checkSupplyAvailability(1, 2))
+            .thenThrow(new IllegalStateException("db fail"));
+        OurRuntime ex = assertThrows(OurRuntime.class,
+            () -> shopService.checkSupplyAvailability(1, 2, tok));
+        assertTrue(ex.getMessage().contains("Error checking supply"));
+    }
+
+    // checkSupplyAvailabilityAndAcquire → repo throws OurArg
+    @Test
+    void testCheckSupplyAvailabilityAndAcquire_RepoOurArg() {
+        when(shopRepository.checkSupplyAvailabilityAndAqcuire(1, 2, 3))
+            .thenThrow(new OurArg("fail"));
+        OurArg ex = assertThrows(OurArg.class,
+            () -> shopService.checkSupplyAvailabilityAndAcquire(1, 2, 3));
+        assertTrue(ex.getMessage().contains("checkSupplyAvailabilityAndAqcuire"));
+    }
+
+    // checkSupplyAvailabilityAndAcquire → repo throws RuntimeException
+    @Test
+    void testCheckSupplyAvailabilityAndAcquire_RepoOurRuntime() {
+        when(shopRepository.checkSupplyAvailabilityAndAqcuire(1, 2, 3))
+            .thenThrow(new RuntimeException("fail"));
+        OurRuntime ex = assertThrows(OurRuntime.class,
+            () -> shopService.checkSupplyAvailabilityAndAcquire(1, 2, 3));
+        assertTrue(ex.getMessage().contains("Error checking supply"));
+    }
+
+    // getItemsByShop → authToken throws OurArg
+    @Test
+    void testGetItemsByShop_InvalidTokenOurArg() throws Exception {
+        when(authTokenService.ValidateToken("bad")).thenThrow(new OurArg("no auth"));
+        OurArg ex = assertThrows(OurArg.class,
+            () -> shopService.getItemsByShop(1, "bad"));
+        assertTrue(ex.getMessage().contains("getItems"));
+    }
+
+    // getItemsByShop → repo throws RuntimeException
+    @Test
+    void testGetItemsByShop_RepoErrorOurRuntime() throws Exception {
+        String tok = "t";
+        when(authTokenService.ValidateToken(tok)).thenReturn(1);
+        when(shopRepository.getItemsByShop(2))
+            .thenThrow(new IllegalStateException("db error"));
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> shopService.getItemsByShop(2, tok));
+        assertTrue(ex.getMessage().contains("Error retrieving items"));
+    }
+
+    // getItems (global) → authToken throws OurArg
+    @Test
+    void testGetItems_InvalidTokenOurArg() throws Exception {
+        when(authTokenService.ValidateToken("bad")).thenThrow(new OurArg("no auth"));
+        OurArg ex = assertThrows(OurArg.class,
+            () -> shopService.getItems("bad"));
+        assertTrue(ex.getMessage().contains("getItems"));
+    }
+
+    // getItems (global) → repo throws RuntimeException
+    @Test
+    void testGetItems_RepoOurRuntime() throws Exception {
+        String tok = "t";
+        when(authTokenService.ValidateToken(tok)).thenReturn(1);
+        when(shopRepository.getItems())
+            .thenThrow(new IllegalStateException("db fail"));
+        OurRuntime ex = assertThrows(OurRuntime.class,
+            () -> shopService.getItems(tok));
+        assertTrue(ex.getMessage().contains("Error retrieving all items"));
+    }
+
+    // getItems (global) → itemService throws OurArg
+    @Test
+    void testGetItems_ItemServiceOurArg() throws Exception {
+        String tok = "t";
+        when(authTokenService.ValidateToken(tok)).thenReturn(1);
+        when(shopRepository.getItems()).thenReturn(List.of(1));
+        when(itemService.getItemsByIds(List.of(1), tok))
+            .thenThrow(new OurArg("item error"));
+        OurArg ex = assertThrows(OurArg.class,
+            () -> shopService.getItems(tok));
+        assertTrue(ex.getMessage().contains("getItems"));
+        assertTrue(ex.getMessage().contains("item error"));
+    }
+
+    // searchItems → filterItemsInShop throws RuntimeException, bubbles up as OurRuntime
+    @Test
+    void testSearchItems_FilterItemsError() throws Exception {
+        String tok = "t";
+        when(authTokenService.ValidateToken(tok)).thenReturn(1);
+        Shop s = new Shop(1, "S", shippingMethod);
+        when(shopRepository.getAllShops()).thenReturn(List.of(s));
+        when(shopRepository.getItemsByShop(1)).thenReturn(List.of(1));
+        when(itemService.getItemsByIds(List.of(1), tok))
+            .thenThrow(new RuntimeException("item fail"));
+        
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> shopService.searchItems(null, null, null, null, null, null, null, tok));
+        assertTrue(ex.getMessage().contains("searchItems"));
+    }
+
+
+    @Test
+    void testGetShop_Success2() throws Exception {
+        String token = "tok";
+        int shopId = 42;
+        Shop expected = new Shop(shopId, "MyShop", shippingMethod);
+
+        when(authTokenService.ValidateToken(token)).thenReturn(123);
+        when(shopRepository.getShop(shopId)).thenReturn(expected);
+
+        Shop actual = shopService.getShop(shopId, token);
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    void testGetShop_InvalidToken_Failure() throws Exception {
+        when(authTokenService.ValidateToken("bad")).thenThrow(new RuntimeException("no auth"));
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> shopService.getShop(1, "bad"));
+        assertTrue(ex.getMessage().contains("no auth"));
+    }
+
+    @Test
+    void testGetShop_RepoError_Failure() throws Exception {
+        String token = "tok";
+        int shopId = 7;
+
+        when(authTokenService.ValidateToken(token)).thenReturn(1);
+        when(shopRepository.getShop(shopId)).thenThrow(new RuntimeException("db fail"));
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> shopService.getShop(shopId, token));
+        assertTrue(ex.getMessage().contains("Error retrieving shop"));
+    }
+
+
+    //
+    // ----- searchItems(...)
+    //
+
+    @Test
+    void testSearchItems_Global_Success2() throws Exception {
+        String token = "tok";
+        when(authTokenService.ValidateToken(token)).thenReturn(1);
+
+        // one shop that passes minShopRating
+        Shop s = new Shop(1, "S", shippingMethod);
+        s.addReview(1,5,"r");
+        when(shopRepository.getAllShops()).thenReturn(List.of(s));
+
+        // underlying in-shop search
+        when(shopRepository.getShop(1)).thenReturn(s);
+        when(shopRepository.getItemsByShop(1)).thenReturn(List.of(10));
+        Item it = new Item(10,"Find","desc",0);
+        when(itemService.getItemsByIds(List.of(10), token)).thenReturn(List.of(it));
+
+        // only "find" matches
+        var results = shopService.searchItems("find", null, null, null, null, null, 4.0, token);
+        assertEquals(1, results.size());
+        assertEquals(it, results.get(0));
+    }
+
+    @Test
+    void testSearchItems_InvalidToken_OurArg() throws Exception{
+        when(authTokenService.ValidateToken("bad")).thenThrow(new OurArg("bad token"));
+        OurArg ex = assertThrows(OurArg.class,
+            () -> shopService.searchItems(null, null, null, null, null, null, null, "bad"));
+        assertTrue(ex.getMessage().contains("searchItems"));
+    }
+
+
+    //
+    // ----- searchItemsInShop(...)
+    //
+
+    @Test
+    void testSearchItemsInShop_PriceAndRatingFilters() throws Exception {
+        String token = "tok";
+        int shopId = 5;
+        when(authTokenService.ValidateToken(token)).thenReturn(1);
+
+        Shop spyShop = spy(new Shop(shopId, "S", shippingMethod));
+        doReturn(20).when(spyShop).getItemPrice(10);
+        when(shopRepository.getShop(shopId)).thenReturn(spyShop);
+        when(shopRepository.getItemsByShop(shopId)).thenReturn(List.of(10));
+
+        Item it = new Item(10, "Name", "Desc", 0);
+        it.addReview(new ItemReview(5, "r"));
+        when(itemService.getItemsByIds(List.of(10), token)).thenReturn(List.of(it));
+
+        // minPrice > price → no hits
+        assertTrue(shopService.searchItemsInShop(shopId, null, null, null, 30, 50, null, token).isEmpty());
+        // minProductRating > avg → no hits
+        assertTrue(shopService.searchItemsInShop(shopId, null, null, null, null, null, 6.0, token).isEmpty());
+    }
+
+    @Test
+    void testSearchItemsInShop_ShopFetchError() throws Exception {
+        String token = "tok";
+        int shopId = 5;
+        when(authTokenService.ValidateToken(token)).thenReturn(1);
+        when(shopRepository.getShop(shopId)).thenThrow(new RuntimeException("no shop"));
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> shopService.searchItemsInShop(shopId, null, null, null, null, null, null, token));
+        assertTrue(ex.getMessage().contains("searchItemsInShop"));
+    }
+
+
+    //
+    // ----- addSupplyToItem(...)
+    //
+
+    @Test
+    void testAddSupplyToItem_Success2() throws Exception {
+        String tok = "t";
+        when(authTokenService.ValidateToken(tok)).thenReturn(1);
+        when(userService.hasPermission(1, PermissionsEnum.manageItems, 2)).thenReturn(true);
+
+        doNothing().when(shopRepository).addSupplyToItem(2, 3, 4);
+        shopService.addSupplyToItem(2, 3, 4, tok);
+        verify(shopRepository).addSupplyToItem(2, 3, 4);
+    }
+
+    @Test
+    void testAddSupplyToItem_NoPermission() throws Exception {
+        String tok = "t";
+        when(authTokenService.ValidateToken(tok)).thenReturn(1);
+        when(userService.hasPermission(1, PermissionsEnum.manageItems, 2)).thenReturn(false);
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> shopService.addSupplyToItem(2,3,4,tok));
+        assertTrue(ex.getMessage().contains("permission"));
+    }
+
+    @Test
+    void testAddSupplyToItem_RepoError() throws Exception {
+        String tok = "t";
+        when(authTokenService.ValidateToken(tok)).thenReturn(1);
+        when(userService.hasPermission(1, PermissionsEnum.manageItems, 2)).thenReturn(true);
+        doThrow(new RuntimeException("fail")).when(shopRepository).addSupplyToItem(2,3,4);
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> shopService.addSupplyToItem(2,3,4,tok));
+        assertTrue(ex.getMessage().contains("Error adding supply"));
+    }
+
+
+    //
+    // ----- removeDiscountForItem(...)
+    //
+
+    @Test
+    void testRemoveDiscountForItem_Success2() throws Exception {
+        String tok = "t";
+        when(authTokenService.ValidateToken(tok)).thenReturn(1);
+        when(userService.hasPermission(1, PermissionsEnum.setPolicy, 7)).thenReturn(true);
+
+        doNothing().when(shopRepository).removeDiscountForItem(7, 99);
+        shopService.removeDiscountForItem(7, 99, tok);
+        verify(shopRepository).removeDiscountForItem(7, 99);
+    }
+
+    @Test
+    void testRemoveDiscountForItem_NoPermission() throws Exception {
+        String tok = "t";
+        when(authTokenService.ValidateToken(tok)).thenReturn(1);
+        when(userService.hasPermission(1, PermissionsEnum.setPolicy, 7)).thenReturn(false);
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> shopService.removeDiscountForItem(7,99,tok));
+        assertTrue(ex.getMessage().contains("permission"));
+    }
+
+    @Test
+    void testRemoveDiscountForItem_RepoError() throws Exception {
+        String tok = "t";
+        when(authTokenService.ValidateToken(tok)).thenReturn(1);
+        when(userService.hasPermission(1, PermissionsEnum.setPolicy, 7)).thenReturn(true);
+        doThrow(new IllegalArgumentException("oops"))
+            .when(shopRepository).removeDiscountForItem(7, 99);
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> shopService.removeDiscountForItem(7,99,tok));
+        assertTrue(ex.getMessage().contains("Error removing discount for item"));
+    }
+
+
+    //
+    // ----- addSupply(...)
+    //
+
+    @Test
+    void testAddSupply_Success2() throws Exception {
+        String tok = "t";
+        when(authTokenService.ValidateToken(tok)).thenReturn(2);
+        when(userService.hasPermission(2, PermissionsEnum.manageItems, 5)).thenReturn(true);
+
+        doNothing().when(shopRepository).addSupply(5, 6, 7);
+        shopService.addSupply(5,6,7,tok);
+        verify(shopRepository).addSupply(5,6,7);
+    }
+
+    @Test
+    void testAddSupply_NoPermission() throws Exception {
+        String tok = "t";
+        when(authTokenService.ValidateToken(tok)).thenReturn(2);
+        when(userService.hasPermission(2, PermissionsEnum.manageItems, 5)).thenReturn(false);
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> shopService.addSupply(5,6,7,tok));
+        assertTrue(ex.getMessage().contains("permission"));
+    }
+
+    @Test
+    void testAddSupply_RepoError() throws Exception {
+        String tok = "t";
+        when(authTokenService.ValidateToken(tok)).thenReturn(2);
+        when(userService.hasPermission(2, PermissionsEnum.manageItems, 5)).thenReturn(true);
+        doThrow(new RuntimeException("fail")).when(shopRepository).addSupply(5,6,7);
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> shopService.addSupply(5,6,7,tok));
+        assertTrue(ex.getMessage().contains("Error adding supply"));
+    }
+
+
+    //
+    // ----- addDiscountPolicy(...)
+    //
+
+    @Test
+    void testAddDiscountPolicy_Success() throws Exception {
+        String tok = "t";
+        int shopId = 8;
+        when(authTokenService.ValidateToken(tok)).thenReturn(3);
+        when(userService.hasPermission(3, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
+
+        doNothing().when(shopRepository)
+            .addDiscountPolicy(2, 10, ItemCategory.BOOKS, 50.0, Operator.AND, shopId);
+
+        shopService.addDiscountPolicy(tok, 2, 10, ItemCategory.BOOKS, 50.0, Operator.AND, shopId);
+        verify(shopRepository).addDiscountPolicy(2,10,ItemCategory.BOOKS,50.0,Operator.AND,shopId);
+    }
+
+    @Test
+    void testAddDiscountPolicy_NoPermission() throws Exception {
+        String tok = "t";
+        when(authTokenService.ValidateToken(tok)).thenReturn(3);
+        when(userService.hasPermission(3, PermissionsEnum.setPolicy, 8)).thenReturn(false);
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> shopService.addDiscountPolicy(tok,2,10,ItemCategory.BOOKS,10,Operator.OR,8));
+        assertTrue(ex.getMessage().contains("permission"));
+    }
+
+    @Test
+    void testAddDiscountPolicy_InvalidToken_OurArg() {
+        assertThrows(OurRuntime.class, () ->
+            shopService.addDiscountPolicy("bad",1,2,null,0.0,Operator.OR,5)
+        );
+    }
+
+
+    //
+    // ----- getShopsByWorker(...)
+    //
+
+    @Test
+    void testGetShopsByWorker_Success() throws Exception {
+        String token = "tok";
+        int workerId = 99;
+        // userService.getShopIdsByWorkerId does not use token
+        when(userService.getShopIdsByWorkerId(workerId)).thenReturn(List.of(1,2));
+
+        Shop a = new Shop(1,"A",shippingMethod);
+        Shop b = new Shop(2,"B",shippingMethod);
+        // getShop is called with token
+        when(authTokenService.ValidateToken(token)).thenReturn(10);
+        when(shopRepository.getShop(1)).thenReturn(a);
+        when(shopRepository.getShop(2)).thenReturn(b);
+
+        var out = shopService.getShopsByWorker(workerId, token);
+        assertEquals(2, out.size());
+        assertTrue(out.containsAll(List.of(a,b)));
+    }
+
+    @Test
+    void testGetShopsByWorker_GetShopFails() throws Exception {
+        String tok = "tok";
+        int workerId = 5;
+        when(userService.getShopIdsByWorkerId(workerId)).thenReturn(List.of(42));
+        when(authTokenService.ValidateToken(tok)).thenReturn(1);
+        when(shopRepository.getShop(42)).thenThrow(new OurArg("nope"));
+
+        OurArg ex = assertThrows(OurArg.class,
+            () -> shopService.getShopsByWorker(workerId, tok));
+        assertTrue(ex.getMessage().contains("getShopsByWorker"));
+    }
+
 }
