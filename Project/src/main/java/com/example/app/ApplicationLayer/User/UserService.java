@@ -151,10 +151,11 @@ public class UserService {
                 LoggerService.logError("addMember", new OurArg("Username is already taken."));
                 throw new OurArg("Username is already taken.");
             }
+            String rawPassword = password;
             String encodedPassword = passwordEncoder.encode(password); // Encode the password using the PasswordEncoderUtil
             LoggerService.logMethodExecution("addMember", username, password, email, phoneNumber, address);
             int userId = userRepository.addMember(username, encodedPassword, email, phoneNumber, address);
-            String token = authTokenService.Login(username, password,userId);
+            String token = authTokenService.Login(username, rawPassword,userId);
             LoggerService.logMethodExecutionEndVoid("addMember");
             return token; // Return the generated token
         } catch (OurRuntime e) {
@@ -328,7 +329,7 @@ public class UserService {
     }
 
     public String loginAsMember(String username, String password, String token_if_guest) {
-        LoggerService.logMethodExecution("loginAsMember", username, passwordEncoder.encode(password), token_if_guest);
+        LoggerService.logMethodExecution("loginAsMember", username, "****", token_if_guest);
         String token = null;
         try {
             if (username == null || password == null) {
@@ -341,8 +342,8 @@ public class UserService {
             }
             int loginAsMember_id = userRepository.isUsernameAndPasswordValid(username, password);
             if (loginAsMember_id > 0) { // valid login attempt
-                if (token_if_guest == "") { // if the user is not a guest, it's their initial login
-                    token = authTokenService.Login(username, passwordEncoder.encode(password), loginAsMember_id);
+                if (token_if_guest==null || token_if_guest.equals("") || token_if_guest.isEmpty()) { // if the user is not a guest, it's their initial login
+                    token = authTokenService.Login(username, password, loginAsMember_id);
                     LoggerService.logMethodExecutionEnd("loginAsMember", loginAsMember_id);
                     return token; // Return the ID of the logged-in member
                 } else {
@@ -353,7 +354,7 @@ public class UserService {
                     member.mergeShoppingCart(guest.getShoppingCart());
                     // remove the guest user from the data
                     userRepository.removeUserById(id);
-                    token = authTokenService.Login(username, passwordEncoder.encode(password), loginAsMember_id);
+                    token = authTokenService.Login(username, password, loginAsMember_id);
                     LoggerService.logMethodExecutionEnd("loginAsMember", loginAsMember_id);
                     return token;
                 }
