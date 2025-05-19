@@ -72,6 +72,8 @@ public class UserService {
         }
     }
 
+
+
     public void removeAdmin(String token, Integer id) {
         LoggerService.logMethodExecution("removeAdmin", token, id);
         try {
@@ -141,6 +143,24 @@ public class UserService {
         } catch (Exception e) {
             LoggerService.logError("getUserById", e, id);
             throw new OurRuntime("getUserById: " + e.getMessage(), e); // Rethrow the custom exception
+        }
+    }
+
+    public List<Member> getAllMembers() {
+        try {
+            LoggerService.logMethodExecution("getAllUsers");
+            List<Member> users = userRepository.getAllMembers();
+            LoggerService.logMethodExecutionEnd("getAllUsers", users);
+            return users;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getAllUsers", e);
+            throw new OurArg("getAllUsers: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurRuntime e) {
+            LoggerService.logError("getAllUsers", e);
+            throw new OurRuntime("getAllUsers: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("getAllUsers", e);
+            throw new OurRuntime("getAllUsers: " + e.getMessage(), e); // Rethrow the custom exception
         }
     }
 

@@ -1,5 +1,6 @@
 package DTOs;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -7,33 +8,61 @@ public class ShopDTO {
 
     private int shopId;
     private String name;
-    private Map<ItemDTO, Integer> items;   // ItemDTO → quantity
-    private Map<ItemDTO, Integer> prices;  // ItemDTO → price
+
+    private List<ItemDTO> items;                 // List of items in the shop
+    private Map<Integer, Integer> itemQuantities; // itemId → quantity
+    private Map<Integer, Integer> itemPrices;     // itemId → price
+
     private List<ShopReviewDTO> reviews;
 
-    // Jackson needs this
     public ShopDTO() { }
 
-    public ShopDTO(int shopId, String name, Map<ItemDTO, Integer> items, Map<ItemDTO, Integer> prices, List<ShopReviewDTO> reviews) {
+    public ShopDTO(int shopId, String name,
+                   List<ItemDTO> items,
+                   Map<Integer, Integer> itemQuantities,
+                   Map<Integer, Integer> itemPrices,
+                   List<ShopReviewDTO> reviews) {
         this.shopId = shopId;
         this.name = name;
         this.items = items;
-        this.prices = prices;
+        this.itemQuantities = itemQuantities;
+        this.itemPrices = itemPrices;
         this.reviews = reviews;
     }
 
-    // Getters
     public int getShopId() { return shopId; }
-    public String getName() { return name; }
-    public Map<ItemDTO, Integer> getItems() { return items; }
-    public Map<ItemDTO, Integer> getPrices() { return prices; }
-    public List<ShopReviewDTO> getReviews() { return reviews; }
-
-    // Setter methods for Jackson
     public void setShopId(int shopId) { this.shopId = shopId; }
-    public void setName(String name) { this.name = name; }
-    public void setItems(Map<ItemDTO, Integer> items) { this.items = items; }
-    public void setPrices(Map<ItemDTO, Integer> prices) { this.prices = prices; }
-    public void setReviews(List<ShopReviewDTO> reviews) { this.reviews = reviews; }
 
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+
+    public List<ItemDTO> getItems() { return items; }
+    public void setItems(List<ItemDTO> items) { this.items = items; }
+
+    public Map<Integer, Integer> getItemQuantities() { return itemQuantities; }
+    public void setItemQuantities(Map<Integer, Integer> itemQuantities) { this.itemQuantities = itemQuantities; }
+
+    public Map<Integer, Integer> getItemPrices() { return itemPrices; }
+    public void setItemPrices(Map<Integer, Integer> itemPrices) { this.itemPrices = itemPrices; }
+
+    public List<ShopReviewDTO> getReviews() { return reviews; }
+    public void setReviews(List<ShopReviewDTO> reviews) { this.reviews = reviews; }
+    
+    public static Map<ItemDTO, Integer> itemQuantitiesToMapConverter(List<ItemDTO> items, Map<Integer, Integer> itemQuantities) {
+        Map<ItemDTO, Integer> itemQuantitiesMap = new HashMap<>();
+        for (ItemDTO item : items) {
+            int quantity = itemQuantities.get(item.getId());
+            itemQuantitiesMap.put(item, quantity);
+        }
+        return itemQuantitiesMap;
+    }
+
+    public static Map<ItemDTO, Integer> itemPricesToMapConverter(List<ItemDTO> items, Map<Integer, Integer> itemPrices) {
+        Map<ItemDTO, Integer> itemPricesMap = new HashMap<>();
+        for (ItemDTO item : items) {
+            int price = itemPrices.get(item.getId());
+            itemPricesMap.put(item, price);
+        }
+        return itemPricesMap;
+    }
 }

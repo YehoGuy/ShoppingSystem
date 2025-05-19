@@ -136,5 +136,8 @@ public interface IUserRepository {
 
     List<Role> getPendingRoles(int userId);
 
+    List<Member> getAllMembers();
+
     List<Role> getAcceptedRoles(int userId);
+
 }
