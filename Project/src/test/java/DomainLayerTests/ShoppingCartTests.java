@@ -1,9 +1,11 @@
 package DomainLayerTests;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
@@ -115,4 +117,68 @@ public class ShoppingCartTests {
     void testGetItemsNotFound() {
         assertNull(shoppingCart.getItems().get(1), "Items in basket 1 should not exist and return null");
     }
+
+    @Test
+    public void testShoppingCartBasketOperations() {
+        ShoppingCart cart = new ShoppingCart();
+        assertNull(cart.getBasket(1));
+
+        cart.addBasket(1);
+        assertNotNull(cart.getBasket(1));
+        assertTrue(cart.getBasket(1).isEmpty());
+
+        cart.addItem(1, 100, 2);
+        Map<Integer,Integer> basket = cart.getBasket(1);
+        assertEquals(2, basket.get(100));
+
+        cart.addItem(1, 100, 3);
+        assertEquals(5, cart.getBasket(1).get(100));
+
+        cart.updateProduct(1, 100, 1);
+        assertEquals(1, cart.getBasket(1).get(100));
+
+        cart.removeItem(1, 100);
+        assertFalse(cart.getBasket(1).containsKey(100));
+
+        // setBasket requires a HashMap
+        HashMap<Integer,Integer> newBasket = new HashMap<>();
+        newBasket.put(200, 4);
+        cart.setBasket(1, newBasket);
+        assertEquals(4, cart.getBasket(1).get(200));
+
+        // removeBasket and clearCart
+        cart.removeBasket(1);
+        assertNull(cart.getBasket(1));
+        cart.addBasket(2);
+        cart.clearCart();
+        assertNull(cart.getBasket(2));
+    }
+
+    @Test
+    public void testShoppingCartMergeAndRestore() {
+        ShoppingCart a = new ShoppingCart();
+        ShoppingCart b = new ShoppingCart();
+        a.addItem(1, 10, 1);
+        b.addItem(1, 10, 2);
+        a.mergeCart(b);
+        assertEquals(3, a.getBasket(1).get(10));
+
+        // restoreCart adds quantities
+        HashMap<Integer, HashMap<Integer,Integer>> snapshot = a.getItems();
+        ShoppingCart c = new ShoppingCart();
+        c.addItem(1, 10, 5);
+        c.restoreCart(snapshot);
+        assertEquals(8, c.getBasket(1).get(10));
+    }
+
+    @Test
+    public void testGetItemsDeepCopy() {
+        ShoppingCart cart = new ShoppingCart();
+        cart.addItem(3, 30, 7);
+        HashMap<Integer, HashMap<Integer,Integer>> copy = cart.getItems();
+        copy.get(3).put(30, 0);
+        // original should remain unchanged
+        assertEquals(7, cart.getBasket(3).get(30));
+    }
+
 }

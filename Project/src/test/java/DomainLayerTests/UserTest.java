@@ -3,8 +3,10 @@ package DomainLayerTests;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
 import com.example.app.DomainLayer.ShoppingCart;
 import com.example.app.DomainLayer.User;
+import com.example.app.DomainLayer.Purchase.Address;
 
 import java.util.HashMap;
 
@@ -67,5 +69,36 @@ public class UserTest {
     @Test
     void testGetPaymentMethodIsNullByDefault() {
         assertNull(user.getPaymentMethod());
+    }
+
+    @Test
+    public void testUserShoppingCartAndPayment() {
+        User u = new User(0){};
+        assertNotNull(u.getShoppingCart());
+
+        ShoppingCart sc = new ShoppingCart();
+        sc.addItem(5, 50, 2);
+        u.setShoppingCart(sc);
+        assertSame(sc, u.getShoppingCart());
+
+        // stub PaymentMethod implementation
+        PaymentMethod pm = new PaymentMethod() {
+            @Override public void processPayment(double amount, int shopId) {}
+            @Override public String getDetails() { return "stub"; }
+            @Override public void refundPayment(double amount, int shopId) {}
+            @Override public void processRefund(double refund, int shopId) {}
+        };
+        u.setPaymentMethod(pm);
+        assertSame(pm, u.getPaymentMethod());
+        assertEquals("stub", u.getPaymentMethod().getDetails());
+
+        Address addr = new Address()
+            .withCountry("C").withCity("Ci").withStreet("St")
+            .withApartmentNumber(1).withZipCode("Z");
+        u.setAddress(addr);
+        assertSame(addr, u.getAddress());
+
+        u.setAddress("X","Y","Z",2,"P");
+        assertNotNull(u.getAddress());
     }
 }
