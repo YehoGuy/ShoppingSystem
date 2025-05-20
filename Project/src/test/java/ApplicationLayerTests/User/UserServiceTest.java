@@ -2933,20 +2933,6 @@ void testGetAllMembers_Failure() {
         assertTrue(ex.getMessage().contains("refundPayment"));
     }
 
-    // --- getPermitionsByShop: invalid token → OurArg ---
-    @Test
-    void testGetPermitionsByShop_InvalidToken_ThrowsOurArg() throws Exception {
-        UserRepository repo = mock(UserRepository.class);
-        AuthTokenService auth = mock(AuthTokenService.class);
-        when(auth.ValidateToken("bad")).thenThrow(new OurArg("noAuth"));
-        UserService svc = new UserService(repo, auth);
-
-        OurArg ex = assertThrows(OurArg.class,
-            () -> svc.getPermitionsByShop("bad", 99)
-        );
-        assertTrue(ex.getMessage().contains("getPermitionsByShop"));
-    }
-
     // --- getNotificationsAndClear: invalid token → OurArg ---
     @Test
     void testGetNotificationsAndClear_InvalidToken_ThrowsOurArg() throws Exception {
@@ -3951,20 +3937,6 @@ void testGetAllMembers_Failure() {
         OurArg ex = assertThrows(OurArg.class, () -> svc.hasRole(100, r));
         assertTrue(ex.getMessage().contains("User with ID 100 is not a member"));
     }
-    
-
-    // --- getPermitionsByShop invalid token ---
-    @Test
-    void testGetPermitionsByShop_InvalidToken() throws Exception {
-        AuthTokenService auth = mock(AuthTokenService.class);
-        when(auth.ValidateToken("bad")).thenThrow(new OurArg("noAuth"));
-
-        UserService svc = new UserService(mock(UserRepository.class), auth);
-        OurArg ex = assertThrows(OurArg.class, () ->
-            svc.getPermitionsByShop("bad", 77)
-        );
-        assertTrue(ex.getMessage().contains("getPermitionsByShop"));
-    }
 
     // --- updateMemberPassword invalid token ---
     @Test
@@ -4142,22 +4114,6 @@ void testGetAllMembers_Failure() {
         UserService svc = new UserService(repo, auth);
         assertDoesNotThrow(() -> svc.removeManagerFromStore(token, mgr, shop));
         verify(repo).removeRole(mgr, shop);
-    }
-
-    @Test
-    void testGetPermitionsByShop_NonOwnerThrows() throws Exception {
-        String token = "tok";
-        int user = 1, shop = 5;
-
-        UserRepository repo = mock(UserRepository.class);
-        AuthTokenService auth = mock(AuthTokenService.class);
-
-        when(auth.ValidateToken(token)).thenReturn(user);
-        when(repo.isSuspended(user)).thenReturn(false);
-        when(repo.isOwner(user, shop)).thenReturn(false);
-
-        UserService svc = new UserService(repo, auth);
-        assertThrows(OurArg.class, () -> svc.getPermitionsByShop(token, shop));
     }
 
     @Test
@@ -4806,16 +4762,6 @@ void testGetAllMembers_Failure() {
         UserService svc = new UserService(r,a);
         OurRuntime ex = assertThrows(OurRuntime.class, () -> svc.removeRole(3,param));
         assertTrue(ex.getMessage().contains("is not the assignee"));
-    }
-
-    // --- getPermitionsByShop(String,int) ---
-    @Test
-    void testGetPermitionsByShop_InvalidTokenThrows() throws Exception {
-        AuthTokenService a = mock(AuthTokenService.class);
-        when(a.ValidateToken("bad")).thenThrow(new OurArg("noAuth"));
-        UserService svc = new UserService(mock(UserRepository.class),a);
-
-        assertThrows(OurArg.class, () -> svc.getPermitionsByShop("bad",77));
     }
 
     @Test

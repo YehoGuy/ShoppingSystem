@@ -22,36 +22,35 @@ import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.constraints.Min;
 
 /**
- *  Base path: /api/purchases         (all calls are JSON in / JSON out)
+ * Base path: /api/purchases (all calls are JSON in / JSON out)
  *
  * 1. POST /checkout
- *    Params  : authToken, country, city, street, houseNumber, [zipCode]
- *    Success : 201  →  [ 123, 124 ]          (array of purchase IDs)
+ * Params : authToken, country, city, street, houseNumber, [zipCode]
+ * Success : 201 → [ 123, 124 ] (array of purchase IDs)
  *
  * 2. POST /bids
- *    Params  : authToken, storeId, initialPrice
- *    Body    : { "5": 2, "9": 1 }            // itemId → quantity
- *    Success : 201  →  42                    (the new bid ID)
+ * Params : authToken, storeId, initialPrice
+ * Body : { "5": 2, "9": 1 } // itemId → quantity
+ * Success : 201 → 42 (the new bid ID)
  *
  * 3. POST /bids/{bidId}/offers
- *    Params  : authToken, bidAmount
- *    Success : 202  (empty body)
+ * Params : authToken, bidAmount
+ * Success : 202 (empty body)
  *
  * 4. POST /bids/{bidId}/finalize
- *    Params  : authToken
- *    Success : 200  →  17                    (winning bidder’s user‑id)
+ * Params : authToken
+ * Success : 200 → 17 (winning bidder’s user‑id)
  * 
  * 5. GET /api/purchases/users/{userId}
- *    Params : authToken
- *    Success: 200 → [ RecieptDTO, … ]
+ * Params : authToken
+ * Success: 200 → [ RecieptDTO, … ]
  *
- *  Error mapping (all endpoints)
- *    400 – Bad data / validation failure
- *    404 – Entity not found (store, bid, cart…)
- *    409 – Business rule conflict (e.g., bid closed, out‑of‑stock)
- *    500 – Unhandled server error
+ * Error mapping (all endpoints)
+ * 400 – Bad data / validation failure
+ * 404 – Entity not found (store, bid, cart…)
+ * 409 – Business rule conflict (e.g., bid closed, out‑of‑stock)
+ * 500 – Unhandled server error
  */
-
 
 @RestController
 @RequestMapping("/api/purchases")
@@ -86,11 +85,11 @@ public class PurchaseController {
                     .withZipCode(zipCode);
 
             List<Integer> ids = purchaseService.checkoutCart(authToken, shipping);
-            return ResponseEntity.status(HttpStatus.CREATED).body(ids);          // 201 Created
+            return ResponseEntity.status(HttpStatus.CREATED).body(ids); // 201 Created
 
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
             // bad parameters (e.g., empty city or invalid token format)
-            return ResponseEntity.badRequest().body(ex.getMessage());            // 400
+            return ResponseEntity.badRequest().body(ex.getMessage()); // 400
 
         } catch (NoSuchElementException ex) {
             // guest/member or cart not found
@@ -98,31 +97,31 @@ public class PurchaseController {
 
         } catch (RuntimeException ex) {
             // business conflict (e.g., inventory unavailable)
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());  // 409
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
 
         } catch (Exception ex) {
             // anything unexpected
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .body("Internal server error");                 // 500
+                    .body("Internal server error"); // 500
         }
     }
 
-    /* ───────────────────────────  BIDS  ────────────────────────── */
+    /* ─────────────────────────── BIDS ────────────────────────── */
 
     @PostMapping("/bids")
     public ResponseEntity<?> createBid(
             @RequestParam String authToken,
             @RequestParam int storeId,
-            @RequestBody Map<Integer, Integer> items,     // JSON: { "5":2, "9":1 }
+            @RequestBody Map<Integer, Integer> items, // JSON: { "5":2, "9":1 }
             @RequestParam int initialPrice) {
 
         try {
             int bidId = purchaseService.createBid(authToken, storeId, items, initialPrice);
-            return ResponseEntity.status(HttpStatus.CREATED).body(bidId);   // 201, plain int
+            return ResponseEntity.status(HttpStatus.CREATED).body(bidId); // 201, plain int
 
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
             // malformed parameters (e.g., negative price, empty items)
-            return ResponseEntity.badRequest().body(ex.getMessage());       // 400
+            return ResponseEntity.badRequest().body(ex.getMessage()); // 400
 
         } catch (NoSuchElementException ex) {
             // store not found
@@ -130,12 +129,12 @@ public class PurchaseController {
 
         } catch (RuntimeException ex) {
             // business conflict, e.g., “store closed for bids”
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());  // 409
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
 
         } catch (Exception ex) {
             // unexpected failure
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .body("Internal server error");                          // 500
+                    .body("Internal server error"); // 500
         }
     }
 
@@ -164,7 +163,6 @@ public class PurchaseController {
         }
     }
 
-
     @PostMapping("/bids/{bidId}/finalize")
     public ResponseEntity<?> finalizeBid(
             @PathVariable @Min(1) int bidId,
@@ -190,7 +188,7 @@ public class PurchaseController {
         } catch (Exception ex) {
             // anything unexpected → 500
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .body("Internal server error");
+                    .body("Internal server error");
         }
     }
 
@@ -202,25 +200,50 @@ public class PurchaseController {
 
         try {
             List<RecieptDTO> receipts = purchaseService
-                    .getUserPurchases(authToken, userId)           // domain list
+                    .getUserPurchases(authToken, userId) // domain list
                     .stream()
-                    .map(RecieptDTO::fromDomain)                   // → DTO
+                    .map(RecieptDTO::fromDomain) // → DTO
                     .toList();
 
-            return ResponseEntity.ok(receipts);                    // 200
+            return ResponseEntity.ok(receipts); // 200
 
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().body(ex.getMessage());          // 400
+            return ResponseEntity.badRequest().body(ex.getMessage()); // 400
 
         } catch (NoSuchElementException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage()); // 404
 
         } catch (RuntimeException ex) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());  // 409
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
 
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .body("Internal server error");                    // 500
+                    .body("Internal server error"); // 500
+        }
+    }
+
+    @GetMapping("/{purchaseId}")
+    public ResponseEntity<?> getReciept(
+            @PathVariable @Min(1) int purchaseId,
+            @RequestParam String authToken) {
+
+        try {
+            RecieptDTO receipt = purchaseService.getReciept(purchaseId)
+                    .stream().map(RecieptDTO::fromDomain).toList().get(0);
+            return ResponseEntity.ok(receipt); // 200
+
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage()); // 400
+
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage()); // 404
+
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
+
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Internal server error"); // 500
         }
     }
 
