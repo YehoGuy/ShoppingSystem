@@ -79,6 +79,10 @@ public class Member extends User {
         return phoneNumber; // Return the phone number
     }
 
+    public LocalDateTime getSuspendedUntil() {
+        return suspended; // Return the suspension status
+    }
+
     public Boolean isSuspended() {
         return suspended.isAfter(LocalDateTime.now()); // Check if the user is suspended
     }
