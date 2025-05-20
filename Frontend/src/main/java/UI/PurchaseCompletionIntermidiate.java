@@ -2,6 +2,7 @@ package UI;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
@@ -18,7 +19,6 @@ import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 
-@Route(value = "complete-purchase", layout = AppLayoutBasic.class)
 public class PurchaseCompletionIntermidiate extends VerticalLayout implements BeforeEnterObserver {
 
     private ComboBox<String> shippingTypeCombo;
@@ -39,19 +39,16 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
         }
     }
 
-    public PurchaseCompletionIntermidiate() {
+    public PurchaseCompletionIntermidiate(Map<ItemDTO, Integer> cartItems) {
+        this.cartItems = cartItems;
+        cartItems.forEach((item, quantity) -> {
+            totalPrice += item.getPrice() * quantity;
+        });
         setSizeFull();
         setSpacing(true);
         setPadding(true);
 
-        // MOCK CART
-        cartItems = Map.of(
-                new ItemDTO(1, "Apple", "Juicy apple", 3.0, null), 2,
-                new ItemDTO(2, "Banana", "Fresh banana", 2.5, null), 4);
-        totalPrice = cartItems.entrySet().stream()
-                .mapToDouble(e -> e.getKey().getPrice() * e.getValue())
-                .sum();
-
+        
         add(new H1("🧾 Complete Your Purchase"));
 
         setupAddressForm();
@@ -104,7 +101,12 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
     }
 
     private void completePurchase(AddressDTO address) {
-        // Here you would call a backend purchase service
-        Notification.show("✅ Purchase completed to: " + address.getCity() + ", total $" + totalPrice);
+        PaymenPageView paymentPage = new PaymenPageView(totalPrice, address.getCountry(), address.getCity(),
+                address.getStreet(), address.getHouseNumber(), address.getZipCode());
+        Dialog paymentDialog = new Dialog(paymentPage);
+        paymentDialog.setWidth("400px");
+        paymentDialog.setHeight("300px");
+        paymentDialog.add(new Span("Please complete your payment in the dialog."));
+        paymentDialog.open();
     }
 }
