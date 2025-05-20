@@ -745,15 +745,15 @@ public class UserController {
         }
     }
 
-    @GetMapping("/shoppingCart/{shopName}/{itemID}/plus")
+    @GetMapping("/shoppingCart/{shopID}/{itemID}/plus")
     public ResponseEntity<Void> addItemToShoppingCart(
             @RequestParam String token,
             @RequestParam int userId,
-            @PathVariable String shopName,
+            @PathVariable int shopID,
             @PathVariable int itemID) {
         try {
             authService.ValidateToken(token);
-            userService.updateShoppingCartItemQuantity(userId, shopName, itemID, true);
+            userService.updateShoppingCartItemQuantity(userId, shopID, itemID, true);
             return ResponseEntity.noContent().build();
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
             return ResponseEntity.badRequest().build();
