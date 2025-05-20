@@ -6,28 +6,22 @@ import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 
 public record RoleDTO(
-        @Positive int assigneeId,
         @Positive int shopId,
-        @NotEmpty List<PermissionDTO> permissions) {
+        String roleName,
+        @NotEmpty List<PermissionDTO> permissions,
+        String shopName,
+         String userName) {
 
     /*  --------------------- Domain → DTO --------------------- */
     public static RoleDTO fromDomain(com.example.app.DomainLayer.Roles.Role r) {
-        return new RoleDTO(
-                r.getAssigneeId(),
-                r.getShopId(),
-                // map enum array → DTO list
-                java.util.Arrays.stream(r.getPermissions())
-                                .map(PermissionDTO::fromDomain)
-                                .toList());
-    }
-
-    /*  --------------------- DTO → Domain --------------------- */
-    public com.example.app.DomainLayer.Roles.Role toDomain() {
-        com.example.app.DomainLayer.Roles.PermissionsEnum[] perms =
-                permissions.stream()
-                           .map(PermissionDTO::toDomain)
-                           .toArray(com.example.app.DomainLayer.Roles.PermissionsEnum[]::new);
-
-        return new com.example.app.DomainLayer.Roles.Role(assigneeId, shopId, perms);
+        // return new RoleDTO(
+            // r.getShopId(),
+            // r.getRoleName(),
+            // r.getPermissions(),
+            // r.getShopName(),
+            // r.getUserName()
+        // );
+        //TODO: Implement the conversion from Domain to DTO
+        return null;
     }
 }
