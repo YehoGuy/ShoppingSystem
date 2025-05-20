@@ -77,9 +77,9 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
         Button buyButton = new Button("Buy entire cart");
         buyButton.addClickListener(event -> {
-            // Handle the buy action here
-            // For example, you can navigate to a payment page or show a confirmation dialog
-            System.out.println("Buying entire cart...");
+            PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(cart);
+            this.removeAll();
+            this.add(purchaseCompletion);
         });
         buyButton.getStyle().set("background-color", "red").set("color", "white");
         buyButtonContainer.add(buyButton);
