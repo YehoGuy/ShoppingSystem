@@ -1,70 +1,154 @@
 package UI;
 
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
-import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+
 import DTOs.PurchaseDTO;
+import DTOs.RecieptDTO;
 import DTOs.AddressDTO;
 
 import com.vaadin.flow.server.VaadinSession;
-import com.vaadin.flow.router.BeforeEnterEvent;
-import com.vaadin.flow.router.BeforeEnterObserver;
 
 @Route("receipt")
-public class ReceiptView extends VerticalLayout implements HasUrlParameter<Integer>, BeforeEnterObserver {
+public class ReceiptView extends VerticalLayout implements BeforeEnterObserver {
+
+    private static final String URL = "http://localhost:8080/api/purchases/";
+    private RecieptDTO receipt;
+
+    public ReceiptView() {
+        configureLayout(); // keep this as is
+
+        Integer purchaseId = (Integer) VaadinSession.getCurrent().getAttribute("purchaseId");
+
+        if (purchaseId == null) {
+            mockReceiptById(0);
+        } else {
+            setReceipt();
+        }
+
+        add(new H1("🧾 Receipt"));
+        buildReceiptView(); // 🔸 This is where you display the pretty receipt
+    }
+
+    private void configureLayout() {
+        setSizeFull();
+        setAlignItems(Alignment.CENTER);
+        setJustifyContentMode(JustifyContentMode.START);
+        setSpacing(true);
+        setPadding(true);
+    }
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("");
         }
+        if (VaadinSession.getCurrent().getAttribute("purchaseId") == null) {
+            event.forwardTo("home");
+        }
     }
 
-    @Override
-    public void setParameter(BeforeEvent event, @OptionalParameter Integer purchaseId) {
-        setPadding(true);
-        setSpacing(true);
+    private void buildReceiptView() {
 
-        if (purchaseId == null) {
-            add(new Span("❌ No purchase ID provided."));
+        if (receipt == null) {
+            add(new Paragraph("No receipt data available."));
             return;
         }
 
-        // Replace this with actual service call
-        PurchaseDTO purchase = mockPurchaseById(purchaseId);
+        AddressDTO address = receipt.getAddress();
 
-        if (purchase == null) {
-            add(new Span("❌ Purchase #" + purchaseId + " not found."));
-            return;
-        }
+        // Create a styled container for the receipt
+        Div receiptContainer = new Div();
+        receiptContainer.getStyle()
+                .set("border", "1px solid #ccc")
+                .set("padding", "20px")
+                .set("border-radius", "10px")
+                .set("max-width", "400px")
+                .set("box-shadow", "0 2px 10px rgba(0,0,0,0.1)")
+                .set("background-color", "#fafafa");
 
-        add(new H1("🧾 Receipt for Purchase #" + purchaseId));
+        receiptContainer.add(
+                createLabeledLine("🧾 Purchase ID", receipt.getPurchaseId()),
+                createLabeledLine("👤 User ID", receipt.getUserId()),
+                createLabeledLine("🏬 Store ID", receipt.getStoreId()),
+                new Paragraph("📦 Shipping Address:"),
+                createIndentedLine(address.getStreet() + " " + address.getHouseNumber()),
+                createIndentedLine(address.getCity() + ", " + address.getCountry()),
+                createLabeledLine("💰 Total Price", "$" + String.format("%.2f", receipt.getPrice())));
 
-        Map<Integer, Integer> items = purchase.getItems(); // itemId -> quantity
-        AddressDTO address = purchase.getShippingAddress();
-        double total = purchase.getPrice();
-
-        items.forEach((id, qty) -> add(new Span("• Item #" + id + " x" + qty)));
-
-        add(new Span("📦 Shipping To: " + address.getStreet() + " " + address.getHouseNumber() +
-                ", " + address.getCity()));
-        add(new Span("💰 Total Paid: $" + total));
+        add(receiptContainer);
     }
 
-    // Replace this with real service logic
-    private PurchaseDTO mockPurchaseById(int id) {
-        return new PurchaseDTO(
-                id,
-                1,
-                5,
-                Map.of(1, 2, 2, 3),
-                new AddressDTO("USA", "NY", "Main St", "101", "2A", "10001"),
-                true,
+    // Helper methods to format the lines
+    private Paragraph createLabeledLine(String label, Object value) {
+        Paragraph line = new Paragraph();
+        line.getElement().setProperty("innerHTML", "<strong>" + label + ":</strong> " + value);
+        line.getStyle().set("margin", "8px 0");
+        return line;
+    }
+
+    private Paragraph createIndentedLine(String text) {
+        Paragraph line = new Paragraph(text);
+        line.getStyle().set("margin", "4px 0 4px 16px");
+        return line;
+    }
+
+    private void mockReceiptById(int id) {
+        receipt = new RecieptDTO(
+                id, id, id,
+                new HashMap<>(),
+                new AddressDTO("Street", "HouseNumber", "City", "Country", "here", "here"),
+                false,
                 null,
-                23.5);
+                80.0,
+                null);
+    }
+
+    private void setReceipt() {
+        String authToken = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        Integer purchaseId = (Integer) VaadinSession.getCurrent().getAttribute("purchaseId");
+
+        if (authToken == null || purchaseId == null) {
+            Notification.show("Missing token or purchase ID.");
+            return;
+        }
+
+        String url = URL + purchaseId;
+        RestTemplate restTemplate = new RestTemplate();
+
+        // Add authToken as header if needed, or modify URL with query param
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + authToken); // or custom header
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<RecieptDTO> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    entity,
+                    RecieptDTO.class);
+
+            if (response.getStatusCode() == HttpStatus.OK) {
+                receipt = response.getBody();
+            } else {
+                Notification.show("Failed to fetch receipt: " + response.getStatusCode());
+            }
+        } catch (Exception e) {
+            Notification.show("Error fetching receipt: " + e.getMessage(), 4000, Notification.Position.MIDDLE);
+        }
     }
 }
