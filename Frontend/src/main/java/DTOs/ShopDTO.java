@@ -11,7 +11,7 @@ public class ShopDTO {
 
     private List<ItemDTO> items;                 // List of items in the shop
     private Map<Integer, Integer> itemQuantities; // itemId → quantity
-    private Map<Integer, Integer> itemPrices;     // itemId → price
+    private Map<Integer, Double> itemPrices;     // itemId → price
 
     private List<ShopReviewDTO> reviews;
 
@@ -20,7 +20,7 @@ public class ShopDTO {
     public ShopDTO(int shopId, String name,
                    List<ItemDTO> items,
                    Map<Integer, Integer> itemQuantities,
-                   Map<Integer, Integer> itemPrices,
+                   Map<Integer, Double> itemPrices,
                    List<ShopReviewDTO> reviews) {
         this.shopId = shopId;
         this.name = name;
@@ -42,8 +42,8 @@ public class ShopDTO {
     public Map<Integer, Integer> getItemQuantities() { return itemQuantities; }
     public void setItemQuantities(Map<Integer, Integer> itemQuantities) { this.itemQuantities = itemQuantities; }
 
-    public Map<Integer, Integer> getItemPrices() { return itemPrices; }
-    public void setItemPrices(Map<Integer, Integer> itemPrices) { this.itemPrices = itemPrices; }
+    public Map<Integer, Double> getItemPrices() { return itemPrices; }
+    public void setItemPrices(Map<Integer, Double> itemPrices) { this.itemPrices = itemPrices; }
 
     public List<ShopReviewDTO> getReviews() { return reviews; }
     public void setReviews(List<ShopReviewDTO> reviews) { this.reviews = reviews; }

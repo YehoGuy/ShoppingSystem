@@ -142,4 +142,8 @@ public interface IUserRepository {
 
     List<Role> getAcceptedRoles(int userId);
 
+    void updateShoppingCartItemQuantity(int userId, int shopID, int itemID, boolean b);
+
+    void removeShoppingCartItem(int userId, int shopID, int itemID);
+
 }
