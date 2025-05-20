@@ -21,9 +21,11 @@ import com.example.app.DomainLayer.Purchase.BidReciept;
 import com.example.app.DomainLayer.Purchase.IPurchaseRepository;
 import com.example.app.DomainLayer.Purchase.Purchase;
 import com.example.app.DomainLayer.Purchase.Reciept;
+
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 
 import jakarta.validation.constraints.Min;
+
 @Service
 public class PurchaseService {
 
@@ -35,20 +37,21 @@ public class PurchaseService {
     private MessageService messageService;
 
     public PurchaseService(IPurchaseRepository purchaseRepository,
-                           AuthTokenService    authTokenService,
-                           UserService         userService,
-                           ShopService         shopService,
-                           ItemService         itemService,
-                           MessageService      messageService) {
-        this.messageService     = messageService;
+            AuthTokenService authTokenService,
+            UserService userService,
+            ShopService shopService,
+            ItemService itemService,
+            MessageService messageService) {
+        this.messageService = messageService;
         this.purchaseRepository = purchaseRepository;
-        this.authTokenService   = authTokenService;
-        this.userService        = userService;
-        this.shopService        = shopService;
-        this.itemService        = itemService;
+        this.authTokenService = authTokenService;
+        this.userService = userService;
+        this.shopService = shopService;
+        this.itemService = itemService;
     }
 
-    public void setServices(AuthTokenService authTokenService, UserService userService, ItemService itemService, ShopService shopService, MessageService messageService) {
+    public void setServices(AuthTokenService authTokenService, UserService userService, ItemService itemService,
+            ShopService shopService, MessageService messageService) {
         this.authTokenService = authTokenService;
         this.userService = userService;
         this.itemService = itemService;
@@ -71,13 +74,15 @@ public class PurchaseService {
                 double totalPrice = shopService.purchaseItems(cart.get(shopId), shopId, authToken);
                 totalPrices.put(shopId, totalPrice);
                 aqcuired.put(shopId, cart.get(shopId));
-                int pid = purchaseRepository.addPurchase(userId, shopId, aqcuired.get(shopId), totalPrice, shippingAddress);
+                int pid = purchaseRepository.addPurchase(userId, shopId, aqcuired.get(shopId), totalPrice,
+                        shippingAddress);
                 purchaseIds.put(pid, shopId);
                 userService.pay(authToken, shopId, totalPrice);
             }
             userService.clearUserShoppingCart(userId);
             for (Integer purchaseId : purchaseIds.keySet()) {
-                shopService.shipPurchase(authToken, purchaseId, purchaseIds.get(purchaseId), shippingAddress.getCountry(),
+                shopService.shipPurchase(authToken, purchaseId, purchaseIds.get(purchaseId),
+                        shippingAddress.getCountry(),
                         shippingAddress.getCity(), shippingAddress.getStreet(), shippingAddress.getZipCode());
             }
             LoggerService.logMethodExecutionEnd("checkoutCart", purchaseIds);
@@ -134,7 +139,8 @@ public class PurchaseService {
                 throw new OurRuntime("Purchase " + purchaseId + " is not a bid");
             }
             if (purchase.getUserId() == userId) {
-                throw new OurRuntime("User " + userId + " is the owner of the bid " + purchaseId + " and cannot bid on it");
+                throw new OurRuntime(
+                        "User " + userId + " is the owner of the bid " + purchaseId + " and cannot bid on it");
             }
             ((Bid) purchase).addBidding(userId, bidAmount);
             LoggerService.logMethodExecutionEndVoid("postBidding");
@@ -174,7 +180,8 @@ public class PurchaseService {
             payed = true;
             Address shippingAddress = userService.getUserShippingAddress(initiatingUserId);
             purchase.setAddress(shippingAddress);
-            shopService.shipPurchase(authToken, purchaseId, shopId, shippingAddress.getCountry(), shippingAddress.getCity(), shippingAddress.getStreet(), shippingAddress.getZipCode());
+            shopService.shipPurchase(authToken, purchaseId, shopId, shippingAddress.getCountry(),
+                    shippingAddress.getCity(), shippingAddress.getStreet(), shippingAddress.getZipCode());
             try {
                 List<Integer> bidders = ((Bid) purchase).getBiddersIds();
                 for (Integer uid : bidders) {
@@ -183,7 +190,8 @@ public class PurchaseService {
                             : "Congratulations! You have won the bid " + purchaseId + "!\n" + receipt;
                     messageService.sendMessageToUser(authToken, uid, msg, 0);
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
             LoggerService.logMethodExecutionEnd("finalizeBid", highestBidderId);
             return highestBidderId;
         } catch (OurArg e) {
@@ -241,6 +249,28 @@ public class PurchaseService {
         }
     }
 
+    public List<Reciept> getReciept(int purchaseId) {
+        try {
+            LoggerService.logMethodExecution("getReciept", purchaseId);
+            Purchase p = purchaseRepository.getPurchaseById(purchaseId);
+            if (p == null) {
+                throw new OurRuntime("Purchase " + purchaseId + " does not exist");
+            }
+            Reciept r = p.generateReciept();
+            LoggerService.logMethodExecutionEnd("getReciept", r);
+            return List.of(r);
+        } catch (OurArg e) {
+            LoggerService.logDebug("getReciept", e);
+            throw new OurArg("getReciept: " + e.getMessage(), e);
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getReciept", e);
+            throw new OurRuntime("getReciept: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("getReciept", e, purchaseId);
+            throw new OurRuntime("Error retrieving reciept: " + e.getMessage(), e);
+        }
+    }
+
     public List<Reciept> getStorePurchases(String authToken, int shopId) {   
         try {
             LoggerService.logMethodExecution("getStorePurchases", authToken, shopId);
@@ -267,4 +297,5 @@ public class PurchaseService {
         }
     }
     
+
 }
