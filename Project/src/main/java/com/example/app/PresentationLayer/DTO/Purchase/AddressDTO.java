@@ -1,11 +1,11 @@
 package com.example.app.PresentationLayer.DTO.Purchase;
-
+import jakarta.validation.constraints.NotBlank;
 
 public record AddressDTO(
-    String country,
-    String city,
-    String street,
-    String houseNumber,
+    @NotBlank String country,
+    @NotBlank String city,
+    @NotBlank String street,
+    @NotBlank String houseNumber,
     String apartmentNumber,
     String zipCode
 ) {
