@@ -12,6 +12,8 @@ public class ShoppingCart {
         this.items = new ConcurrentHashMap<>();
     }
 
+
+
     public void clearCart() {
         items.clear();
     }
@@ -80,6 +82,37 @@ public class ShoppingCart {
             copy.put(entry.getKey(), new HashMap<>(entry.getValue()));
         }
         return copy;
+    }
+
+    /**
+     * Returns the total number of items in the shopping cart.
+     * @return The total number of items in the shopping cart.
+     */
+    public double getTotalPrice() {
+        double totalPrice = 0;
+        for (Map.Entry<Integer, ConcurrentHashMap<Integer, Integer>> entry : items.entrySet()) {
+            for (Integer price : entry.getValue().values()) {
+                totalPrice += price;
+            }
+        }
+        return totalPrice;
+    }
+
+    /**
+     * Returns the total number of items in the shopping cart.
+     * @return The total number of items in the shopping cart.
+     */
+    public HashMap<Integer, Double> getShopPrices() {
+        HashMap<Integer, Double> shopPrices = new HashMap<>();
+        for (Map.Entry<Integer, ConcurrentHashMap<Integer, Integer>> entry : items.entrySet()) {
+            int shopId = entry.getKey();
+            double totalPrice = 0;
+            for (Integer price : entry.getValue().values()) {
+                totalPrice += price;
+            }
+            shopPrices.put(shopId, totalPrice);
+        }
+        return shopPrices;
     }
 
     /**
