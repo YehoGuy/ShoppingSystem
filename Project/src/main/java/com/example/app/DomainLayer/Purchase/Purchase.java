@@ -190,4 +190,13 @@ public class Purchase {
         else
             return new Reciept(purchaseId, userId, storeId, items, shippingAddress, timeOfCompletion, this.price);
     }
+
+    /**
+     * Returns the total price of the purchase.
+     * 
+     * @return the total price.
+     */
+    public double getPrice() {
+        return price;
+    }
 }
