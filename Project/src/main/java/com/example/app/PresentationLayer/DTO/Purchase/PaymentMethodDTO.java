@@ -5,13 +5,8 @@ import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
 public record PaymentMethodDTO(
         /*  ——— base receipt fields ——— */
         String paymentDetails) {
-    /* Domain → DTO */
+    /* -------- Domain → DTO -------- */
     public static PaymentMethodDTO fromDomain(PaymentMethod p) {
         return new PaymentMethodDTO(p.getDetails());
     }
-
-    // /* DTO → Domain */
-    // public PaymentMethod toDomain() {
-    //     return new PaymentMethod(paymentDetails);
-    // }
-} 
+}
