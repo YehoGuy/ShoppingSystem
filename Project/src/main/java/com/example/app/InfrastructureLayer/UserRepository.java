@@ -13,6 +13,7 @@ import org.springframework.stereotype.Repository;
 
 import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
+import com.example.app.ApplicationLayer.Shop.ShopService;
 import com.example.app.DomainLayer.Guest;
 import com.example.app.DomainLayer.IUserRepository;
 import com.example.app.DomainLayer.Member;
@@ -630,6 +631,38 @@ public class UserRepository implements IUserRepository {
     public List<Member> getAllMembers() {
         return new ArrayList<Member>(userMapping.values().stream().filter(user -> user instanceof Member)
                 .map(user -> (Member) user).toList());
+    }
+
+    public void updateShoppingCartItemQuantity(int userId, int shopID, int itemID, boolean b)
+    {
+        if (!userMapping.containsKey(userId)) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        User user = userMapping.get(userId);
+        ShoppingCart shoppingCart = user.getShoppingCart();
+        Map<Integer, Integer> basket = shoppingCart.getBasket(userId);
+        if (basket == null || !basket.containsKey(itemID)) {
+            throw new OurRuntime("Item with ID " + itemID + " not found in the shopping cart.");
+        }
+        int quantity = basket.get(itemID);
+        if (b) {
+            basket.put(itemID, quantity + 1);
+        } else {
+            if (quantity > 1) {
+                basket.put(itemID, quantity - 1);
+            } else {
+                shoppingCart.removeItem(shopID, itemID);
+            }
+        }
+    }
+
+    public void removeShoppingCartItem(int userId, int shopID, int itemID) {
+        if (!userMapping.containsKey(userId)) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        User user = userMapping.get(userId);
+        ShoppingCart shoppingCart = user.getShoppingCart();
+        shoppingCart.removeItem(shopID, itemID);
     }
 
 }
