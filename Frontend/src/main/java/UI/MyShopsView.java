@@ -2,6 +2,7 @@ package UI;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Paragraph;
@@ -27,11 +28,12 @@ import java.util.Arrays;
 import java.util.List;
 
 @Route(value = "myshops", layout = AppLayoutBasic.class)
+@JsModule("./js/notification-client.js")
 public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
 
     private static final String BASE_URL = "http://localhost:8080/api/shops";
     private static final String GET_ALL = BASE_URL + "/all";
-    private static final String CREATE  = BASE_URL + "/create";
+    private static final String CREATE = BASE_URL + "/create";
 
     private final RestTemplate restTemplate = new RestTemplate();
     private List<ShopDTO> allShops;
@@ -61,9 +63,9 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
         shopsContainer = new VerticalLayout();
         shopsContainer.setSizeFull();
         shopsContainer.getStyle()
-            .set("overflow", "auto")
-            .set("padding", "10px")
-            .set("gap", "10px");
+                .set("overflow", "auto")
+                .set("padding", "10px")
+                .set("gap", "10px");
         add(shopsContainer);
 
         // Initial load
@@ -76,6 +78,12 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
         if (token == null) {
             event.forwardTo("login");
         }
+        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m => m.connectNotifications($0))",
+                getUserId());
+    }
+
+    private String getUserId() {
+        return (String) VaadinSession.getCurrent().getAttribute("userId");
     }
 
     private void loadShops() {
@@ -132,8 +140,8 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
     private void filterAndDisplay() {
         String q = searchField.getValue();
         List<ShopDTO> filtered = allShops.stream()
-            .filter(s -> s.getName().toLowerCase().contains(q.toLowerCase()))
-            .toList();
+                .filter(s -> s.getName().toLowerCase().contains(q.toLowerCase()))
+                .toList();
         displayShops(filtered);
     }
 
@@ -146,12 +154,12 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
         for (ShopDTO s : shops) {
             HorizontalLayout row = new HorizontalLayout();
             row.setWidthFull();
-            
+
             Span name = new Span("🏷️ " + s.getName());
             name.getStyle()
-                .set("cursor", "pointer")
-                .set("font-weight", "600")
-                .set("font-size", "18px");
+                    .set("cursor", "pointer")
+                    .set("font-weight", "600")
+                    .set("font-size", "18px");
             name.addClickListener(evt -> UI.getCurrent().navigate("shop/" + s.getName()));
 
             Button view = new Button("🔍 View", e -> UI.getCurrent().navigate("shop/" + s.getName()));

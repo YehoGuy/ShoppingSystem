@@ -1,6 +1,8 @@
 package UI;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
@@ -18,20 +20,21 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
-import DTOs.MemberDTO;      // your existing DTOs
+import DTOs.MemberDTO; // your existing DTOs
 import DTOs.rolesDTO;
 
-@Route(value="profile", layout = AppLayoutBasic.class)
+@Route(value = "profile", layout = AppLayoutBasic.class)
+@JsModule("./js/notification-client.js")
 public class PersonProfileView extends VerticalLayout implements BeforeEnterObserver {
-    private static final String USER_URL          = "http://localhost:8080/api/users";
-    private static final String NOTIF_URL         = "http://localhost:8080/api/users/notifications";
+    private static final String USER_URL = "http://localhost:8080/api/users";
+    private static final String NOTIF_URL = "http://localhost:8080/api/users/notifications";
     private static final String ACCEPT_ROLES_URL = "http://localhost:8080/api/users/getAcceptedRoles";
 
     private final RestTemplate rest = new RestTemplate();
 
-    private final VerticalLayout detailsLayout     = new VerticalLayout();
+    private final VerticalLayout detailsLayout = new VerticalLayout();
     private final VerticalLayout notificationsLayout = new VerticalLayout();
-    private final VerticalLayout rolesLayout       = new VerticalLayout();
+    private final VerticalLayout rolesLayout = new VerticalLayout();
 
     private String token;
     private int profileUserId;
@@ -44,6 +47,8 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
             event.forwardTo("login");
             return;
         }
+        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m => m.connectNotifications($0))",
+                getUserId());
 
         // 2) Parse ?userId= from URL
         String userIdString = VaadinSession.getCurrent().getAttribute("userId").toString();
@@ -58,6 +63,10 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
         loadProfile();
         loadNotifications();
         loadRoles();
+    }
+
+    private String getUserId() {
+        return (String) VaadinSession.getCurrent().getAttribute("userId");
     }
 
     private void buildLayout() {
@@ -83,9 +92,9 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
 
         page.add(left, mid, right);
         page.getStyle()
-            .set("display", "flex")
-            .set("justify-content", "space-between")
-            .set("align-items", "flex-start");
+                .set("display", "flex")
+                .set("justify-content", "space-between")
+                .set("align-items", "flex-start");
 
         add(page);
     }
@@ -94,17 +103,15 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
         detailsLayout.removeAll();
         try {
             ResponseEntity<MemberDTO> resp = rest.getForEntity(
-                USER_URL + "/" + profileUserId + "?token=" + token,
-                MemberDTO.class
-            );
+                    USER_URL + "/" + profileUserId + "?token=" + token,
+                    MemberDTO.class);
             if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
                 MemberDTO memberDTO = resp.getBody();
                 detailsLayout.add(
-                    new Span("User ID: "   + memberDTO.getMemberId()),
-                    new Span("Username: "  + memberDTO.getUsername()),
-                    new Span("Email: "     + memberDTO.getEmail()),
-                    new Span("Phone: "     + memberDTO.getPhoneNumber())
-                );
+                        new Span("User ID: " + memberDTO.getMemberId()),
+                        new Span("Username: " + memberDTO.getUsername()),
+                        new Span("Email: " + memberDTO.getEmail()),
+                        new Span("Phone: " + memberDTO.getPhoneNumber()));
             } else {
                 detailsLayout.add(new Span("Cannot load profile: " + resp.getStatusCode()));
             }
@@ -117,9 +124,8 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
         notificationsLayout.removeAll();
         try {
             ResponseEntity<String[]> resp = rest.getForEntity(
-                NOTIF_URL + "?authToken=" + token,
-                String[].class
-            );
+                    NOTIF_URL + "?authToken=" + token,
+                    String[].class);
             if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
                 for (String note : resp.getBody()) {
                     notificationsLayout.add(new Span("• " + note));
@@ -136,17 +142,15 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
         rolesLayout.removeAll();
         try {
             ResponseEntity<rolesDTO[]> resp = rest.getForEntity(
-                ACCEPT_ROLES_URL + "?authToken=" + token,
-                rolesDTO[].class
-            );
+                    ACCEPT_ROLES_URL + "?authToken=" + token,
+                    rolesDTO[].class);
             if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
                 for (rolesDTO r : resp.getBody()) {
-                    if (r.getUserName().equalsIgnoreCase( /* your MemberDTO.getUsername() */ "" )) {
+                    if (r.getUserName().equalsIgnoreCase( /* your MemberDTO.getUsername() */ "")) {
                         HorizontalLayout row = new HorizontalLayout();
                         row.add(
-                            new Span(r.getRoleName() + " @ " + r.getShopName()),
-                            new Span("Perms: " + String.join(",", r.getPermissions()))
-                        );
+                                new Span(r.getRoleName() + " @ " + r.getShopName()),
+                                new Span("Perms: " + String.join(",", r.getPermissions())));
                         rolesLayout.add(row);
                     }
                 }

@@ -3,6 +3,7 @@ package UI;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
@@ -31,10 +32,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Route(value = "messages", layout = AppLayoutBasic.class)
+@JsModule("./js/notification-client.js")
 public class MessageView extends VerticalLayout implements BeforeEnterObserver {
-    private static final String BASE_URL            = "http://localhost:8080/api/messages";
-    private static final String NOTIFICATIONS_URL  = "http://localhost:8080/api/users/notifications";
-    private static final String PENDING_ROLES_URL  = "http://localhost:8080/api/users/getPendingRoles";
+    private static final String BASE_URL = "http://localhost:8080/api/messages";
+    private static final String NOTIFICATIONS_URL = "http://localhost:8080/api/users/notifications";
+    private static final String PENDING_ROLES_URL = "http://localhost:8080/api/users/getPendingRoles";
 
     private final RestTemplate rest = new RestTemplate();
     private final VerticalLayout threadContainer = new VerticalLayout();
@@ -114,9 +116,9 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
         page.setWidthFull();
         page.setHeightFull();
         page.getStyle()
-            .set("display", "flex")
-            .set("align-items", "stretch")
-            .set("justify-content", "space-between");
+                .set("display", "flex")
+                .set("align-items", "stretch")
+                .set("justify-content", "space-between");
 
         add(page);
         loadAndDisplayConversation();
@@ -128,6 +130,12 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
         if (token == null) {
             event.forwardTo("login");
         }
+        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m => m.connectNotifications($0))",
+                getUserId());
+    }
+
+    private String getUserId() {
+        return (String) VaadinSession.getCurrent().getAttribute("userId");
     }
 
     private void loadAndDisplayConversation() {
@@ -135,50 +143,50 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
         String token = getToken();
         try {
             ResponseEntity<MessageDTO[]> sent = rest.getForEntity(
-                BASE_URL + "/sender/" + currentUserId + "?authToken=" + token,
-                MessageDTO[].class);
+                    BASE_URL + "/sender/" + currentUserId + "?authToken=" + token,
+                    MessageDTO[].class);
             ResponseEntity<MessageDTO[]> received = rest.getForEntity(
-                BASE_URL + "/receiver/" + currentUserId + "?authToken=" + token,
-                MessageDTO[].class);
+                    BASE_URL + "/receiver/" + currentUserId + "?authToken=" + token,
+                    MessageDTO[].class);
 
             List<MessageDTO> convo = Stream.concat(Arrays.stream(sent.getBody()), Arrays.stream(received.getBody()))
-                .filter(m -> (m.getSenderId()==currentUserId && m.getReceiverId()==currentChatUserId)
-                          || (m.getSenderId()==currentChatUserId && m.getReceiverId()==currentUserId))
-                .sorted(Comparator.comparing(MessageDTO::getMessageId))
-                .collect(Collectors.toList());
+                    .filter(m -> (m.getSenderId() == currentUserId && m.getReceiverId() == currentChatUserId)
+                            || (m.getSenderId() == currentChatUserId && m.getReceiverId() == currentUserId))
+                    .sorted(Comparator.comparing(MessageDTO::getMessageId))
+                    .collect(Collectors.toList());
 
             lastMessageId = -1;
             convo.forEach(msg -> {
                 HorizontalLayout line = new HorizontalLayout();
                 line.setWidthFull();
-                Span who = new Span(msg.getSenderId()==currentUserId ? "You:" : "User #"+msg.getSenderId()+":");
+                Span who = new Span(msg.getSenderId() == currentUserId ? "You:" : "User #" + msg.getSenderId() + ":");
                 Span text = new Span(msg.isDeleted() ? "(deleted)" : msg.getContent());
                 Span time = new Span("🕓 " + msg.getTimestamp());
-                time.getStyle().set("margin-left","auto").set("font-size","smaller");
+                time.getStyle().set("margin-left", "auto").set("font-size", "smaller");
                 line.add(who, text, time);
                 threadContainer.add(line);
                 lastMessageId = msg.getMessageId();
             });
         } catch (Exception ex) {
-            Notification.show("Error loading messages: "+ex.getMessage(), 3000, Notification.Position.MIDDLE);
+            Notification.show("Error loading messages: " + ex.getMessage(), 3000, Notification.Position.MIDDLE);
         }
     }
 
     private void sendMessageToUser(int receiverId, String content, int previousId) {
         String token = getToken();
-        String url = BASE_URL + "/user?authToken="+token
-                   +"&receiverId="+receiverId
-                   +"&content="+encode(content)
-                   +"&previousMessageId="+previousId;
+        String url = BASE_URL + "/user?authToken=" + token
+                + "&receiverId=" + receiverId
+                + "&content=" + encode(content)
+                + "&previousMessageId=" + previousId;
         try {
             ResponseEntity<String> resp = rest.postForEntity(url, null, String.class);
-            if (resp.getStatusCode()==HttpStatus.ACCEPTED) {
-                Notification.show("✅ Message sent",2000,Notification.Position.MIDDLE);
+            if (resp.getStatusCode() == HttpStatus.ACCEPTED) {
+                Notification.show("✅ Message sent", 2000, Notification.Position.MIDDLE);
             } else {
-                Notification.show("⚠️ "+resp.getBody(),3000,Notification.Position.MIDDLE);
+                Notification.show("⚠️ " + resp.getBody(), 3000, Notification.Position.MIDDLE);
             }
         } catch (Exception ex) {
-            Notification.show("❗ Error sending message: "+ex.getMessage(),3000,Notification.Position.MIDDLE);
+            Notification.show("❗ Error sending message: " + ex.getMessage(), 3000, Notification.Position.MIDDLE);
         }
     }
 
@@ -191,12 +199,12 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
     }
 
     private void loadNotifications(VerticalLayout container) {
-        
+
         container.removeAll();
         String token = getToken();
         try {
             ResponseEntity<String[]> resp = rest.getForEntity(
-                NOTIFICATIONS_URL + "?authToken=" + token, String[].class);
+                    NOTIFICATIONS_URL + "?authToken=" + token, String[].class);
             if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
                 String[] notes = resp.getBody();
                 if (notes.length > 0) {
@@ -223,9 +231,8 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
         try {
             // 1) Fetch rolesDTO[]
             ResponseEntity<rolesDTO[]> resp = rest.getForEntity(
-                PENDING_ROLES_URL + "?authToken=" + token,
-                rolesDTO[].class
-            );
+                    PENDING_ROLES_URL + "?authToken=" + token,
+                    rolesDTO[].class);
 
             if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
                 rolesDTO[] roles = resp.getBody();
@@ -241,33 +248,31 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
                         // 2) Accept button
                         Button accept = new Button("Accept", e -> {
                             rest.postForEntity(
-                            "http://localhost:8080/api/users/roles/" + shopId + "/accept"
-                            + "?authToken=" + token,
-                            null, Void.class
-                            );
+                                    "http://localhost:8080/api/users/roles/" + shopId + "/accept"
+                                            + "?authToken=" + token,
+                                    null, Void.class);
                             row.remove();
                         });
                         accept.getStyle()
-                            .set("background-color", "#4CAF50")
-                            .set("color", "white");
+                                .set("background-color", "#4CAF50")
+                                .set("color", "white");
 
                         // 3) Reject button
                         Button reject = new Button("Reject", e -> {
                             rest.postForEntity(
-                            "http://localhost:8080/api/users/roles/" + shopId + "/decline"
-                            + "?authToken=" + token,
-                            null, Void.class
-                            );
+                                    "http://localhost:8080/api/users/roles/" + shopId + "/decline"
+                                            + "?authToken=" + token,
+                                    null, Void.class);
                             row.remove();
                         });
                         reject.getStyle()
-                            .set("background-color", "#f44336")
-                            .set("color", "white");
+                                .set("background-color", "#f44336")
+                                .set("color", "white");
 
                         row.add(span, accept, reject);
                         row.getStyle()
-                        .set("margin-bottom", "5px")
-                        .set("align-items", "center");
+                                .set("margin-bottom", "5px")
+                                .set("align-items", "center");
 
                         container.add(row);
                     }
@@ -281,7 +286,7 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
 
         } catch (Exception ex) {
             Notification.show("❗ Error loading pending roles: " + ex.getMessage(),
-                            3000, Notification.Position.MIDDLE);
+                    3000, Notification.Position.MIDDLE);
         }
     }
 }

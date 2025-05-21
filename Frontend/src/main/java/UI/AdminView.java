@@ -4,6 +4,7 @@ import DTOs.MemberDTO;
 import DTOs.ShopDTO;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H2;
@@ -22,6 +23,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Route(value = "admin", layout = AppLayoutBasic.class)
+@JsModule("./js/notification-client.js")
 public class AdminView extends VerticalLayout implements BeforeEnterObserver {
 
     private Grid<UserGridRow> userGrid;
@@ -34,30 +36,47 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
         private String username;
         private String email;
 
-        public UserGridRow() {}
+        public UserGridRow() {
+        }
+
         public UserGridRow(int id, String username, String email) {
             this.id = id;
             this.username = username;
             this.email = email;
         }
 
-        public int getId() { return id; }
-        public String getUsername() { return username; }
-        public String getEmail() { return email; }
+        public int getId() {
+            return id;
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public String getEmail() {
+            return email;
+        }
     }
 
     public static class ShopGridRow {
         private int id;
         private String name;
 
-        public ShopGridRow() {}
+        public ShopGridRow() {
+        }
+
         public ShopGridRow(int id, String name) {
             this.id = id;
             this.name = name;
         }
 
-        public int getId() { return id; }
-        public String getName() { return name; }
+        public int getId() {
+            return id;
+        }
+
+        public String getName() {
+            return name;
+        }
     }
 
     @Override
@@ -65,6 +84,12 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("login");
         }
+        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m => m.connectNotifications($0))",
+                getUserId());
+    }
+
+    private String getUserId() {
+        return (String) VaadinSession.getCurrent().getAttribute("userId");
     }
 
     public AdminView() {
@@ -125,8 +150,8 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             ResponseEntity<MemberDTO[]> response = restTemplate.exchange(
                     url, HttpMethod.GET, request, MemberDTO[].class);
 
-            List<MemberDTO> members = response.getBody() != null ?
-                    Arrays.asList(response.getBody()) : Collections.emptyList();
+            List<MemberDTO> members = response.getBody() != null ? Arrays.asList(response.getBody())
+                    : Collections.emptyList();
 
             List<UserGridRow> rows = members.stream()
                     .map(m -> new UserGridRow(m.getMemberId(), m.getUsername(), m.getEmail()))
@@ -148,8 +173,8 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             ResponseEntity<ShopDTO[]> response = restTemplate.exchange(
                     url, HttpMethod.GET, request, ShopDTO[].class);
 
-            List<ShopDTO> shops = response.getBody() != null ?
-                    Arrays.asList(response.getBody()) : Collections.emptyList();
+            List<ShopDTO> shops = response.getBody() != null ? Arrays.asList(response.getBody())
+                    : Collections.emptyList();
 
             List<ShopGridRow> rows = shops.stream()
                     .map(s -> new ShopGridRow(s.getShopId(), s.getName()))
@@ -180,7 +205,8 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             String token = getToken();
             HttpHeaders headers = getHeaders(token);
             HttpEntity<Void> request = new HttpEntity<>(headers);
-            String url = BASE_URL + "/api/users/" + userId + "/suspension?until=" + LocalDateTime.now().plusDays(30)+ "?token=" + token;
+            String url = BASE_URL + "/api/users/" + userId + "/suspension?until=" + LocalDateTime.now().plusDays(30)
+                    + "?token=" + token;
 
             restTemplate.exchange(url, HttpMethod.PATCH, request, Void.class);
             Notification.show("User " + userId + " suspended");
@@ -194,8 +220,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             String token = getToken();
             HttpHeaders headers = getHeaders(token);
             HttpEntity<Void> request = new HttpEntity<>(headers);
-            String url = BASE_URL + "/api/shops/" + shopId +"?token=" + token;
-            
+            String url = BASE_URL + "/api/shops/" + shopId + "?token=" + token;
 
             restTemplate.exchange(url, HttpMethod.DELETE, request, Void.class);
             Notification.show("Shop " + shopId + " removed");

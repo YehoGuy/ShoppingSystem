@@ -2,7 +2,10 @@ package UI;
 
 import com.vaadin.flow.router.Route;
 import DTOs.PaymentMethodDTO;
+
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H3;
@@ -23,8 +26,9 @@ import org.springframework.web.client.RestTemplate;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PaymenPageView extends VerticalLayout implements  BeforeEnterObserver {
-    
+@JsModule("./js/notification-client.js")
+public class PaymenPageView extends VerticalLayout implements BeforeEnterObserver {
+
     private final PaymentMethodDTO paymentMethod;
 
     private double totalAmount = 0.0;
@@ -41,13 +45,19 @@ public class PaymenPageView extends VerticalLayout implements  BeforeEnterObserv
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("login");
         }
+        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m -> m.connectNotifications($0))",
+                getUserId());
     }
 
+    private String getUserId() {
+        return (String) VaadinSession.getCurrent().getAttribute("userId");
+    }
 
-    public PaymenPageView(double totalAmount, String country, String city, String street, String houseNumber, String zipCode) {
+    public PaymenPageView(double totalAmount, String country, String city, String street, String houseNumber,
+            String zipCode) {
 
         paymentMethod = getUserPaymentMethod();
-        
+
         this.totalAmount = totalAmount;
         this.country = country;
         this.city = city;
@@ -55,10 +65,8 @@ public class PaymenPageView extends VerticalLayout implements  BeforeEnterObserv
         this.houseNumber = houseNumber;
         this.zipCode = zipCode;
 
-
         setUpLayout();
     }
-
 
     private PaymentMethodDTO getUserPaymentMethod() {
         String token = getToken();
@@ -98,11 +106,9 @@ public class PaymenPageView extends VerticalLayout implements  BeforeEnterObserv
         buttonLayout.getStyle().set("padding", "10px");
         buttonLayout.getStyle().set("background-color", "#f9f9f9");
 
-        
         Button methodButton = new Button(paymentMethod.getMethodDetails(), event -> processPayment(paymentMethod));
         methodButton.setWidthFull();
         buttonLayout.add(methodButton);
-        
 
         Div scroller = new Div(buttonLayout);
         scroller.getStyle().set("overflow-y", "auto");

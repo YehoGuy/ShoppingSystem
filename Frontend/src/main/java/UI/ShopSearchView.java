@@ -1,6 +1,7 @@
 package UI;
 
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Route(value = "shops", layout = AppLayoutBasic.class)
+@JsModule("./js/notification-client.js")
 public class ShopSearchView extends VerticalLayout implements BeforeEnterObserver {
 
     private static final String SHOPS_API_URL = "http://localhost:8080/api/shops/all";
@@ -40,8 +42,14 @@ public class ShopSearchView extends VerticalLayout implements BeforeEnterObserve
             event.forwardTo("");
             return;
         }
+        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m -> m.connectNotifications($0))",
+                getUserId());
         loadShops(token);
         displayShops(filteredShops);
+    }
+
+    private String getUserId() {
+        return (String) VaadinSession.getCurrent().getAttribute("userId");
     }
 
     public ShopSearchView() {
@@ -78,7 +86,8 @@ public class ShopSearchView extends VerticalLayout implements BeforeEnterObserve
                 filteredShops.clear();
                 filteredShops.addAll(allShops);
             } else {
-                Notification.show("Failed to load shops: " + response.getStatusCode(), 3000, Notification.Position.MIDDLE);
+                Notification.show("Failed to load shops: " + response.getStatusCode(), 3000,
+                        Notification.Position.MIDDLE);
             }
         } catch (Exception ex) {
             Notification.show("Error loading shops: " + ex.getMessage(), 5000, Notification.Position.MIDDLE);
@@ -88,10 +97,9 @@ public class ShopSearchView extends VerticalLayout implements BeforeEnterObserve
     public void filterShops(String query) {
         filteredShops.clear();
         filteredShops.addAll(
-            allShops.stream()
-                    .filter(s -> s.getName().toLowerCase().contains(query.toLowerCase()))
-                    .collect(Collectors.toList())
-        );
+                allShops.stream()
+                        .filter(s -> s.getName().toLowerCase().contains(query.toLowerCase()))
+                        .collect(Collectors.toList()));
         displayShops(filteredShops);
     }
 
@@ -105,8 +113,8 @@ public class ShopSearchView extends VerticalLayout implements BeforeEnterObserve
             VerticalLayout shopLayout = new VerticalLayout();
             shopLayout.setWidth("100%");
             shopLayout.getStyle()
-                      .set("border", "1px solid #ccc")
-                      .set("padding", "15px");
+                    .set("border", "1px solid #ccc")
+                    .set("padding", "15px");
 
             // Clickable shop name
             H1 shopName = new H1(shop.getName());
