@@ -54,7 +54,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                     
                 }else{
                     this.allItemPrices = this.shop.getItems().stream()
-                        .collect(HashMap::new, (map, item) -> map.put(item, shop.getItemPrices().get(item.getId())), HashMap::putAll);
+                        .collect(HashMap::new, (map, item) -> map.put(item, shop.getItemPrices().get(item.getId()) != null ? shop.getItemPrices().get(item.getId()).intValue() : null), HashMap::putAll);
                 }
 
             } else {

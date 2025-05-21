@@ -1,17 +1,8 @@
 package UI;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import java.util.*;
+import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
-
-import java.util.List;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -26,23 +17,18 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
-
-import DTOs.CartEntryDTO;
-import DTOs.ItemDTO;
-import DTOs.ShoppingCartDTO;
-import Domain.ItemCategory;
-
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 
+import DTOs.CartEntryDTO;
+import DTOs.ItemDTO;
+import DTOs.ShoppingCartDTO;
 import DTOs.ShopDTO;
-
 
 @Route(value = "cart", layout = AppLayoutBasic.class)
 public class ShoppingCartView extends VerticalLayout implements BeforeEnterObserver {
     private ShoppingCartDTO cart;
-    private Map<String, Map<Integer, Double>> itemPrices;
     private List<ShopDTO> shops;
 
     private final RestTemplate restTemplate = new RestTemplate();
@@ -50,8 +36,6 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
     private static final String URLUser = "http://localhost:8080/api/users";
     private static final String URLPurchases = "http://localhost:8080/api/purchases";
     private static final String URLItem = "http://localhost:8080/api/items";
-
-
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
@@ -61,9 +45,6 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
     }
 
     public ShoppingCartView() {
-        // Mock data for demonstration purposes
-        // In a real application, you would retrieve this data from a service or
-        // database
         setSizeFull();
         setSpacing(true);
         setPadding(true);
@@ -92,19 +73,34 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
         add(title);
 
-        cart.getCartItems().forEach((shopName, items) -> {
-            double shopTotal = cart.getShopPrices().getOrDefault(shopName, 0.0);
-            Button buyBasketButton = new Button("Buy basket from " + shopName);
+        // For each shop in the cart
+        cart.getShopItems().forEach((shopID, itemIDs) -> {
+            String shopName = getShopName(shopID);
+            Map<Integer, Double> itemPricesMap = cart.getShopItemPrices().get(shopID);
+            Map<Integer, Integer> itemQuantitiesMap = cart.getShopItemQuantities().get(shopID);
+
+            double shopTotal = 0;
+            List<CartEntryDTO> entries = new ArrayList<>();
+            for (Integer itemId : itemIDs) {
+                int quantity = itemQuantitiesMap != null && itemQuantitiesMap.containsKey(itemId) ? itemQuantitiesMap.get(itemId) : 1;
+                double price = itemPricesMap != null && itemPricesMap.containsKey(itemId) ? itemPricesMap.get(itemId) : 0;
+                shopTotal += price * quantity;
+                ItemDTO item = getAllItems().stream().filter(it -> it.getId() == itemId).findFirst().orElse(null);
+                if (item != null) {
+                    entries.add(new CartEntryDTO(quantity, item, shopID));
+                }
+            }
+
+            Button buyBasketButton = new Button("Buy basket from " + shopName + " " + shopTotal + "₪");
             buyBasketButton.getStyle().set("background-color", "blue").set("color", "white");
             buyBasketButton.addClickListener(event -> {
                 ShoppingCartDTO shopCart = new ShoppingCartDTO();
-                shopCart.setCartItems(Map.of(shopName, items));
-                shopCart.setTotalPrice(shopTotal);
-                shopCart.setShopPrices(Map.of(shopName, shopTotal));
-                PurchaseCompletionIntermediate purchaseCompletion = new PurchaseCompletionIntermediate(shopCart);
+                shopCart.setShopItems(Map.of(shopID, itemIDs));
+                shopCart.setShopItemPrices(Map.of(shopID, itemPricesMap));
+                shopCart.setShopItemQuantities(Map.of(shopID, itemQuantitiesMap));
+                PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(shopCart);
                 this.removeAll();
                 this.add(purchaseCompletion);
-
             });
             H3 shopHeader = new H3(shopName + " - total price: " + shopTotal + "₪");
             VerticalLayout shopHeaderContainer = new VerticalLayout(shopHeader, buyBasketButton);
@@ -112,6 +108,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             shopHeaderContainer.setAlignItems(Alignment.CENTER);
             shopHeaderContainer.setJustifyContentMode(JustifyContentMode.BETWEEN);
             add(shopHeaderContainer);
+
             Grid<ItemRow> grid = new Grid<>(ItemRow.class, false);
             grid.addColumn(ItemRow::name).setHeader("Item name");
             grid.addColumn(ItemRow::price).setHeader("Price");
@@ -120,13 +117,12 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             grid.addColumn(ItemRow::description).setHeader("Description");
             grid.setAllRowsVisible(true);
             grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
-            // Convert items to list of rows
+
             List<ItemRow> rows = new ArrayList<>();
-            for(int i = 0; i < items.size(); i++) {
-                CartEntryDTO entry = items.get(i);
+            for (CartEntryDTO entry : entries) {
                 ItemDTO item = entry.getItem();
                 int quantity = entry.getQuantity();
-                double price = cart.getShopPrices().getOrDefault(item.getId(), 0.0);
+                Double price = itemPricesMap != null && itemPricesMap.containsKey(item.getId()) ? itemPricesMap.get(item.getId()) : 0;
                 rows.add(new ItemRow(item, quantity, price));
             }
 
@@ -136,88 +132,13 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 Button addButton = new Button(VaadinIcon.PLUS.create());
                 Button removeCompletlyButton = new Button(VaadinIcon.TRASH.create());
                 removeCompletlyButton.addClickListener(event -> {
-                    try {
-                        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-                        HttpHeaders headers = new HttpHeaders();
-                        headers.setContentType(MediaType.APPLICATION_JSON);
-                        HttpEntity<?> entity = new HttpEntity<>(null, headers);
-                        int itemID = cart.getCartItems().get(shopName).stream()
-                                .filter(item -> item.getItem().getName().equals(renderer.name()))
-                                .findFirst()
-                                .map(CartEntryDTO::getItemId)
-                                .orElse(-1);
-                        int shopID = shops.stream()
-                                .filter(shop -> shop.getName().equals(shopName))
-                                .findFirst()
-                                .map(ShopDTO::getShopId)
-                                .orElse(-1);
-                        String url = URLUser + "/shoppingCart/" + shopID + "/" + itemID + "/remove";
-                        Map<String, String> params = new HashMap<>();
-                        params.put("authToken", token);
-                        ResponseEntity<?> response = restTemplate.postForEntity(url, entity, String.class, params);
-                        if (response.getStatusCode().is2xxSuccessful()) {
-                            Notification.show("Item removed from cart", 3000, Notification.Position.BOTTOM_START);
-                            UI.getCurrent().getPage().reload();
-                        }
-                    } catch (Exception e) {
-                        Notification.show("Error removing item from cart", 3000, Notification.Position.BOTTOM_START);
-                    }
+                    handleCartAction(shopID, renderer.name(), "remove");
                 });
                 addButton.addClickListener(event -> {
-                    try {
-                        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-                        HttpHeaders headers = new HttpHeaders();
-                        headers.setContentType(MediaType.APPLICATION_JSON);
-                        HttpEntity<?> entity = new HttpEntity<>(null, headers);
-                        int itemID = cart.getCartItems().get(shopName).stream()
-                                .filter(item -> item.getItem().getName().equals(renderer.name()))
-                                .findFirst()
-                                .map(CartEntryDTO::getItemId)
-                                .orElse(-1);
-                        int shopID = shops.stream()
-                                .filter(shop -> shop.getName().equals(shopName))
-                                .findFirst()
-                                .map(ShopDTO::getShopId)
-                                .orElse(-1);
-                        String url = URLUser + "/shoppingCart/" + shopID + "/" + itemID + "/plus";
-                        Map<String, String> params = new HashMap<>();
-                        params.put("authToken", token);
-                        ResponseEntity<?> response = restTemplate.postForEntity(url, entity, String.class, params);
-                        if (response.getStatusCode().is2xxSuccessful()) {
-                            Notification.show("Item added to cart", 3000, Notification.Position.BOTTOM_START);
-                            UI.getCurrent().getPage().reload();
-                        }
-                    } catch (Exception e) {
-                        Notification.show("Error adding item to cart", 3000, Notification.Position.BOTTOM_START);
-                    }
+                    handleCartAction(shopID, renderer.name(), "plus");
                 });
                 removeButton.addClickListener(event -> {
-                    try {
-                        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-                        HttpHeaders headers = new HttpHeaders();
-                        headers.setContentType(MediaType.APPLICATION_JSON);
-                        HttpEntity<?> entity = new HttpEntity<>(null, headers);
-                        int itemID = cart.getCartItems().get(shopName).stream()
-                                .filter(item -> item.getItem().getName().equals(renderer.name()))
-                                .findFirst()
-                                .map(CartEntryDTO::getItemId)
-                                .orElse(-1);
-                        int shopID = shops.stream()
-                                .filter(shop -> shop.getName().equals(shopName))
-                                .findFirst()
-                                .map(ShopDTO::getShopId)
-                                .orElse(-1);
-                        String url = URLUser + "/shoppingCart/" + shopID + "/" + itemID + "/minus";
-                        Map<String, String> params = new HashMap<>();
-                        params.put("authToken", token);
-                        ResponseEntity<?> response = restTemplate.postForEntity(url, entity, String.class, params);
-                        if (response.getStatusCode().is2xxSuccessful()) {
-                            Notification.show("Item removed from cart", 3000, Notification.Position.BOTTOM_START);
-                            UI.getCurrent().getPage().reload();
-                        }
-                    } catch (Exception e) {
-                        Notification.show("Error removing item from cart", 3000, Notification.Position.BOTTOM_START);
-                    }
+                    handleCartAction(shopID, renderer.name(), "minus");
                 });
                 HorizontalLayout buttonLayout = new HorizontalLayout(addButton, removeButton, removeCompletlyButton);
                 buttonLayout.setAlignItems(Alignment.CENTER);
@@ -242,34 +163,36 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         HashMap<Integer, HashMap<Integer, Integer>> IDs = getCartIDs();
         shops = getShopNames(IDs.keySet());
         List<ItemDTO> items = getAllItems();
-        Map<String, List<CartEntryDTO>> cartItems = new HashMap<>();
-        double totalPrice = 0.0;
-        Map<String, Double> shopPrices = new HashMap<>();
-        itemPrices = new HashMap<>();
-        for (int i = 0; i < shops.size(); i++) {
-            int shopId = shops.get(i).getShopId();
-            String shopName = shops.get(i).getName();
-            List<CartEntryDTO> cartEntries = new ArrayList<>();
-            List<Double> prices = new ArrayList<>();
-            for (Map.Entry<Integer, Integer> entry : IDs.get(IDs.keySet().stream().toList().get(i)).entrySet()) {
-                int itemId = entry.getKey();
-                int quantity = entry.getValue();
+
+        // Build DTO fields
+        Map<Integer, List<Integer>> shopItems = new HashMap<>();
+        Map<Integer, Map<Integer, Double>> shopItemPrices = new HashMap<>();
+        Map<Integer, Map<Integer, Integer>> shopItemQuantities = new HashMap<>();
+
+        for (ShopDTO shop : shops) {
+            int shopId = shop.getShopId();
+            HashMap<Integer, Integer> itemQuantities = IDs.get(shopId);
+            if (itemQuantities == null) continue;
+            List<Integer> itemIds = new ArrayList<>(itemQuantities.keySet());
+            shopItems.put(shopId, itemIds);
+
+            Map<Integer, Double> prices = new HashMap<>();
+            for (Integer itemId : itemIds) {
                 ItemDTO item = items.stream().filter(it -> it.getId() == itemId).findFirst().orElse(null);
-                if (item != null) {
-                    cartEntries.add(new CartEntryDTO(itemId, quantity, item));
+                double price = 0;
+                if (item != null && shop.getItemPrices() != null && shop.getItemPrices().containsKey(itemId)) {
+                    price = shop.getItemPrices().get(itemId).intValue();
                 }
-                prices.add(shops.get(i).getItemPrices().get(itemId));
+                prices.put(itemId, price);
             }
-            cartItems.put(shopName, cartEntries);
-            double shopTotal = prices.stream().mapToDouble(Double::doubleValue).sum();
-            shopPrices.put(shopName, shopTotal);
-            itemPrices.put(shopName, new HashMap<>());
-            for (int j = 0; j < cartEntries.size(); j++) {
-                itemPrices.get(shopName).put(cartEntries.get(j).getItemId(), prices.get(j));
-            }
-            totalPrice += shopTotal;
+            shopItemPrices.put(shopId, prices);
+            shopItemQuantities.put(shopId, itemQuantities);
         }
-        cart = new ShoppingCartDTO(cartItems, totalPrice, shopPrices);
+
+        cart = new ShoppingCartDTO();
+        cart.setShopItems(shopItems);
+        cart.setShopItemPrices(shopItemPrices);
+        cart.setShopItemQuantities(shopItemQuantities);
     }
 
     private List<ItemDTO> getAllItems() {
@@ -292,10 +215,11 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             Notification.show("Error: could not retrieve shopping cart", 5000,
                     Notification.Position.MIDDLE);
         }
-        return null;
+        return Collections.emptyList();
     }
 
     private List<ShopDTO> getShopNames(Set<Integer> keySet) {
+        List<ShopDTO> result = new ArrayList<>();
         try {
             String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
             for (int i : keySet) {
@@ -304,53 +228,86 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 headers.setContentType(MediaType.APPLICATION_JSON);
                 HttpEntity<?> entity = new HttpEntity<>(null, headers);
                 Map<String, String> params = new HashMap<>();
-                params.put("shopsIds", keySet.toString());
                 params.put("authToken", token);
-                ResponseEntity<?> response = restTemplate.getForEntity(url, List.class, entity, params);
-                if (response.getStatusCode().is2xxSuccessful()) {
-                    List<ShopDTO> shops = (List<ShopDTO>) response.getBody();
-                    if (shops != null) {
-                        return shops;
-                    }
+                ResponseEntity<ShopDTO> response = restTemplate.getForEntity(url, ShopDTO.class, params);
+                if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                    result.add(response.getBody());
                 }
             }
-            
         } catch (Exception e) {
-            Notification.show("Error: could not retrieve shopping cart", 5000,
+            Notification.show("Error: could not retrieve shop names", 5000,
                     Notification.Position.MIDDLE);
         }
-        return null;
+        return result;
     }
 
     private HashMap<Integer, HashMap<Integer, Integer>> getCartIDs() {
-        try{
+        try {
             String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<?> entity = new HttpEntity<>(null,headers);
+            HttpEntity<?> entity = new HttpEntity<>(null, headers);
             String url = URLUser + "/shoppingCart";
             Map<String, String> params = new HashMap<>();
             params.put("authToken", token);
             ResponseEntity<?> response = restTemplate.getForEntity(url, HashMap.class, params);
             if (response.getStatusCode().is2xxSuccessful()) {
                 HashMap<Integer, HashMap<Integer, Integer>> cartIDs = (HashMap<Integer, HashMap<Integer, Integer>>) response.getBody();
-                if(cartIDs != null) {
+                if (cartIDs != null) {
                     return cartIDs;
                 }
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             Notification.show("Error: could not retrieve shopping cart", 5000,
                     Notification.Position.MIDDLE);
         }
-
-        return null;
+        return new HashMap<>();
     }
 
     // Helper record class to populate the grid
     public record ItemRow(String name, double price, int quantity, double totalPrice, String description) {
         public ItemRow(ItemDTO item, int quantity, double price) {
             this(item.getName(), price, quantity, price * quantity, item.getDescription());
+        }
+    }
+
+    private String getShopName(int shopId) {
+        return shops.stream()
+                .filter(shop -> shop.getShopId() == shopId)
+                .map(ShopDTO::getName)
+                .findFirst()
+                .orElse("Unknown Shop");
+    }
+
+    private void handleCartAction(int shopID, String itemName, String action) {
+        try {
+            String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<?> entity = new HttpEntity<>(null, headers);
+
+            // Find itemId by name
+            List<Integer> itemIds = cart.getShopItems().get(shopID);
+            int itemID = -1;
+            for (Integer id : itemIds) {
+                ItemDTO item = getAllItems().stream().filter(it -> it.getId() == id && it.getName().equals(itemName)).findFirst().orElse(null);
+                if (item != null) {
+                    itemID = id;
+                    break;
+                }
+            }
+            if (itemID == -1) return;
+
+            String url = URLUser + "/shoppingCart/" + shopID + "/" + itemID + "/" + action;
+            Map<String, String> params = new HashMap<>();
+            params.put("authToken", token);
+            ResponseEntity<?> response = restTemplate.postForEntity(url, entity, String.class, params);
+            if (response.getStatusCode().is2xxSuccessful()) {
+                Notification.show("Cart updated", 3000, Notification.Position.BOTTOM_START);
+                UI.getCurrent().getPage().reload();
+            }
+        } catch (Exception e) {
+            Notification.show("Error updating cart", 3000, Notification.Position.BOTTOM_START);
         }
     }
 }

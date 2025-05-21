@@ -5,15 +5,14 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.router.Route;
 
 import java.util.Map;
 
 import DTOs.AddressDTO;
 import DTOs.ItemDTO;
+import DTOs.ShoppingCartDTO;
 
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -29,7 +28,8 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
     private TextField apartmentNumberField;
     private TextField zipCodeField;
 
-    private Map<ItemDTO, Integer> cartItems;
+    private ShoppingCartDTO cartDto;
+    private Map<ItemDTO, Integer> items;
     private double totalPrice = 0;
 
     @Override
@@ -39,11 +39,11 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
         }
     }
 
-    public PurchaseCompletionIntermidiate(Map<ItemDTO, Integer> cartItems) {
-        this.cartItems = cartItems;
-        cartItems.forEach((item, quantity) -> {
-            totalPrice += item.getPrice() * quantity;
-        });
+    public PurchaseCompletionIntermidiate(ShoppingCartDTO cart) {
+        setAllItems();
+
+        this.cartDto = cart;
+        this.totalPrice = cart.getTotalPrice();
         setSizeFull();
         setSpacing(true);
         setPadding(true);
@@ -90,9 +90,15 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
     private void displayCartSummary() {
         add(new H1("🛒 Cart Summary"));
 
-        cartItems.forEach((item, quantity) -> {
-            String line = "- " + item.getName() + " x" + quantity + " = $" + (item.getPrice() * quantity);
-            add(new Span(line));
+        cartDto.getShopItemPrices().forEach((shopId, itemPrices) -> {
+            itemPrices.forEach((itemId, price) -> {
+                ItemDTO item = getItemById(itemId);
+                if (item != null) {
+                    String line = "- " + item.getName() + " x" + cartDto.getShopItemQuantities().get(shopId).get(itemId)
+                            + " = $" + (price * cartDto.getShopItemQuantities().get(shopId).get(itemId));
+                    add(new Span(line));
+                }
+            });
         });
 
         Span total = new Span("💰 Total: $" + totalPrice);
@@ -108,5 +114,29 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
         paymentDialog.setHeight("300px");
         paymentDialog.add(new Span("Please complete your payment in the dialog."));
         paymentDialog.open();
+    }
+
+    private void setAllItems() {
+        items = new java.util.HashMap<>();
+        cartDto.getShopItemQuantities()
+                .forEach((shopId, itemQuantities) -> {
+                    itemQuantities.forEach((itemId, quantity) -> {
+                        ItemDTO item = cartDto.getItems().stream()
+                                .filter(i -> i.getId() == itemId)
+                                .findFirst()
+                                .orElse(null);
+                        if (item != null) {
+                            items.put(item, quantity);
+                        }
+                    });
+                });
+    }
+
+
+    private ItemDTO getItemById(int id) {
+        return items.keySet().stream()
+                .filter(item -> item.getId() == id)
+                .findFirst()
+                .orElse(null);
     }
 }

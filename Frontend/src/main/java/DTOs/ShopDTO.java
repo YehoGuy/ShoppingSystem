@@ -57,10 +57,10 @@ public class ShopDTO {
         return itemQuantitiesMap;
     }
 
-    public static Map<ItemDTO, Integer> itemPricesToMapConverter(List<ItemDTO> items, Map<Integer, Integer> itemPrices) {
-        Map<ItemDTO, Integer> itemPricesMap = new HashMap<>();
+    public static Map<ItemDTO, Double> itemPricesToMapConverter(List<ItemDTO> items, Map<Integer, Double> itemPrices) {
+        Map<ItemDTO, Double> itemPricesMap = new HashMap<>();
         for (ItemDTO item : items) {
-            int price = itemPrices.get(item.getId());
+            Double price = itemPrices.get(item.getId());
             itemPricesMap.put(item, price);
         }
         return itemPricesMap;
