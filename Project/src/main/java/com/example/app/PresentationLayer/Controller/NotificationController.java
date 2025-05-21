@@ -17,7 +17,7 @@ public class NotificationController {
     }
 
     @PostMapping("/send/{userId}")
-    public void sendNotification(@PathVariable String userId, @RequestBody String message) {
-        this.notificationService.sendToUser(userId, message);
+    public void sendNotification(@PathVariable int userId, @RequestBody String title, @RequestBody String message) {
+        this.notificationService.sendToUser(userId, title, message);
     }
 }

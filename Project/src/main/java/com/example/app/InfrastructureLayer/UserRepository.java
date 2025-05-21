@@ -39,7 +39,7 @@ public class UserRepository implements IUserRepository {
         this.userIdCounter = new AtomicInteger(0); // Initialize the user ID counter
         this.managers = new CopyOnWriteArrayList<>(); // Initialize the managers list
         this.passwordEncoderUtil = new PasswordEncoderUtil();
-        // TODO: V should be removed when adding database 
+        // TODO: V should be removed when adding database
         addMember("admin", passwordEncoderUtil.encode("admin"), "admin@mail.com", "0", "admin st.");
         managers.add(isUsernameAndPasswordValid("admin", "admin"));
     }
@@ -110,6 +110,7 @@ public class UserRepository implements IUserRepository {
         User member = new Member(id, username, password, email, phoneNumber, address); // Assuming User has a
                                                                                        // constructor with these
                                                                                        // parameters
+        ((Member) member).setConnected(true);
         userMapping.put(id, member); // Add the member to the mapping
         return id; // Return the ID of the newly created member
     }
