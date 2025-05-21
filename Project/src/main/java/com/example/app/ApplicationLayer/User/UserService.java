@@ -1925,6 +1925,38 @@ public class UserService {
         } catch (Exception e) {
             LoggerService.logError("addNotification", e, userId, message);
             throw new OurRuntime("addNotification: " + e.getMessage(), e);
+
+    public void updateShoppingCartItemQuantity(int userId, int shopID, int itemID, boolean b) {
+        try {
+            LoggerService.logMethodExecution("updateShoppingCartItemQuantity", userId, shopID, itemID, b);
+            userRepository.updateShoppingCartItemQuantity(userId, shopID, itemID, b);
+            LoggerService.logMethodExecutionEndVoid("updateShoppingCartItemQuantity");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("updateShoppingCartItemQuantity", e);
+            throw new OurRuntime("updateShoppingCartItemQuantity: " + e.getMessage(), e);
+        } catch (OurArg e) {
+            LoggerService.logDebug("updateShoppingCartItemQuantity", e);
+            throw new OurArg("updateShoppingCartItemQuantity: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("updateShoppingCartItemQuantity", e, userId, shopID, itemID, b);
+            throw new OurRuntime("updateShoppingCartItemQuantity: " + e.getMessage(), e);
+        }
+    }
+
+    public void removeItemFromShoppingCart(int userId, int shopID, int itemID) {
+        try {
+            LoggerService.logMethodExecution("removeShoppingCartItem", userId, shopID, itemID);
+            userRepository.removeShoppingCartItem(userId, shopID, itemID);
+            LoggerService.logMethodExecutionEndVoid("removeShoppingCartItem");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("removeShoppingCartItem", e);
+            throw new OurRuntime("removeShoppingCartItem: " + e.getMessage(), e);
+        } catch (OurArg e) {
+            LoggerService.logDebug("removeShoppingCartItem", e);
+            throw new OurArg("removeShoppingCartItem: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("removeShoppingCartItem", e, userId, shopID, itemID);
+            throw new OurRuntime("removeShoppingCartItem: " + e.getMessage(), e);
         }
     }
 }

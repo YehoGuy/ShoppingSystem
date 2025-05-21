@@ -20,12 +20,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
+import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
 import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.Guest;
 import com.example.app.DomainLayer.Member;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
 import com.example.app.DomainLayer.User;
+import com.example.app.PresentationLayer.DTO.Purchase.PaymentMethodDTO;
 import com.example.app.PresentationLayer.DTO.Role.RoleDTO;
 import com.example.app.PresentationLayer.DTO.User.GuestDTO;
 import com.example.app.PresentationLayer.DTO.User.MemberDTO;
@@ -174,6 +176,26 @@ public class UserController {
 
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
+
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
+    }
+
+    @GetMapping("/paymentMethod/{userId}")
+    public ResponseEntity<?> getUserPaymentMethod(int userId) {
+        try {
+            PaymentMethod paymentMethod = userService.getUserPaymentMethod(userId);
+            return ResponseEntity.ok(PaymentMethodDTO.fromDomain(paymentMethod));
+
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
 
         } catch (RuntimeException ex) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
@@ -729,5 +751,78 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    @GetMapping("/shoppingCart")
+    public ResponseEntity<HashMap<Integer, HashMap<Integer, Integer>>> getShoppingCart(@RequestParam String token, @RequestParam int userId) {
+        try {
+            authService.ValidateToken(token);
+            HashMap<Integer, HashMap<Integer, Integer>> cart = userService.getUserShoppingCartItems(userId);
+            return ResponseEntity.ok(cart);
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(null);
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @GetMapping("/shoppingCart/{shopID}/{itemID}/plus")
+    public ResponseEntity<Void> addItemToShoppingCart(
+            @RequestParam String token,
+            @RequestParam int userId,
+            @PathVariable int shopID,
+            @PathVariable int itemID) {
+        try {
+            authService.ValidateToken(token);
+            userService.updateShoppingCartItemQuantity(userId, shopID, itemID, true);
+            return ResponseEntity.noContent().build();
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().build();
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/shoppingCart/{shopID}/{itemID}/minus")
+    public ResponseEntity<Void> decreaseItemInShoppingCart(
+            @RequestParam String token,
+            @RequestParam int userId,
+            @PathVariable int shopID,
+            @PathVariable int itemID) {
+        try {
+            authService.ValidateToken(token);
+            userService.updateShoppingCartItemQuantity(userId, shopID, itemID, false);
+            return ResponseEntity.noContent().build();
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().build();
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/shoppingCart/{shopID}/{itemID}/remove")
+    public ResponseEntity<Void> removeCompletelyItemFromShoppingCart(
+            @RequestParam String token,
+            @RequestParam int userId,
+            @PathVariable int shopID,
+            @PathVariable int itemID) {
+        try {
+            authService.ValidateToken(token);
+            userService.removeItemFromShoppingCart(userId, shopID, itemID);
+            return ResponseEntity.noContent().build();
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().build();
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
 
 }
