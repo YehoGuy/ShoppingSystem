@@ -787,7 +787,7 @@ public class UserController {
     }
 
     @GetMapping("/shoppingCart/{shopID}/{itemID}/minus")
-    public ResponseEntity<Void> removeItemFromShoppingCart(
+    public ResponseEntity<Void> decreaseItemInShoppingCart(
             @RequestParam String token,
             @RequestParam int userId,
             @PathVariable int shopID,
@@ -805,8 +805,8 @@ public class UserController {
         }
     }
 
-    @GetMapping("/shoppingCart/{shopID}/{itemID}/minus")
-    public ResponseEntity<Void> removeCompletlyItemFromShoppingCart(
+    @GetMapping("/shoppingCart/{shopID}/{itemID}/remove")
+    public ResponseEntity<Void> removeCompletelyItemFromShoppingCart(
             @RequestParam String token,
             @RequestParam int userId,
             @PathVariable int shopID,
