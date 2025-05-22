@@ -1925,7 +1925,8 @@ public class UserService {
         } catch (Exception e) {
             LoggerService.logError("addNotification", e, userId, message);
             throw new OurRuntime("addNotification: " + e.getMessage(), e);
-
+        }
+    }
     public void updateShoppingCartItemQuantity(int userId, int shopID, int itemID, boolean b) {
         try {
             LoggerService.logMethodExecution("updateShoppingCartItemQuantity", userId, shopID, itemID, b);
