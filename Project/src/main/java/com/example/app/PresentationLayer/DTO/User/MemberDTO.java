@@ -1,14 +1,18 @@
 package com.example.app.PresentationLayer.DTO.User;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import com.example.app.DomainLayer.Roles.PermissionsEnum;
+import com.example.app.DomainLayer.Roles.Role;
+import com.example.app.PresentationLayer.DTO.Purchase.AddressDTO;
+import com.example.app.PresentationLayer.DTO.Role.RoleDTO;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
-
-import java.time.LocalDateTime;
-import java.util.List;
-
-import com.example.app.PresentationLayer.DTO.Purchase.AddressDTO;
-import com.example.app.PresentationLayer.DTO.Role.RoleDTO;
 
 /**
  * Read‑model for member‐profile APIs.
@@ -28,6 +32,45 @@ public record MemberDTO(
 
     /* -------- Domain ➜ DTO -------- */
     public static MemberDTO fromDomain(com.example.app.DomainLayer.Member m) {
+        List<RoleDTO> roles = new ArrayList<>();
+        for (com.example.app.DomainLayer.Roles.Role role : m.getRoles()) {
+            List<String> permissions = Arrays.stream(role.getPermissions())
+                        .map(PermissionsEnum::name)
+                        .toList();
+                String rolename = "manager";
+                for(PermissionsEnum permission : role.getPermissions()){
+                    if(permission == PermissionsEnum.manageOwners){
+                        rolename = "founder";
+                        break;
+                    }
+                    if(permission == PermissionsEnum.manageManagers && rolename != "founder"){
+                        rolename = "owner";
+                        break;
+                    }
+                }
+            RoleDTO roleDTO = new RoleDTO(role.getShopId(), rolename, permissions, m.getUsername());
+            roles.add(roleDTO);
+        }
+        List<RoleDTO> pendingRoles = new ArrayList<>();
+        for (com.example.app.DomainLayer.Roles.Role role : m.getPendingRoles()) {
+            List<String> permissions = Arrays.stream(role.getPermissions())
+                        .map(PermissionsEnum::name)
+                        .toList();
+            String rolename = "manager";
+            for(PermissionsEnum permission : role.getPermissions()){
+                if(permission == PermissionsEnum.manageOwners){
+                    rolename = "founder";
+                    break;
+                }
+                if(permission == PermissionsEnum.manageManagers && rolename != "founder"){
+                    rolename = "owner";
+                    break;
+                }
+            }
+            RoleDTO roleDTO = new RoleDTO(role.getShopId(), rolename, permissions, m.getUsername());
+            pendingRoles.add(roleDTO);
+        }
+
         return new MemberDTO(
                 m.getMemberId(),
                 m.getUsername(),
@@ -36,8 +79,8 @@ public record MemberDTO(
                 // Member#isSuspended() hides the instant; expose the timestamp instead
                 m.isSuspended() ? LocalDateTime.now().plusYears(100) : null,
                 m.getAddress() != null ? AddressDTO.fromDomain(m.getAddress()) : null,
-                m.getRoles().stream().map(RoleDTO::fromDomain).toList(),
-                m.getPendingRoles().stream().map(RoleDTO::fromDomain).toList(),
+                roles,
+                pendingRoles,
                 m.getOrderHistory(),
                 ShoppingCartDTO.fromDomain(m.getShoppingCart()));
     }
@@ -50,8 +93,25 @@ public record MemberDTO(
                 address != null ? address.toDomain() : null);
 
         // restore collections
-        m.setRoles(roles.stream().map(RoleDTO::toDomain).toList());
-        m.setPendingRoles(pendingRoles.stream().map(RoleDTO::toDomain).toList());
+        List<Role> roles = new ArrayList<>();
+        for (RoleDTO role : this.roles) {
+            Role r = new Role(memberId, role.getShopId(), role.getPermissions()
+                    .stream()
+                    .map(PermissionsEnum::valueOf)
+                    .toArray(PermissionsEnum[]::new));
+            roles.add(r);
+        }
+        List<Role> pendingRoles = new ArrayList<>();
+        for (RoleDTO role : this.pendingRoles) {
+            Role r = new Role(memberId, role.getShopId(), role.getPermissions()
+                    .stream()
+                    .map(PermissionsEnum::valueOf)
+                    .toArray(PermissionsEnum[]::new));
+            pendingRoles.add(r);
+        }
+
+        m.setRoles(roles);
+        m.setPendingRoles(pendingRoles);
         m.setOrderHistory(orderHistory);
         if (shoppingCart != null) m.mergeShoppingCart(shoppingCart.toDomain());
         if (suspendedUntil != null) m.setSuspended(suspendedUntil);

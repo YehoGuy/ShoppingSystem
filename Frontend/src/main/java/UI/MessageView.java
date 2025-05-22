@@ -1,5 +1,18 @@
 package UI;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -15,21 +28,8 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
-
 import DTOs.MessageDTO;
 import DTOs.rolesDTO;
-
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Route(value = "messages", layout = AppLayoutBasic.class)
 @JsModule("./js/notification-client.js")
@@ -240,7 +240,11 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
                 if (roles.length > 0) {
                     for (rolesDTO dto : roles) {
                         int shopId = dto.getShopId();
-                        String desc = dto.getRoleName() + " @ " + dto.getShopName();
+                        DTOs.ShopDTO shop = rest.getForObject(
+                                "http://localhost:8080/api/shops/" + shopId + "?authToken=" + token,
+                                DTOs.ShopDTO.class);
+                        String shopName = shop.getName();
+                        String desc = dto.getRoleName() + " @ " + shopName;
 
                         HorizontalLayout row = new HorizontalLayout();
                         Span span = new Span(desc);

@@ -1,33 +1,38 @@
 package com.example.app.PresentationLayer.DTO.Role;
 
 
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 
-public record RoleDTO(
-        @Positive int assigneeId,
-        @Positive int shopId,
-        @NotEmpty List<PermissionDTO> permissions) {
+public class RoleDTO {
+    private int shopId; // The ID of the role.
+    private String roleName; // The name of the role.
+    private List<String> permissions; // A list of permissions associated with the role.
+    private String userName; // The name of the user associated with the role.
 
-    /*  --------------------- Domain → DTO --------------------- */
-    public static RoleDTO fromDomain(com.example.app.DomainLayer.Roles.Role r) {
-        return new RoleDTO(
-                r.getAssigneeId(),
-                r.getShopId(),
-                // map enum array → DTO list
-                java.util.Arrays.stream(r.getPermissions())
-                                .map(PermissionDTO::fromDomain)
-                                .toList());
+    public RoleDTO(int shopId, String roleName, List<String> permissions, String userName) {
+        this.shopId = shopId;
+        this.roleName = roleName;
+        this.permissions = permissions;
+        this.userName = userName;
     }
 
-    /*  --------------------- DTO → Domain --------------------- */
-    public com.example.app.DomainLayer.Roles.Role toDomain() {
-        com.example.app.DomainLayer.Roles.PermissionsEnum[] perms =
-                permissions.stream()
-                           .map(PermissionDTO::toDomain)
-                           .toArray(com.example.app.DomainLayer.Roles.PermissionsEnum[]::new);
-
-        return new com.example.app.DomainLayer.Roles.Role(assigneeId, shopId, perms);
+    public int getShopId() {
+        return shopId;
     }
+    
+    public String getRoleName() {
+        return roleName;
+    }
+
+    public List<String> getPermissions() {
+        return permissions;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    
+    
+
 }

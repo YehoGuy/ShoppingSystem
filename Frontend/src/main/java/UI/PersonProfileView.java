@@ -1,26 +1,21 @@
 package UI;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+
 import com.vaadin.flow.component.UI;
-import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 
-import java.util.List;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
-
-import DTOs.MemberDTO; // your existing DTOs
+import DTOs.MemberDTO;
 import DTOs.rolesDTO;
 
 @Route(value = "profile", layout = AppLayoutBasic.class)
@@ -148,8 +143,12 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
                 for (rolesDTO r : resp.getBody()) {
                     if (r.getUserName().equalsIgnoreCase( /* your MemberDTO.getUsername() */ "")) {
                         HorizontalLayout row = new HorizontalLayout();
+                        DTOs.ShopDTO shop = rest.getForObject(
+                                "http://localhost:8080/api/shops/" + r.getShopId() + "?authToken=" + token,
+                                DTOs.ShopDTO.class);
+                        String shopName = shop.getName();
                         row.add(
-                                new Span(r.getRoleName() + " @ " + r.getShopName()),
+                                new Span(r.getRoleName() + " @ " + shopName),
                                 new Span("Perms: " + String.join(",", r.getPermissions())));
                         rolesLayout.add(row);
                     }

@@ -1,6 +1,7 @@
 package com.example.app.PresentationLayer.Controller;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -32,6 +33,7 @@ import com.example.app.PresentationLayer.DTO.Role.RoleDTO;
 import com.example.app.PresentationLayer.DTO.User.GuestDTO;
 import com.example.app.PresentationLayer.DTO.User.MemberDTO;
 
+import java.util.Arrays;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -712,9 +714,29 @@ public class UserController {
     public ResponseEntity<?> getAcceptedRoles(@RequestParam("authToken") String token) {
         try {
             List<Role> acceptedRoles = userService.getAcceptedRoles(token);
-            List<RoleDTO> acceptedRolesDTO = acceptedRoles.stream()
-                                                        .map(RoleDTO::fromDomain)
-                                                        .toList();
+            List<RoleDTO> acceptedRolesDTO = new ArrayList<>();
+            for (Role role : acceptedRoles) {
+                int shopId = role.getShopId();
+                User assignee = userService.getUserById(role.getAssigneeId());
+                userService.validateMemberId(role.getAssigneeId());
+                String username = ((Member)assignee).getUsername();
+                List<String> permissions = Arrays.stream(role.getPermissions())
+                        .map(PermissionsEnum::name)
+                        .toList();
+                String rolename = "manager";
+                for(PermissionsEnum permission : role.getPermissions()){
+                    if(permission == PermissionsEnum.manageOwners){
+                        rolename = "founder";
+                        break;
+                    }
+                    if(permission == PermissionsEnum.manageManagers && rolename != "founder"){
+                        rolename = "owner";
+                        break;
+                    }
+                }
+                RoleDTO roleDTO = new RoleDTO(shopId, rolename, permissions, username);
+                acceptedRolesDTO.add(roleDTO);
+            }
             return ResponseEntity.ok(acceptedRolesDTO);
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(null);
@@ -729,9 +751,29 @@ public class UserController {
     public ResponseEntity<List<RoleDTO>> getPendingRoles(@RequestParam("authToken") String token) {
         try {
             List<Role> pendingRoles = userService.getPendingRoles(token);
-            List<RoleDTO> pendingRolesDTO = pendingRoles.stream()
-                                                        .map(RoleDTO::fromDomain)
-                                                        .toList();
+            List<RoleDTO> pendingRolesDTO = new ArrayList<>();
+            for (Role role : pendingRoles) {
+                int shopId = role.getShopId();
+                User assignee = userService.getUserById(role.getAssigneeId());
+                userService.validateMemberId(role.getAssigneeId());
+                String username = ((Member)assignee).getUsername();
+                List<String> permissions = Arrays.stream(role.getPermissions())
+                        .map(PermissionsEnum::name)
+                        .toList();
+                String rolename = "manager";
+                for(PermissionsEnum permission : role.getPermissions()){
+                    if(permission == PermissionsEnum.manageOwners){
+                        rolename = "founder";
+                        break;
+                    }
+                    if(permission == PermissionsEnum.manageManagers && rolename != "founder"){
+                        rolename = "owner";
+                        break;
+                    }
+                }
+                RoleDTO roleDTO = new RoleDTO(shopId, rolename, permissions, username);
+                pendingRolesDTO.add(roleDTO);
+            }
             return ResponseEntity.ok(pendingRolesDTO);
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(null);
