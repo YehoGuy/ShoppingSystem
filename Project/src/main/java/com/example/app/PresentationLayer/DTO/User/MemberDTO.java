@@ -31,7 +31,7 @@ public record MemberDTO(
         ShoppingCartDTO shoppingCart) {
 
     /* -------- Domain ➜ DTO -------- */
-    public static MemberDTO fromDomain(com.example.app.DomainLayer.Member m) {
+    public static MemberDTO fromDomain(com.example.app.DomainLayer.Member m, ShoppingCartDTO shoppingCart) {
         List<RoleDTO> roles = new ArrayList<>();
         for (com.example.app.DomainLayer.Roles.Role role : m.getRoles()) {
             List<String> permissions = Arrays.stream(role.getPermissions())
@@ -82,7 +82,8 @@ public record MemberDTO(
                 roles,
                 pendingRoles,
                 m.getOrderHistory(),
-                ShoppingCartDTO.fromDomain(m.getShoppingCart()));
+                shoppingCart
+        );
     }
 
     /* -------- DTO ➜ Domain (use with care—password not included) -------- */
