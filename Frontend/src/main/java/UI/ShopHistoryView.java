@@ -3,6 +3,8 @@ package UI;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
+import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H3;
@@ -23,6 +25,7 @@ import org.springframework.web.client.RestTemplate;
 import DTOs.RecieptDTO;
 
 @Route(value = "history", layout = AppLayoutBasic.class)
+@JsModule("./js/notification-client.js")
 public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<Integer>, BeforeEnterObserver {
 
     private static final String PURCHASE_HISTORY_URL = "http://localhost:8080/api/purchases/shops";
@@ -49,6 +52,12 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
             event.forwardTo("login");
             return;
         }
+        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m => m.connectNotifications($0))",
+                getUserId());
+    }
+
+    private String getUserId() {
+        return (String) VaadinSession.getCurrent().getAttribute("userId");
     }
 
     @Override
@@ -60,7 +69,8 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
     private void loadReceipts() {
         receiptsLayout.removeAll();
 
-        String url = PURCHASE_HISTORY_URL + "/" + shopId + "?authToken=" + VaadinSession.getCurrent().getAttribute("authToken");
+        String url = PURCHASE_HISTORY_URL + "/" + shopId + "?authToken="
+                + VaadinSession.getCurrent().getAttribute("authToken");
         try {
             ResponseEntity<RecieptDTO[]> resp = rest.getForEntity(url, RecieptDTO[].class);
             if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
@@ -84,20 +94,19 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         // card container
         com.vaadin.flow.component.html.Section card = new com.vaadin.flow.component.html.Section();
         card.addClassNames(
-            LumoUtility.Background.CONTRAST_5,
-            LumoUtility.BorderRadius.LARGE,
-            LumoUtility.BoxShadow.SMALL,
-            LumoUtility.Padding.LARGE
-        );
+                LumoUtility.Background.CONTRAST_5,
+                LumoUtility.BorderRadius.LARGE,
+                LumoUtility.BoxShadow.SMALL,
+                LumoUtility.Padding.LARGE);
         card.setWidth("80%");
 
         // header info
-        H3 buyer       = new H3("Buyer ID: "     + r.getUserId());
-        H3 totalPrice  = new H3("Total Price: $" + r.getPrice());
-        H3 completed   = new H3("Completed: "     + r.isCompleted());
-        String ts      = r.getTimestampOfRecieptGeneration()
-                           .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-        H3 date        = new H3("Date: "          + ts);
+        H3 buyer = new H3("Buyer ID: " + r.getUserId());
+        H3 totalPrice = new H3("Total Price: $" + r.getPrice());
+        H3 completed = new H3("Completed: " + r.isCompleted());
+        String ts = r.getTimestampOfRecieptGeneration()
+                .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        H3 date = new H3("Date: " + ts);
 
         HorizontalLayout header = new HorizontalLayout(buyer, totalPrice, completed, date);
         header.setWidthFull();
@@ -105,7 +114,7 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         header.getStyle().set("padding", "var(--lumo-space-m)");
 
         // items grid
-        Grid<Map.Entry<Integer,Integer>> grid = new Grid<>();
+        Grid<Map.Entry<Integer, Integer>> grid = new Grid<>();
         grid.addColumn(Map.Entry::getKey).setHeader("Item ID");
         grid.addColumn(Map.Entry::getValue).setHeader("Quantity");
         grid.setItems(r.getItems().entrySet());

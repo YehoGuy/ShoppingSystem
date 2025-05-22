@@ -1,6 +1,8 @@
 package UI;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Paragraph;
@@ -29,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Route(value = "shop", layout = AppLayoutBasic.class)
+@JsModule("./js/notification-client.js")
 public class ShopView extends VerticalLayout implements HasUrlParameter<String>, BeforeEnterObserver {
 
     private static final String SHOP_API_URL = "http://localhost:8080/api/shops";
@@ -41,6 +44,12 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("login");
         }
+        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m -> m.connectNotifications($0))",
+                getUserId());
+    }
+
+    private String getUserId() {
+        return (String) VaadinSession.getCurrent().getAttribute("userId");
     }
 
     @Override

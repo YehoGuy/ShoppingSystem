@@ -2,8 +2,11 @@ package UI;
 
 import DTOs.*;
 import Domain.ItemCategory;
+
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
@@ -27,11 +30,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Route(value = "edit-shop", layout = AppLayoutBasic.class)
+@JsModule("./js/notification-client.js")
 public class EditShopView extends VerticalLayout implements HasUrlParameter<Integer>, BeforeEnterObserver {
 
     private final RestTemplate restTemplate = new RestTemplate();
     private ShopDTO shop;
-    private Map<ItemDTO,Integer> allItemPrices;
+    private Map<ItemDTO, Integer> allItemPrices;
     private VerticalLayout itemsContainer;
 
     @Override
@@ -39,6 +43,12 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("login");
         }
+        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m => m.connectNotifications($0))",
+                getUserId());
+    }
+
+    private String getUserId() {
+        return (String) VaadinSession.getCurrent().getAttribute("userId");
     }
 
     private void loadShopData(int shopId) {
@@ -46,13 +56,13 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             String token = getToken();
             String url = "http://localhost:8080/api/shops/" + shopId + "?token=" + token;
             ResponseEntity<ShopDTO> response = restTemplate.getForEntity(url, ShopDTO.class);
-            
+
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 this.shop = response.getBody();
-                if (this.shop.getItems() == null ) {
+                if (this.shop.getItems() == null) {
                     this.shop.setItems(new ArrayList<>());
-                    
-                }else{
+
+                } else {
                     this.allItemPrices = this.shop.getItems().stream()
                         .collect(HashMap::new, (map, item) -> map.put(item, shop.getItemPrices().get(item.getId()) != null ? shop.getItemPrices().get(item.getId()).intValue() : null), HashMap::putAll);
                 }

@@ -6,6 +6,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Div;
@@ -27,6 +28,7 @@ import DTOs.ShoppingCartDTO;
 import DTOs.ShopDTO;
 
 @Route(value = "cart", layout = AppLayoutBasic.class)
+@JsModule("./js/notification-client.js")
 public class ShoppingCartView extends VerticalLayout implements BeforeEnterObserver {
     private ShoppingCartDTO cart;
     private List<ShopDTO> shops;
@@ -42,6 +44,12 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("");
         }
+        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m -> m.connectNotifications($0))",
+                getUserId());
+    }
+
+    private String getUserId() {
+        return (String) VaadinSession.getCurrent().getAttribute("userId");
     }
 
     public ShoppingCartView() {

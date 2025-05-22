@@ -1,5 +1,7 @@
 package UI;
 
+import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Paragraph;
@@ -24,6 +26,7 @@ import DTOs.AddressDTO;
 import com.vaadin.flow.server.VaadinSession;
 
 @Route("receipt")
+@JsModule("./js/notification-client.js")
 public class ReceiptView extends VerticalLayout implements BeforeEnterObserver {
 
     private static final String URL = "http://localhost:8080/api/purchases/";
@@ -60,6 +63,12 @@ public class ReceiptView extends VerticalLayout implements BeforeEnterObserver {
         if (VaadinSession.getCurrent().getAttribute("purchaseId") == null) {
             event.forwardTo("home");
         }
+        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m -> m.connectNotifications($0))",
+                getUserId());
+    }
+
+    private String getUserId() {
+        return (String) VaadinSession.getCurrent().getAttribute("userId");
     }
 
     private void buildReceiptView() {
