@@ -19,8 +19,10 @@ import static org.mockito.Mockito.when;
 import org.mockito.MockitoAnnotations;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
+import com.example.app.ApplicationLayer.NotificationService;
 import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.User.UserService;
+import com.example.app.DomainLayer.Notification;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
 import com.example.app.InfrastructureLayer.UserRepository;
@@ -33,6 +35,7 @@ public class UserServiceAcceptanceTests {
     private AuthTokenService authTokenService;
 
     private UserService userService;
+    private NotificationService notificationService;
     private AutoCloseable mocks;
 
     private final String token = "token123";
@@ -45,7 +48,7 @@ public class UserServiceAcceptanceTests {
     void setUp() {
         mocks = MockitoAnnotations.openMocks(this);
         userRepository.setEncoderToTest(true); // Set the encoder to test mode
-        userService = spy(new UserService(userRepository, authTokenService));
+        userService = spy(new UserService(userRepository, authTokenService, notificationService));
         userService.setEncoderToTest(true); // Set the encoder to test mode
     }
 

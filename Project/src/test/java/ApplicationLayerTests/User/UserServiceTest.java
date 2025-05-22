@@ -37,12 +37,14 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
+import com.example.app.ApplicationLayer.NotificationService;
 import com.example.app.ApplicationLayer.OurArg;
 import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
 import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.IUserRepository;
 import com.example.app.DomainLayer.Member;
+import com.example.app.DomainLayer.Notification;
 import com.example.app.DomainLayer.ShoppingCart;
 import com.example.app.DomainLayer.User;
 import com.example.app.DomainLayer.Purchase.Address;
@@ -57,13 +59,14 @@ public class UserServiceTest {
     private AuthTokenRepository authTokenRepository;
     private AuthTokenService authTokenService;
     private UserService userService;
+    private NotificationService notificationService;
 
     @BeforeEach
     void setUp() {
         authTokenRepository = new AuthTokenRepository(); // Your real repo
         authTokenService = new AuthTokenService(authTokenRepository); // Real service
         userRepository = new UserRepository();
-        userService = new UserService(userRepository, authTokenService);
+        userService = new UserService(userRepository, authTokenService, notificationService);
     }
 
     @Test
@@ -284,7 +287,7 @@ public class UserServiceTest {
     void testSetSuspendedFailure() {
         // replace repository with a mock that throws
         UserRepository mockRepo = Mockito.mock(UserRepository.class);
-        userService = new UserService(mockRepo, authTokenService);
+        userService = new UserService(userRepository, authTokenService, notificationService);
         // stub to throw low‐level error
         Mockito.doThrow(new RuntimeException("DB error"))
                 .when(mockRepo).setSuspended(Mockito.eq(42), Mockito.any(LocalDateTime.class));
@@ -298,7 +301,8 @@ public class UserServiceTest {
     void testGetNotificationsAndClearSuccess() throws Exception {
         UserRepository mockRepo = mock(UserRepository.class);
         AuthTokenService mockAuth = mock(AuthTokenService.class);
-        UserService svc = new UserService(mockRepo, mockAuth);
+        NotificationService mockNotify = mock(NotificationService.class);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
 
         String token = "tok123";
         when(mockAuth.ValidateToken(token)).thenReturn(77);
@@ -312,7 +316,8 @@ public class UserServiceTest {
     void testGetNotificationsAndClearFailure() throws Exception {
         UserRepository mockRepo = mock(UserRepository.class);
         AuthTokenService mockAuth = mock(AuthTokenService.class);
-        UserService svc = new UserService(mockRepo, mockAuth);
+        NotificationService mockNotify = mock(NotificationService.class);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
 
         String token = "tokX";
         when(mockAuth.ValidateToken(token)).thenReturn(42);
@@ -328,7 +333,7 @@ public class UserServiceTest {
     void testPurchaseNotificationSuccess() {
         // --- arrange ---
         UserRepository mockRepo = mock(UserRepository.class);
-        UserService svc = new UserService(mockRepo, authTokenService);
+        UserService svc = new UserService(userRepository, authTokenService, notificationService);
 
         Member owner = mock(Member.class);
         when(owner.getMemberId()).thenReturn(10);
@@ -353,7 +358,7 @@ public class UserServiceTest {
     void testPurchaseNotificationFailure() {
         // --- arrange ---
         UserRepository mockRepo = mock(UserRepository.class);
-        UserService svc = new UserService(mockRepo, authTokenService);
+        UserService svc = new UserService(userRepository, authTokenService, notificationService);
 
         Member owner = mock(Member.class);
         when(owner.getMemberId()).thenReturn(9);
@@ -378,7 +383,7 @@ public class UserServiceTest {
     @Test
     void testCloseShopNotificationSuccess() {
         UserRepository mockRepo = mock(UserRepository.class);
-        UserService svc = new UserService(mockRepo, authTokenService);
+        UserService svc = new UserService(userRepository, authTokenService, notificationService);
 
         Member owner = mock(Member.class);
         when(owner.getMemberId()).thenReturn(21);
@@ -394,7 +399,7 @@ public class UserServiceTest {
     @Test
     void testCloseShopNotificationFailure() {
         UserRepository mockRepo = mock(UserRepository.class);
-        UserService svc = new UserService(mockRepo, authTokenService);
+        UserService svc = new UserService(userRepository, authTokenService, notificationService);
 
         when(mockRepo.getOwners(99))
                 .thenThrow(new RuntimeException("network"));
@@ -407,7 +412,7 @@ public class UserServiceTest {
     @Test
     void testRemovedAppointmentWithoutShopSuccess() {
         UserRepository mockRepo = mock(UserRepository.class);
-        UserService svc = new UserService(mockRepo, authTokenService);
+        UserService svc = new UserService(userRepository, authTokenService, notificationService);
 
         svc.removedAppointment(5, "Dentist", null);
         verify(mockRepo).addNotification(5,
@@ -418,7 +423,7 @@ public class UserServiceTest {
     @Test
     void testRemovedAppointmentWithShopSuccess() {
         UserRepository mockRepo = mock(UserRepository.class);
-        UserService svc = new UserService(mockRepo, authTokenService);
+        UserService svc = new UserService(userRepository, authTokenService, notificationService);
 
         svc.removedAppointment(6, "Checkup", 42);
         verify(mockRepo).addNotification(6,
@@ -429,7 +434,7 @@ public class UserServiceTest {
     @Test
     void testRemovedAppointmentFailure() {
         UserRepository mockRepo = mock(UserRepository.class);
-        UserService svc = new UserService(mockRepo, authTokenService);
+        UserService svc = new UserService(userRepository, authTokenService, notificationService);
 
         doThrow(new RuntimeException("boom"))
                 .when(mockRepo).addNotification(anyInt(), anyString(), anyString());
@@ -442,7 +447,7 @@ public class UserServiceTest {
     @Test
     void testMessageNotificationFromShopSuccess() {
         UserRepository mockRepo = mock(UserRepository.class);
-        UserService svc = new UserService(mockRepo, authTokenService);
+        UserService svc = new UserService(userRepository, authTokenService, notificationService);
 
         svc.messageNotification(33, 55, true);
         verify(mockRepo).addNotification(33,
@@ -453,7 +458,7 @@ public class UserServiceTest {
     @Test
     void testMessageNotificationFromUserSuccess() {
         UserRepository mockRepo = mock(UserRepository.class);
-        UserService svc = new UserService(mockRepo, authTokenService);
+        UserService svc = new UserService(userRepository, authTokenService, notificationService);
 
         svc.messageNotification(44, 0, false);
         verify(mockRepo).addNotification(44,
@@ -464,7 +469,7 @@ public class UserServiceTest {
     @Test
     void testMessageNotificationFailure() {
         UserRepository mockRepo = mock(UserRepository.class);
-        UserService svc = new UserService(mockRepo, authTokenService);
+        UserService svc = new UserService(userRepository, authTokenService, notificationService);
 
         doThrow(new RuntimeException("failMsg"))
                 .when(mockRepo).addNotification(anyInt(), anyString(), anyString());
@@ -642,6 +647,7 @@ public class UserServiceTest {
 
         UserRepository mockRepo      = mock(UserRepository.class);
         AuthTokenService mockAuth    = mock(AuthTokenService.class);
+        NotificationService mockNotify = mock(NotificationService.class);
         when(mockAuth.ValidateToken(token)).thenReturn(ownerId);
         when(mockRepo.isSuspended(ownerId)).thenReturn(false);
         when(mockRepo.isOwner(ownerId, shopId)).thenReturn(true);
@@ -652,7 +658,7 @@ public class UserServiceTest {
         when(mockRepo.getMemberById(targetId)).thenReturn(member);
         when(member.getRoles()).thenReturn(List.of(existingRole));
 
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
 
         // act + assert no exception
         assertDoesNotThrow(() ->
@@ -676,10 +682,11 @@ public class UserServiceTest {
 
         UserRepository mockRepo = mock(UserRepository.class);
         AuthTokenService mockAuth = mock(AuthTokenService.class);
+        NotificationService mockNotify = mock(NotificationService.class);
         when(mockAuth.ValidateToken(token)).thenReturn(userId);
         when(mockRepo.isOwner(userId, shopId)).thenReturn(false);
 
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
         OurRuntime ex = assertThrows(OurRuntime.class,
             () -> svc.changePermissions(token, targetId, shopId, new PermissionsEnum[]{PermissionsEnum.manageItems})
         );
@@ -698,6 +705,7 @@ public class UserServiceTest {
         // --- arrange mocks ---
         UserRepository    mockRepo = mock(UserRepository.class);
         AuthTokenService  mockAuth = mock(AuthTokenService.class);
+        NotificationService mockNotify = mock(NotificationService.class);
 
         // token → assignee
         when(mockAuth.ValidateToken(token)).thenReturn(assignee);
@@ -715,7 +723,7 @@ public class UserServiceTest {
         Role role = new Role(assignee, shopId, new PermissionsEnum[]{ perm });
         when(mockRepo.getRole(targetId, shopId)).thenReturn(role);
 
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
 
         // --- act & assert ---
         boolean result = svc.removePermission(token, targetId, perm, shopId);
@@ -731,9 +739,10 @@ public class UserServiceTest {
         String token = "t";
         UserRepository mockRepo = mock(UserRepository.class);
         AuthTokenService mockAuth = mock(AuthTokenService.class);
+        NotificationService mockNotify = mock(NotificationService.class);
         when(mockAuth.ValidateToken(token)).thenReturn(1);
 
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
         OurRuntime ex = assertThrows(OurRuntime.class,
             () -> svc.removePermission(token, 2, null, 7)
         );
@@ -753,6 +762,7 @@ public class UserServiceTest {
         // mocks
         UserRepository   mockRepo = mock(UserRepository.class);
         AuthTokenService mockAuth = mock(AuthTokenService.class);
+        NotificationService mockNotify = mock(NotificationService.class);
 
         // make validateMemberId(id) pass:
         Member dummyMember = mock(Member.class);
@@ -765,7 +775,7 @@ public class UserServiceTest {
         // getRole(id, shopId) returns our same role
         when(mockRepo.getRole(id, shopId)).thenReturn(role);
 
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
 
         // exercise
         boolean ok = svc.removeRole(id, role);
@@ -793,6 +803,7 @@ public class UserServiceTest {
         // mocks
         UserRepository   mockRepo = mock(UserRepository.class);
         AuthTokenService mockAuth = mock(AuthTokenService.class);
+        NotificationService mockNotify = mock(NotificationService.class);
 
         // auth + owner check
         when(mockAuth.ValidateToken(token)).thenReturn(ownerId);
@@ -803,7 +814,7 @@ public class UserServiceTest {
             .thenReturn(new Role(ownerId, shopId, perms)); // assignee == ownerId
         // no members list needed here, removeAllAssigned is only in removeOwner...
 
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
 
         // 1) make manager
         assertDoesNotThrow(() -> svc.makeManagerOfStore(token, mgrId, shopId, perms));
@@ -823,6 +834,7 @@ public class UserServiceTest {
         // mocks
         UserRepository   mockRepo = mock(UserRepository.class);
         AuthTokenService mockAuth = mock(AuthTokenService.class);
+        NotificationService mockNotify = mock(NotificationService.class);
 
         // auth + isOwner
         when(mockAuth.ValidateToken(token)).thenReturn(owner);
@@ -832,7 +844,7 @@ public class UserServiceTest {
         // stub out downstream of removeOwner
         when(mockRepo.getMembersList()).thenReturn(List.of()); // avoid removeAllAssigned loops
 
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
 
         // make owner
         assertDoesNotThrow(() -> svc.makeStoreOwner(token, newOwner, shopId));
@@ -858,6 +870,7 @@ public class UserServiceTest {
         // mocks
         UserRepository   mockRepo = mock(UserRepository.class);
         AuthTokenService mockAuth = mock(AuthTokenService.class);
+        NotificationService mockNotify = mock(NotificationService.class);
 
         // make validateMemberId(id) pass
         Member fakeMember = mock(Member.class);
@@ -868,7 +881,7 @@ public class UserServiceTest {
         // stub out getRole
         when(mockRepo.getRole(id, shopId)).thenReturn(r);
 
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
 
         // exercise
         boolean result = svc.hasRole(id, r);
@@ -896,7 +909,7 @@ public class UserServiceTest {
         when(mockAuth.ValidateToken(token)).thenReturn(memberId);
         when(mockRepo.getPendingRole(memberId, shopId)).thenReturn(r);
 
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
         assertDoesNotThrow(() -> svc.acceptRole(token, shopId));
         verify(mockRepo).acceptRole(memberId, r);
 
@@ -916,7 +929,7 @@ public class UserServiceTest {
         when(mockAuth.ValidateToken(token)).thenReturn(emp);
         when(mockRepo.getRole(emp, shopId)).thenReturn(new Role(emp, shopId, null));
 
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
         boolean ok = svc.refundPaymentByStoreEmployee(token, uid, shopId, 12.5);
         assertTrue(ok);
         verify(mockRepo).refund(uid, shopId, 12.5);
@@ -930,7 +943,7 @@ public class UserServiceTest {
         when(mockAuth.ValidateToken(token)).thenReturn(1);
         when(mockRepo.getRole(1, 9)).thenReturn(null);
 
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
         OurRuntime ex = assertThrows(OurRuntime.class,
             () -> svc.refundPaymentByStoreEmployee(token, 2, 9, 5.0)
         );
@@ -947,7 +960,7 @@ public class UserServiceTest {
         AuthTokenService mockAuth = mock(AuthTokenService.class);
         when(mockAuth.ValidateToken(token)).thenReturn(userId);
 
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
         assertDoesNotThrow(() -> svc.updateItemQuantityInShoppingCart(token, shopId, itemId, qty));
         verify(mockRepo).updateItemQuantityInShoppingCart(userId, shopId, itemId, qty);
     }
@@ -985,7 +998,7 @@ public class UserServiceTest {
         AuthTokenService mockAuth = mock(AuthTokenService.class);
         when(mockAuth.ValidateToken(token)).thenReturn(userId);
 
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
         boolean ok = svc.refundPaymentAuto(token, shopId, 11.1);
         assertTrue(ok);
         verify(mockRepo).refund(userId, shopId, 11.1);
@@ -1000,7 +1013,7 @@ public class UserServiceTest {
         AuthTokenService mockAuth = mock(AuthTokenService.class);
         when(mockAuth.ValidateToken(token)).thenReturn(userId);
 
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
         assertDoesNotThrow(() -> svc.addBasket(token, shopId));
         verify(mockRepo).createBasket(userId, shopId);
     }
@@ -1017,7 +1030,7 @@ public class UserServiceTest {
         when(mockAuth.ValidateToken(token)).thenReturn(userId);
         when(mockRepo.getPendingRoles(userId)).thenReturn(List.of(r1));
 
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
         List<Role> lst = svc.getPendingRoles(token);
         assertEquals(1, lst.size());
         assertSame(r1, lst.get(0));
@@ -1032,7 +1045,7 @@ public class UserServiceTest {
         AuthTokenService mockAuth = mock(AuthTokenService.class);
         when(mockAuth.ValidateToken(token)).thenReturn(userId);
 
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
         assertDoesNotThrow(() -> svc.clearShoppingCart(token));
         verify(mockRepo).clearShoppingCart(userId);
     }
@@ -1048,7 +1061,7 @@ public class UserServiceTest {
         when(mockRepo.getUserById(userId)).thenReturn(mock(com.example.app.DomainLayer.User.class));
         when(mockRepo.getUserById(userId).getAddress()).thenReturn(addr);
 
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
         assertSame(addr, svc.getUserShippingAddress(userId));
     }
 
@@ -1062,7 +1075,7 @@ public class UserServiceTest {
         Member m = mock(Member.class);
         when(mockRepo.getShopMembers(shopId)).thenReturn(List.of(m));
 
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
         assertTrue(svc.getShopIdsByWorkerId(userId).contains(shopId));
         assertTrue(svc.getShopMembers(shopId).contains(m));
     }
@@ -1086,7 +1099,7 @@ void testUpdateMemberAddress_Success() throws Exception {
     when(mockRepo.getUserMapping()).thenReturn(Map.of(userId, realMember));
     when(mockRepo.getUserById(userId)).thenReturn(realMember);
 
-    UserService svc = new UserService(mockRepo, mockAuth);
+    UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
     // should not throw
     assertDoesNotThrow(() -> svc.updateMemberAddress(token, city, street, apt, postal));
     verify(mockRepo).updateMemberAddress(userId, city, street, apt, postal);
@@ -1100,7 +1113,7 @@ void testUpdateMemberAddress_Failure_InvalidMember() throws Exception {
     AuthTokenService mockAuth = mock(AuthTokenService.class);
     when(mockAuth.ValidateToken(token)).thenReturn(7);
 
-    UserService svc = new UserService(mockRepo, mockAuth);
+    UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
     OurArg ex = assertThrows(OurArg.class,
         () -> svc.updateMemberAddress(token, "C", "S", 1, "P")
     );
@@ -1119,7 +1132,7 @@ void testGetAcceptedRoles_Success() throws Exception {
     when(mockAuth.ValidateToken(token)).thenReturn(userId);
     when(mockRepo.getAcceptedRoles(userId)).thenReturn(List.of(r1));
 
-    UserService svc = new UserService(mockRepo, mockAuth);
+    UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
     List<Role> result = svc.getAcceptedRoles(token);
     assertEquals(1, result.size());
     assertSame(r1, result.get(0));
@@ -1135,7 +1148,7 @@ void testGetAcceptedRoles_Failure_NoPending() throws Exception{
     when(mockAuth.ValidateToken(token)).thenReturn(userId);
     when(mockRepo.getAcceptedRoles(userId)).thenThrow(new RuntimeException("db"));
 
-    UserService svc = new UserService(mockRepo, mockAuth);
+    UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
     OurRuntime ex = assertThrows(OurRuntime.class,
         () -> svc.getAcceptedRoles(token)
     );
@@ -1318,7 +1331,7 @@ void testGetAllMembers_Failure() {
         when(mockRepo.getRole(target, shopId)).thenReturn(existingRole);
     
         // exercise
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
         boolean result = svc.addPermission(token, target, perm, shopId);
     
         // verify
@@ -1334,7 +1347,7 @@ void testGetAllMembers_Failure() {
         var mockAuth = mock(AuthTokenService.class);
         when(mockAuth.ValidateToken(token)).thenReturn(1);
 
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
         OurRuntime ex = assertThrows(OurRuntime.class, () ->
             svc.addPermission(token, 2, null, 1)
         );
@@ -2670,7 +2683,7 @@ void testGetAllMembers_Failure() {
         AuthTokenService mockAuth = mock(AuthTokenService.class);
         UserRepository mockRepo = mock(UserRepository.class);
         when(mockAuth.ValidateToken("bad")).thenThrow(new OurArg("noAuth"));
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
 
         OurArg ex = assertThrows(OurArg.class, () -> svc.addBasket("bad", 123));
         assertTrue(ex.getMessage().contains("addBasket"));
@@ -2685,7 +2698,7 @@ void testGetAllMembers_Failure() {
         doThrow(new RuntimeException("fail"))
             .when(mockRepo).createBasket(1, 3);
 
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
         OurRuntime ex = assertThrows(OurRuntime.class, () -> svc.addBasket("tok", 3));
         assertTrue(ex.getMessage().contains("addBasket: fail"));
     }
@@ -2697,7 +2710,7 @@ void testGetAllMembers_Failure() {
         UserRepository mockRepo = mock(UserRepository.class);
         when(mockAuth.ValidateToken("bad")).thenThrow(new OurArg("noAuth"));
 
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
         OurArg ex = assertThrows(OurArg.class,
             () -> svc.updateItemQuantityInShoppingCart("bad", 1, 2, 3));
         assertTrue(ex.getMessage().contains("updateItemQuantityInShoppingCart"));
@@ -2736,7 +2749,7 @@ void testGetAllMembers_Failure() {
         when(mockRepo.addGuest()).thenReturn(42);
         when(mockAuth.AuthenticateGuest(42)).thenThrow(new RuntimeException("authfail"));
 
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
         OurRuntime ex = assertThrows(OurRuntime.class, svc::loginAsGuest);
         assertTrue(ex.getMessage().contains("loginAsGuest:"));
     }
@@ -3791,7 +3804,7 @@ void testGetAllMembers_Failure() {
         // add role, accept/decline
         UserRepository mockRepo = mock(UserRepository.class);
         AuthTokenService mockAuth = mock(AuthTokenService.class);
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
         String token = "tok";
         int uid = 5, shop = 10;
 
@@ -4258,7 +4271,7 @@ void testGetAllMembers_Failure() {
     void testGetNotificationsAndClear_ReturnsList() throws Exception {
         UserRepository mockRepo = mock(UserRepository.class);
         AuthTokenService mockAuth = mock(AuthTokenService.class);
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
 
         String token = "tok";
         when(mockAuth.ValidateToken(token)).thenReturn(10);
@@ -4324,7 +4337,7 @@ void testGetAllMembers_Failure() {
         when(mockAuth.ValidateToken("tok")).thenReturn(20);
         when(mockRepo.getPendingRoles(20)).thenReturn(List.of());
 
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
         List<Role> lst = svc.getPendingRoles("tok");
         assertTrue(lst.isEmpty());
     }
@@ -4336,7 +4349,7 @@ void testGetAllMembers_Failure() {
         when(mockAuth.ValidateToken("tok")).thenReturn(30);
         when(mockRepo.getAcceptedRoles(30)).thenReturn(List.of());
 
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
         List<Role> lst = svc.getAcceptedRoles("tok");
         assertTrue(lst.isEmpty());
     }
@@ -4349,7 +4362,7 @@ void testGetAllMembers_Failure() {
         when(mockRepo.isAdmin(1)).thenReturn(true);
         when(mockRepo.getAllAdmins()).thenReturn(List.of());
 
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
         List<Integer> admins = svc.getAllAdmins("tok");
         assertTrue(admins.isEmpty());
     }
@@ -4633,11 +4646,12 @@ void testGetAllMembers_Failure() {
     void testUpdateMemberUsername_SuspendedThrows() throws Exception {
         UserRepository mockRepo = mock(UserRepository.class);
         AuthTokenService mockAuth = mock(AuthTokenService.class);
+        NotificationService mockNotify = mock(NotificationService.class);
         when(mockAuth.ValidateToken("tok")).thenReturn(7);
         when(mockRepo.isSuspended(7)).thenReturn(true);
         when(mockRepo.getUserMapping()).thenReturn(Map.of(7, mock(Member.class)));
         when(mockRepo.getUserById(7)).thenReturn(mock(Member.class));
-        UserService svc = new UserService(mockRepo, mockAuth);
+        UserService svc = new UserService(mockRepo, mockAuth, mockNotify);
 
         OurRuntime ex = assertThrows(OurRuntime.class, () ->
             svc.updateMemberUsername("tok","new")
