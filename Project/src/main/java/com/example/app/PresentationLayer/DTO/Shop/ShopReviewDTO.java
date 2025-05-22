@@ -10,11 +10,12 @@ import jakarta.validation.constraints.Positive;
 public record ShopReviewDTO(
         @Positive int userId,
         @Min(1) @Max(5) int rating,
-        @NotBlank String reviewText) {
+        @NotBlank String reviewText,
+        @NotBlank String shopName) {
 
     /*  ---------------- Domain ➜ DTO ---------------- */
-    public static ShopReviewDTO fromDomain(com.example.app.DomainLayer.Shop.ShopReview r) {
-        return new ShopReviewDTO(r.getUserId(), r.getRating(), r.getReviewText());
+    public static ShopReviewDTO fromDomain(com.example.app.DomainLayer.Shop.ShopReview r, String shopName) {
+        return new ShopReviewDTO(r.getUserId(), r.getRating(), r.getReviewText(), shopName);
     }
 
     /*  ---------------- DTO ➜ Domain ---------------- */
