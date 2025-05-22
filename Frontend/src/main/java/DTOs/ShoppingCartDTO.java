@@ -9,6 +9,7 @@ public class ShoppingCartDTO {
     private Map<Integer, List<Integer>> shopItems;
     // shopId -> Map<Item Id, Price>
     private Map<Integer, Map<Integer,Double>> shopItemPrices;
+    // shopId -> Map<Item Id, Quantity>
     private Map<Integer, Map<Integer,Integer>> shopItemQuantities;
     private List<ItemDTO> items;
 
