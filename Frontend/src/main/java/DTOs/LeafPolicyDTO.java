@@ -5,9 +5,9 @@ public class LeafPolicyDTO {
     private Integer threshold;
     private String itemName;
     private ItemCategory itemCategory;
-    private Double basketValue;
+    private Integer basketValue;
 
-    public LeafPolicyDTO(Integer threshold, String itemName, ItemCategory itemCategory, double basketValue) {
+    public LeafPolicyDTO(Integer threshold, String itemName, ItemCategory itemCategory, Integer basketValue) {
         this.threshold = threshold;
         this.itemName = itemName;
         this.itemCategory = itemCategory;

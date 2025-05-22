@@ -5,40 +5,61 @@ import java.util.Map;
 
 public class ShoppingCartDTO {
 
-    // shopId → list of cart entries
-    private Map<String, List<CartEntryDTO>> cartItems;
-    private double totalPrice;
-    private Map<String, Double> shopPrices;
+    // shopId -> Item Id
+    private Map<Integer, List<Integer>> shopItems;
+    // shopId -> Map<Item Id, Price>
+    private Map<Integer, Map<Integer,Double>> shopItemPrices;
+    private Map<Integer, Map<Integer,Integer>> shopItemQuantities;
+    private List<ItemDTO> items;
+
+
 
     public ShoppingCartDTO() {}
 
-    public ShoppingCartDTO(Map<String, List<CartEntryDTO>> cartItems, double totalPrice, Map<String, Double> shopPrices) {
-        this.cartItems = cartItems;
-        this.totalPrice = totalPrice;
-        this.shopPrices = shopPrices;
+    public ShoppingCartDTO(Map<Integer, List<Integer>> shopItems,
+                        Map<Integer, Map<Integer, Double>> shopItemPrices,
+                        Map<Integer, Map<Integer, Integer>> shopItemQuantities,
+                        double totalPrice,  List<ItemDTO> items) {
+        this.shopItems = shopItems;
+        this.shopItemPrices = shopItemPrices;
+        this.shopItemQuantities = shopItemQuantities;
     }
 
-    public Map<String, List<CartEntryDTO>> getCartItems() {
-        return cartItems;
+    public Map<Integer, List<Integer>> getShopItems() {
+        return shopItems;
     }
 
-    public void setCartItems(Map<String, List<CartEntryDTO>> cartItems) {
-        this.cartItems = cartItems;
+    public void setShopItems(Map<Integer, List<Integer>> shopItems) {
+        this.shopItems = shopItems;
     }
 
-    public double getTotalPrice() {
-        return totalPrice;
+    public Map<Integer, Map<Integer, Double>> getShopItemPrices() {
+        return shopItemPrices;
     }
 
-    public void setTotalPrice(double totalPrice) {
-        this.totalPrice = totalPrice;
+    public void setShopItemPrices(Map<Integer, Map<Integer, Double>> shopItemPrices) {
+        this.shopItemPrices = shopItemPrices;
     }
 
-    public Map<String, Double> getShopPrices() {
-        return shopPrices;
+    public Map<Integer, Map<Integer, Integer>> getShopItemQuantities() {
+        return shopItemQuantities;
     }
 
-    public void setShopPrices(Map<String, Double> shopPrices) {
-        this.shopPrices = shopPrices;
+    public void setShopItemQuantities(Map<Integer, Map<Integer, Integer>> shopItemQuantities) {
+        this.shopItemQuantities = shopItemQuantities;
+    }
+
+    public Double getTotalPrice() {
+        return shopItemPrices.values().stream()
+                .mapToDouble(map -> map.values().stream().mapToDouble(Double::doubleValue).sum())
+                .sum();
+    }
+
+    public List<ItemDTO> getItems() {
+        return items;
+    }
+
+    public void setItems(List<ItemDTO> items) {
+        this.items = items;
     }
 }
