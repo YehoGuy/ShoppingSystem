@@ -100,4 +100,12 @@ public class ShoppingCart {
         }
     }
 
+    public Map<Integer, Map<Integer, Integer>> getCart() {
+        Map<Integer, Map<Integer, Integer>> cartCopy = new HashMap<>();
+        for (Map.Entry<Integer, ConcurrentHashMap<Integer, Integer>> entry : items.entrySet()) {
+            cartCopy.put(entry.getKey(), new HashMap<>(entry.getValue()));
+        }
+        return cartCopy;
+    }
+
 }

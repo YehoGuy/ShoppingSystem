@@ -2,6 +2,7 @@ package com.example.app.PresentationLayer.Controller;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -33,7 +34,6 @@ import com.example.app.PresentationLayer.DTO.Role.RoleDTO;
 import com.example.app.PresentationLayer.DTO.User.GuestDTO;
 import com.example.app.PresentationLayer.DTO.User.MemberDTO;
 
-import java.util.Arrays;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -115,11 +115,11 @@ public class UserController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
             if (user instanceof Member) {
                 Member member = (Member) user;
-                MemberDTO userDTO = MemberDTO.fromDomain(member);
+                MemberDTO userDTO = MemberDTO.fromDomain(member,null);
                 return ResponseEntity.ok(userDTO);
             } else if (user instanceof Guest) {
                 Guest guest = (Guest) user;
-                GuestDTO userDTO = GuestDTO.fromDomain(guest);
+                GuestDTO userDTO = GuestDTO.fromDomain(guest, null);
                 return ResponseEntity.ok(userDTO);
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Not member or Guest");
@@ -143,9 +143,10 @@ public class UserController {
         try {
             authService.ValidateToken(token);
             List<Member> members = userService.getAllMembers();
-            List<MemberDTO> membersDTO = members.stream()
-                    .map(MemberDTO::fromDomain)
-                    .toList();
+            List<MemberDTO> membersDTO = new ArrayList<>();
+            for (Member member : members) {
+                membersDTO.add(MemberDTO.fromDomain(member, null));
+            }
             return ResponseEntity.ok(membersDTO);
 
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
@@ -696,9 +697,10 @@ public class UserController {
         try {
             authService.ValidateToken(token);
             List<Member> members = userService.getShopMembers(shopId);
-            List<MemberDTO> membersDTO = members.stream()
-                    .map(MemberDTO::fromDomain)
-                    .toList();
+            List<MemberDTO> membersDTO = new ArrayList<>();
+            for (Member member : members) {
+                membersDTO.add(MemberDTO.fromDomain(member, null));
+            }
             return ResponseEntity.ok(membersDTO);
 
         } catch (ConstraintViolationException | IllegalArgumentException ex) {

@@ -11,10 +11,11 @@ public record GuestDTO(
         AddressDTO address) {
 
     /* -------- Domain ➜ DTO -------- */
-    public static GuestDTO fromDomain(com.example.app.DomainLayer.Guest g) {
+    public static GuestDTO fromDomain(com.example.app.DomainLayer.Guest g,
+                                      ShoppingCartDTO shoppingCart) {
         return new GuestDTO(
                 g.getGuestId(),
-                ShoppingCartDTO.fromDomain(g.getShoppingCart()),
+                shoppingCart,
                 g.getAddress() != null ? AddressDTO.fromDomain(g.getAddress()) : null);
     }
 
