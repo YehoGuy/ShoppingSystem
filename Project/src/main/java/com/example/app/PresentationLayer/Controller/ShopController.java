@@ -1,5 +1,6 @@
 package com.example.app.PresentationLayer.Controller;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -153,7 +154,11 @@ public class ShopController {
         try {
             // TODO: parse a real PurchasePolicy if needed
             Shop shop = shopService.createShop(name, null, null, token);
-            ShopDTO shopDTO = ShopDTO.fromDomain(shop);
+            List<Item> items = shopService.getItemsByShop(shop.getId(), token);
+            List<ItemDTO> itemDTOs = items.stream()
+                    .map(ItemDTO::fromDomain)
+                    .toList();
+            ShopDTO shopDTO = ShopDTO.fromDomain(shop, itemDTOs);
             return ResponseEntity.status(HttpStatus.CREATED).body(shopDTO);
 
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
@@ -179,7 +184,11 @@ public class ShopController {
                 throw new IllegalArgumentException("Shop ID must be a positive integer.");
             }
             Shop shop = shopService.getShop(id, token);
-            ShopDTO shopDTO = ShopDTO.fromDomain(shop);
+            List<Item> items = shopService.getItemsByShop(id, token);
+            List<ItemDTO> itemDTOs = items.stream()
+                    .map(ItemDTO::fromDomain)
+                    .toList();
+            ShopDTO shopDTO = ShopDTO.fromDomain(shop, itemDTOs);
             return ResponseEntity.ok(shopDTO);
 
         } catch (NoSuchElementException ex) {
@@ -197,9 +206,14 @@ public class ShopController {
     public ResponseEntity<List<ShopDTO>> getAllShops(@RequestParam String token) {
         try {
             List<Shop> shops = shopService.getAllShops(token);
-            List<ShopDTO> shopDTOs = shops.stream()
-                    .map(ShopDTO::fromDomain)
+            List<Item> items = shopService.getItems(token);
+            List<ItemDTO> itemDTOs = items.stream()
+                    .map(ItemDTO::fromDomain)
                     .toList();
+            List<ShopDTO> shopDTOs = new ArrayList<>();
+            for (Shop shop : shops) {
+                shopDTOs.add(ShopDTO.fromDomain(shop, itemDTOs));
+            }
             return ResponseEntity.ok(shopDTOs);
         } catch (Exception ex) {
             ex.printStackTrace(); // log the real error
@@ -653,9 +667,14 @@ public class ShopController {
             @RequestParam String token) {
         try {
             List<Shop> shops = shopService.getShopsByWorker(workerId, token);
-            List<ShopDTO> shopDTOs = shops.stream()
-                    .map(ShopDTO::fromDomain)
+            List<Item> items = shopService.getItems(token);
+            List<ItemDTO> itemDTOs = items.stream()
+                    .map(ItemDTO::fromDomain)
                     .toList();
+            List<ShopDTO> shopDTOs = new ArrayList<>();
+            for (Shop shop : shops) {
+                shopDTOs.add(ShopDTO.fromDomain(shop, itemDTOs));
+            }
             return ResponseEntity.ok(shopDTOs);
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());

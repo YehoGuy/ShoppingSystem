@@ -541,4 +541,35 @@ public class Shop {
             }
         }
     }
+
+    public Map<Integer, Double> getItemPrices()
+    {
+        Map<Integer, Double> prices = new HashMap<>();
+        for (Map.Entry<Integer, AtomicInteger> entry : itemsPrices.entrySet()) {
+            int itemId = entry.getKey();
+            double price = entry.getValue().get();
+            prices.put(itemId, price);
+        }
+        return prices;
+    }
+
+    public Map<Integer, Integer> getItemQuantities()
+    {
+        Map<Integer, Integer> quantities = new HashMap<>();
+        for (Map.Entry<Integer, AtomicInteger> entry : items.entrySet()) {
+            int itemId = entry.getKey();
+            int quantity = entry.getValue().get();
+            quantities.put(itemId, quantity);
+        }
+        return quantities;
+    }
+
+    public List<Integer> getItems() {
+        List<Integer> itemsList = new ArrayList<>();
+        for (Map.Entry<Integer, AtomicInteger> entry : items.entrySet()) {
+            int itemId = entry.getKey();
+            itemsList.add(itemId);
+        }
+        return itemsList;
+    }
 }
