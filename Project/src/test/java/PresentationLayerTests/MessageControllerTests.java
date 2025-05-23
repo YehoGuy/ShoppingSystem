@@ -1,5 +1,9 @@
 package PresentationLayerTests;
 
+import java.util.Arrays;
+
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -13,25 +17,17 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-
-import com.example.app.ApplicationLayer.Message.MessageService;
-import com.example.app.DomainLayer.Message;
-import com.example.app.PresentationLayer.Controller.MessageController;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.Arrays;
-import java.util.List;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
+import com.example.app.ApplicationLayer.Message.MessageService;
+import com.example.app.DomainLayer.Message;
+import com.example.app.PresentationLayer.Controller.MessageController;
 
 /**
  * Comprehensive slice tests for MessageController.
@@ -46,14 +42,14 @@ public class MessageControllerTests {
     }
 
     @Autowired
-    private MockMvc mvc;
+    private static MockMvc mvc;
 
     @MockBean
-    private MessageService messageService;
+    private static MessageService messageService;
 
     @Nested
     @DisplayName("1. SEND TO USER")
-    class SendToUserTests {
+    static class SendToUserTests {
         @Test
         void success_returns202() throws Exception {
             when(messageService.sendMessageToUser("tok", 5, "Hello", 0))
@@ -85,7 +81,7 @@ public class MessageControllerTests {
 
     @Nested
     @DisplayName("2. SEND TO SHOP")
-    class SendToShopTests {
+    static class SendToShopTests {
         @Test
         void success_returns202() throws Exception {
             when(messageService.sendMessageToShop("tok", 10, "Order?", 2))
@@ -117,7 +113,7 @@ public class MessageControllerTests {
 
     @Nested
     @DisplayName("3. DELETE MESSAGE")
-    class DeleteMessageTests {
+    static class DeleteMessageTests {
         @Test
         void success_returns200() throws Exception {
             when(messageService.deleteMessage("tok", 42)).thenReturn("deleted");
@@ -142,7 +138,7 @@ public class MessageControllerTests {
 
     @Nested
     @DisplayName("4. UPDATE MESSAGE")
-    class UpdateMessageTests {
+    static class UpdateMessageTests {
         @Test
         void success_returns200() throws Exception {
             when(messageService.updateMessage("tok", 7, "New content"))
@@ -170,7 +166,7 @@ public class MessageControllerTests {
 
     @Nested
     @DisplayName("5. GET CONVERSATION")
-    class GetConversationTests {
+    static class GetConversationTests {
         @Test
         void success_returns200AndConversation() throws Exception {
             when(messageService.getFullConversation("tok", 15))
@@ -185,7 +181,7 @@ public class MessageControllerTests {
 
     @Nested
     @DisplayName("6. GET BY SENDER")
-    class GetBySenderTests {
+    static class GetBySenderTests {
         @Test
         void success_returns200AndMessages() throws Exception {
         Message m1 = new Message(1, 3, 4, "Hello", "2025-05-07T13:45:30Z", true, 0);
@@ -210,7 +206,7 @@ public class MessageControllerTests {
 
     @Nested
     @DisplayName("7. GET BY RECEIVER")
-    class GetByReceiverTests {
+    static class GetByReceiverTests {
         @Test
         void success_returns200AndMessages() throws Exception {
                 Message mA = new Message(1, 3, 4, "Hello", "2025-05-07T13:45:30Z", true, 0);
@@ -235,7 +231,7 @@ public class MessageControllerTests {
 
     @Nested
     @DisplayName("8. GET BY ID")
-    class GetByIdTests {
+    static class GetByIdTests {
         @Test
         void success_returns200() throws Exception {
             when(messageService.getMessageById("tok", 9))
@@ -261,7 +257,7 @@ public class MessageControllerTests {
 
     @Nested
     @DisplayName("9. GET PREVIOUS MESSAGE")
-    class GetPreviousTests {
+    static class GetPreviousTests {
         @Test
         void success_returns200() throws Exception {
             when(messageService.getPreviousMessage("tok", 9))
