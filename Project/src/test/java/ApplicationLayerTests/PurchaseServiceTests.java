@@ -59,46 +59,52 @@ import com.example.app.InfrastructureLayer.PurchaseRepository;
 import com.example.app.SimpleHttpServerApplication;
 
 /**
- * High-level “acceptance” tests for {@link PurchaseService}.  
+ * High-level “acceptance” tests for {@link PurchaseService}.
  * Each test uses full mocking to validate observable behaviour across the
  * service’s public API, including happy-paths and rollback paths.
  */
 @ExtendWith({ SpringExtension.class, MockitoExtension.class })
 @SpringBootTest(classes = SimpleHttpServerApplication.class)
 @AutoConfigureMockMvc(addFilters = false)
-class PurchaseServiceAcceptanceTests{
+class PurchaseServiceAcceptanceTests {
 
     /* ─────────── mocks & SUT ─────────── */
-    @Mock IPurchaseRepository repo;
-    @Mock AuthTokenService    auth;
-    @Mock UserService         users;
-    @Mock ItemService         items;
-    @Mock ShopService         shops;
-    @Mock MessageService      msg;
+    @Mock
+    IPurchaseRepository repo;
+    @Mock
+    AuthTokenService auth;
+    @Mock
+    UserService users;
+    @Mock
+    ItemService items;
+    @Mock
+    ShopService shops;
+    @Mock
+    MessageService msg;
     PurchaseService service;
 
     Address addr = new Address().withCountry("IL").withCity("TLV")
-                                .withStreet("Rothschild").withZipCode("6800000");
+            .withStreet("Rothschild").withZipCode("6800000");
 
     @BeforeEach
     void setUp() {
         service = new PurchaseService(repo, auth, users, shops, items, msg);
     }
-    /* ══════════════════════════════════════════════════════════════
-       checkoutCart tests
-       ══════════════════════════════════════════════════════════════ */
+    /*
+     * ══════════════════════════════════════════════════════════════
+     * checkoutCart tests
+     * ══════════════════════════════════════════════════════════════
+     */
 
     @Test
-    @DisplayName(
-        "checkoutCart_whenUserHasCartWithTwoDifferentShopIds_shouldCreateTwoPurchases_CallPaymentAndShipping_ThenReturnBothIds"
-    )
+    @DisplayName("checkoutCart_whenUserHasCartWithTwoDifferentShopIds_shouldCreateTwoPurchases_CallPaymentAndShipping_ThenReturnBothIds")
     void checkoutCart_multiShopHappyPath() throws Exception {
         String token = "valid";
         int uid = 1;
         int shopA = 10, shopB = 20;
-        Map<Integer,Integer> cartShopA = Map.of(5,2);
-        Map<Integer,Integer> cartShopB = Map.of(7,1);
-        Map<Integer,HashMap<Integer,Integer>> cart = new HashMap<>();
+        Map<Integer, Integer> cartShopA = Map.of(5, 2);
+        Map<Integer, Integer> cartShopB = Map.of(7, 1);
+        Map<Integer, HashMap<Integer, Integer>> cart = new HashMap<>();
         cart.put(shopA, new HashMap<>(cartShopA));
         cart.put(shopB, new HashMap<>(cartShopB));
 
@@ -107,26 +113,25 @@ class PurchaseServiceAcceptanceTests{
         when(shops.purchaseItems(cartShopA, shopA, token)).thenReturn(100.0);
         when(shops.purchaseItems(cartShopB, shopB, token)).thenReturn(50.0);
         when(repo.addPurchase(eq(uid), eq(shopA), eq(cartShopA), eq(100.0), any())).thenReturn(1);
-        when(repo.addPurchase(eq(uid), eq(shopB), eq(cartShopB), eq(50.0),  any())).thenReturn(2);
+        when(repo.addPurchase(eq(uid), eq(shopB), eq(cartShopB), eq(50.0), any())).thenReturn(2);
 
         List<Integer> ids = service.checkoutCart(token, addr);
 
-        assertEquals(Set.of(1,2), new HashSet<>(ids));
+        assertEquals(Set.of(1, 2), new HashSet<>(ids));
         verify(users).clearUserShoppingCart(uid);
         verify(users).pay(token, shopA, 100.0);
         verify(users).pay(token, shopB, 50.0);
-        verify(shops).shipPurchase(token, 1, shopA, "IL","TLV","Rothschild","6800000");
-        verify(shops).shipPurchase(token, 2, shopB, "IL","TLV","Rothschild","6800000");
+        verify(shops).shipPurchase(token, 1, shopA, "IL", "TLV", "Rothschild", "6800000");
+        verify(shops).shipPurchase(token, 2, shopB, "IL", "TLV", "Rothschild", "6800000");
     }
 
     @Test
-    @DisplayName(
-        "checkoutCart_whenSecondShopPaymentThrows_shouldRollbackAcquiredItems_restoreCart_refundFirstPayment_andPropagateException"
-    )
+    @DisplayName("checkoutCart_whenSecondShopPaymentThrows_shouldRollbackAcquiredItems_restoreCart_refundFirstPayment_andPropagateException")
     void checkoutCart_rollbackOnPaymentFailure() throws Exception {
-        String token="t"; int uid=2, shop=11;
-        Map<Integer,Integer> cartShop = Map.of(3,1);
-        Map<Integer,HashMap<Integer,Integer>> cart = new HashMap<>();
+        String token = "t";
+        int uid = 2, shop = 11;
+        Map<Integer, Integer> cartShop = Map.of(3, 1);
+        Map<Integer, HashMap<Integer, Integer>> cart = new HashMap<>();
         cart.put(shop, new HashMap<>(cartShop));
 
         when(auth.ValidateToken(token)).thenReturn(uid);
@@ -136,45 +141,47 @@ class PurchaseServiceAcceptanceTests{
         doThrow(new RuntimeException("payFail")).when(users).pay(token, shop, 30.0);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> service.checkoutCart(token, addr));
+                () -> service.checkoutCart(token, addr));
 
         verify(shops).rollBackPurchase(cartShop, shop);
         verify(users).restoreUserShoppingCart(eq(uid), any());
         verify(users, never()).clearUserShoppingCart(uid);
     }
 
-    /* ══════════════════════════════════════════════════════════════
-       createBid tests
-       ══════════════════════════════════════════════════════════════ */
+    /*
+     * ══════════════════════════════════════════════════════════════
+     * createBid tests
+     * ══════════════════════════════════════════════════════════════
+     */
 
     @Test
-    @DisplayName(
-        "createBid_whenAllValid_shouldReserveItems_CreateBidInRepository_andReturnBidId"
-    )
+    @DisplayName("createBid_whenAllValid_shouldReserveItems_CreateBidInRepository_andReturnBidId")
     void createBid_happyPath() throws Exception {
-        String t="tok"; int uid=4, shop=5, bidId=44;
-        Map<Integer,Integer> itemsMap = Map.of(9,2);
+        String t = "tok";
+        int uid = 4, shop = 5, bidId = 44;
+        Map<Integer, Integer> itemsMap = Map.of(9, 2);
 
         when(auth.ValidateToken(t)).thenReturn(uid);
         when(repo.addBid(uid, shop, itemsMap, 120)).thenReturn(bidId);
 
         int id = service.createBid(t, shop, itemsMap, 120);
 
-        assertEquals(bidId,id);
+        assertEquals(bidId, id);
         verify(shops).purchaseItems(itemsMap, shop, t);
     }
 
-    /* ══════════════════════════════════════════════════════════════
-       postBidding tests
-       ══════════════════════════════════════════════════════════════ */
+    /*
+     * ══════════════════════════════════════════════════════════════
+     * postBidding tests
+     * ══════════════════════════════════════════════════════════════
+     */
 
     @Test
-    @DisplayName(
-        "postBidding_whenUserIsNotOwnerAndBidExists_shouldAddBiddingViaDomainObjectOnce"
-    )
+    @DisplayName("postBidding_whenUserIsNotOwnerAndBidExists_shouldAddBiddingViaDomainObjectOnce")
     void postBidding_nonOwnerPostsBid() throws Exception {
-        String token="a"; int owner=1, bidder=2, pid=10;
-        Bid bid = spy(new Bid(pid, owner, 7, Map.of(1,1), 50));
+        String token = "a";
+        int owner = 1, bidder = 2, pid = 10;
+        Bid bid = spy(new Bid(pid, owner, 7, Map.of(1, 1), 50));
 
         when(auth.ValidateToken(token)).thenReturn(bidder);
         when(repo.getPurchaseById(pid)).thenReturn(bid);
@@ -185,43 +192,44 @@ class PurchaseServiceAcceptanceTests{
     }
 
     @Test
-    @DisplayName(
-        "postBidding_whenUserIsOwner_shouldThrowAndNotCallAddBidding"
-    )
+    @DisplayName("postBidding_whenUserIsOwner_shouldThrowAndNotCallAddBidding")
     void postBidding_ownerCannotBid() throws Exception {
-        String token="t"; int owner=3, pid=11;
+        String token = "t";
+        int owner = 3, pid = 11;
         Bid bid = spy(new Bid(pid, owner, 9, Map.of(), 10));
 
         when(auth.ValidateToken(token)).thenReturn(owner);
         when(repo.getPurchaseById(pid)).thenReturn(bid);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> service.postBidding(token,pid,20));
+                () -> service.postBidding(token, pid, 20));
 
         assertTrue(ex.getMessage().contains("owner"));
         verify(bid, never()).addBidding(anyInt(), anyInt());
     }
 
-    /* ══════════════════════════════════════════════════════════════
-       finalizeBid tests
-       ══════════════════════════════════════════════════════════════ */
+    /*
+     * ══════════════════════════════════════════════════════════════
+     * finalizeBid tests
+     * ══════════════════════════════════════════════════════════════
+     */
 
-    
-    /** happy path: owner finalises bid, payment & shipping succeed, bidders notified */
+    /**
+     * happy path: owner finalises bid, payment & shipping succeed, bidders notified
+     */
     @Test
-    @DisplayName(
-        "finalizeBid_whenOwnerInvokesAndPaymentSucceeds_shouldInvokePay_thenShip_thenNotifyBidders_andReturnHighestBidderId"
-    )
+    @DisplayName("finalizeBid_whenOwnerInvokesAndPaymentSucceeds_shouldInvokePay_thenShip_thenNotifyBidders_andReturnHighestBidderId")
     void finalizeBid_happyPath() throws Exception {
-        String token = "tok"; int owner = 1, shop = 8, pid = 22;
+        String token = "tok";
+        int owner = 1, shop = 8, pid = 22;
 
         // Spy on an *un-completed* bid
-        Bid bid = spy(new Bid(pid, owner, shop, Map.of(1,1), 100));
+        Bid bid = spy(new Bid(pid, owner, shop, Map.of(1, 1), 100));
 
         /* fabricate receipt object the service expects after completion */
         BidReciept rec = mock(BidReciept.class);
         when(rec.getHighestBidderId()).thenReturn(5);
-        when(bid.completePurchase()).thenReturn(rec);      // stub out real behaviour
+        when(bid.completePurchase()).thenReturn(rec); // stub out real behaviour
         when(bid.getMaxBidding()).thenReturn(150);
         when(bid.getBiddersIds()).thenReturn(List.of(5));
 
@@ -240,11 +248,11 @@ class PurchaseServiceAcceptanceTests{
         verify(msg).sendMessageToUser(eq(token), eq(5), contains("Congratulations"), eq(0));
     }
 
-    /** error path: pay() throws immediately – service returns –1 and does NOT refund */
+    /**
+     * error path: pay() throws immediately – service returns –1 and does NOT refund
+     */
     @Test
-    @DisplayName(
-        "finalizeBid_whenPayOperationImmediatelyThrows_shouldReturnMinusOne_andNoRefundOrShippingArePerformed"
-    )
+    @DisplayName("finalizeBid_whenPayOperationImmediatelyThrows_shouldReturnMinusOne_andNoRefundOrShippingArePerformed")
     void finalizeBid_paymentThrowsNoRefundExpected() throws Exception {
         String token = "tok";
         int owner = 1, shop = 2, pid = 30;
@@ -255,47 +263,41 @@ class PurchaseServiceAcceptanceTests{
         BidReciept rec = mock(BidReciept.class);
         when(rec.getHighestBidderId()).thenReturn(6);
         when(bid.completePurchase()).thenReturn(rec);
-        when(bid.getMaxBidding()).thenReturn(80);     // needed for pay()
+        when(bid.getMaxBidding()).thenReturn(80); // needed for pay()
 
         when(repo.getPurchaseById(pid)).thenReturn(bid);
         when(auth.ValidateToken(token)).thenReturn(owner);
 
         /* force pay() to fail */
         doThrow(new RuntimeException("payErr"))
-            .when(users).pay(token, shop, 80);
+                .when(users).pay(token, shop, 80);
 
-        assertThrows(Throwable.class,() -> service.finalizeBid(token, pid));
+        assertThrows(Throwable.class, () -> service.finalizeBid(token, pid));
 
-
-
-        
         verify(users, never())
-            .refundPaymentByStoreEmployee(any(), anyInt(), anyInt(), anyDouble());
+                .refundPaymentByStoreEmployee(any(), anyInt(), anyInt(), anyDouble());
         verify(shops, never()).shipPurchase(any(), anyInt(), anyInt(),
-                                            any(), any(), any(), any());
+                any(), any(), any(), any());
     }
 
-
-
-    /* ══════════════════════════════════════════════════════════════
-       simple query helpers
-       ══════════════════════════════════════════════════════════════ */
+    /*
+     * ══════════════════════════════════════════════════════════════
+     * simple query helpers
+     * ══════════════════════════════════════════════════════════════
+     */
 
     @Test
-    @DisplayName(
-        "getPurchaseById_whenRepositoryThrows_shouldWrapAndThrowIllegalArgumentException"
-    )
+    @DisplayName("getPurchaseById_whenRepositoryThrows_shouldWrapAndThrowIllegalArgumentException")
     void getPurchaseById_wrapsRepoException() {
         when(repo.getPurchaseById(99)).thenThrow(new RuntimeException());
         assertThrows(IllegalArgumentException.class, () -> service.getPurchaseById(99));
     }
 
     @Test
-    @DisplayName(
-        "getUserPurchases_whenTokenMatchesUserId_shouldReturnReceiptsFromRepository"
-    )
+    @DisplayName("getUserPurchases_whenTokenMatchesUserId_shouldReturnReceiptsFromRepository")
     void getUserPurchases_happyPath() throws Exception {
-        String token="t"; int uid=9;
+        String token = "t";
+        int uid = 9;
         List<Reciept> list = List.of(mock(Reciept.class));
         when(auth.ValidateToken(token)).thenReturn(uid);
         when(repo.getUserPurchases(uid)).thenReturn(list);
@@ -305,43 +307,54 @@ class PurchaseServiceAcceptanceTests{
         assertSame(list, out);
     }
 
-    /* ───────────────────────── CONCURRENCY ACCEPTANCE TESTS ───────────────────────── */
+    /*
+     * ───────────────────────── CONCURRENCY ACCEPTANCE TESTS
+     * ─────────────────────────
+     */
 
     @Nested
     @DisplayName("Concurrency – repository-level")
     class Concurrency {
 
-        @Autowired PurchaseRepository purchaseRepo;
+        @Autowired
+        PurchaseRepository purchaseRepo;
 
         private static final int THREADS = 16;
         private ExecutorService pool;
 
-        @BeforeEach void initPool() { pool = Executors.newFixedThreadPool(THREADS); }
-        @AfterEach  void shutdownPool() { pool.shutdownNow(); }
+        @BeforeEach
+        void initPool() {
+            pool = Executors.newFixedThreadPool(THREADS);
+        }
 
-        /** Multiple threads calling addPurchase must get distinct IDs and all
-         *  purchases must be retrievable afterwards. */
+        @AfterEach
+        void shutdownPool() {
+            pool.shutdownNow();
+        }
+
+        /**
+         * Multiple threads calling addPurchase must get distinct IDs and all
+         * purchases must be retrievable afterwards.
+         */
         @Test
         void concurrentAddPurchase_producesUniqueIds() throws Exception {
 
-            int userId  = 77;
+            int userId = 77;
             int storeId = 3;
-            Map<Integer,Integer> items = Map.of(1, 1);
+            Map<Integer, Integer> items = Map.of(1, 1);
 
             Set<Integer> ids = ConcurrentHashMap.newKeySet();
             CountDownLatch ready = new CountDownLatch(THREADS);
-            CountDownLatch go    = new CountDownLatch(1);
+            CountDownLatch go = new CountDownLatch(1);
 
-            IntStream.range(0, THREADS).forEach(i ->
-                pool.submit(() -> {
-                    ready.countDown();
-                    go.await();                      // all threads start together
-                    int id = purchaseRepo.addPurchase(
-                            userId, storeId, items, 10.0, /*shipping*/ null);
-                    ids.add(id);
-                    return null;
-                })
-            );
+            IntStream.range(0, THREADS).forEach(i -> pool.submit(() -> {
+                ready.countDown();
+                go.await(); // all threads start together
+                int id = purchaseRepo.addPurchase(
+                        userId, storeId, items, 10.0, /* shipping */ null);
+                ids.add(id);
+                return null;
+            }));
 
             ready.await();
             go.countDown();
@@ -353,65 +366,67 @@ class PurchaseServiceAcceptanceTests{
 
             /* repository must contain exactly THREADS purchases for that user */
             assertThat(purchaseRepo.getUserPurchases(userId))
-                .hasSize(THREADS);
+                    .hasSize(THREADS);
         }
 
-        /** Concurrent deletions of the *same* purchase ID must be safe and
-        *  idempotent – the purchase ends up gone, with no exceptions leaking. */
+        /**
+         * Concurrent deletions of the *same* purchase ID must be safe and
+         * idempotent – the purchase ends up gone, with no exceptions leaking.
+         */
         @Test
         void concurrentDeletePurchase_isIdempotent() throws Exception {
 
             int purchaseId = purchaseRepo.addPurchase(
-                    88, 4, Map.of(2, 2), 20.0, null);   // create once
+                    88, 4, Map.of(2, 2), 20.0, null); // create once
 
             CountDownLatch done = new CountDownLatch(THREADS);
 
-            IntStream.range(0, THREADS).forEach(i ->
-                pool.submit(() -> {
-                    try {
-                        purchaseRepo.deletePurchase(purchaseId);
-                    } catch (IllegalArgumentException ex) {
-                        /* Another thread already deleted it – that’s expected.
-                        * Any other exception type would still fail the test. */
-                        assertTrue(ex.getMessage().contains("purchaseId"));
-                    } finally {
-                        done.countDown();
-                    }
-                })
-            );
+            IntStream.range(0, THREADS).forEach(i -> pool.submit(() -> {
+                try {
+                    purchaseRepo.deletePurchase(purchaseId);
+                } catch (IllegalArgumentException ex) {
+                    /*
+                     * Another thread already deleted it – that’s expected.
+                     * Any other exception type would still fail the test.
+                     */
+                    assertTrue(ex.getMessage().contains("purchaseId"));
+                } finally {
+                    done.countDown();
+                }
+            }));
 
             done.await(5, TimeUnit.SECONDS);
 
             /* after all deletions, the repository must not find that ID */
             /* repository must no longer have that purchase ID */
             assertThrows(IllegalArgumentException.class,
-                        () -> purchaseRepo.getPurchaseById(purchaseId));
+                    () -> purchaseRepo.getPurchaseById(purchaseId));
         }
 
         /* ───────────────────── Bid-specific concurrency tests ───────────────────── */
 
-        /** Many threads call addBid(..) at once – every ID must be unique
-         *  and the repository must let us fetch each Bid afterwards. */
+        /**
+         * Many threads call addBid(..) at once – every ID must be unique
+         * and the repository must let us fetch each Bid afterwards.
+         */
         @Test
         void concurrentAddBid_producesUniqueIds() throws Exception {
 
-            int owner   = 55;
-            int shopId  = 9;
-            Map<Integer,Integer> items = Map.of(1, 1);
+            int owner = 55;
+            int shopId = 9;
+            Map<Integer, Integer> items = Map.of(1, 1);
 
             Set<Integer> ids = ConcurrentHashMap.newKeySet();
             CountDownLatch ready = new CountDownLatch(THREADS);
-            CountDownLatch go    = new CountDownLatch(1);
+            CountDownLatch go = new CountDownLatch(1);
 
-            IntStream.range(0, THREADS).forEach(i ->
-                pool.submit(() -> {
-                    ready.countDown();
-                    go.await();                          // blast off together
-                    int bidId = purchaseRepo.addBid(owner, shopId, items, 50 + i);
-                    ids.add(bidId);
-                    return null;
-                })
-            );
+            IntStream.range(0, THREADS).forEach(i -> pool.submit(() -> {
+                ready.countDown();
+                go.await(); // blast off together
+                int bidId = purchaseRepo.addBid(owner, shopId, items, 50 + i);
+                ids.add(bidId);
+                return null;
+            }));
 
             ready.await();
             go.countDown();
@@ -422,21 +437,21 @@ class PurchaseServiceAcceptanceTests{
             assertThat(ids).hasSize(THREADS);
 
             /* and each id maps to a Bid object in the repo */
-            ids.forEach(id ->
-                assertThat(purchaseRepo.getPurchaseById(id)).isInstanceOf(Bid.class)
-            );
+            ids.forEach(id -> assertThat(purchaseRepo.getPurchaseById(id)).isInstanceOf(Bid.class));
         }
 
-        /** Several bidders raise the same Bid in parallel.
-         *  After the race the Bid must remain internally consistent:
-         *  – maxBidding is at least the opening price and not corrupted  
-         *  – bidder list contains no duplicates  
-         *  – no exception leaks from concurrent updates */
+        /**
+         * Several bidders raise the same Bid in parallel.
+         * After the race the Bid must remain internally consistent:
+         * – maxBidding is at least the opening price and not corrupted
+         * – bidder list contains no duplicates
+         * – no exception leaks from concurrent updates
+         */
         @Test
         void concurrentAddBidding_updatesStateConsistently() throws Exception {
 
             int owner = 1, shop = 7;
-            Map<Integer,Integer> baseItems = Map.of(2, 1);
+            Map<Integer, Integer> baseItems = Map.of(2, 1);
             int bidId = purchaseRepo.addBid(owner, shop, baseItems, 40);
 
             Bid bid = (Bid) purchaseRepo.getPurchaseById(bidId);
@@ -446,17 +461,19 @@ class PurchaseServiceAcceptanceTests{
 
             IntStream.range(0, THREADS).forEach(i -> {
                 int bidder = 100 + i;
-                int amount = 60 + i;                 // ascending offers
+                int amount = 60 + i; // ascending offers
                 pool.submit(() -> {
                     ready.countDown();
-                    
+
                     try {
                         start.await();
                         bid.addBidding(bidder, amount);
                     } catch (RuntimeException ignored) {
-                        /* business rules may reject some offers (e.g., too low,
-                        bidder already bid, etc.) – that's fine; we only care
-                        that concurrent calls don't corrupt shared state. */
+                        /*
+                         * business rules may reject some offers (e.g., too low,
+                         * bidder already bid, etc.) – that's fine; we only care
+                         * that concurrent calls don't corrupt shared state.
+                         */
                     } catch (InterruptedException ex) {
                         Thread.currentThread().interrupt();
                     }
@@ -468,180 +485,179 @@ class PurchaseServiceAcceptanceTests{
             pool.shutdown();
             pool.awaitTermination(5, TimeUnit.SECONDS);
 
-            /* 1) max bidding must be ≥ opening price (40) and ≤ highest offer (60+THREADS-1) */
+            /*
+             * 1) max bidding must be ≥ opening price (40) and ≤ highest offer
+             * (60+THREADS-1)
+             */
             assertThat(bid.getMaxBidding())
-                .isBetween(40, 60 + THREADS - 1);
+                    .isBetween(40, 60 + THREADS - 1);
 
             /* 2) bidder list must not contain duplicates */
             List<Integer> bidders = bid.getBiddersIds();
             assertThat(bidders)
-                .hasSameSizeAs(new HashSet<>(bidders));        // uniqueness check
+                    .hasSameSizeAs(new HashSet<>(bidders)); // uniqueness check
         }
-
-
 
     }
 
+    // ─────────── checkoutCart exception branches ───────────
 
-        // ─────────── checkoutCart exception branches ───────────
+    @Test
+    @DisplayName("checkoutCart_whenValidateTokenThrowsOurArg_shouldWrapAndThrowOurArg")
+    void checkoutCart_validateTokenThrowsOurArg() throws Exception {
+        String token = "bad";
+        when(auth.ValidateToken(token)).thenThrow(new OurArg("invalid token"));
 
-        @Test
-        @DisplayName("checkoutCart_whenValidateTokenThrowsOurArg_shouldWrapAndThrowOurArg")
-        void checkoutCart_validateTokenThrowsOurArg() throws Exception{
-            String token = "bad";
-            when(auth.ValidateToken(token)).thenThrow(new OurArg("invalid token"));
-    
-            OurArg ex = assertThrows(OurArg.class, () -> service.checkoutCart(token, addr));
-            assertTrue(ex.getMessage().contains("checkoutCart:"));
-        }
-    
-        @Test
-        @DisplayName("checkoutCart_whenPurchaseItemsThrowsOurRuntime_shouldWrapAndThrowOurRuntime")
-        void checkoutCart_purchaseItemsThrowsOurRuntime() throws Exception{
-            String token = "tok";
-            int uid = 3, shop = 5;
-            Map<Integer,Integer> cartShop = Map.of(9,1);
-            Map<Integer,HashMap<Integer,Integer>> cart = Map.of(shop, new HashMap<>(cartShop));
-    
-            when(auth.ValidateToken(token)).thenReturn(uid);
-            when(users.getUserShoppingCartItems(uid)).thenReturn(new HashMap<>(cart));
-            when(shops.purchaseItems(cartShop, shop, token))
-              .thenThrow(new OurRuntime("purchase error"));
-    
-            OurRuntime ex = assertThrows(OurRuntime.class, () -> service.checkoutCart(token, addr));
-            assertTrue(ex.getMessage().contains("checkoutCart:"));
-            verify(users, never()).pay(any(), anyInt(), anyDouble());
-        }
-    
-        @Test
-        @DisplayName("checkoutCart_whenAddPurchaseThrows_shouldRollbackRestoreRefundAndThrowOurRuntime")
-        void checkoutCart_addPurchaseThrows() throws Exception{
-            String token = "tok";
-            int uid = 4, shop = 6;
-            Map<Integer,Integer> cartShop = Map.of(2,2);
-            Map<Integer,HashMap<Integer,Integer>> cart = Map.of(shop, new HashMap<>(cartShop));
-    
-            when(auth.ValidateToken(token)).thenReturn(uid);
-            when(users.getUserShoppingCartItems(uid)).thenReturn(new HashMap<>(cart));
-            when(shops.purchaseItems(cartShop, shop, token)).thenReturn(44.0);
-            when(repo.addPurchase(uid, shop, cartShop, 44.0, addr))
-              .thenThrow(new RuntimeException("db fail"));
-    
-            OurRuntime ex = assertThrows(OurRuntime.class, () -> service.checkoutCart(token, addr));
-            assertTrue(ex.getMessage().contains("checkoutCart:"));
-            verify(shops).rollBackPurchase(cartShop, shop);
-            verify(users).restoreUserShoppingCart(eq(uid), any());
-            verify(users).refundPaymentAuto(token, shop, 44.0);
-        }
-    
-        // ─────────── createBid exception branches ───────────
-    
-        @Test
-        @DisplayName("createBid_whenValidateTokenThrowsOurArg_shouldWrapAndThrowOurArg")
-        void createBid_validateTokenThrowsOurArg() throws Exception{
-            String token = "bad";
-            when(auth.ValidateToken(token)).thenThrow(new OurArg("no auth"));
-    
-            OurArg ex = assertThrows(OurArg.class, () -> service.createBid(token, 1, Map.of(), 10));
-            assertTrue(ex.getMessage().contains("createBid:"));
-        }
-    
-        @Test
-        @DisplayName("createBid_whenPurchaseItemsThrowsOurRuntime_shouldWrapAndThrowOurRuntime")
-        void createBid_purchaseItemsThrowsOurRuntime() throws Exception{
-            String token = "tok";
-            int shopId = 7;
-            Map<Integer,Integer> itemsMap = Map.of(1,1);
-    
-            when(auth.ValidateToken(token)).thenReturn(2);
-            doThrow(new OurRuntime("reserve fail"))
-              .when(shops).purchaseItems(itemsMap, shopId, token);
-    
-            OurRuntime ex = assertThrows(OurRuntime.class, () -> service.createBid(token, shopId, itemsMap, 20));
-            assertTrue(ex.getMessage().contains("createBid:"));
-        }
-    
-        // ─────────── postBidding non-bid type ───────────
-    
-        @Test
-        @DisplayName("postBidding_whenPurchaseNotBid_shouldThrowOurRuntime")
-        void postBidding_nonBidType() throws Exception {
-            String token = "tok";
-            int pid = 3;
-            Purchase notBid = mock(Purchase.class);
-    
-            when(auth.ValidateToken(token)).thenReturn(1);
-            when(repo.getPurchaseById(pid)).thenReturn(notBid);
-    
-            OurRuntime ex = assertThrows(OurRuntime.class, () -> service.postBidding(token, pid, 50));
-            assertTrue(ex.getMessage().contains("postBidding:"));
-        }
-    
-        // ─────────── finalizeBid non-bid & auth branches ───────────
-    
-        @Test
-        @DisplayName("finalizeBid_whenPurchaseNotBid_shouldThrowOurRuntime")
-        void finalizeBid_nonBidType() {
-            String token = "tok";
-            int pid = 4;
-            Purchase notBid = mock(Purchase.class);
-    
-            when(repo.getPurchaseById(pid)).thenReturn(notBid);
-    
-            OurRuntime ex = assertThrows(OurRuntime.class, () -> service.finalizeBid(token, pid));
-            assertTrue(ex.getMessage().contains("finalizeBid:"));
-        }
-    
-        @Test
-        @DisplayName("finalizeBid_whenValidateTokenThrowsOurArg_shouldPropagateOurArg")
-        void finalizeBid_validateTokenThrowsOurArg() throws Exception{
-            String token = "tok";
-            int pid = 5;
-            Bid bid = spy(new Bid(pid, 1, 1, Map.of(), 10));
-    
-            when(repo.getPurchaseById(pid)).thenReturn(bid);
-            when(auth.ValidateToken(token)).thenThrow(new OurArg("no auth"));
-    
-            OurArg ex = assertThrows(OurArg.class, () -> service.finalizeBid(token, pid));
-            assertTrue(ex.getMessage().contains("finalizeBid:"));
-        }
-    
-        // ─────────── getPurchaseById & getUserPurchases branches ───────────
-    
-        @Test
-        @DisplayName("getPurchaseById_whenRepositoryReturnsPurchase_shouldReturnIt")
-        void getPurchaseById_happyPath() {
-            Purchase p = mock(Purchase.class);
-            when(repo.getPurchaseById(9)).thenReturn(p);
-    
-            Purchase result = service.getPurchaseById(9);
-            assertSame(p, result);
-        }
-    
-        @Test
-        @DisplayName("getUserPurchases_whenTokenDoesNotMatch_shouldThrowOurRuntime")
-        void getUserPurchases_tokenMismatch() throws Exception {
-            String token = "tok";
-            int uid = 8;
-    
-            when(auth.ValidateToken(token)).thenReturn(uid + 1);
-    
-            OurRuntime ex = assertThrows(OurRuntime.class, () -> service.getUserPurchases(token, uid));
-            assertTrue(ex.getMessage().contains("getUserPurchases:"));
-        }
-    
-        @Test
-        @DisplayName("getUserPurchases_whenRepositoryThrows_shouldWrapAndThrowOurRuntime")
-        void getUserPurchases_repositoryThrows() throws Exception {
-            String token = "tok";
-            int uid = 9;
-    
-            when(auth.ValidateToken(token)).thenReturn(uid);
-            when(repo.getUserPurchases(uid)).thenThrow(new RuntimeException("fail"));
-    
-            OurRuntime ex = assertThrows(OurRuntime.class, () -> service.getUserPurchases(token, uid));
-            assertTrue(ex.getMessage().contains("Error retrieving user purchases:"));
-        }
-    
+        OurArg ex = assertThrows(OurArg.class, () -> service.checkoutCart(token, addr));
+        assertTrue(ex.getMessage().contains("checkoutCart:"));
+    }
+
+    @Test
+    @DisplayName("checkoutCart_whenPurchaseItemsThrowsOurRuntime_shouldWrapAndThrowOurRuntime")
+    void checkoutCart_purchaseItemsThrowsOurRuntime() throws Exception {
+        String token = "tok";
+        int uid = 3, shop = 5;
+        Map<Integer, Integer> cartShop = Map.of(9, 1);
+        Map<Integer, HashMap<Integer, Integer>> cart = Map.of(shop, new HashMap<>(cartShop));
+
+        when(auth.ValidateToken(token)).thenReturn(uid);
+        when(users.getUserShoppingCartItems(uid)).thenReturn(new HashMap<>(cart));
+        when(shops.purchaseItems(cartShop, shop, token))
+                .thenThrow(new OurRuntime("purchase error"));
+
+        OurRuntime ex = assertThrows(OurRuntime.class, () -> service.checkoutCart(token, addr));
+        assertTrue(ex.getMessage().contains("checkoutCart:"));
+        verify(users, never()).pay(any(), anyInt(), anyDouble());
+    }
+
+    @Test
+    @DisplayName("checkoutCart_whenAddPurchaseThrows_shouldRollbackRestoreRefundAndThrowOurRuntime")
+    void checkoutCart_addPurchaseThrows() throws Exception {
+        String token = "tok";
+        int uid = 4, shop = 6;
+        Map<Integer, Integer> cartShop = Map.of(2, 2);
+        Map<Integer, HashMap<Integer, Integer>> cart = Map.of(shop, new HashMap<>(cartShop));
+
+        when(auth.ValidateToken(token)).thenReturn(uid);
+        when(users.getUserShoppingCartItems(uid)).thenReturn(new HashMap<>(cart));
+        when(shops.purchaseItems(cartShop, shop, token)).thenReturn(44.0);
+        when(repo.addPurchase(uid, shop, cartShop, 44.0, addr))
+                .thenThrow(new RuntimeException("db fail"));
+
+        OurRuntime ex = assertThrows(OurRuntime.class, () -> service.checkoutCart(token, addr));
+        assertTrue(ex.getMessage().contains("checkoutCart:"));
+        verify(shops).rollBackPurchase(cartShop, shop);
+        verify(users).restoreUserShoppingCart(eq(uid), any());
+        verify(users).refundPaymentAuto(token, shop, 44.0);
+    }
+
+    // ─────────── createBid exception branches ───────────
+
+    @Test
+    @DisplayName("createBid_whenValidateTokenThrowsOurArg_shouldWrapAndThrowOurArg")
+    void createBid_validateTokenThrowsOurArg() throws Exception {
+        String token = "bad";
+        when(auth.ValidateToken(token)).thenThrow(new OurArg("no auth"));
+
+        OurArg ex = assertThrows(OurArg.class, () -> service.createBid(token, 1, Map.of(), 10));
+        assertTrue(ex.getMessage().contains("createBid:"));
+    }
+
+    @Test
+    @DisplayName("createBid_whenPurchaseItemsThrowsOurRuntime_shouldWrapAndThrowOurRuntime")
+    void createBid_purchaseItemsThrowsOurRuntime() throws Exception {
+        String token = "tok";
+        int shopId = 7;
+        Map<Integer, Integer> itemsMap = Map.of(1, 1);
+
+        when(auth.ValidateToken(token)).thenReturn(2);
+        doThrow(new OurRuntime("reserve fail"))
+                .when(shops).purchaseItems(itemsMap, shopId, token);
+
+        OurRuntime ex = assertThrows(OurRuntime.class, () -> service.createBid(token, shopId, itemsMap, 20));
+        assertTrue(ex.getMessage().contains("createBid:"));
+    }
+
+    // ─────────── postBidding non-bid type ───────────
+
+    @Test
+    @DisplayName("postBidding_whenPurchaseNotBid_shouldThrowOurRuntime")
+    void postBidding_nonBidType() throws Exception {
+        String token = "tok";
+        int pid = 3;
+        Purchase notBid = mock(Purchase.class);
+
+        when(auth.ValidateToken(token)).thenReturn(1);
+        when(repo.getPurchaseById(pid)).thenReturn(notBid);
+
+        OurRuntime ex = assertThrows(OurRuntime.class, () -> service.postBidding(token, pid, 50));
+        assertTrue(ex.getMessage().contains("postBidding:"));
+    }
+
+    // ─────────── finalizeBid non-bid & auth branches ───────────
+
+    @Test
+    @DisplayName("finalizeBid_whenPurchaseNotBid_shouldThrowOurRuntime")
+    void finalizeBid_nonBidType() {
+        String token = "tok";
+        int pid = 4;
+        Purchase notBid = mock(Purchase.class);
+
+        when(repo.getPurchaseById(pid)).thenReturn(notBid);
+
+        OurRuntime ex = assertThrows(OurRuntime.class, () -> service.finalizeBid(token, pid));
+        assertTrue(ex.getMessage().contains("finalizeBid:"));
+    }
+
+    @Test
+    @DisplayName("finalizeBid_whenValidateTokenThrowsOurArg_shouldPropagateOurArg")
+    void finalizeBid_validateTokenThrowsOurArg() throws Exception {
+        String token = "tok";
+        int pid = 5;
+        Bid bid = spy(new Bid(pid, 1, 1, Map.of(), 10));
+
+        when(repo.getPurchaseById(pid)).thenReturn(bid);
+        when(auth.ValidateToken(token)).thenThrow(new OurArg("no auth"));
+
+        OurArg ex = assertThrows(OurArg.class, () -> service.finalizeBid(token, pid));
+        assertTrue(ex.getMessage().contains("finalizeBid:"));
+    }
+
+    // ─────────── getPurchaseById & getUserPurchases branches ───────────
+
+    @Test
+    @DisplayName("getPurchaseById_whenRepositoryReturnsPurchase_shouldReturnIt")
+    void getPurchaseById_happyPath() {
+        Purchase p = mock(Purchase.class);
+        when(repo.getPurchaseById(9)).thenReturn(p);
+
+        Purchase result = service.getPurchaseById(9);
+        assertSame(p, result);
+    }
+
+    @Test
+    @DisplayName("getUserPurchases_whenTokenDoesNotMatch_shouldThrowOurRuntime")
+    void getUserPurchases_tokenMismatch() throws Exception {
+        String token = "tok";
+        int uid = 8;
+
+        when(auth.ValidateToken(token)).thenReturn(uid + 1);
+
+        OurRuntime ex = assertThrows(OurRuntime.class, () -> service.getUserPurchases(token, uid));
+        assertTrue(ex.getMessage().contains("getUserPurchases:"));
+    }
+
+    @Test
+    @DisplayName("getUserPurchases_whenRepositoryThrows_shouldWrapAndThrowOurRuntime")
+    void getUserPurchases_repositoryThrows() throws Exception {
+        String token = "tok";
+        int uid = 9;
+
+        when(auth.ValidateToken(token)).thenReturn(uid);
+        when(repo.getUserPurchases(uid)).thenThrow(new RuntimeException("fail"));
+
+        OurRuntime ex = assertThrows(OurRuntime.class, () -> service.getUserPurchases(token, uid));
+        assertTrue(ex.getMessage().contains("Error retrieving user purchases:"));
+    }
 
 }
