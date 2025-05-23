@@ -22,7 +22,6 @@ import com.example.app.ApplicationLayer.AuthTokenService;
 import com.example.app.ApplicationLayer.NotificationService;
 import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.User.UserService;
-import com.example.app.DomainLayer.Notification;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
 import com.example.app.InfrastructureLayer.UserRepository;
@@ -118,6 +117,7 @@ public class UserServiceAcceptanceTests {
         userService.addMember(username, pwd, email, phone, addr);
         when(userRepository.isUsernameAndPasswordValid(username,pwd)).thenReturn(5);
         when(authTokenService.Login(username,pwd,5)).thenReturn("tokenM");
+        when(userRepository.getMemberById(5)).thenReturn(new com.example.app.DomainLayer.Member(5, username, pwd, email, phone, addr));
 
         String tk = userService.loginAsMember(username,pwd,"");
         assertEquals("tokenM", tk);
@@ -154,6 +154,7 @@ public class UserServiceAcceptanceTests {
     void testLoginSuccess() {
         when(userRepository.isUsernameAndPasswordValid("user1", "Password1!")).thenReturn(5);
         when(authTokenService.Login("user1", "Password1!", 5)).thenReturn("memToken");
+        when(userRepository.getMemberById(5)).thenReturn(new com.example.app.DomainLayer.Member(5, "user1", "Password1!", "email@test.com", "1234567890", "address"));
 
         String tk = userService.loginAsMember("user1", "Password1!", "");
         assertEquals("memToken", tk);
