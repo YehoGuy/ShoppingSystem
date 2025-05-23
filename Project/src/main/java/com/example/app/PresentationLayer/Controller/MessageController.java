@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.app.ApplicationLayer.Message.MessageService;
+import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.Message;
 import com.example.app.PresentationLayer.DTO.Message.MessageDTO;
 
@@ -44,9 +46,13 @@ import jakarta.validation.constraints.NotBlank;
 public class MessageController {
 
     private final MessageService messageService;
+    private final SimpMessagingTemplate broker;
+    private final UserService userService;
 
-    public MessageController(MessageService messageService) {
+    public MessageController(MessageService messageService, UserService userService, SimpMessagingTemplate broker) {
         this.messageService = messageService;
+        this.userService = userService;
+        this.broker = broker;
     }
 
     @PostMapping("/user")
@@ -59,6 +65,10 @@ public class MessageController {
         if (result.startsWith("Error")) {
             return ResponseEntity.badRequest().body(result);
         }
+        broker.convertAndSendToUser(
+                String.valueOf(receiverId),      // destination user
+                "/queue/inbox",                  //  /user/{id}/queue/inbox
+                content);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(result);
     }
 

@@ -18,18 +18,21 @@ public class Member extends User {
     private volatile String email; // Email address of the user
     private volatile String phoneNumber; // Phone number of the user
     private volatile LocalDateTime suspended; // Suspension status of the user
-    
+
     private final List<Role> roles; // List of roles associated with the user
     private final List<Integer> orderHistory;// List of order IDs
     private final List<Role> pending_roles; // List of pending roles not yet confirmed/declined by the user
     private final List<Notification> notifications; // List of notifications for the user
 
+    private boolean isConnected; // Connection status of the user, used for notification purposes
+
     private final Object rolesLock = new Object();
     private final Object pendingRolesLock = new Object();
     private final Object orderHistoryLock = new Object();
-    private final Object notificationsLock = new Object();  
+    private final Object notificationsLock = new Object();
 
-    public Member(int memberId, String username, String password, String email, String phoneNumber, String addressToRemove) {
+    public Member(int memberId, String username, String password, String email, String phoneNumber,
+            String addressToRemove) {
         super(memberId); // Call the User class constructor
         this.memberId = memberId; // Initialize member ID
         this.username = username; // Initialize username
@@ -41,7 +44,7 @@ public class Member extends User {
         this.roles = new CopyOnWriteArrayList<>(); // Initialize roles
         this.pending_roles = new CopyOnWriteArrayList<>(); // Initialize pending roles
         this.notifications = new CopyOnWriteArrayList<>(); // Initialize notifications
-
+        this.isConnected = false; // Initialize connection status
     }
 
     public Member(int memberId, String username, String password, String email, String phoneNumber, Address address) {
@@ -57,6 +60,7 @@ public class Member extends User {
         this.pending_roles = new CopyOnWriteArrayList<>(); // Initialize pending roles
         this.address = address;
         this.notifications = new CopyOnWriteArrayList<>(); // Initialize notifications
+        this.isConnected = false; // Initialize connection status
     }
 
     public int getMemberId() {
@@ -145,10 +149,11 @@ public class Member extends User {
         } // Check if the user has a specific role
     }
 
-
     public boolean equals(Object obj) {
-        if (this == obj) return true; // Check if the same object
-        if (obj == null || getClass() != obj.getClass()) return false; // Check for null or different class
+        if (this == obj)
+            return true; // Check if the same object
+        if (obj == null || getClass() != obj.getClass())
+            return false; // Check for null or different class
         Member member = (Member) obj; // Cast to Member
         return memberId == member.memberId; // Compare member IDs
     }
@@ -198,6 +203,7 @@ public class Member extends User {
             }
         }
     }
+
     public boolean hasPermission(PermissionsEnum permission, int shopId) {
         synchronized (rolesLock) {
             for (Role role : roles) {
@@ -222,7 +228,7 @@ public class Member extends User {
             this.pending_roles.addAll(newPendingRoles);
         }
     }
-    
+
     public void setRoles(List<Role> newRoles) {
         synchronized (rolesLock) {
             this.roles.clear();
@@ -259,5 +265,13 @@ public class Member extends User {
             // return what was there
             return snapshot;
         }
+    }
+
+    public void setConnected(boolean isConnected) {
+        this.isConnected = isConnected; // Set the connection status
+    }
+
+    public boolean isConnected() {
+        return isConnected; // Return the connection status
     }
 }

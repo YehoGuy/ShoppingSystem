@@ -18,11 +18,13 @@ import com.example.app.ApplicationLayer.OurArg;
 import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Item.ItemService;
 import com.example.app.ApplicationLayer.Message.MessageService;
+import com.example.app.ApplicationLayer.NotificationService;
 import com.example.app.ApplicationLayer.Purchase.ShippingMethod;
 import com.example.app.ApplicationLayer.Shop.ShopService;
 import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.IMessageRepository;
 import com.example.app.DomainLayer.Message;
+import com.example.app.DomainLayer.Notification;
 import com.example.app.DomainLayer.Shop.PurchasePolicy;
 import com.example.app.InfrastructureLayer.AuthTokenRepository;
 import com.example.app.InfrastructureLayer.ItemRepository;
@@ -50,10 +52,11 @@ public class MessageServiceTests {
     @BeforeEach
     void setUp() {
         // Initialize the message service and repository before each test
+        NotificationService notificationMock = mock(NotificationService.class);
         authTokenRepository = new AuthTokenRepository();
         authTokenService = new AuthTokenService(authTokenRepository);
         userRepository = new UserRepository();
-        userService = new UserService(userRepository, authTokenService);
+        userService = new UserService(userRepository, authTokenService, notificationMock);
         shopRepository = new ShopRepository();
         shopService = new ShopService(shopRepository, authTokenService, userService, new ItemService(new ItemRepository(),authTokenService,userService));
         messageService = new MessageService(new MessageRepository(),authTokenService, userService, shopService);

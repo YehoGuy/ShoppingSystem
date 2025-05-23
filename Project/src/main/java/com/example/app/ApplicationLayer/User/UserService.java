@@ -9,11 +9,13 @@ import org.springframework.stereotype.Service;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
 import com.example.app.ApplicationLayer.LoggerService;
+import com.example.app.ApplicationLayer.NotificationService;
 import com.example.app.ApplicationLayer.OurArg;
 import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
 import com.example.app.DomainLayer.IUserRepository;
 import com.example.app.DomainLayer.Member;
+import com.example.app.DomainLayer.Notification;
 import com.example.app.DomainLayer.Purchase.Address;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
@@ -26,14 +28,16 @@ public class UserService {
     private final IUserRepository userRepository;
 
     private AuthTokenService authTokenService;
+    private NotificationService notificationService;
 
     private PasswordEncoderUtil passwordEncoder;
 
     public UserService(IUserRepository userRepository,
-            AuthTokenService authTokenService) {
+            AuthTokenService authTokenService, NotificationService notificationService) {
         this.passwordEncoder = new PasswordEncoderUtil();
         this.userRepository = userRepository;
         this.authTokenService = authTokenService;
+        this.notificationService = notificationService;
     }
 
     public boolean isAdmin(Integer id) {
@@ -71,8 +75,6 @@ public class UserService {
             throw new OurRuntime("makeAdmin: " + e);
         }
     }
-
-
 
     public void removeAdmin(String token, Integer id) {
         LoggerService.logMethodExecution("removeAdmin", token, id);
@@ -172,10 +174,11 @@ public class UserService {
                 throw new OurArg("Username is already taken.");
             }
             String rawPassword = password;
-            String encodedPassword = passwordEncoder.encode(password); // Encode the password using the PasswordEncoderUtil
+            String encodedPassword = passwordEncoder.encode(password); // Encode the password using the
+                                                                       // PasswordEncoderUtil
             LoggerService.logMethodExecution("addMember", username, password, email, phoneNumber, address);
             int userId = userRepository.addMember(username, encodedPassword, email, phoneNumber, address);
-            String token = authTokenService.Login(username, rawPassword,userId);
+            String token = authTokenService.Login(username, rawPassword, userId);
             LoggerService.logMethodExecutionEndVoid("addMember");
             return token; // Return the generated token
         } catch (OurRuntime e) {
@@ -362,14 +365,15 @@ public class UserService {
             }
             int loginAsMember_id = userRepository.isUsernameAndPasswordValid(username, password);
             if (loginAsMember_id > 0) { // valid login attempt
-                if (token_if_guest==null || token_if_guest.equals("") || token_if_guest.isEmpty()) { // if the user is not a guest, it's their initial login
+                Member member = userRepository.getMemberById(loginAsMember_id);
+                member.setConnected(true);
+                if (token_if_guest == null || token_if_guest.equals("") || token_if_guest.isEmpty()) {
                     token = authTokenService.Login(username, password, loginAsMember_id);
                     LoggerService.logMethodExecutionEnd("loginAsMember", loginAsMember_id);
                     return token; // Return the ID of the logged-in member
                 } else {
                     int id = authTokenService.ValidateToken(token_if_guest); // guest id
                     // merge the guest cart with the member cart
-                    User member = userRepository.getUserById(loginAsMember_id);
                     User guest = userRepository.getUserById(id);
                     member.mergeShoppingCart(guest.getShoppingCart());
                     // remove the guest user from the data
@@ -471,6 +475,9 @@ public class UserService {
             int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             if (userRepository.isGuestById(id)) {
                 userRepository.removeUserById(id); // Remove guest from the repository
+            } else {
+                Member member = userRepository.getMemberById(id);
+                member.setConnected(false); // Set the member as disconnected
             }
             authTokenService.Logout(token); // Logout the user by removing the token
 
@@ -493,9 +500,11 @@ public class UserService {
         try {
 
             LoggerService.logMethodExecution("getPermitionsByShop", shopId);
-            // int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            // int id = authTokenService.ValidateToken(token); // Validate the token and get
+            // the user ID
             // if (!userRepository.isOwner(id, shopId)) {
-            //     throw new OurArg("Member ID " + token + " is not an owner of shop ID " + shopId);
+            // throw new OurArg("Member ID " + token + " is not an owner of shop ID " +
+            // shopId);
             // }
 
             HashMap<Integer, PermissionsEnum[]> permissions = new HashMap<>();
@@ -1667,7 +1676,7 @@ public class UserService {
                     for (Map.Entry<Integer, Integer> itemEntry : items.entrySet()) {
                         int itemId = itemEntry.getKey();
                         int quantity = itemEntry.getValue();
-                        userRepository.addNotification(owner.getMemberId(), "Item " + itemId + " Purchased",
+                        this.notificationService.sendToUser(owner.getMemberId(), "Item " + itemId + " Purchased",
                                 "Quantity: " + quantity + " purchased from your shop ID: " + shopId);
                     }
                 }
@@ -1690,7 +1699,7 @@ public class UserService {
             LoggerService.logMethodExecution("closeShopNotification", shopId);
             List<Member> owners = userRepository.getOwners(shopId);
             for (Member owner : owners) {
-                userRepository.addNotification(owner.getMemberId(), "Shop Closed",
+                this.notificationService.sendToUser(owner.getMemberId(), "Shop Closed",
                         "Your shop ID: " + shopId + " has been closed.");
             }
             LoggerService.logMethodExecutionEndVoid("closeShopNotification");
@@ -1710,10 +1719,10 @@ public class UserService {
         try {
             LoggerService.logMethodExecution("removedAppointment", memberId, appointment);
             if (shopId == null) {
-                userRepository.addNotification(memberId, "Appointment Removed",
+                this.notificationService.sendToUser(memberId, "Appointment Removed",
                         "Your appointment to: " + appointment + " has been removed.");
             } else {
-                userRepository.addNotification(memberId, "Appointment Removed",
+                this.notificationService.sendToUser(memberId, "Appointment Removed",
                         "Your appointment to: " + appointment + " in the shop " + shopId + " has been removed.");
             }
             LoggerService.logMethodExecutionEndVoid("removedAppointment");
@@ -1735,7 +1744,7 @@ public class UserService {
         if (isFromShop) {
             try {
                 LoggerService.logMethodExecution("messageUserNotification", memberId);
-                userRepository.addNotification(memberId, "Message Received",
+                this.notificationService.sendToUser(memberId, "Message Received",
                         "You have received a new message from the shop (id=" + shopId + ").");
                 LoggerService.logMethodExecutionEndVoid("messageUserNotification");
             } catch (OurRuntime e) {
@@ -1751,7 +1760,7 @@ public class UserService {
         } else {
             try {
                 LoggerService.logMethodExecution("messageUserNotification", memberId);
-                userRepository.addNotification(memberId, "Message Received",
+                this.notificationService.sendToUser(memberId, "Message Received",
                         "You have received a new message from the user (id=" + memberId + ").");
                 LoggerService.logMethodExecutionEndVoid("messageUserNotification");
             } catch (OurRuntime e) {
@@ -1902,6 +1911,22 @@ public class UserService {
         }
     }
 
+    public void addNotification(int userId, String title, String message) {
+        try {
+            LoggerService.logMethodExecution("addNotification", userId, message);
+            userRepository.addNotification(userId, title, message);
+            LoggerService.logMethodExecutionEndVoid("addNotification");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("addNotification", e);
+            throw new OurRuntime("addNotification: " + e.getMessage(), e);
+        } catch (OurArg e) {
+            LoggerService.logDebug("addNotification", e);
+            throw new OurArg("addNotification: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("addNotification", e, userId, message);
+            throw new OurRuntime("addNotification: " + e.getMessage(), e);
+        }
+    }
     public void updateShoppingCartItemQuantity(int userId, int shopID, int itemID, boolean b) {
         try {
             LoggerService.logMethodExecution("updateShoppingCartItemQuantity", userId, shopID, itemID, b);
