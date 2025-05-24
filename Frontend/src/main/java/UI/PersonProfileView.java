@@ -61,7 +61,7 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
     }
 
     private String getUserId() {
-        return (String) VaadinSession.getCurrent().getAttribute("userId");
+        return VaadinSession.getCurrent().getAttribute("userId").toString();
     }
 
     private void buildLayout() {

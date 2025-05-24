@@ -50,7 +50,7 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
     }
 
     private String getUserId() {
-        return (String) VaadinSession.getCurrent().getAttribute("userId");
+        return VaadinSession.getCurrent().getAttribute("userId").toString();
     }
 
     public PaymenPageView(double totalAmount, String country, String city, String street, String houseNumber,

@@ -135,7 +135,7 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
     }
 
     private String getUserId() {
-        return (String) VaadinSession.getCurrent().getAttribute("userId");
+        return VaadinSession.getCurrent().getAttribute("userId").toString();
     }
 
     private void loadAndDisplayConversation() {

@@ -25,7 +25,7 @@ public class HomeView extends VerticalLayout implements BeforeEnterObserver {
     }
 
     private String getUserId() {
-        return (String) VaadinSession.getCurrent().getAttribute("userId");
+        return VaadinSession.getCurrent().getAttribute("userId").toString();
     }
 
     public HomeView() {
@@ -34,6 +34,5 @@ public class HomeView extends VerticalLayout implements BeforeEnterObserver {
         setJustifyContentMode(JustifyContentMode.CENTER);
         H1 title = new H1("Welcome to the Home Page!");
         add(title);
-
     }
 }
