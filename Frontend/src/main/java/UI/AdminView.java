@@ -89,7 +89,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
     }
 
     private String getUserId() {
-        return (String) VaadinSession.getCurrent().getAttribute("userId");
+        return VaadinSession.getCurrent().getAttribute("userId").toString();
     }
 
     public AdminView() {

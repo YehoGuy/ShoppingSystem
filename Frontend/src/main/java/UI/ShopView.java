@@ -49,7 +49,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
     }
 
     private String getUserId() {
-        return (String) VaadinSession.getCurrent().getAttribute("userId");
+        return VaadinSession.getCurrent().getAttribute("userId").toString();
     }
 
     @Override
@@ -58,7 +58,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
             add(new Span("❌ No shop ID provided."));
             return;
         }
-       
+
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
         String url = SHOP_API_URL + "/" + shopId + "?token=" + token;
         try {
@@ -74,7 +74,6 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
             Notification.show("❗ Error loading shop: " + e.getMessage());
         }
     }
-
 
     /**
      * Renders the shop page with header, items, and reviews.

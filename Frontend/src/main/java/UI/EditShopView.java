@@ -48,7 +48,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
     }
 
     private String getUserId() {
-        return (String) VaadinSession.getCurrent().getAttribute("userId");
+        return VaadinSession.getCurrent().getAttribute("userId").toString();
     }
 
     private void loadShopData(int shopId) {
@@ -64,7 +64,12 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
 
                 } else {
                     this.allItemPrices = this.shop.getItems().stream()
-                        .collect(HashMap::new, (map, item) -> map.put(item, shop.getItemPrices().get(item.getId()) != null ? shop.getItemPrices().get(item.getId()).intValue() : null), HashMap::putAll);
+                            .collect(HashMap::new,
+                                    (map, item) -> map.put(item,
+                                            shop.getItemPrices().get(item.getId()) != null
+                                                    ? shop.getItemPrices().get(item.getId()).intValue()
+                                                    : null),
+                                    HashMap::putAll);
                 }
 
             } else {

@@ -1,4 +1,4 @@
-import '@vaadin/notification';
+import '@vaadin/notification/vaadin-notification.js';
 
 export function showVaadinNotification(message) {
     const notification = document.createElement('vaadin-notification');

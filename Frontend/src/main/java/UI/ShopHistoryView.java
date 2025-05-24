@@ -57,7 +57,7 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
     }
 
     private String getUserId() {
-        return (String) VaadinSession.getCurrent().getAttribute("userId");
+        return VaadinSession.getCurrent().getAttribute("userId").toString();
     }
 
     @Override

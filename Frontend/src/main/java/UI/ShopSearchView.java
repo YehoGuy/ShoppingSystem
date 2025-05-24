@@ -49,7 +49,7 @@ public class ShopSearchView extends VerticalLayout implements BeforeEnterObserve
     }
 
     private String getUserId() {
-        return (String) VaadinSession.getCurrent().getAttribute("userId");
+        return VaadinSession.getCurrent().getAttribute("userId").toString();
     }
 
     public ShopSearchView() {

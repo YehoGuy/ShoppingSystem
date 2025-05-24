@@ -45,7 +45,7 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
     }
 
     private String getUserId() {
-        return (String) VaadinSession.getCurrent().getAttribute("userId");
+        return VaadinSession.getCurrent().getAttribute("userId").toString();
     }
 
     public PurchaseCompletionIntermidiate(ShoppingCartDTO cart) {
@@ -139,7 +139,6 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
                     });
                 });
     }
-
 
     private ItemDTO getItemById(int id) {
         return items.keySet().stream()

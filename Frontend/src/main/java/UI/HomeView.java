@@ -33,8 +33,6 @@ public class HomeView extends VerticalLayout implements BeforeEnterObserver {
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.CENTER);
         H1 title = new H1("Welcome to the Home Page!");
-        H1 subtitle = new H1(getUserId());
         add(title);
-        add(subtitle);
     }
 }

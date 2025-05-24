@@ -1,4 +1,6 @@
 import { showVaadinNotification } from "./notification-helper";
+import SockJS from 'sockjs-client';
+import { Stomp } from '@stomp/stompjs';
 
 const socket = new SockJS('/ws');
 const stompClient = Stomp.over(socket);

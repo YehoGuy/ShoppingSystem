@@ -49,7 +49,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
     }
 
     private String getUserId() {
-        return (String) VaadinSession.getCurrent().getAttribute("userId");
+        return VaadinSession.getCurrent().getAttribute("userId").toString();
     }
 
     public ShoppingCartView() {
@@ -90,8 +90,11 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             double shopTotal = 0;
             List<CartEntryDTO> entries = new ArrayList<>();
             for (Integer itemId : itemIDs) {
-                int quantity = itemQuantitiesMap != null && itemQuantitiesMap.containsKey(itemId) ? itemQuantitiesMap.get(itemId) : 1;
-                double price = itemPricesMap != null && itemPricesMap.containsKey(itemId) ? itemPricesMap.get(itemId) : 0;
+                int quantity = itemQuantitiesMap != null && itemQuantitiesMap.containsKey(itemId)
+                        ? itemQuantitiesMap.get(itemId)
+                        : 1;
+                double price = itemPricesMap != null && itemPricesMap.containsKey(itemId) ? itemPricesMap.get(itemId)
+                        : 0;
                 shopTotal += price * quantity;
                 ItemDTO item = getAllItems().stream().filter(it -> it.getId() == itemId).findFirst().orElse(null);
                 if (item != null) {
@@ -130,7 +133,9 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             for (CartEntryDTO entry : entries) {
                 ItemDTO item = entry.getItem();
                 int quantity = entry.getQuantity();
-                Double price = itemPricesMap != null && itemPricesMap.containsKey(item.getId()) ? itemPricesMap.get(item.getId()) : 0;
+                Double price = itemPricesMap != null && itemPricesMap.containsKey(item.getId())
+                        ? itemPricesMap.get(item.getId())
+                        : 0;
                 rows.add(new ItemRow(item, quantity, price));
             }
 
@@ -180,7 +185,8 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         for (ShopDTO shop : shops) {
             int shopId = shop.getShopId();
             HashMap<Integer, Integer> itemQuantities = IDs.get(shopId);
-            if (itemQuantities == null) continue;
+            if (itemQuantities == null)
+                continue;
             List<Integer> itemIds = new ArrayList<>(itemQuantities.keySet());
             shopItems.put(shopId, itemIds);
 
@@ -260,7 +266,8 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             params.put("authToken", token);
             ResponseEntity<?> response = restTemplate.getForEntity(url, HashMap.class, params);
             if (response.getStatusCode().is2xxSuccessful()) {
-                HashMap<Integer, HashMap<Integer, Integer>> cartIDs = (HashMap<Integer, HashMap<Integer, Integer>>) response.getBody();
+                HashMap<Integer, HashMap<Integer, Integer>> cartIDs = (HashMap<Integer, HashMap<Integer, Integer>>) response
+                        .getBody();
                 if (cartIDs != null) {
                     return cartIDs;
                 }
@@ -298,13 +305,15 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             List<Integer> itemIds = cart.getShopItems().get(shopID);
             int itemID = -1;
             for (Integer id : itemIds) {
-                ItemDTO item = getAllItems().stream().filter(it -> it.getId() == id && it.getName().equals(itemName)).findFirst().orElse(null);
+                ItemDTO item = getAllItems().stream().filter(it -> it.getId() == id && it.getName().equals(itemName))
+                        .findFirst().orElse(null);
                 if (item != null) {
                     itemID = id;
                     break;
                 }
             }
-            if (itemID == -1) return;
+            if (itemID == -1)
+                return;
 
             String url = URLUser + "/shoppingCart/" + shopID + "/" + itemID + "/" + action;
             Map<String, String> params = new HashMap<>();
