@@ -3,6 +3,10 @@ package UI;
 import java.util.*;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.web.client.HttpClientErrorException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -30,6 +34,7 @@ import DTOs.ShopDTO;
 @Route(value = "cart", layout = AppLayoutBasic.class)
 @JsModule("./js/notification-client.js")
 public class ShoppingCartView extends VerticalLayout implements BeforeEnterObserver {
+    private static final Logger log = LoggerFactory.getLogger(ShoppingCartView.class);
     private ShoppingCartDTO cart;
     private List<ShopDTO> shops;
 
@@ -59,6 +64,20 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         setAlignItems(Alignment.CENTER);
 
         getData();
+
+        if (cart.getShopItems() == null || cart.getShopItems().isEmpty()) {
+        H2 empty = new H2("Your shopping cart is empty 😕");
+        empty.getStyle().set("color", "var(--lumo-secondary-text-color)");
+        add(empty);
+
+        // optional: add a “continue shopping” button
+        Button shopMore = new Button("Continue Shopping", e -> 
+            UI.getCurrent().navigate("items")  // or whatever your product listing route is
+        );
+        add(shopMore);
+
+        return;
+        }
 
         H1 title = new H1("Shopping cart");
 
@@ -211,72 +230,92 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
     private List<ItemDTO> getAllItems() {
         try {
-            String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+            String token = VaadinSession.getCurrent().getAttribute("authToken").toString();
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<?> entity = new HttpEntity<>(null, headers);
-            String url = URLItem + "/all";
-            Map<String, String> params = new HashMap<>();
-            params.put("authToken", token);
-            ResponseEntity<?> response = restTemplate.getForEntity(url, List.class, entity, params);
-            if (response.getStatusCode().is2xxSuccessful()) {
-                List<ItemDTO> items = (List<ItemDTO>) response.getBody();
-                if (items != null) {
-                    return items;
-                }
-            }
-        } catch (Exception e) {
-            Notification.show("Error: could not retrieve shopping cart", 5000,
-                    Notification.Position.MIDDLE);
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+            ResponseEntity<List<ItemDTO>> response = restTemplate.exchange(
+                URLItem + "/all?authToken={authToken}",
+                HttpMethod.GET,
+                entity,
+                new ParameterizedTypeReference<>() {},
+                token
+            );
+            List<ItemDTO> items = response.getBody();
+            return (items != null) ? items : Collections.emptyList();
         }
-        return Collections.emptyList();
+        catch (HttpClientErrorException.NotFound nf) {
+            // no items ⇒ empty
+            log.warn("No items found in the database, returning empty list");
+            return Collections.emptyList();
+        }
+        catch (Exception e) {
+            // swallow silently
+            log.warn("Failed to fetch item list—returning empty", e);
+            return Collections.emptyList();
+        }
     }
 
-    private List<ShopDTO> getShopNames(Set<Integer> keySet) {
+    private List<ShopDTO> getShopNames(Set<Integer> shopIds) {
         List<ShopDTO> result = new ArrayList<>();
-        try {
-            String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-            for (int i : keySet) {
-                String url = URLShop + "/" + i;
-                HttpHeaders headers = new HttpHeaders();
-                headers.setContentType(MediaType.APPLICATION_JSON);
-                HttpEntity<?> entity = new HttpEntity<>(null, headers);
-                Map<String, String> params = new HashMap<>();
-                params.put("authToken", token);
-                ResponseEntity<ShopDTO> response = restTemplate.getForEntity(url, ShopDTO.class, params);
-                if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                    result.add(response.getBody());
+        String token = VaadinSession.getCurrent().getAttribute("authToken").toString();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        for (Integer id : shopIds) {
+            try {
+                ResponseEntity<ShopDTO> resp = restTemplate.exchange(
+                    URLShop + "/" + id + "?authToken={authToken}",
+                    HttpMethod.GET,
+                    entity,
+                    ShopDTO.class,
+                    token
+                );
+                if (resp.getBody() != null) {
+                    result.add(resp.getBody());
                 }
             }
-        } catch (Exception e) {
-            Notification.show("Error: could not retrieve shop names", 5000,
-                    Notification.Position.MIDDLE);
+            catch (HttpClientErrorException.NotFound nf) {
+                // skip
+                log.warn("Shop with ID {} not found, skipping", id);
+            }
+            catch (Exception e) {
+                // skip all other errors silently
+                log.warn("Error fetching shop with ID {}: {}", id, e.getMessage());
+                return Collections.emptyList();
+            }
         }
         return result;
     }
 
+
     private HashMap<Integer, HashMap<Integer, Integer>> getCartIDs() {
         try {
-            String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+            String token = VaadinSession.getCurrent().getAttribute("authToken").toString();
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<?> entity = new HttpEntity<>(null, headers);
-            String url = URLUser + "/shoppingCart";
-            Map<String, String> params = new HashMap<>();
-            params.put("authToken", token);
-            ResponseEntity<?> response = restTemplate.getForEntity(url, HashMap.class, params);
-            if (response.getStatusCode().is2xxSuccessful()) {
-                HashMap<Integer, HashMap<Integer, Integer>> cartIDs = (HashMap<Integer, HashMap<Integer, Integer>>) response
-                        .getBody();
-                if (cartIDs != null) {
-                    return cartIDs;
-                }
-            }
-        } catch (Exception e) {
-            Notification.show("Error: could not retrieve shopping cart", 5000,
-                    Notification.Position.MIDDLE);
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+            ResponseEntity<HashMap<Integer, HashMap<Integer, Integer>>> resp = restTemplate.exchange(
+                URLUser + "/shoppingCart?authToken={authToken}",
+                HttpMethod.GET,
+                entity,
+                new ParameterizedTypeReference<>() {},
+                token
+            );
+            HashMap<Integer, HashMap<Integer, Integer>> body = resp.getBody();
+            return (body != null) ? body : new HashMap<>();
         }
-        return new HashMap<>();
+        catch (HttpClientErrorException.NotFound nf) {
+            // no cart yet ⇒ empty
+            return new HashMap<>();
+        }
+        catch (Exception e) {
+            // swallow everything else silently
+            return new HashMap<>();
+        }
     }
 
     // Helper record class to populate the grid
@@ -296,35 +335,30 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
     private void handleCartAction(int shopID, String itemName, String action) {
         try {
-            String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+            String token = VaadinSession.getCurrent().getAttribute("authToken").toString();
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<?> entity = new HttpEntity<>(null, headers);
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-            // Find itemId by name
-            List<Integer> itemIds = cart.getShopItems().get(shopID);
-            int itemID = -1;
-            for (Integer id : itemIds) {
-                ItemDTO item = getAllItems().stream().filter(it -> it.getId() == id && it.getName().equals(itemName))
-                        .findFirst().orElse(null);
-                if (item != null) {
-                    itemID = id;
-                    break;
-                }
-            }
-            if (itemID == -1)
-                return;
+            // find itemID …
+            int itemID = getAllItems().stream()
+                .filter(item -> item.getName().equals(itemName))
+                .map(ItemDTO::getId)
+                .findFirst()
+                .orElse(-1);
+            if (itemID < 0) return;
 
-            String url = URLUser + "/shoppingCart/" + shopID + "/" + itemID + "/" + action;
-            Map<String, String> params = new HashMap<>();
-            params.put("authToken", token);
-            ResponseEntity<?> response = restTemplate.postForEntity(url, entity, String.class, params);
-            if (response.getStatusCode().is2xxSuccessful()) {
-                Notification.show("Cart updated", 3000, Notification.Position.BOTTOM_START);
-                UI.getCurrent().getPage().reload();
-            }
-        } catch (Exception e) {
-            Notification.show("Error updating cart", 3000, Notification.Position.BOTTOM_START);
+            restTemplate.postForEntity(
+                URLUser + "/shoppingCart/" + shopID + "/" + itemID + "/" + action + "?authToken={authToken}",
+                entity,
+                String.class,
+                token
+            );
+            UI.getCurrent().getPage().reload();
+        }
+        catch (Exception e) {
+            // completely silent on failure
+            log.warn("Could not retrieve shopping cart, treating as empty", e);
         }
     }
 }
