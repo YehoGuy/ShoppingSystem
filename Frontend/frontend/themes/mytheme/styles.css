@@ -1,26 +1,48 @@
+/* File: frontend/themes/mytheme/styles.css */
+
+/* Color Palette */
 :root {
-  /* your custom color palette */
   --app-primary-color: #6200EE;
   --app-secondary-color: #03DAC6;
   --app-bg-color: #F5F5F5;
   --app-text-color: #333333;
+  --app-gradient-start: #e0c3fc;
+  --app-gradient-end: #8ec5fc;
+  --card-bg: rgba(255, 255, 255, 0.8);
+  --card-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-/* Apply a light background and font */
+/* Global Styles */
 body, vaadin-app-layout {
-  background-color: var(--app-bg-color);
+  background: linear-gradient(135deg, var(--app-gradient-start), var(--app-gradient-end));
   color: var(--app-text-color);
   font-family: 'Segoe UI', sans-serif;
 }
 
-/* Style the top-level layout bar */
+/* Header Styling */
 vaadin-app-layout::part(header) {
   background: var(--app-primary-color);
   color: white;
-  padding: 0.5em 1em;
+  padding: 1rem 2rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-/* Buttons everywhere */
+/* Content Area */
+vaadin-app-layout::part(content) {
+  padding: 2rem;
+}
+
+/* View container */
+:host([theme~="mytheme"]) [router-outlet] {
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  border-radius: 12px;
+  padding: 1rem;
+  margin: 1rem;
+  animation: fade-in 0.5s ease-in-out;
+}
+
+/* Buttons */
 vaadin-button {
   background-color: var(--app-primary-color);
   color: white;
@@ -29,27 +51,28 @@ vaadin-button {
   transition: background-color 0.3s ease, transform 0.2s ease;
   cursor: pointer;
 }
-
-/* Hover/focus state */
 vaadin-button:hover,
 vaadin-button:focus {
   background-color: var(--app-secondary-color);
   transform: translateY(-2px);
 }
 
-/* Smooth page transitions */
-:host([theme~="mytheme"]) [router-outlet] {
-  animation: fade-in 0.5s ease-in-out;
+/* Links and icons */
+vaadin-icon, a {
+  cursor: pointer;
+  transition: color 0.2s ease;
 }
 
+/* Card-like components */
+vaadin-card, .card {
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+/* Fade-in animation */
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
-}
-
-/* Change pointer on links, icons, etc. */
-vaadin-icon,
-a {
-  cursor: pointer;
-  transition: color 0.2s ease;
 }
