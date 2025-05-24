@@ -1,0 +1,55 @@
+:root {
+  /* your custom color palette */
+  --app-primary-color: #6200EE;
+  --app-secondary-color: #03DAC6;
+  --app-bg-color: #F5F5F5;
+  --app-text-color: #333333;
+}
+
+/* Apply a light background and font */
+body, vaadin-app-layout {
+  background-color: var(--app-bg-color);
+  color: var(--app-text-color);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* Style the top-level layout bar */
+vaadin-app-layout::part(header) {
+  background: var(--app-primary-color);
+  color: white;
+  padding: 0.5em 1em;
+}
+
+/* Buttons everywhere */
+vaadin-button {
+  background-color: var(--app-primary-color);
+  color: white;
+  border-radius: 8px;
+  padding: 0.6em 1.2em;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  cursor: pointer;
+}
+
+/* Hover/focus state */
+vaadin-button:hover,
+vaadin-button:focus {
+  background-color: var(--app-secondary-color);
+  transform: translateY(-2px);
+}
+
+/* Smooth page transitions */
+:host([theme~="mytheme"]) [router-outlet] {
+  animation: fade-in 0.5s ease-in-out;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Change pointer on links, icons, etc. */
+vaadin-icon,
+a {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}

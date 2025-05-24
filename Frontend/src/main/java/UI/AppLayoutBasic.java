@@ -6,11 +6,15 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
+import com.vaadin.flow.router.RouterLayout;
+import com.vaadin.flow.theme.Theme;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
 
 // tag::snippet[]
-public class AppLayoutBasic extends AppLayout {
+
+
+public class AppLayoutBasic extends AppLayout implements RouterLayout {
 
     public AppLayoutBasic() {
         DrawerToggle toggle = new DrawerToggle();
