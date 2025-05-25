@@ -115,7 +115,7 @@ public class UserController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
             if (user instanceof Member) {
                 Member member = (Member) user;
-                MemberDTO userDTO = MemberDTO.fromDomain(member,null);
+                MemberDTO userDTO = MemberDTO.fromDomain(member, null);
                 return ResponseEntity.ok(userDTO);
             } else if (user instanceof Guest) {
                 Guest guest = (Guest) user;
@@ -139,7 +139,7 @@ public class UserController {
     }
 
     @GetMapping("/allmembers")
-    public ResponseEntity<?> getAllMembers(@RequestParam String token){
+    public ResponseEntity<?> getAllMembers(@RequestParam String token) {
         try {
             authService.ValidateToken(token);
             List<Member> members = userService.getAllMembers();
@@ -158,10 +158,8 @@ public class UserController {
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
         }
-        
-    }
 
-    
+    }
 
     @PostMapping("/register")
     public ResponseEntity<String> register(
@@ -721,17 +719,17 @@ public class UserController {
                 int shopId = role.getShopId();
                 User assignee = userService.getUserById(role.getAssigneeId());
                 userService.validateMemberId(role.getAssigneeId());
-                String username = ((Member)assignee).getUsername();
+                String username = ((Member) assignee).getUsername();
                 List<String> permissions = Arrays.stream(role.getPermissions())
                         .map(PermissionsEnum::name)
                         .toList();
                 String rolename = "manager";
-                for(PermissionsEnum permission : role.getPermissions()){
-                    if(permission == PermissionsEnum.manageOwners){
+                for (PermissionsEnum permission : role.getPermissions()) {
+                    if (permission == PermissionsEnum.manageOwners) {
                         rolename = "founder";
                         break;
                     }
-                    if(permission == PermissionsEnum.manageManagers && rolename != "founder"){
+                    if (permission == PermissionsEnum.manageManagers && rolename != "founder") {
                         rolename = "owner";
                         break;
                     }
@@ -758,17 +756,17 @@ public class UserController {
                 int shopId = role.getShopId();
                 User assignee = userService.getUserById(role.getAssigneeId());
                 userService.validateMemberId(role.getAssigneeId());
-                String username = ((Member)assignee).getUsername();
+                String username = ((Member) assignee).getUsername();
                 List<String> permissions = Arrays.stream(role.getPermissions())
                         .map(PermissionsEnum::name)
                         .toList();
                 String rolename = "manager";
-                for(PermissionsEnum permission : role.getPermissions()){
-                    if(permission == PermissionsEnum.manageOwners){
+                for (PermissionsEnum permission : role.getPermissions()) {
+                    if (permission == PermissionsEnum.manageOwners) {
                         rolename = "founder";
                         break;
                     }
-                    if(permission == PermissionsEnum.manageManagers && rolename != "founder"){
+                    if (permission == PermissionsEnum.manageManagers && rolename != "founder") {
                         rolename = "owner";
                         break;
                     }
@@ -797,7 +795,8 @@ public class UserController {
     }
 
     @GetMapping("/shoppingCart")
-    public ResponseEntity<HashMap<Integer, HashMap<Integer, Integer>>> getShoppingCart(@RequestParam String token, @RequestParam int userId) {
+    public ResponseEntity<HashMap<Integer, HashMap<Integer, Integer>>> getShoppingCart(@RequestParam String token,
+            @RequestParam int userId) {
         try {
             authService.ValidateToken(token);
             HashMap<Integer, HashMap<Integer, Integer>> cart = userService.getUserShoppingCartItems(userId);
@@ -868,5 +867,41 @@ public class UserController {
         }
     }
 
+    @GetMapping("/hasRole")
+    public ResponseEntity<Boolean> hasRole(
+            @RequestParam String token,
+            @RequestParam int userId,
+            @RequestParam int shopId) {
+        try {
+            authService.ValidateToken(token);
+            boolean hasRole = userService.hasRoleInShop(userId, shopId);
+            return ResponseEntity.ok(hasRole);
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(false);
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(false);
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(false);
+        }
+    }
+
+    @GetMapping("/hasPermission")
+    public ResponseEntity<Boolean> hasPermission(
+            @RequestParam String token,
+            @RequestParam int userId,
+            @RequestParam int shopId,
+            @RequestParam PermissionsEnum permission) {
+        try {
+            authService.ValidateToken(token);
+            boolean hasPermission = userService.hasPermission(userId, permission, shopId);
+            return ResponseEntity.ok(hasPermission);
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(false);
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(false);
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(false);
+        }
+    }
 
 }
