@@ -28,7 +28,6 @@ import com.example.app.PresentationLayer.DTO.Item.ItemDTO;
 import com.example.app.PresentationLayer.DTO.Shop.ShopDTO;
 
 import jakarta.validation.ConstraintViolationException;
-import jakarta.validation.constraints.Min;
 
 /**
  * Base path : /api/shops     (JSON in / JSON out)
@@ -154,10 +153,7 @@ public class ShopController {
         try {
             // TODO: parse a real PurchasePolicy if needed
             Shop shop = shopService.createShop(name, null, null, token);
-            List<Item> items = shopService.getItemsByShop(shop.getId(), token);
-            List<ItemDTO> itemDTOs = items.stream()
-                    .map(ItemDTO::fromDomain)
-                    .toList();
+            List<ItemDTO> itemDTOs = new ArrayList<>(); // No items initially
             ShopDTO shopDTO = ShopDTO.fromDomain(shop, itemDTOs);
             return ResponseEntity.status(HttpStatus.CREATED).body(shopDTO);
 

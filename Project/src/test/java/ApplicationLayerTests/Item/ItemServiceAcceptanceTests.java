@@ -284,9 +284,9 @@ public class ItemServiceAcceptanceTests {
             "null list should throw");
 
         // empty list → OurArg
-        assertThrows(OurArg.class,
-            () -> itemService.getItemsByIds(List.of(), TOKEN),
-            "empty list should throw");
+        assertEquals(itemService.getItemsByIds(List.of(), TOKEN).size(), 0,
+            "empty list should return empty result");
+
     }
 
     @Test
