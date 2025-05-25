@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Repository;
 
+import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Purchase.ShippingMethod;
 import com.example.app.DomainLayer.Item.ItemCategory;
 import com.example.app.DomainLayer.Shop.IShopRepository;
@@ -36,7 +37,7 @@ public class ShopRepository implements IShopRepository {
             }
             return shop;
         } catch (Exception e) {
-            throw new RuntimeException("Error creating shop: " + e.getMessage(), e);
+            throw new OurRuntime("Error creating shop: " + e.getMessage(), e);
         }
     }
 
@@ -378,10 +379,11 @@ public class ShopRepository implements IShopRepository {
     @Override
     public List<Integer> getItems() {
         try {
-            return Collections.unmodifiableList(
+            List<Integer> lst = Collections.unmodifiableList(
                     shops.values().stream()
                             .flatMap(shop -> shop.getItemIds().stream())
                             .collect(Collectors.toList()));
+            return lst == null ? Collections.emptyList() : lst;
         } catch (Exception e) {
             throw new RuntimeException("Error retrieving all items: " + e.getMessage(), e);
         }

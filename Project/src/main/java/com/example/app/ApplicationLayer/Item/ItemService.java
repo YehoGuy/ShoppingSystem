@@ -261,7 +261,7 @@ public class ItemService {
     public List<Item> getItemsByIds(List<Integer> itemIds , String token) {
         try {
             LoggerService.logMethodExecution("getItemsByIds", itemIds);
-            if (itemIds == null || itemIds.isEmpty()) {
+            if (itemIds == null) {
                 throw new OurArg("Item IDs list cannot be null or empty");
             }
             for (Integer itemId : itemIds) {
@@ -270,6 +270,10 @@ public class ItemService {
                 }
             }
             authTokenService.ValidateToken(token);
+            if (itemIds.isEmpty()) {
+                LoggerService.logMethodExecutionEnd("getItemsByIds", List.of());
+                return List.of(); // Return an empty list if no IDs are provided
+            }
             List<Item> result = itemRepository.getItemsByIds(itemIds);
             LoggerService.logMethodExecutionEnd("getItemsByIds", result);
             return result;
