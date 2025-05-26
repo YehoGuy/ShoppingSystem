@@ -4,11 +4,11 @@ import Domain.ItemCategory;
 public class DiscountDTO {
     private Integer percentage;
     private boolean isDouble;
-    private ItemCategory itemCategory;
-    private int itemId;
+    private ItemCategory itemCategory; // null → not a category discount
+    private Integer itemId; // null → not an item discount
 
     public DiscountDTO(Integer percentage, boolean isDouble,
-            ItemCategory itemCategory, int itemId) {
+            ItemCategory itemCategory, Integer itemId) {
         this.percentage = percentage;
         this.isDouble = isDouble;
         this.itemCategory = itemCategory;
@@ -27,7 +27,7 @@ public class DiscountDTO {
         return itemCategory;
     }
 
-    public int getItemId() {
+    public Integer getItemId() {
         return itemId;
     }
 
