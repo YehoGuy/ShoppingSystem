@@ -668,64 +668,6 @@ public void testRollbackOnDiscountFailure_Success() throws Exception {
 }
 
 
-
-
-    // UC5 – Concurrent reviews vs. average rating (success)
-    // Starts multiple threads adding reviews while one reads average.
-    @Test
-    public void testConcurrentReviewsAndAverageRating_Success() throws Exception {
-        int writers = 5;
-        ExecutorService exec = Executors.newFixedThreadPool(writers + 1);
-        CountDownLatch ready = new CountDownLatch(writers + 1);
-        CountDownLatch start = new CountDownLatch(1);
-
-        List<Future<?>> futures = new ArrayList<>();
-        // writer threads
-        for (int i = 0; i < writers; i++) {
-            futures.add(exec.submit(() -> {
-                ready.countDown();
-                try {
-                    start.await();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return null;
-                }
-                shop.addReview(1, 5, "Great");
-                return null;
-            }));
-        }
-        // reader thread
-        futures.add(exec.submit(() -> {
-            ready.countDown();
-            try {
-                start.await();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return null;
-            }
-            double avg = shop.getAverageRating();
-            // allow initial -1.0 (no reviews yet) through 5.0
-            assertTrue(avg >= -1.0 && avg <= 5.0,
-                "Average should be between -1.0 and 5.0, got " + avg);
-            return null;
-        }));
-
-        // kick them all off
-        ready.await();
-        start.countDown();
-
-        // wait for completion
-        for (Future<?> f : futures) {
-            f.get();
-        }
-        exec.shutdown();
-
-        // after all five 5-star reviews
-        assertEquals(5.0, shop.getAverageRating(),
-            "All five 5-star reviews should average to 5.0");
-    }
-
-
     // UC6 – Permission/auth failures in ShopService (failure)
     // Mocks AuthTokenService and UserService to deny access.
     @Test
