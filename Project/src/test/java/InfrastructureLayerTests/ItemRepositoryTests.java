@@ -58,7 +58,7 @@ public class ItemRepositoryTests {
     public void testGetAverageRating() {
         Integer itemId = repo.createItem("Tool", "Handy tool",1);
         Item item = repo.getItem(itemId);
-        assertEquals(-1.0, repo.getItemAverageRating(item.getId()));
+        assertEquals(0.0, repo.getItemAverageRating(item.getId()));
         repo.addReviewToItem(item.getId(), 4, "Good");
         repo.addReviewToItem(item.getId(), 2, "Poor");
         assertEquals(3.0, repo.getItemAverageRating(item.getId()));

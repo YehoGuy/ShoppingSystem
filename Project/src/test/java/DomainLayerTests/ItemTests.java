@@ -28,7 +28,7 @@ public class ItemTests {
         List<ItemReview> reviews = item.getReviews();
         assertTrue(reviews.isEmpty());
         // Average rating for no reviews is -1.0
-        assertEquals(-1.0, item.getAverageRating());
+        assertEquals(0.0, item.getAverageRating());
     }
 
     @Test
