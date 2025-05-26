@@ -151,7 +151,6 @@ public class ShopController {
             @RequestParam String name) {
 
         try {
-            // TODO: parse a real PurchasePolicy if needed
             Shop shop = shopService.createShop(name, null, null, token);
             List<ItemDTO> itemDTOs = new ArrayList<>(); // No items initially
             ShopDTO shopDTO = ShopDTO.fromDomain(shop, itemDTOs);
