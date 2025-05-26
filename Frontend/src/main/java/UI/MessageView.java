@@ -4,6 +4,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -28,15 +29,17 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 
+import DTOs.MemberDTO;
 import DTOs.MessageDTO;
 import DTOs.rolesDTO;
 
 @Route(value = "messages", layout = AppLayoutBasic.class)
 @JsModule("./js/notification-client.js")
-public class MessageView extends VerticalLayout implements BeforeEnterObserver {
+public class MessageView extends VerticalLayout implements BeforeEnterObserver{
     private static final String BASE_URL = "http://localhost:8080/api/messages";
     private static final String NOTIFICATIONS_URL = "http://localhost:8080/api/users/notifications";
     private static final String PENDING_ROLES_URL = "http://localhost:8080/api/users/getPendingRoles";
+    private static final String GET_BT_RECIVER = "http://localhost:8080/api/messages/receiver?authToken";
 
     private final RestTemplate rest = new RestTemplate();
     private final VerticalLayout threadContainer = new VerticalLayout();
@@ -44,14 +47,33 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
     private int lastMessageId = -1;
 
     // Mock directory; replace with real user lookup if available
-    private final int currentUserId = 1;
-    private final Map<Integer, String> userDirectory = Map.of(2, "alice", 3, "bob", 4, "charlie");
-    private final Map<String, Integer> usernameToId = userDirectory.entrySet()
-            .stream()
-            .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+    private final Map<Integer, String> userDirectory;
+    private final Map<String, Integer> usernameToId;
+    private List<MessageDTO> allmessages;
     private int currentChatUserId = 2;
 
+    private final int thisUserId = Integer.parseInt(VaadinSession.getCurrent().getAttribute("userId").toString());
+
+    private final String token;
+
     public MessageView() {
+
+        this.token = getToken();
+        ResponseEntity<MemberDTO[]> allmem = rest.getForEntity("http://localhost:8080/api/users/allmembers?token=" + token, MemberDTO[].class);
+
+        ResponseEntity<MessageDTO[]> allmessagesRe = rest.getForEntity(
+                GET_BT_RECIVER + token,
+                MessageDTO[].class);
+        this.allmessages = Arrays.asList(allmessagesRe.getBody());
+        
+
+        userDirectory = allmem.getBody() != null ? 
+            Stream.of(allmem.getBody())
+                .collect(Collectors.toMap(MemberDTO::getMemberId, MemberDTO::getUsername)) : new HashMap<>();
+
+        usernameToId = userDirectory.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+
         setSizeFull();
         setPadding(true);
         setSpacing(true);
@@ -69,7 +91,7 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
         userSelector.setValue(userDirectory.get(currentChatUserId));
         userSelector.addValueChangeListener(e -> {
             currentChatUserId = usernameToId.get(e.getValue());
-            loadAndDisplayConversation();
+            loadAndDisplayConversation(currentChatUserId);
         });
 
         threadContainer.setWidth("100%");
@@ -88,7 +110,17 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
             if (!content.isEmpty()) {
                 sendMessageToUser(currentChatUserId, content, lastMessageId);
                 messageArea.clear();
-                loadAndDisplayConversation();
+                // Manually add the sent message to the layout
+                HorizontalLayout line = new HorizontalLayout();
+                line.setWidthFull();
+                Span who = new Span("You:");
+                Span text = new Span(content);
+                String currentTime = java.time.LocalTime.now().withNano(0).toString();
+                Span time = new Span("🕓 " + currentTime);
+                time.getStyle().set("margin-left", "auto").set("font-size", "smaller");
+                line.add(who, text, time);
+                threadContainer.add(line);
+                //loadAndDisplayConversation();
             }
         });
 
@@ -121,12 +153,12 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
                 .set("justify-content", "space-between");
 
         add(page);
-        loadAndDisplayConversation();
+        
     }
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
-        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        
         if (token == null) {
             event.forwardTo("login");
         }
@@ -138,42 +170,39 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
         return VaadinSession.getCurrent().getAttribute("userId").toString();
     }
 
-    private void loadAndDisplayConversation() {
+    private void loadAndDisplayConversation(int fromId) {
         threadContainer.removeAll();
-        String token = getToken();
-        try {
-            ResponseEntity<MessageDTO[]> sent = rest.getForEntity(
-                    BASE_URL + "/sender/" + currentUserId + "?authToken=" + token,
-                    MessageDTO[].class);
-            ResponseEntity<MessageDTO[]> received = rest.getForEntity(
-                    BASE_URL + "/receiver/" + currentUserId + "?authToken=" + token,
-                    MessageDTO[].class);
+        try{
+            List<MessageDTO> conversation = allmessages.stream()
+                .filter(msg -> (msg.getSenderId() == fromId || msg.getReceiverId() == fromId) &&
+                 (msg.getSenderId() != thisUserId || msg.getReceiverId() == thisUserId))
+                .collect(Collectors.toList());
 
-            List<MessageDTO> convo = Stream.concat(Arrays.stream(sent.getBody()), Arrays.stream(received.getBody()))
-                    .filter(m -> (m.getSenderId() == currentUserId && m.getReceiverId() == currentChatUserId)
-                            || (m.getSenderId() == currentChatUserId && m.getReceiverId() == currentUserId))
-                    .sorted(Comparator.comparing(MessageDTO::getMessageId))
-                    .collect(Collectors.toList());
+            conversation.sort(Comparator.comparing(MessageDTO::getTimestamp));
 
-            lastMessageId = -1;
-            convo.forEach(msg -> {
+            for (MessageDTO msg : conversation) {
                 HorizontalLayout line = new HorizontalLayout();
                 line.setWidthFull();
-                Span who = new Span(msg.getSenderId() == currentUserId ? "You:" : "User #" + msg.getSenderId() + ":");
-                Span text = new Span(msg.isDeleted() ? "(deleted)" : msg.getContent());
-                Span time = new Span("🕓 " + msg.getTimestamp());
+                String whoStr = msg.getSenderId() == fromId ? userDirectory.get(msg.getSenderId()) + ":" :  "You:";
+                Span who = new Span(whoStr);
+                Span text = new Span(msg.getContent());
+                Span time = new Span("🕓 " + msg.getTimestamp().toString());
                 time.getStyle().set("margin-left", "auto").set("font-size", "smaller");
                 line.add(who, text, time);
                 threadContainer.add(line);
                 lastMessageId = msg.getMessageId();
-            });
+            }
+
+            
         } catch (Exception ex) {
             Notification.show("Error loading messages: " + ex.getMessage(), 3000, Notification.Position.MIDDLE);
         }
     }
 
+    // Helper method to get current user id as int
+
+
     private void sendMessageToUser(int receiverId, String content, int previousId) {
-        String token = getToken();
         String url = BASE_URL + "/user?authToken=" + token
                 + "&receiverId=" + receiverId
                 + "&content=" + encode(content)
@@ -201,7 +230,6 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
     private void loadNotifications(VerticalLayout container) {
 
         container.removeAll();
-        String token = getToken();
         try {
             ResponseEntity<String[]> resp = rest.getForEntity(
                     NOTIFICATIONS_URL + "?authToken=" + token, String[].class);
@@ -226,7 +254,6 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
 
     private void loadPendingRoles(VerticalLayout container) {
         container.removeAll();
-        String token = getToken();
 
         try {
             // 1) Fetch rolesDTO[]

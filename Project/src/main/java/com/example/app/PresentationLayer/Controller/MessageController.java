@@ -125,9 +125,9 @@ public class MessageController {
         return ResponseEntity.ok(messageDTOs);
     }
 
-    @GetMapping("/receiver/{receiverId}")
-    public ResponseEntity<List<MessageDTO>> getByReceiver(@RequestParam("authToken") String authToken, @PathVariable int receiverId) {
-        List<Message> msgs = messageService.getMessagesByReceiverId(authToken, receiverId);
+    @GetMapping("/receiver")
+    public ResponseEntity<List<MessageDTO>> getByReceiver(@RequestParam("authToken") String authToken) {
+        List<Message> msgs = messageService.getMessagesByReceiverId(authToken);
         List<MessageDTO> messageDTOs = msgs.stream()
                                     .map(MessageDTO::fromDomain)
                                     .collect(Collectors.toList());
