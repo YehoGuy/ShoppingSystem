@@ -61,5 +61,10 @@ public class GlobalDiscount implements Discount {
             throw new IllegalArgumentException("Discount percentage must be between 0 and 100");
         }
     }
+
+    @Override
+    public Integer getPercentage() {
+        return percentage;
+    }
 }
 

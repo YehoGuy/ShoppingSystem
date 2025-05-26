@@ -81,7 +81,7 @@ public class Item {
     public double getAverageRating() {
         List<ItemReview> currentReviews = getReviews();
         if (currentReviews.isEmpty()) {
-            return -1.0;
+            return 0.0;
         }
         int sum = 0;
         for (ItemReview review : currentReviews) {

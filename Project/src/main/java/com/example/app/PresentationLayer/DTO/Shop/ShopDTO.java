@@ -36,5 +36,8 @@ public record ShopDTO(
                 reviews);
     }
 
+    public int getShopId() {
+        return id;
+    }
 
 }

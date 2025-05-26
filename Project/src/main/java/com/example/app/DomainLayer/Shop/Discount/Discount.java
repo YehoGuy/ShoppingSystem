@@ -22,4 +22,8 @@ public interface Discount {
     boolean checkPolicies(Map<Integer,Integer> items, Map<Integer,Double> prices, Map<Integer,ItemCategory> itemsCategory);
 
     boolean isDouble();
+
+    Integer getPercentage() ;
+
+
 }

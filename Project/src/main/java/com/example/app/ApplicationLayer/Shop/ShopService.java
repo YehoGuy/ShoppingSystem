@@ -22,6 +22,7 @@ import com.example.app.DomainLayer.Shop.IShopRepository;
 import com.example.app.DomainLayer.Shop.Operator;
 import com.example.app.DomainLayer.Shop.PurchasePolicy;
 import com.example.app.DomainLayer.Shop.Shop;
+import com.example.app.DomainLayer.Shop.Discount.Discount;
 
 @Service
 public class ShopService {
@@ -48,7 +49,7 @@ public class ShopService {
             Shop returnShop = shopRepository.createShop(name, purchasePolicy, shippingMethod);
             Role founderRole = new Role(userId, returnShop.getId(), null);
             founderRole.setFoundersPermissions();
-            userService.addRole(userId, founderRole);
+            userService.addFounderRole(userId, founderRole, returnShop.getId());
             LoggerService.logMethodExecutionEnd("createShop", returnShop);
             return returnShop;
         } catch (OurArg e) {
@@ -802,4 +803,24 @@ public class ShopService {
             throw new OurRuntime("addDiscountPolicy" + e.getMessage());
         }
     }
+
+    public List<Discount> getDiscounts(int shopId, String token) {
+        try {
+            LoggerService.logMethodExecution("getDiscounts", shopId);
+            authTokenService.ValidateToken(token);
+            List<Discount> discounts = shopRepository.getDiscounts(shopId);
+            LoggerService.logMethodExecutionEnd("getDiscounts", discounts);
+            return discounts;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getDiscounts", e);
+            throw new OurArg("getDiscounts" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getDiscounts", e);
+            throw new OurRuntime("getDiscounts" + e.getMessage());
+        } catch (Exception e) {
+            LoggerService.logError("getDiscounts", e, shopId);
+            throw new OurRuntime("Error retrieving discounts for shop " + shopId + ": " + e.getMessage(), e);
+        }
+    }
+
 }

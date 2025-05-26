@@ -68,4 +68,8 @@ public class CategoryDiscount implements Discount {
         return itemCategory;
     }
 
+    @Override
+    public Integer getPercentage() {
+        return percentage;
+    }
 }

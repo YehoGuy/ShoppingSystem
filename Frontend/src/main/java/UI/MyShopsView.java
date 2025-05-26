@@ -124,8 +124,9 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
     private void createShop(String name) {
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
         try {
-            String url = CREATE + "?token=" + token + "&name=" + name;
+            String url = CREATE + "?token=" + token + "&name=" + URLEncoder.encode(name, StandardCharsets.UTF_8);
             ResponseEntity<ShopDTO> resp = restTemplate.postForEntity(url, null, ShopDTO.class);
+
             if (resp.getStatusCode() == HttpStatus.CREATED) {
                 Notification.show("✅ Shop created: " + name);
                 loadShops();
@@ -160,9 +161,9 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
                     .set("cursor", "pointer")
                     .set("font-weight", "600")
                     .set("font-size", "18px");
-            name.addClickListener(evt -> UI.getCurrent().navigate("shop/" + s.getName()));
+            name.addClickListener(evt -> UI.getCurrent().navigate("shop/" + s.getShopId()));
 
-            Button view = new Button("🔍 View", e -> UI.getCurrent().navigate("edit-shop/" + s.getName()));
+            Button view = new Button("Edit-Shop", e -> UI.getCurrent().navigate("edit-shop/" + s.getShopId()));
 
             row.add(name, view);
             shopsContainer.add(row);

@@ -24,8 +24,13 @@ import com.example.app.DomainLayer.Item.Item;
 import com.example.app.DomainLayer.Item.ItemCategory;
 import com.example.app.DomainLayer.Shop.Operator;
 import com.example.app.DomainLayer.Shop.Shop;
+import com.example.app.DomainLayer.Shop.Discount.Discount;
 import com.example.app.PresentationLayer.DTO.Item.ItemDTO;
+import com.example.app.PresentationLayer.DTO.Shop.DiscountDTO;
 import com.example.app.PresentationLayer.DTO.Shop.ShopDTO;
+import com.example.app.DomainLayer.Shop.Discount.SingleDiscount;
+import com.example.app.DomainLayer.Shop.Discount.CategoryDiscount;
+import com.example.app.DomainLayer.Shop.Discount.GlobalDiscount;
 
 import jakarta.validation.ConstraintViolationException;
 
@@ -154,6 +159,9 @@ public class ShopController {
             Shop shop = shopService.createShop(name, null, null, token);
             List<ItemDTO> itemDTOs = new ArrayList<>(); // No items initially
             ShopDTO shopDTO = ShopDTO.fromDomain(shop, itemDTOs);
+            //print shop id
+            System.out.println("Shop created with ID: " + shopDTO.getShopId());
+
             return ResponseEntity.status(HttpStatus.CREATED).body(shopDTO);
 
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
@@ -417,7 +425,7 @@ public class ShopController {
         }
     }
 
-    @PatchMapping("/{shopId}/items/{itemId}/price")
+    @PostMapping("/{shopId}/items/{itemId}/price")
     public ResponseEntity<?> updateItemPrice(
             @PathVariable int shopId,
             @PathVariable int itemId,
@@ -676,7 +684,7 @@ public class ShopController {
         }
     }
 
-    @GetMapping("/addDiscountPolicy")
+    @PostMapping("/addDiscountPolicy")
     public ResponseEntity<?> addDiscountPolicy(@RequestParam String token,
             @RequestParam int threshold,
             @RequestParam int itemId,
@@ -689,6 +697,31 @@ public class ShopController {
             return ResponseEntity.ok().build();
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }
+    }
+
+    @GetMapping("/{shopId}/discounts")
+    public ResponseEntity<?> getItemPricesWithDiscounts(
+            @PathVariable int shopId,
+            @RequestParam String token) {
+        try {
+            List<Discount> discounts = shopService.getDiscounts(shopId, token);
+            // Convert discounts to a suitable DTO or response format
+            List<DiscountDTO> discountDTOs = discounts.stream()
+                    .map(d -> new DiscountDTO(
+                            d.getPercentage(),
+                            d.isDouble(),
+                            //check tpe of discount
+                            d instanceof CategoryDiscount ? ((CategoryDiscount) d).getCategory() : null,
+                            d instanceof SingleDiscount ? ((SingleDiscount) d).getItemId() : 0))
+                            .toList();
+                    return ResponseEntity.ok(discountDTOs);
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

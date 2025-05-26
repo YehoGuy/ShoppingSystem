@@ -280,7 +280,7 @@ class ShopControllerTests {
         void updatePrice_badRequest_400() throws Exception {
             doThrow(new IllegalArgumentException())
                     .when(shopService).updateItemPriceInShop(anyInt(), anyInt(), anyInt(), anyString());
-            mvc.perform(patch("/api/shops/1/items/7/price")
+            mvc.perform(post("/api/shops/1/items/7/price")
                     .param("price", "-5").param("token", "tok"))
                     .andExpect(status().isBadRequest());
         }
@@ -303,7 +303,7 @@ class ShopControllerTests {
         @Test
         void updatePrice_success_204() throws Exception {
             doNothing().when(shopService).updateItemPriceInShop(1, 7, 120, "tok");
-            mvc.perform(patch("/api/shops/1/items/7/price")
+            mvc.perform(post("/api/shops/1/items/7/price")
                     .param("price", "120").param("token", "tok"))
                     .andExpect(status().isNoContent());
         }
