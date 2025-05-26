@@ -162,7 +162,8 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         for (MemberDTO member : members) {
             PermissionsEnum[] permissions = roles.get(member.getMemberId());
             if (permissions != null) {
-                userPermissionsList.add(new UserPermissionsDTO(member.getUsername(), permissions));
+                userPermissionsList
+                        .add(new UserPermissionsDTO(member.getMemberId(), member.getUsername(), permissions));
             }
         }
         if (userPermissionsList.isEmpty()) {
@@ -177,8 +178,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         rolesGrid.addComponentColumn(dto -> {
             Button changeBtn = new Button("Change Permissions");
             changeBtn.addClickListener(e -> {
-                // Your logic here
-                Notification.show("Change permissions for " + dto.getUsername());
+                changePermissions(dto);
             });
             return changeBtn;
         }).setHeader("Change");
@@ -187,7 +187,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         rolesGrid.addComponentColumn(dto -> {
             Button removeBtn = new Button("Remove");
             removeBtn.addClickListener(e -> {
-                Notification.show("Remove " + dto.getUsername() + " from shop");
+                removeMemberFromShop(dto);
             });
             return removeBtn;
         }).setHeader("Remove");
@@ -230,6 +230,50 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             dialog.open();
         });
         rolesLayout.add(addManager);
+    }
+
+    private void removeMemberFromShop(UserPermissionsDTO dto) {
+        Dialog dialog = new Dialog();
+        Button confirmButton = new Button("Confirm", evt -> {
+            String url = USERS_URL + "/shops/" + shop.getShopId() + "/managers?memberId=" + dto.getMemberId()
+                    + "&token=" + getToken();
+            ResponseEntity<Void> response = restTemplate.exchange(url, HttpMethod.DELETE, null, Void.class);
+            if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
+                Notification.show(dto.getUsername() + " was removed from the shop.");
+                DisplayRoles();
+            } else {
+                Notification.show("Failed to remove user from the shop: " + response.getStatusCode());
+            }
+            dialog.close();
+        });
+        dialog.add(new VerticalLayout(new Span("Are you sure you want to remove " + dto.getUsername() + "?"),
+                confirmButton));
+        dialog.open();
+    }
+
+    private void changePermissions(UserPermissionsDTO dto) {
+        Dialog dialog = new Dialog();
+        CheckboxGroup<PermissionsEnum> checkboxGroup = new CheckboxGroup<>();
+        checkboxGroup.setLabel("Select Permissions");
+        checkboxGroup.setItems(PermissionsEnum.values());
+        Button confirmButton = new Button("Confirm", evt -> {
+            PermissionsEnum[] selectedPermissions = checkboxGroup.getValue().toArray(new PermissionsEnum[0]);
+            if (selectedPermissions.length == 0) {
+                Notification.show("Please select at least one permission.");
+                return;
+            }
+            String url = USERS_URL + "/shops/" + shop.getShopId() + "/managers?memberId=" + dto.getMemberId()
+                    + "&token=" + getToken() + "&permissions=" + selectedPermissions.toString();
+            ResponseEntity<Void> response = restTemplate.postForEntity(url, null, Void.class);
+            if (response.getStatusCode() == HttpStatus.CREATED) {
+                Notification.show(dto.getUsername() + "' permissions were changed.");
+            } else {
+                Notification.show("Failed to change permissions to user's pending roles: " + response.getStatusCode());
+            }
+            dialog.close();
+        });
+        dialog.add(new VerticalLayout(checkboxGroup, confirmButton));
+        dialog.open();
     }
 
     private int getSelectedMemberId(String username, List<MemberDTO> notWorkingMembers) {
@@ -547,11 +591,13 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
     }
 
     class UserPermissionsDTO {
+        private int memberId;
         private String username;
         private PermissionsEnum[] permissions;
         private String roleName;
 
-        public UserPermissionsDTO(String username, PermissionsEnum[] permissions) {
+        public UserPermissionsDTO(int memberId, String username, PermissionsEnum[] permissions) {
+            this.memberId = memberId;
             this.username = username;
             this.permissions = permissions;
             this.roleName = setRoleName(permissions);
@@ -582,6 +628,10 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
 
         public String getRoleName() {
             return roleName;
+        }
+
+        public int getMemberId() {
+            return memberId;
         }
 
         public String showPermissions() {
