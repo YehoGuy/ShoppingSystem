@@ -614,7 +614,7 @@ public class ShopController {
         }
     }
 
-    @PatchMapping("/{shopId}/items/{itemId}/supply/remove")
+    @PostMapping("/{shopId}/items/{itemId}/supply/remove")
     public ResponseEntity<?> removeSupply(
             @PathVariable int shopId,
             @PathVariable int itemId,

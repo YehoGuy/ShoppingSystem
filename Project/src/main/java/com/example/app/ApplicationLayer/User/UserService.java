@@ -1927,6 +1927,7 @@ public class UserService {
             throw new OurRuntime("addNotification: " + e.getMessage(), e);
         }
     }
+
     public void updateShoppingCartItemQuantity(int userId, int shopID, int itemID, boolean b) {
         try {
             LoggerService.logMethodExecution("updateShoppingCartItemQuantity", userId, shopID, itemID, b);
@@ -1958,6 +1959,30 @@ public class UserService {
         } catch (Exception e) {
             LoggerService.logError("removeShoppingCartItem", e, userId, shopID, itemID);
             throw new OurRuntime("removeShoppingCartItem: " + e.getMessage(), e);
+        }
+    }
+
+    public boolean hasRoleInShop(int userId, int shopId) {
+        try {
+            LoggerService.logMethodExecution("hasRoleInShop", userId, shopId);
+            Member member = (Member) userRepository.getUserById(userId);
+            if (member == null) {
+                LoggerService.logDebug("hasRoleInShop", new OurRuntime("Member with ID " + userId + " not found."));
+                throw new OurRuntime("Member with ID " + userId + " not found.");
+            }
+            boolean hasRole = member.getRoles().stream()
+                    .anyMatch(role -> role.getShopId() == shopId);
+            LoggerService.logMethodExecutionEnd("hasRoleInShop", hasRole);
+            return hasRole;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("hasRoleInShop", e);
+            throw new OurRuntime("hasRoleInShop: " + e.getMessage(), e);
+        } catch (OurArg e) {
+            LoggerService.logDebug("hasRoleInShop", e);
+            throw new OurArg("hasRoleInShop: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("hasRoleInShop", e, userId, shopId);
+            throw new OurRuntime("hasRoleInShop: " + e.getMessage(), e);
         }
     }
 }
