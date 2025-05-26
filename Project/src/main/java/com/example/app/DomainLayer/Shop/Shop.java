@@ -572,4 +572,8 @@ public class Shop {
         }
         return itemsList;
     }
+
+    public List<Discount> getDiscounts() {
+        return Collections.unmodifiableList(discounts);
+    }
 }

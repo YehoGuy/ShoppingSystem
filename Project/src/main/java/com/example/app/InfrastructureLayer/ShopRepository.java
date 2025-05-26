@@ -18,6 +18,7 @@ import com.example.app.DomainLayer.Shop.IShopRepository;
 import com.example.app.DomainLayer.Shop.Operator;
 import com.example.app.DomainLayer.Shop.PurchasePolicy;
 import com.example.app.DomainLayer.Shop.Shop;
+import com.example.app.DomainLayer.Shop.Discount.Discount;
 
 @Repository
 public class ShopRepository implements IShopRepository {
@@ -423,6 +424,19 @@ public class ShopRepository implements IShopRepository {
             shop.addPolicy(threshold, itemId, category, basketValue, operator);
         } catch (Exception e) {
             throw new RuntimeException("Error adding discount policy: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public List<Discount> getDiscounts(int shopId) {
+        try {
+            Shop shop = shops.get(shopId);
+            if (shop == null) {
+                throw new IllegalArgumentException("Shop not found: " + shopId);
+            }
+            return shop.getDiscounts();
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving discounts: " + e.getMessage(), e);
         }
     }
 

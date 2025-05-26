@@ -226,7 +226,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                 }
                 dialog.close();
             });
-            dialog.add(new VerticalLayout(usernameField, confirmButton));
+            dialog.add(new VerticalLayout(usernameField, checkboxGroup, confirmButton));
             dialog.open();
         });
         rolesLayout.add(addManager);
@@ -314,7 +314,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
 
     private List<MemberDTO> getShopWorkers(int shopId) {
         String token = getToken();
-        String url = USERS_URL + "/shops/" + shopId + "/members?token=" + token;
+        String url = USERS_URL + "/shops/" + shopId + "/workers?token=" + token;
         ResponseEntity<List<MemberDTO>> response = restTemplate.exchange(
                 url,
                 HttpMethod.GET,
@@ -332,7 +332,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
 
     private Map<Integer, PermissionsEnum[]> getRoles() {
         String token = getToken();
-        String url = USERS_URL + "/shops/" + shop.getShopId() + "/permissions/?token=" + token;
+        String url = USERS_URL + "/shops/" + shop.getShopId() + "/permissions?token=" + token;
         ResponseEntity<Map<Integer, PermissionsEnum[]>> response = restTemplate.exchange(
                 url,
                 HttpMethod.GET,
@@ -392,6 +392,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                 itemsContainer.add(new Span("No items found."));
                 return;
             }
+            List<DiscountDTO> discounts = getDiscounts();
 
             for (ItemDTO item : allItemPrices.keySet()) {
                 Button addSupply, deleteItem, removeSupply, editPrice, setItemDiscount, removeItemDiscount;
@@ -405,10 +406,17 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
 
                 Span itemName = new Span("Item: " + item.getName());
                 Span itemPrice = new Span("Price: " + allItemPrices.get(item) + " $");
+                Span itemDiscount = new Span("Discount: " +
+                        (discounts.stream()
+                                .filter(d -> d.getItemId() == item.getId())
+                                .findFirst()
+                                .map(DiscountDTO::toString)
+                                .orElse("No Discount")));
                 Span itemCategory = new Span("Category: " + item.getCategory());
                 Span itemDescription = new Span("Description: " + item.getDescription());
                 Span itemRating = new Span("Rating: " + item.getAverageRating());
-                VerticalLayout itemDetails = new VerticalLayout(itemName, itemPrice, itemCategory, itemDescription,
+                Span itemQuantity = new Span("Quantity: " + shop.getItemQuantities().getOrDefault(item.getId(), 0));
+                VerticalLayout itemDetails = new VerticalLayout(itemName, itemPrice, itemDiscount, itemCategory, itemDescription, itemQuantity,
                         itemRating);
                 itemDetails.setWidth("70%");
 
@@ -444,6 +452,65 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                 itemLayout.setFlexGrow(1, itemDetails);
                 itemsContainer.add(itemLayout);
             }
+            //present all the discounts that are not related to items
+            List<DiscountDTO> categoryDiscounts = discounts.stream()
+                    .filter(d -> d.getItemCategory() != null)
+                    .collect(Collectors.toList());
+            List<DiscountDTO> globalDiscounts = discounts.stream()
+                    .filter(d -> d.getItemCategory() == null && d.getItemId() == 0)
+                    .collect(Collectors.toList());
+            if (!categoryDiscounts.isEmpty() || !globalDiscounts.isEmpty()) {
+                H2 discountsTitle = new H2("Discounts");
+                itemsContainer.add(discountsTitle);
+            }
+            H2 globalDiscountsTitle = new H2("Global Discounts");
+            itemsContainer.add(globalDiscountsTitle);
+            for (DiscountDTO discount : globalDiscounts) {
+                HorizontalLayout discountLayout = new HorizontalLayout();
+                discountLayout.setWidthFull();
+                discountLayout.setAlignItems(FlexComponent.Alignment.CENTER);
+                discountLayout.getStyle().set("border", "1px solid #ccc");
+                discountLayout.getStyle().set("padding", "10px");
+                discountLayout.getStyle().set("border-radius", "8px");
+                discountLayout.getStyle().set("margin-bottom", "10px");
+
+                Span discountInfo = new Span(discount.toString());
+                // Button removeDiscountButton = createRemoveItemDiscountButton(new ItemDTO(discount.getItemId(), "", "", 0, 0, null));
+                discountLayout.add(discountInfo);
+                itemsContainer.add(discountLayout);
+            }
+            H2 categoryDiscountsTitle = new H2("Category Discounts");
+            itemsContainer.add(categoryDiscountsTitle);
+            for (DiscountDTO discount : categoryDiscounts) {
+                HorizontalLayout discountLayout = new HorizontalLayout();
+                discountLayout.setWidthFull();
+                discountLayout.setAlignItems(FlexComponent.Alignment.CENTER);
+                discountLayout.getStyle().set("border", "1px solid #ccc");
+                discountLayout.getStyle().set("padding", "10px");
+                discountLayout.getStyle().set("border-radius", "8px");
+                discountLayout.getStyle().set("margin-bottom", "10px");
+
+                Span discountInfo = new Span(discount.toString());
+                // Button removeDiscountButton = createRemoveItemDiscountButton(new ItemDTO(discount.getItemId(), "", "", 0, 0, null));
+                discountLayout.add(discountInfo);
+                itemsContainer.add(discountLayout);
+            }
+        }
+    }
+
+    private List<DiscountDTO> getDiscounts() {
+        String discountsUrl = "http://localhost:8080/api/shops/" + shop.getShopId() + "/discounts?token=" + getToken();
+        ResponseEntity<List<DiscountDTO>> response = restTemplate.exchange(
+                discountsUrl,
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<List<DiscountDTO>>() {
+                });
+        if (response.getStatusCode() == HttpStatus.OK) {
+            return response.getBody() != null ? response.getBody() : new ArrayList<>();
+        } else {
+            Notification.show("Failed to load discounts: " + response.getStatusCode());
+            return new ArrayList<>();
         }
     }
 
@@ -474,10 +541,10 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             Button confirmDiscount = new Button("Confirm", evt -> {
                 String token = getToken();
                 String url = "http://localhost:8080/api/shops/" + shop.getShopId() + "/discount/items/"
-                        + item.getId() + "/discount=" + discountField.getValue()
-                        + "isDouble=true" + "&token=" + token;
+                        + item.getId() + "?discount=" + discountField.getValue().intValue() 
+                        + "&isDouble=true" + "&token=" + token;
                 ResponseEntity<Void> discountResponse = restTemplate.postForEntity(url, null, Void.class);
-                if (discountResponse.getStatusCode() == HttpStatus.OK) {
+                if (discountResponse.getStatusCode() == HttpStatus.NO_CONTENT) {
                     Notification.show("Discount set successfully");
                     loadShopData(shop.getShopId());
                     displayItems();
@@ -498,8 +565,10 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             Button confirmPrice = new Button("Confirm", evt -> {
                 String token = getToken();
                 String url = "http://localhost:8080/api/shops/" + shop.getShopId() + "/items/"
-                        + item.getId() + "/price?price=" + newPriceField.getValue()
+                        + item.getId() + "/price?price=" + newPriceField.getValue().intValue()
                         + "&token=" + token;
+                //print the URL for debugging
+                System.out.println("Request URL: " + url);
                 ResponseEntity<Void> priceResponse = restTemplate.postForEntity(url, null, Void.class);
                 if (priceResponse.getStatusCode() == HttpStatus.OK) {
                     Notification.show("Price updated successfully");
@@ -652,4 +721,5 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             return sb.substring(0, sb.length() - 2); // Remove the last comma and space
         }
     }
+
 }

@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.example.app.ApplicationLayer.Purchase.ShippingMethod;
 import com.example.app.DomainLayer.Item.ItemCategory;
+import com.example.app.DomainLayer.Shop.Discount.Discount;
 
 public interface IShopRepository {
 
@@ -250,4 +251,8 @@ public interface IShopRepository {
 
     void addDiscountPolicy(int threshold, int itemId, ItemCategory category, double basketValue, Operator operator,
             int shopId);
+
+       
+       
+     List<Discount> getDiscounts(int shopId);
 }

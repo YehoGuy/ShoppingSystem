@@ -654,6 +654,10 @@ public void testRollbackOnDiscountFailure_Success() throws Exception {
             Map<Integer, ItemCategory> categories) {
             return true;
         }
+        @Override
+        public Integer getPercentage() {
+            return 0;
+        }
     });
 
     // a purchase of 2 should throw, and rollback to 5

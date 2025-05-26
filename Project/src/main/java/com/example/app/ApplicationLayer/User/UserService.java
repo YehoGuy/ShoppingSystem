@@ -891,6 +891,37 @@ public class UserService {
         }
     }
 
+    public boolean addFounderRole(int memberId, Role role, int shopId) {
+        try {
+            LoggerService.logMethodExecution("addFounderRole", memberId, role, shopId);
+            validateMemberId(memberId);
+            if (isSuspended(memberId)) {
+                LoggerService.logDebug("addFounderRole", new OurRuntime("Member ID " + memberId + " is suspended."));
+                throw new OurRuntime("the user is suspended");
+            }
+            if (role == null) {
+                LoggerService.logDebug("addFounderRole", new OurRuntime("Role cannot be null."));
+                throw new OurRuntime("Role cannot be null.");
+            }
+            Member member = userRepository.getMemberById(memberId);
+            if (member == null) {
+                LoggerService.logDebug("addFounderRole", new OurRuntime("Member ID " + memberId + " does not exist."));
+                throw new OurRuntime("Member ID " + memberId + " does not exist.");
+            }
+            member.addRole(role); // Add the role to the member
+            LoggerService.logMethodExecutionEnd("addFounderRole", true);
+            return true;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("addFounderRole", e);
+            throw new OurRuntime("addFounderRole" + e.getMessage()); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("addFounderRole", e);
+            throw new OurArg("addFounderRole" + e.getMessage()); // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("addFounderRole", e, memberId, role, shopId);
+            throw new OurRuntime("addFounderRole: " + e.getMessage(), e); // Indicate failure to add role
+        }
+    }
     /**
      * Removes a role from a member.
      * 
