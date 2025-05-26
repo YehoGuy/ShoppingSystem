@@ -154,6 +154,9 @@ public class ShopController {
             Shop shop = shopService.createShop(name, null, null, token);
             List<ItemDTO> itemDTOs = new ArrayList<>(); // No items initially
             ShopDTO shopDTO = ShopDTO.fromDomain(shop, itemDTOs);
+            //print shop id
+            System.out.println("Shop created with ID: " + shopDTO.getShopId());
+
             return ResponseEntity.status(HttpStatus.CREATED).body(shopDTO);
 
         } catch (ConstraintViolationException | IllegalArgumentException ex) {

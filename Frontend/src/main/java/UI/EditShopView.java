@@ -50,7 +50,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final String USERS_URL = "http://localhost:8080/api/users";
-    private final String SHOPS_URL = "http://localhost:8080/api/shops";
+    private final String SHOPS_URL = "http://localhost:8080/api/shops/";    
     private final String PERMISSIONS_URL = "http://localhost:8080/api/users/hasPermission";
     private ShopDTO shop;
     private Map<ItemDTO, Integer> allItemPrices;
@@ -585,10 +585,17 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
     }
 
     @Override
-    public void setParameter(BeforeEvent arg0, Integer arg1) {
-        loadShopData(arg1);
+    public void setParameter(BeforeEvent event, Integer shopId) {
+    if (shopId == null || shopId <= 0) {
+        Notification.show("Invalid shop ID");
+        UI.getCurrent().navigate("home");
+        return;
+    }
+    loadShopData(shopId);
+    if (shop != null) {
         buildUI();
     }
+}
 
     class UserPermissionsDTO {
         private int memberId;
