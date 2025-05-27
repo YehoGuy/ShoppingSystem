@@ -9,9 +9,10 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
 
 
-public class WSEPPay {
+public class WSEPPay implements PaymentMethod {
 
     private static final String PAYMENT_URL = "https://damp-lynna-wsep-1984852e.koyeb.app/"; // Replace with actual URL
     private final RestTemplate restTemplate;
@@ -20,6 +21,7 @@ public class WSEPPay {
         this.restTemplate = new RestTemplate();
     }
 
+    @Override
     public boolean isPaymentServiceAvailable() {
         Map<String, String> postContent = Map.of(
             "action_type", "handshake"
@@ -38,6 +40,7 @@ public class WSEPPay {
         return body.equals("OK");
     }
     
+    @Override
     public int processPayment(double amount, String currency, String cardNumber, String expirationDateMonth, String expirationDateYear, String cardHolderName, String cvv, String id) {
         if (amount <= 0 || currency == null || cardNumber == null || expirationDateMonth == null || expirationDateYear == null || cardHolderName == null || cvv == null || id == null) {
             throw new IllegalArgumentException("All payment details must be provided and valid");
@@ -70,6 +73,7 @@ public class WSEPPay {
         }
     }
 
+    @Override
     public boolean cancelPayment(int paymentId) {
         if (paymentId <= 10000 || paymentId >= 100000) {
             throw new IllegalArgumentException("Payment ID must be a positive integer");

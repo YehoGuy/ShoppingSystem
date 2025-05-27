@@ -9,8 +9,9 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import com.example.app.ApplicationLayer.Purchase.ShippingMethod;
 
-public class WSEPShipping {
+public class WSEPShipping implements ShippingMethod {
 
     private static final String PAYMENT_URL = "https://damp-lynna-wsep-1984852e.koyeb.app/"; // Replace with actual URL
     private final RestTemplate restTemplate;
@@ -19,6 +20,7 @@ public class WSEPShipping {
         this.restTemplate = new RestTemplate();
     }
 
+    @Override
     public boolean isShippingServiceAvailable() {
         Map<String, String> postContent = Map.of(
             "action_type", "handshake"
@@ -37,6 +39,7 @@ public class WSEPShipping {
         return body.equals("OK");
     }
 
+    @Override
     public int processShipping(String name, String address, String city, String country, String zipCode) {
         if (name == null || address == null || city == null || country == null || zipCode == null) {
             throw new IllegalArgumentException("All shipping details must be provided");
@@ -68,6 +71,7 @@ public class WSEPShipping {
         }
     }
 
+    @Override
     public boolean cancelShipping(int shippingId) {
         if (shippingId <= 0) {
             throw new IllegalArgumentException("Invalid shipping ID");
