@@ -161,9 +161,10 @@ public class MessageService {
         }
     }
 
-    public List<Message> getMessagesByReceiverId(String token, int receiverId) {
+    public List<Message> getMessagesByReceiverId(String token) {
         try {
-            LoggerService.logMethodExecution("getMessagesByReceiverId", token, receiverId);
+            LoggerService.logMethodExecution("getMessagesByReceiverId", token);
+            int receiverId = authTokenService.getUserIdByToken(token);
             List<Message> messages = messageRepository.getMessagesByReceiverId(receiverId);
             LoggerService.logMethodExecutionEnd("getMessagesByReceiverId", "Messages retrieved successfully.");
             return messages;
@@ -174,7 +175,7 @@ public class MessageService {
             LoggerService.logDebug("getMessagesByReceiverId", e);
             throw new OurRuntime("getMessagesByReceiverId", e);
         } catch (Exception e) {
-            LoggerService.logError("getMessagesByReceiverId", e, token, receiverId);
+            LoggerService.logError("getMessagesByReceiverId", e, token);
             throw new OurRuntime("Error getting messages by receiver ID: " + e.getMessage(), e);
         }
     }
