@@ -33,6 +33,7 @@ import com.example.app.DomainLayer.Item.Item;
 import com.example.app.DomainLayer.Item.ItemCategory;
 import com.example.app.DomainLayer.Shop.Shop;
 import com.example.app.PresentationLayer.Controller.ShopController;
+import com.example.app.InfrastructureLayer.WSEPShipping;
 
 /**
  * Full slice tests – **every ShopController endpoint has ≥ 2 cases**.
@@ -53,14 +54,7 @@ class ShopControllerTests {
     ShopService shopService;
 
     private ShippingMethod stubShip() { // easy fake shipper
-        return new ShippingMethod() {
-            public void processShipment(int id, String c, String ci, String s, String p) {
-            }
-
-            public String getDetails() {
-                return "STD";
-            }
-        };
+        return new WSEPShipping();
     }
 
     /* ───────────── 1 · CREATE SHOP ───────────── */

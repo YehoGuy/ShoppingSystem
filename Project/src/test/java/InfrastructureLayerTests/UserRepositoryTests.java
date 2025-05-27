@@ -26,6 +26,7 @@ import com.example.app.DomainLayer.Roles.Role;
 import com.example.app.InfrastructureLayer.UserRepository;
 import com.example.app.DomainLayer.Notification;
 import com.example.app.DomainLayer.ShoppingCart;
+import com.example.app.InfrastructureLayer.WSEPPay;
 
     
 public class UserRepositoryTests {
@@ -509,12 +510,7 @@ public class UserRepositoryTests {
     @Test
     void testPaymentFailures() {
         // non-existent user
-        PaymentMethod pm = new PaymentMethod() {
-            @Override public void processPayment(double a,int s){}
-            @Override public String getDetails(){return "";}
-            @Override public void refundPayment(double a,int s){}
-            @Override public void processRefund(double r,int s){}
-        };
+        PaymentMethod pm = new WSEPPay();
         assertThrows(OurRuntime.class,
             () -> repo.setPaymentMethod(9999, 0, pm));
         assertThrows(OurRuntime.class,
