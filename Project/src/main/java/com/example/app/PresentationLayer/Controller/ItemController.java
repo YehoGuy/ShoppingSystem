@@ -83,7 +83,7 @@ public class ItemController {
             @RequestParam @Min(0) int shopId,
             @RequestParam @NotBlank String name,
             @RequestParam @NotBlank String description,
-            @RequestParam @Min(0) Integer category,
+            @RequestParam ItemCategory category,
             @RequestParam @NotBlank String token) {
         try {
             Integer id = itemService.createItem(shopId, name, description, category, token);

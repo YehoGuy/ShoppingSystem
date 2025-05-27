@@ -411,10 +411,11 @@ public class ShopController {
             @RequestParam String name,
             @RequestParam String description,
             @RequestParam int quantity,
+            @RequestParam ItemCategory category,
             @RequestParam int price,
             @RequestParam String token) {
         try {
-            shopService.addItemToShop(shopId, name, description, quantity, price, token);
+            shopService.addItemToShop(shopId, name, description, quantity, category, price, token);
             return ResponseEntity.status(HttpStatus.CREATED).build(); // 201
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());

@@ -60,14 +60,14 @@ public class ItemControllerTests {
     class CreateItem {
         @Test
         void success_returnsCreated() throws Exception {
-            when(itemService.createItem(1, "ItemX", "Desc", 2, "tok"))
+            when(itemService.createItem(1, "ItemX", "Desc", ItemCategory.ELECTRONICS, "tok"))
                     .thenReturn(123);
 
             mvc.perform(post("/api/items/create")
                     .param("shopId", "1")
                     .param("name", "ItemX")
                     .param("description", "Desc")
-                    .param("category", "2")
+                    .param("category", "ELECTRONICS")
                     .param("token", "tok"))
                     .andExpect(status().isCreated())
                     .andExpect(content().string("123"));
@@ -75,28 +75,28 @@ public class ItemControllerTests {
 
         @Test
         void badRequest_returns400() throws Exception {
-            when(itemService.createItem(anyInt(), anyString(), anyString(), anyInt(), anyString()))
+            when(itemService.createItem(anyInt(), anyString(), anyString(), eq(ItemCategory.ELECTRONICS), anyString()))
                     .thenThrow(new OurArg("bad"));
 
             mvc.perform(post("/api/items/create")
                     .param("shopId", "1")
                     .param("name", "")
                     .param("description", "Desc")
-                    .param("category", "2")
+                    .param("category", "ELECTRONICS")
                     .param("token", "tok"))
                     .andExpect(status().isBadRequest());
         }
 
         @Test
         void conflict_returns409() throws Exception {
-            when(itemService.createItem(anyInt(), anyString(), anyString(), anyInt(), anyString()))
+            when(itemService.createItem(anyInt(), anyString(), anyString(), eq(ItemCategory.ELECTRONICS), anyString()))
                     .thenThrow(new OurRuntime("conflict"));
 
             mvc.perform(post("/api/items/create")
                     .param("shopId", "1")
                     .param("name", "ItemX")
                     .param("description", "Desc")
-                    .param("category", "2")
+                    .param("category", "ELECTRONICS")
                     .param("token", "tok"))
                     .andExpect(status().isConflict());
         }

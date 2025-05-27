@@ -128,8 +128,10 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             closeShopButton = new Button("Close Shop", e -> {
                 String token = getToken();
                 String url = "http://localhost:8080/api/shops/" + shop.getShopId() + "?token=" + token;
-                ResponseEntity<Void> response = restTemplate.postForEntity(url, null, Void.class);
-                if (response.getStatusCode() == HttpStatus.OK) {
+                //print the URL for debugging
+                System.out.println("Request URL: " + url);
+                ResponseEntity<Void> response = restTemplate.exchange(url,HttpMethod.DELETE, null, Void.class);
+                if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
                     Notification.show("Shop closed successfully");
                     UI.getCurrent().navigate("home");
                 } else {
@@ -366,6 +368,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                     + "?name=" + name.getValue()
                     + "&description=" + desc.getValue()
                     + "&quantity=" + quantity.getValue().intValue()
+                    + "&category=" + (category.getValue() != null ? category.getValue() : "")
                     + "&price=" + price.getValue().intValue()
                     + "&token=" + token;
 

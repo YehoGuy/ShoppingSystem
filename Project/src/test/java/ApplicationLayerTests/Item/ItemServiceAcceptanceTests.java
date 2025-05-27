@@ -109,7 +109,7 @@ public class ItemServiceAcceptanceTests {
     public void testCreateItemSuccess() throws Exception {
         String name        = "Widget";
         String description = "A test widget";
-        Integer category   = 0;
+        ItemCategory category = ItemCategory.ELECTRONICS;
         Integer newItemId  = 123;
 
         // user has permission
@@ -117,7 +117,7 @@ public class ItemServiceAcceptanceTests {
             .thenReturn(true);
 
         // repository creates item
-        when(itemRepository.createItem(name, description, category))
+        when(itemRepository.createItem(name, description, category.ordinal()))
             .thenReturn(newItemId);
 
         Integer result = itemService.createItem(
@@ -125,7 +125,7 @@ public class ItemServiceAcceptanceTests {
         );
 
         assertEquals(newItemId, result);
-        verify(itemRepository).createItem(name, description, category);
+        verify(itemRepository).createItem(name, description, category.ordinal());
     }
 
     // UC16 – Create Item (invalid no permission)
@@ -133,7 +133,7 @@ public class ItemServiceAcceptanceTests {
     public void testCreateItemNoPermission() {
         String name        = "Widget";
         String description = "A test widget";
-        Integer category   = 0;
+        ItemCategory category = ItemCategory.ELECTRONICS;
 
         // user does not have permission
         when(userService.hasPermission(USER_ID, PermissionsEnum.manageItems, SHOP_ID))
@@ -150,13 +150,13 @@ public class ItemServiceAcceptanceTests {
     public void testCreateItemInvalidName() {
         String name      = "";
         String description = "desc";
-        Integer category = 1;
+        ItemCategory category = ItemCategory.ELECTRONICS;
 
         when(userService.hasPermission(USER_ID, PermissionsEnum.manageItems, SHOP_ID))
             .thenReturn(true);
 
         // repository throws
-        when(itemRepository.createItem(name, description, category))
+        when(itemRepository.createItem(name, description, category.ordinal()))
             .thenThrow(new RuntimeException("Database error"));
 
         assertThrows(RuntimeException.class, () ->
@@ -170,13 +170,13 @@ public class ItemServiceAcceptanceTests {
     public void testCreateItemInvalidDescription() {
         String name        = "Widget";
         String description = ""; // invalid
-        Integer category   = 0;
+        ItemCategory category = ItemCategory.ELECTRONICS;
 
         when(userService.hasPermission(USER_ID, PermissionsEnum.manageItems, SHOP_ID))
             .thenReturn(true);
 
         // repository throws
-        when(itemRepository.createItem(name, description, category))
+        when(itemRepository.createItem(name, description, category.ordinal()))
             .thenThrow(new RuntimeException("Database error"));
 
         assertThrows(RuntimeException.class, () ->
@@ -189,7 +189,7 @@ public class ItemServiceAcceptanceTests {
     public void testCreateItemInvalidCategory() {
         String name        = "Widget";
         String description = "A test widget";
-        Integer category   = -1; // invalid
+        ItemCategory category = null; // invalid
 
         when(userService.hasPermission(USER_ID, PermissionsEnum.manageItems, SHOP_ID))
             .thenReturn(true);
@@ -205,7 +205,7 @@ public class ItemServiceAcceptanceTests {
     public void testCreateItemInvalidShopId() {
         String name        = "Widget";
         String description = "A test widget";
-        Integer category   = 0;
+        ItemCategory category = ItemCategory.ELECTRONICS;
         Integer shopId     = -1; // invalid
 
         when(userService.hasPermission(USER_ID, PermissionsEnum.manageItems, shopId))
