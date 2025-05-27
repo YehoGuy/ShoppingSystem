@@ -315,7 +315,7 @@ public class ShopService {
         }
     }
 
-    public void addItemToShop(int shopId, String name, String desc, int quantity, int price, String token) {
+    public void addItemToShop(int shopId, String name, String description, int quantity, ItemCategory category, int price, String token) {
         try {
             LoggerService.logMethodExecution("addItemToShop", shopId, quantity, price);
             Integer userId = authTokenService.ValidateToken(token);
@@ -324,7 +324,7 @@ public class ShopService {
                 LoggerService.logDebug("addItemToShop", e);
                 throw e;
             }
-            Integer itemId = itemService.createItem(shopId, name, desc, userId, token);
+            Integer itemId = itemService.createItem(shopId, name, description, category, token);
             shopRepository.addItemToShop(shopId, itemId, quantity, price);
             LoggerService.logMethodExecutionEndVoid("addItemToShop");
         } catch (OurArg e) {

@@ -7,6 +7,7 @@ import UI.EditShopView.UserPermissionsDTO;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.checkbox.CheckboxGroup;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dependency.JsModule;
@@ -42,6 +43,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Route(value = "edit-shop", layout = AppLayoutBasic.class)
@@ -126,8 +128,10 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             closeShopButton = new Button("Close Shop", e -> {
                 String token = getToken();
                 String url = "http://localhost:8080/api/shops/" + shop.getShopId() + "?token=" + token;
-                ResponseEntity<Void> response = restTemplate.postForEntity(url, null, Void.class);
-                if (response.getStatusCode() == HttpStatus.OK) {
+                //print the URL for debugging
+                System.out.println("Request URL: " + url);
+                ResponseEntity<Void> response = restTemplate.exchange(url,HttpMethod.DELETE, null, Void.class);
+                if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
                     Notification.show("Shop closed successfully");
                     UI.getCurrent().navigate("home");
                 } else {
@@ -364,6 +368,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                     + "?name=" + name.getValue()
                     + "&description=" + desc.getValue()
                     + "&quantity=" + quantity.getValue().intValue()
+                    + "&category=" + (category.getValue() != null ? category.getValue() : "")
                     + "&price=" + price.getValue().intValue()
                     + "&token=" + token;
 
@@ -395,7 +400,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             List<DiscountDTO> discounts = getDiscounts();
 
             for (ItemDTO item : allItemPrices.keySet()) {
-                Button addSupply, deleteItem, removeSupply, editPrice, setItemDiscount, removeItemDiscount;
+                Button addSupply, deleteItem, removeSupply, editPrice, setDiscount, removeDiscount;
                 HorizontalLayout itemLayout = new HorizontalLayout();
                 itemLayout.setWidthFull();
                 itemLayout.setAlignItems(FlexComponent.Alignment.CENTER);
@@ -428,8 +433,8 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                     deleteItem = createDeleteItemButton(item);
                     removeSupply = createRemoveSupplyButton(item);
                     editPrice = createEditPriceButton(item);
-                    setItemDiscount = createSetItemDiscountButton(item);
-                    removeItemDiscount = createRemoveItemDiscountButton(item);
+                    setDiscount = SetDiscountButton(item);
+                    removeDiscount = RemoveDiscountButton(item);
                 } else {
                     addSupply = new Button("Add Supply",
                             e -> Notification.show("You do not have permission to add supply."));
@@ -439,14 +444,14 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                             e -> Notification.show("You do not have permission to remove supply."));
                     editPrice = new Button("Edit Price",
                             e -> Notification.show("You do not have permission to edit prices."));
-                    setItemDiscount = new Button("Set Discount",
+                    setDiscount = new Button("Set Discount",
                             e -> Notification.show("You do not have permission to set discounts."));
-                    removeItemDiscount = new Button("Remove Discount",
+                    removeDiscount = new Button("Remove Discount",
                             e -> Notification.show("You do not have permission to remove discounts."));
                 }
 
                 VerticalLayout buttonsLayout = new VerticalLayout(addSupply, deleteItem, removeSupply, editPrice,
-                        setItemDiscount, removeItemDiscount);
+                        setDiscount, removeDiscount);
                 buttonsLayout.setWidth("30%");
                 itemLayout.add(itemDetails, buttonsLayout);
                 itemLayout.setFlexGrow(1, itemDetails);
@@ -514,49 +519,230 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         }
     }
 
-    private Button createRemoveItemDiscountButton(ItemDTO item) {
+    private Button RemoveDiscountButton(ItemDTO item) {
         return new Button("Remove Discount", e -> {
-            String token = getToken();
-            String url = "http://localhost:8080/api/shops/" + shop.getShopId() + "/discount/items/"
-                    + item.getId() + "?token=" + token;
-            ResponseEntity<Void> removeDiscountResponse = restTemplate.exchange(url, HttpMethod.DELETE,
-                    null,
-                    Void.class);
-            if (removeDiscountResponse.getStatusCode() == HttpStatus.NO_CONTENT) {
-                Notification.show("Discount removed successfully");
-                loadShopData(shop.getShopId());
-                displayItems();
-            } else {
-                Notification.show("Failed to remove discount");
-            }
+            Dialog dlg = new Dialog();
+
+            // ① categories of every item in the shop
+            Set<String> presentCats = shop.getItems().stream()
+                .map(ItemDTO::getCategory)
+                .collect(Collectors.toSet());
+
+            boolean hasAnyItems = !shop.getItems().isEmpty();
+            List<String> types = new ArrayList<>();
+            if (hasAnyItems)            types.add("Global");
+            if (!presentCats.isEmpty()) types.add("Category");
+                                        types.add("Product");
+
+            ComboBox<String> scopeCombo = new ComboBox<>("Discount Type", types);
+            scopeCombo.setValue("Product");
+
+            ComboBox<ItemCategory> categoryCombo = new ComboBox<>("Category");
+            Set<ItemCategory> presentItemCats = presentCats.stream()
+                .map(ItemCategory::valueOf)
+                .collect(Collectors.toSet());
+            categoryCombo.setItems(presentItemCats);
+            categoryCombo.setVisible(false);
+
+            scopeCombo.addValueChangeListener(ev ->
+                categoryCombo.setVisible("Category".equals(ev.getValue()))
+            );
+
+            Button confirm = new Button("Confirm", clk -> {
+                String choice = scopeCombo.getValue();
+                if ("Global".equals(choice)) {
+                    removeGlobalDiscount();
+                }
+                else if ("Category".equals(choice)) {
+                    ItemCategory cat = categoryCombo.getValue();
+                    if (cat == null) {
+                        Notification.show("Please pick a category");
+                        return;
+                    }
+                    removeCategoryDiscount(cat);
+                }
+                else {
+                    removeItemDiscount(item.getId());
+                }
+                dlg.close();
+            });
+
+            dlg.add(new VerticalLayout(scopeCombo, categoryCombo, confirm));
+            dlg.open();
         });
     }
 
-    private Button createSetItemDiscountButton(ItemDTO item) {
+    private void removeItemDiscount(int id) {
+        String token = getToken();
+        String url = SHOPS_URL + "/"
+            + shop.getShopId()
+            + "/discount/items/" + id
+            + "?token=" + token;
+
+        ResponseEntity<Void> resp = restTemplate.exchange(
+            url, HttpMethod.DELETE, null, Void.class);
+
+        if (resp.getStatusCode() == HttpStatus.NO_CONTENT) {
+            Notification.show("Item discount removed");
+            loadShopData(shop.getShopId());
+            displayItems();
+        } else {
+            Notification.show("Failed to remove item discount");
+        }
+    }
+
+    private void removeCategoryDiscount(ItemCategory category) {
+        String token = getToken();
+        String url = SHOPS_URL + "/"
+            + shop.getShopId()
+            + "/discount/categories?category=" + category.name()
+            + "&token=" + token;
+
+        ResponseEntity<Void> resp = restTemplate.exchange(url, HttpMethod.DELETE, null, Void.class);
+        if (resp.getStatusCode() == HttpStatus.NO_CONTENT) {
+            Notification.show("Category discount removed");
+            loadShopData(shop.getShopId());
+            displayItems();
+        } else {
+            Notification.show("Failed to remove category discount");
+        }
+    }
+
+    private void removeGlobalDiscount() {
+        String token = getToken();
+        String url = SHOPS_URL + "/"
+            + shop.getShopId()
+            + "/discount/global?token=" + token;
+
+        ResponseEntity<Void> resp = restTemplate.exchange(
+            url, HttpMethod.DELETE, null, Void.class);
+
+        if (resp.getStatusCode() == HttpStatus.NO_CONTENT) {
+            Notification.show("Global discount removed");
+            loadShopData(shop.getShopId());
+            displayItems();
+        } else {
+            Notification.show("Failed to remove global discount");
+        }
+    }
+
+
+    private Button SetDiscountButton(ItemDTO item) {
         return new Button("Set Discount", e -> {
-            Dialog discountDialog = new Dialog();
-            NumberField discountField = new NumberField("Discount Percentage");
-            discountField.setMin(0);
-            discountField.setMax(100);
-            Button confirmDiscount = new Button("Confirm", evt -> {
-                String token = getToken();
-                String url = "http://localhost:8080/api/shops/" + shop.getShopId() + "/discount/items/"
-                        + item.getId() + "?discount=" + discountField.getValue().intValue() 
-                        + "&isDouble=true" + "&token=" + token;
-                ResponseEntity<Void> discountResponse = restTemplate.postForEntity(url, null, Void.class);
-                if (discountResponse.getStatusCode() == HttpStatus.NO_CONTENT) {
-                    Notification.show("Discount set successfully");
-                    loadShopData(shop.getShopId());
-                    displayItems();
-                } else {
-                    Notification.show("Failed to set discount");
+            Dialog dlg = new Dialog();
+
+            Set<String> presentCats = shop.getItems().stream()
+                .map(ItemDTO::getCategory)
+                .collect(Collectors.toSet());
+
+            boolean hasAnyItems = !shop.getItems().isEmpty();
+            List<String> types = new ArrayList<>();
+            if (hasAnyItems)            types.add("Global");
+            if (!presentCats.isEmpty()) types.add("Category");
+                                        types.add("Product");
+
+            ComboBox<String> scopeCombo = new ComboBox<>("Discount Type", types);
+            scopeCombo.setValue("Product");
+
+            ComboBox<ItemCategory> categoryCombo = new ComboBox<>("Category");
+            Set<ItemCategory> presentItemCats = presentCats.stream()
+                .map(ItemCategory::valueOf)
+                .collect(Collectors.toSet());
+            categoryCombo.setItems(presentItemCats);
+            categoryCombo.setVisible(false);
+
+            NumberField pctField = new NumberField("Discount %");
+            pctField.setMin(0); pctField.setMax(100);
+            Checkbox dblChk = new Checkbox("Double discount", true);
+
+            scopeCombo.addValueChangeListener(ev ->
+                categoryCombo.setVisible("Category".equals(ev.getValue()))
+            );
+
+            Button confirm = new Button("Confirm", clk -> {
+                String choice = scopeCombo.getValue();
+                int pct = pctField.getValue().intValue();
+                boolean dbl = dblChk.getValue();
+
+                if ("Global".equals(choice)) {
+                    applyGlobalDiscount(pct, dbl);
                 }
-                discountDialog.close();
+                else if ("Category".equals(choice)) {
+                    ItemCategory cat = categoryCombo.getValue();
+                    if (cat == null) {
+                        Notification.show("Please pick a category");
+                        return;
+                    }
+                    applyCategoryDiscount(cat, pct, dbl);
+                }
+                else {
+                    applyItemDiscount(item.getId(), pct, dbl);
+                }
+                dlg.close();
             });
-            discountDialog.add(new VerticalLayout(discountField, confirmDiscount));
-            discountDialog.open();
+
+            dlg.add(new VerticalLayout(scopeCombo, categoryCombo, pctField, dblChk, confirm));
+            dlg.open();
         });
     }
+
+
+    private void applyItemDiscount(int id, int pct, boolean dbl) {
+        String token = getToken();
+        String url = SHOPS_URL + "/"
+            + shop.getShopId()
+            + "/discount/items/" + id
+            + "?discount=" + pct
+            + "&isDouble=" + dbl
+            + "&token=" + token;
+
+        ResponseEntity<Void> resp = restTemplate.postForEntity(url, null, Void.class);
+        if (resp.getStatusCode() == HttpStatus.NO_CONTENT) {
+            Notification.show("Item discount applied");
+            loadShopData(shop.getShopId());
+            displayItems();
+        } else {
+            Notification.show("Failed to apply item discount");
+        }
+    }
+
+    private void applyCategoryDiscount(ItemCategory category, int pct, boolean dbl) {
+        String token = getToken();
+        String url = SHOPS_URL + "/"
+            + shop.getShopId()
+            + "/discount/categories?category=" + category.name()
+            + "&discount=" + pct
+            + "&isDouble=" + dbl
+            + "&token=" + token;
+
+        ResponseEntity<Void> resp = restTemplate.postForEntity(url, null, Void.class);
+        if (resp.getStatusCode() == HttpStatus.NO_CONTENT) {
+            Notification.show("Category discount applied");
+            loadShopData(shop.getShopId());
+            displayItems();
+        } else {
+            Notification.show("Failed to apply category discount");
+        }
+    }
+
+    private void applyGlobalDiscount(int pct, boolean dbl) {
+        String token = getToken();
+        String url = SHOPS_URL + "/"
+            + shop.getShopId()
+            + "/discount/global?discount=" + pct
+            + "&isDouble=" + dbl
+            + "&token=" + token;
+
+        ResponseEntity<Void> resp = restTemplate.postForEntity(url, null, Void.class);
+        if (resp.getStatusCode() == HttpStatus.NO_CONTENT) {
+            Notification.show("Global discount applied");
+            loadShopData(shop.getShopId());
+            displayItems();
+        } else {
+            Notification.show("Failed to apply global discount");
+        }
+    }
+
 
     private Button createEditPriceButton(ItemDTO item) {
         return new Button("Edit Price", e -> {
