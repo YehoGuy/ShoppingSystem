@@ -39,7 +39,7 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver{
     private static final String BASE_URL = "http://localhost:8080/api/messages";
     private static final String NOTIFICATIONS_URL = "http://localhost:8080/api/users/notifications";
     private static final String PENDING_ROLES_URL = "http://localhost:8080/api/users/getPendingRoles";
-    private static final String GET_BT_RECIVER = "http://localhost:8080/api/messages/receiver?authToken";
+    private static final String GET_BY_RECIVER = "http://localhost:8080/api/messages/receiver?authToken=";
 
     private final RestTemplate rest = new RestTemplate();
     private final VerticalLayout threadContainer = new VerticalLayout();
@@ -62,7 +62,7 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver{
         ResponseEntity<MemberDTO[]> allmem = rest.getForEntity("http://localhost:8080/api/users/allmembers?token=" + token, MemberDTO[].class);
 
         ResponseEntity<MessageDTO[]> allmessagesRe = rest.getForEntity(
-                GET_BT_RECIVER + token,
+                GET_BY_RECIVER + token,
                 MessageDTO[].class);
         this.allmessages = Arrays.asList(allmessagesRe.getBody());
         
@@ -110,17 +110,7 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver{
             if (!content.isEmpty()) {
                 sendMessageToUser(currentChatUserId, content, lastMessageId);
                 messageArea.clear();
-                // Manually add the sent message to the layout
-                HorizontalLayout line = new HorizontalLayout();
-                line.setWidthFull();
-                Span who = new Span("You:");
-                Span text = new Span(content);
-                String currentTime = java.time.LocalTime.now().withNano(0).toString();
-                Span time = new Span("🕓 " + currentTime);
-                time.getStyle().set("margin-left", "auto").set("font-size", "smaller");
-                line.add(who, text, time);
-                threadContainer.add(line);
-                //loadAndDisplayConversation();
+                loadAndDisplayConversation(currentChatUserId);
             }
         });
 
