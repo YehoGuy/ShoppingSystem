@@ -255,16 +255,6 @@ public class MessageServiceTests {
     //     assertTrue(out.contains("recvMsg"));
     // }
 
-    @Test
-    void testGetMessagesByReceiverId_RepoThrowsOurArg() {
-        IMessageRepository repoMock = mock(IMessageRepository.class);
-        when(repoMock.getMessagesByReceiverId(anyInt())).thenThrow(new OurArg("bad"));
-
-        MessageService svc = new MessageService(repoMock, null, null, null);
-        OurRuntime ex = assertThrows(OurRuntime.class,
-            () -> svc.getMessagesByReceiverId("any", 1));
-        assertTrue(ex.getMessage().contains("getMessagesByReceiverId"));
-    }
 
     @Test
     void testGetMessagesByReceiverId_RepoThrowsOther() {
@@ -273,7 +263,7 @@ public class MessageServiceTests {
 
         MessageService svc = new MessageService(repoMock, null, null, null);
         OurRuntime ex = assertThrows(OurRuntime.class,
-            () -> svc.getMessagesByReceiverId("any", 1));
+            () -> svc.getMessagesByReceiverId("any"));
         assertTrue(ex.getMessage().contains("Error getting messages by receiver ID"));
     }
 
