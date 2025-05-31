@@ -78,6 +78,11 @@ public class Bid extends Purchase{
         return this.biddersIds.keySet().stream().toList();
     }
 
+    @Override
+    public BidReciept generateReciept() {
+        return new BidReciept(this.purchaseId, this.userId, this.storeId, this.items, this.shippingAddress, this.initialPrice.get(), this.highestBidderId.get(), this.initialPrice.get(), this.highestBid.get(), this.highestBidderId.get());
+    }
+
 
 
 }
