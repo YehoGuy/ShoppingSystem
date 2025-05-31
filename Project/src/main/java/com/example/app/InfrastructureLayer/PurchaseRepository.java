@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import com.example.app.DomainLayer.Purchase.Address;
 import com.example.app.DomainLayer.Purchase.Bid;
+import com.example.app.DomainLayer.Purchase.BidReciept;
 import com.example.app.DomainLayer.Purchase.IPurchaseRepository;
 import com.example.app.DomainLayer.Purchase.Purchase;
 import com.example.app.DomainLayer.Purchase.Reciept;
@@ -157,6 +158,19 @@ public class PurchaseRepository implements IPurchaseRepository {
                 .map(Purchase::generateReciept)
                 .toList();
     }   
+
+    @Override
+    /**
+     * Retrieves all bids.
+     *
+     * @return A list of bids available in the repository.
+     */
+    public List<BidReciept> getAllBids() {
+        return purchaseStorage.values().stream()
+                .filter(purchase -> purchase instanceof Bid)
+                .map(purchase -> ((Bid) purchase).generateReciept())
+                .toList();
+    }
     
 
 }

@@ -69,6 +69,13 @@ public interface IPurchaseRepository {
      */
     List<Reciept> getUserStorePurchases(int userId, int storeId);
 
+    /**
+     * Retrieves all bids.
+     *
+     * @return A list of Bid data objects (BidReciept) for the available bids.
+     */
+    List<BidReciept> getAllBids();
+
 
 
 }
