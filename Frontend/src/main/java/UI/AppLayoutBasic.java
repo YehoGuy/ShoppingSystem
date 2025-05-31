@@ -7,6 +7,7 @@ import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.router.RouterLayout;
+import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.theme.Theme;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
@@ -38,9 +39,19 @@ public class AppLayoutBasic extends AppLayout implements RouterLayout {
                 new SideNavItem("Search Item", "/items", VaadinIcon.SEARCH.create()),
                 new SideNavItem("Search Shop", "/shops", VaadinIcon.SHOP.create()),
                 new SideNavItem("My Shops", "/myshops", VaadinIcon.LIST_UL.create()),
-                new SideNavItem("My Messages", "/messages", VaadinIcon.ENVELOPE.create()),
-                new SideNavItem("Logout", "/logout", VaadinIcon.SIGN_OUT.create())
+                new SideNavItem("My Messages", "/messages", VaadinIcon.ENVELOPE.create())
         );
+
+
+        // only for admins
+        Boolean isAdmin = (Boolean) VaadinSession.getCurrent().getAttribute("isAdmin");
+        if (Boolean.TRUE.equals(isAdmin)) {
+            sideNav.addItem(new SideNavItem("Admin Panel", "/admin", VaadinIcon.SHIELD.create()));
+        }
+
+
+
+        sideNav.addItem(new SideNavItem("Logout", "/logout", VaadinIcon.SIGN_OUT.create()));
         return sideNav;
     }
 
