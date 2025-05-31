@@ -46,6 +46,10 @@ import jakarta.validation.constraints.Min;
  * 5. GET /api/purchases/users/{userId}
  * Params : authToken
  * Success: 200 → [ RecieptDTO, … ]
+ * 
+ * 6. GET /bids
+ * Params : authToken
+ * Success: 200 → [ BidRecieptDTO, … ]
  *
  * Error mapping (all endpoints)
  * 400 – Bad data / validation failure
