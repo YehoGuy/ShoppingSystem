@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.app.ApplicationLayer.Purchase.PurchaseService;
+import com.example.app.DomainLayer.Purchase.BidReciept;
+import com.example.app.PresentationLayer.DTO.Purchase.BidRecieptDTO;
 import com.example.app.PresentationLayer.DTO.Purchase.RecieptDTO;
 
 import jakarta.validation.ConstraintViolationException;
@@ -269,6 +271,32 @@ public class PurchaseController {
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                                 .body("Internal server error");                 // 500
+        }
+    }
+
+    @GetMapping("/bids")
+    public ResponseEntity<?> getAllBids(
+            @RequestParam String authToken) {
+
+        try {
+            List<BidReciept> bids = purchaseService.getAllBids(authToken);
+            List<BidRecieptDTO> bidDTOs = bids.stream()
+                    .map(BidRecieptDTO::fromDomain) // convert to DTO
+                    .toList();
+            return ResponseEntity.ok(bidDTOs); // 200 OK, returns list of bids
+
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage()); // 400
+
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage()); // 404
+
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
+
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Internal server error"); // 500
         }
     }
 
