@@ -649,6 +649,29 @@ public class UserController {
         }
     }
 
+    /*
+     * Suspend or unsuspend a user (admin-only token).
+     * Pass an ISO-8601 timestamp in `until`. To unsuspend, omit the param.
+     */
+    @PostMapping("/{userId}/unsuspension")
+    public ResponseEntity<Void> setUnSuspended(
+            @PathVariable @Min(1) int userId,
+            @RequestParam String token) {
+
+        try {
+            authService.ValidateToken(token);
+            userService.setUnSuspended(userId); // null = lift suspension
+            return ResponseEntity.noContent().build();
+
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().build();
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     /* Check whether the user is currently suspended. */
     @GetMapping("/{userId}/suspension")
     public ResponseEntity<?> isSuspended(

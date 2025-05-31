@@ -90,6 +90,10 @@ public class Member extends User {
     public void setSuspended(LocalDateTime suspended) {
         this.suspended = suspended; // Set the suspension status
     }
+    
+    public void setUnSuspended() {
+        this.suspended = LocalDateTime.now(); // Set the suspension status to now (unsuspended)
+    }
 
     public synchronized void setUsername(String username) {
         this.username = username; // Set the username

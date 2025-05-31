@@ -1835,7 +1835,26 @@ public class UserService {
             throw new OurRuntime("Error setting suspension for user ID " + userId + ": " + e.getMessage(), e);
         }
     }
-
+    
+    public void setUnSuspended(int userId) {
+        try {
+            if(!isSuspended(userId)) {
+                throw new OurRuntime("User is already unsuspended");
+            }
+            LoggerService.logMethodExecution("setUnSuspended", userId);
+            userRepository.setUnSuspended(userId);
+            LoggerService.logMethodExecutionEndVoid("setSuspended");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("setSuspended", e);
+            throw new OurRuntime("setSuspended: " + e.getMessage(), e);
+        } catch (OurArg e) {
+            LoggerService.logDebug("setSuspended", e);
+            throw new OurArg("setSuspended: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("setSuspended", e, userId);
+            throw new OurRuntime("Error setting suspension for user ID " + userId + ": " + e.getMessage(), e);
+        }
+    }
     public boolean isSuspended(int userId) {
         try {
             LoggerService.logMethodExecution("isSuspended", userId);

@@ -131,6 +131,8 @@ public interface IUserRepository {
     public List<Member> getOwners(int shopId);
 
     void setSuspended(int userId, LocalDateTime suspended); // Set a user as suspended
+    
+    void setUnSuspended(int userId); // Set a user as suspended
 
     boolean isSuspended(int userId); // Check if a user is suspended
 

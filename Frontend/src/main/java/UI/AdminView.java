@@ -1,7 +1,10 @@
 package UI;
 
+import DTOs.ItemDTO;
 import DTOs.MemberDTO;
 import DTOs.ShopDTO;
+import Domain.ItemCategory;
+
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.JsModule;
@@ -33,6 +36,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
 
     private Grid<UserGridRow> userGrid;
     private Grid<ShopGridRow> shopGrid;
+    private Grid<ItemGridRow> itemGrid;
     private final RestTemplate restTemplate = new RestTemplate();
     private final String BASE_URL = "http://localhost:8080";
 
@@ -83,6 +87,38 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             return name;
         }
     }
+    public static class ItemGridRow {
+        private int id;
+        private String name;
+        private String description;
+        private String category;
+
+        public ItemGridRow() {
+        }
+
+        public ItemGridRow(int id, String name, String description, String category) {
+            this.id = id;
+            this.name = name;
+            this.description = description;
+            this.category = category;
+        }
+
+        public int getId() {
+            return id;
+        }
+
+        public String getName() {
+            return name;
+        }
+        
+        public String getDescription() {
+            return description;
+        }
+        
+        public String getCategory() {
+            return category;
+        }
+    }
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
@@ -114,12 +150,16 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
 
         userGrid.addComponentColumn(user -> {
             Button adminBtn = new Button("Make Admin");
-            Button suspendBtn = new Button("Suspend 30 Days");
+            Button suspendBtn = new Button("Suspend 30 Days (2 min)");
+            Button unSuspendBtn = new Button("Un-Suspend");
+            Button baButton = new Button("Ban Account");
 
             adminBtn.addClickListener(e -> promoteUserToAdmin(user.getId()));
             suspendBtn.addClickListener(e -> suspendUser(user.getId()));
+            unSuspendBtn.addClickListener(e -> unSuspendUser(user.getId()));
+            //baButton.addClickListener(e -> banUser(user.getId()));
 
-            return new HorizontalLayout(adminBtn, suspendBtn);
+            return new HorizontalLayout(adminBtn, suspendBtn,unSuspendBtn);
         });
 
         userGrid.setWidthFull();
@@ -143,8 +183,28 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
         shopGrid.setWidthFull();
         add(shopGrid);
 
+
+        // ITEMS
+        add(new H2("System Items"));
+        itemGrid = new Grid<>(ItemGridRow.class);
+        itemGrid.setColumns("name", "description", "category");
+
+        itemGrid.addComponentColumn(item -> {
+            //Button removeBtn = new Button("Remove");
+            //Button viewBtn = new Button("View");
+
+            //removeBtn.addClickListener(e -> removeItem(item.getId()));
+            //viewBtn.addClickListener(e -> UI.getCurrent().navigate("item/" + item.getId()));
+
+            return new HorizontalLayout();//removeBtn);//, viewBtn);
+        });
+
+        itemGrid.setWidthFull();
+        add(itemGrid);
+
         loadUsers();
         loadShops();
+        loadItems();
     }
 
     private void loadUsers() {
@@ -193,6 +253,29 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
         }
     }
 
+    private void loadItems() {
+        try {
+            String token = getToken();
+            HttpHeaders headers = getHeaders(token);
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+            String url = BASE_URL + "/api/items/all" + "?token=" + token;
+
+            ResponseEntity<ItemDTO[]> response = restTemplate.exchange(
+                    url, HttpMethod.GET, request, ItemDTO[].class);
+
+            List<ItemDTO> items = response.getBody() != null ? Arrays.asList(response.getBody())
+                    : Collections.emptyList();
+
+            List<ItemGridRow> rows = items.stream()
+                    .map(it -> new ItemGridRow(it.getId(), it.getName(), it.getDescription(), it.getCategory()))
+                    .collect(Collectors.toList());
+
+            itemGrid.setItems(rows);
+        } catch (Exception e) {
+            Notification.show("Failed to load items: " + e.getMessage());
+        }
+    }
+
     private void promoteUserToAdmin(int userId) {
         try {
             String token = getToken();
@@ -221,7 +304,22 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             Notification.show("Suspension failed: " + e.getMessage());
         }
     }
+    
+    private void unSuspendUser(int userId) {
+        try {
+            String token = getToken();
+            HttpHeaders headers = getHeaders(token);
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+            String url = BASE_URL + "/api/users/" + userId + "/unsuspension"
+                    + "?token=" + token;
 
+            restTemplate.postForEntity(url, request, Void.class);
+            Notification.show("User " + userId + " unsuspended");
+        } catch (Exception e) {
+            Notification.show("Unsuspension failed: " + e.getMessage());
+        }
+    }
+    
     private void removeShop(int shopId) {
         try {
             String token = getToken();
@@ -233,6 +331,20 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             Notification.show("Shop " + shopId + " removed");
         } catch (Exception e) {
             Notification.show("Failed to remove shop: " + e.getMessage());
+        }
+    }
+
+    private void removeItem(int itemId) {
+        try {
+            String token = getToken();
+            HttpHeaders headers = getHeaders(token);
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+            String url = BASE_URL + "/api/items/" + itemId + "?token=" + token;
+
+            restTemplate.exchange(url, HttpMethod.DELETE, request, Void.class);
+            Notification.show("Item " + itemId + " removed");
+        } catch (Exception e) {
+            Notification.show("Failed to remove item: " + e.getMessage());
         }
     }
 

@@ -556,7 +556,13 @@ public class UserRepository implements IUserRepository {
         member.setSuspended(suspended);
     }
 
-    
+    public void setUnSuspended(int userId) {
+        Member member = getMemberById(userId);
+        if (member == null) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        member.setUnSuspended();
+    }
 
 
     @Override
