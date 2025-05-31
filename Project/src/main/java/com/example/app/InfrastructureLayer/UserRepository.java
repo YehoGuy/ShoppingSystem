@@ -556,6 +556,9 @@ public class UserRepository implements IUserRepository {
         member.setSuspended(suspended);
     }
 
+    
+
+
     @Override
     public boolean isSuspended(int userId) {
         Member member;

@@ -369,6 +369,11 @@ public class UserService {
                 member.setConnected(true);
                 if (token_if_guest == null || token_if_guest.equals("") || token_if_guest.isEmpty()) {
                     token = authTokenService.Login(username, password, loginAsMember_id);
+                    
+                    int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+                    if (isSuspended(id)) 
+                        {throw new OurRuntime("the user is suspended");}
+
                     LoggerService.logMethodExecutionEnd("loginAsMember", loginAsMember_id);
                     return token; // Return the ID of the logged-in member
                 } else {
