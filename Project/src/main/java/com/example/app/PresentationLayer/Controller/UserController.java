@@ -629,7 +629,7 @@ public class UserController {
      * Suspend or unsuspend a user (admin-only token).
      * Pass an ISO-8601 timestamp in `until`. To unsuspend, omit the param.
      */
-    @PatchMapping("/{userId}/suspension")
+    @PostMapping("/{userId}/suspension")
     public ResponseEntity<Void> setSuspended(
             @PathVariable @Min(1) int userId,
             @RequestParam String token,

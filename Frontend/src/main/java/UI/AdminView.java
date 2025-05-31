@@ -16,11 +16,16 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+
+
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 
 @Route(value = "admin", layout = AppLayoutBasic.class)
 @JsModule("./js/notification-client.js")
@@ -91,6 +96,8 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
     private String getUserId() {
         return VaadinSession.getCurrent().getAttribute("userId").toString();
     }
+    
+    
 
     public AdminView() {
         setSizeFull();
@@ -205,10 +212,10 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             String token = getToken();
             HttpHeaders headers = getHeaders(token);
             HttpEntity<Void> request = new HttpEntity<>(headers);
-            String url = BASE_URL + "/api/users/" + userId + "/suspension?until=" + LocalDateTime.now().plusDays(30)
-                    + "?token=" + token;
+            String url = BASE_URL + "/api/users/" + userId + "/suspension"
+                    + "?token=" + token + "&until=" + LocalDateTime.now().plusMinutes(2);
 
-            restTemplate.exchange(url, HttpMethod.PATCH, request, Void.class);
+            restTemplate.postForEntity(url, request, Void.class);
             Notification.show("User " + userId + " suspended");
         } catch (Exception e) {
             Notification.show("Suspension failed: " + e.getMessage());
