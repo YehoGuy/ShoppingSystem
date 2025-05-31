@@ -1,6 +1,5 @@
 package com.example.app.ApplicationLayer.Purchase;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,10 +20,7 @@ import com.example.app.DomainLayer.Purchase.BidReciept;
 import com.example.app.DomainLayer.Purchase.IPurchaseRepository;
 import com.example.app.DomainLayer.Purchase.Purchase;
 import com.example.app.DomainLayer.Purchase.Reciept;
-
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
-
-import jakarta.validation.constraints.Min;
 
 @Service
 public class PurchaseService {
@@ -296,6 +292,26 @@ public class PurchaseService {
             throw new OurRuntime("Error retrieving store purchases: " + e.getMessage(), e);
         }
     }
+
+    public List<BidReciept> getAllBids(String authToken){
+        try {
+            LoggerService.logMethodExecution("getAllBids", authToken);
+            authTokenService.ValidateToken(authToken);
+            List<BidReciept> bids = purchaseRepository.getAllBids();
+            LoggerService.logMethodExecutionEnd("getAllBids", bids);
+            return bids;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getAllBids", e);
+            throw new OurArg("getAllBids: " + e.getMessage(), e);
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getAllBids", e);
+            throw new OurRuntime("getAllBids: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("getAllBids", e, authToken);
+            throw new OurRuntime("Error retrieving all bids: " + e.getMessage(), e);
+        }
+    }
+
     
 
 }

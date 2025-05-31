@@ -660,4 +660,18 @@ class PurchaseServiceAcceptanceTests {
         assertTrue(ex.getMessage().contains("Error retrieving user purchases:"));
     }
 
+    // ------------ getAllBids() ----------------
+    @Test
+    @DisplayName("getAllBids_whenRepositoryReturnsBids_shouldReturnThem")
+    void getAllBids_happyPath() throws Exception{
+        String token = "tok";
+        int uid = 9;
+        List<BidReciept> bids = List.of(mock(BidReciept.class));
+        when(auth.ValidateToken(token)).thenReturn(uid);
+        when(repo.getAllBids()).thenReturn(bids);
+        List<BidReciept> out = service.getAllBids(token);
+        assertSame(bids, out);
+        verify(repo).getAllBids();
+    }
+
 }
