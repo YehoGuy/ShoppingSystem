@@ -7,6 +7,8 @@ import java.util.Map;
 import com.example.app.ApplicationLayer.Purchase.ShippingMethod;
 import com.example.app.DomainLayer.Item.ItemCategory;
 import com.example.app.DomainLayer.Shop.Discount.Discount;
+import com.example.app.DomainLayer.Shop.Discount.Policy;
+import com.example.app.PresentationLayer.DTO.Shop.PoliciesDTO;
 
 public interface IShopRepository {
 
@@ -249,10 +251,38 @@ public interface IShopRepository {
      */
     void shipPurchase(int purchaseId, int shopId, String country, String city, String street, String postalCode);
 
+    /**
+     * Adds a discount policy for a specific item in the shop.
+     *
+     * @param threshold   the threshold value for the discount.
+     * @param itemId      the item id to which the discount applies.
+     * @param category    the item category for the discount.
+     * @param basketValue the basket value for the discount.
+     * @param operator    the operator for the discount condition (e.g., greater than, less than).
+     * @param shopId      the shop id where the discount policy is applied.
+     */
     void addDiscountPolicy(int threshold, int itemId, ItemCategory category, double basketValue, Operator operator,
             int shopId);
-
        
-       
+     /**
+     * Retrieves a list of discounts for the specified shop.
+     * @param shopId the shop id.
+     * @return a list of Discount objects.
+     */
      List<Discount> getDiscounts(int shopId);
+
+     /**
+     * Sets a discount policy for the specified shop.
+     * @param shopId the shop id.
+     * @param policy the discount policy to set.
+     */
+     void setDiscountPolicy(int shopId, Policy policy);
+
+     /**
+     * Retrieves a list of policies for the specified shop.
+     * @param shopId the shop id.
+     * @return a list of Policy objects.
+     */
+     List<Policy> getPolicies(int shopId);
+
 }

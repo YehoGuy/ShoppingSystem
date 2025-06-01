@@ -2,8 +2,8 @@ package UI;
 
 import DTOs.*;
 import Domain.ItemCategory;
+import Domain.Operator;
 import Domain.PermissionsEnum;
-import UI.EditShopView.UserPermissionsDTO;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -20,6 +20,7 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -28,23 +29,27 @@ import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
-import com.vaadin.flow.theme.lumo.LumoUtility.Display;
-import com.vaadin.flow.theme.lumo.LumoUtility.Margin.Vertical;
 
-import org.objectweb.asm.Label;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Route(value = "edit-shop", layout = AppLayoutBasic.class)
 @JsModule("./js/notification-client.js")
@@ -52,13 +57,22 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final String USERS_URL = "http://localhost:8080/api/users";
-    private final String SHOPS_URL = "http://localhost:8080/api/shops/";    
+    private final String SHOPS_URL = "http://localhost:8080/api/shops/";   
     private final String PERMISSIONS_URL = "http://localhost:8080/api/users/hasPermission";
     private ShopDTO shop;
     private Map<ItemDTO, Integer> allItemPrices;
     private VerticalLayout itemsContainer;
     private VerticalLayout rolesLayout;
-
+    ////////////////////////
+    private enum PredicateType {
+        ITEM_QTY("Item quantity ≥ N"),
+        CATEGORY_QTY("Category quantity ≥ N"),
+        BASKET_VALUE("Basket total ≥ V");
+        final String label;
+        PredicateType(String label) { this.label = label; }
+        @Override public String toString() { return label; }
+    }
+    ////////////////////////
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
@@ -127,7 +141,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         if (restTemplate.getForEntity(canCloseShopUrl, Boolean.class).getBody()) {
             closeShopButton = new Button("Close Shop", e -> {
                 String token = getToken();
-                String url = "http://localhost:8080/api/shops/" + shop.getShopId() + "?token=" + token;
+                String url = SHOPS_URL + shop.getShopId() + "?token=" + token;
                 //print the URL for debugging
                 System.out.println("Request URL: " + url);
                 ResponseEntity<Void> response = restTemplate.exchange(url,HttpMethod.DELETE, null, Void.class);
@@ -364,7 +378,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
 
         Button confirm = new Button("Add", e -> {
             String token = getToken();
-            String url = "http://localhost:8080/api/shops/" + shop.getShopId() + "/items"
+            String url = SHOPS_URL + shop.getShopId() + "/items"
                     + "?name=" + name.getValue()
                     + "&description=" + desc.getValue()
                     + "&quantity=" + quantity.getValue().intValue()
@@ -409,22 +423,27 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                 itemLayout.getStyle().set("border-radius", "8px");
                 itemLayout.getStyle().set("margin-bottom", "10px");
 
+                DiscountDTO discount = discounts.stream()
+                        .filter(d -> d.getItemId() != null && d.getItemId() == item.getId())
+                        .findFirst()
+                        .orElse(null);
+
+
                 Span itemName = new Span("Item: " + item.getName());
                 Span itemPrice = new Span("Price: " + allItemPrices.get(item) + " $");
                 Span itemDiscount = new Span("Discount: " +
-                        (discounts.stream()
-                                .filter(d -> d.getItemId() == item.getId())
-                                .findFirst()
-                                .map(DiscountDTO::toString)
-                                .orElse("No Discount")));
+                        (discount != null ? discount.toString() : "No Discount"));
+
                 Span itemCategory = new Span("Category: " + item.getCategory());
                 Span itemDescription = new Span("Description: " + item.getDescription());
                 Span itemRating = new Span("Rating: " + item.getAverageRating());
                 Span itemQuantity = new Span("Quantity: " + shop.getItemQuantities().getOrDefault(item.getId(), 0));
-                VerticalLayout itemDetails = new VerticalLayout(itemName, itemPrice, itemDiscount, itemCategory, itemDescription, itemQuantity,
-                        itemRating);
-                itemDetails.setWidth("70%");
 
+                VerticalLayout itemDetails = new VerticalLayout(itemName, itemPrice, itemDiscount,
+                    itemCategory, itemDescription, itemQuantity, itemRating);
+                itemDetails.setWidth("70%");
+                itemDetails.getStyle().set("border-right", "1px solid #ccc");
+               
                 String canManageItemsUrl = PERMISSIONS_URL + "?token=" + getToken() + "&userId="
                         + getUserId() + "&shopId=" + shop.getShopId() + "&permission="
                         + PermissionsEnum.manageItems;
@@ -480,10 +499,10 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                 discountLayout.getStyle().set("margin-bottom", "10px");
 
                 Span discountInfo = new Span(discount.toString());
-                // Button removeDiscountButton = createRemoveItemDiscountButton(new ItemDTO(discount.getItemId(), "", "", 0, 0, null));
                 discountLayout.add(discountInfo);
                 itemsContainer.add(discountLayout);
             }
+
             H2 categoryDiscountsTitle = new H2("Category Discounts");
             itemsContainer.add(categoryDiscountsTitle);
             for (DiscountDTO discount : categoryDiscounts) {
@@ -496,7 +515,6 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                 discountLayout.getStyle().set("margin-bottom", "10px");
 
                 Span discountInfo = new Span(discount.toString());
-                // Button removeDiscountButton = createRemoveItemDiscountButton(new ItemDTO(discount.getItemId(), "", "", 0, 0, null));
                 discountLayout.add(discountInfo);
                 itemsContainer.add(discountLayout);
             }
@@ -504,7 +522,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
     }
 
     private List<DiscountDTO> getDiscounts() {
-        String discountsUrl = "http://localhost:8080/api/shops/" + shop.getShopId() + "/discounts?token=" + getToken();
+        String discountsUrl = SHOPS_URL + shop.getShopId() + "/discounts?token=" + getToken();
         ResponseEntity<List<DiscountDTO>> response = restTemplate.exchange(
                 discountsUrl,
                 HttpMethod.GET,
@@ -660,6 +678,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             );
 
             Button confirm = new Button("Confirm", clk -> {
+                // 1️ apply the discount exactly as before
                 String choice = scopeCombo.getValue();
                 int pct = pctField.getValue().intValue();
                 boolean dbl = dblChk.getValue();
@@ -679,11 +698,222 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                     applyItemDiscount(item.getId(), pct, dbl);
                 }
                 dlg.close();
+
+                // 2️ ask if they want to add a policy
+                Dialog askPolicy = new Dialog();
+                askPolicy.add(new H1("Add a policy for this discount?"));
+                Button yes = new Button("Yes", ev -> {
+                    askPolicy.close();
+                    // capture context:
+                    String scope       = scopeCombo.getValue();             // "Product" or "Category" or "Global"
+                    Integer contextId  = "Product".equals(scope) ? item.getId(): null;
+                    ItemCategory ctxCat = "Category".equals(scope) ? categoryCombo.getValue() : null;
+                    openPolicyDialog(new ArrayList<>(), new ArrayList<>(), scope, contextId, ctxCat);
+                });
+
+                Button no  = new Button("No",  ev -> {
+                    askPolicy.close();
+                    Notification.show("Discount applied");
+                });
+                askPolicy.add(new HorizontalLayout(yes, no));
+                askPolicy.open();
             });
 
             dlg.add(new VerticalLayout(scopeCombo, categoryCombo, pctField, dblChk, confirm));
             dlg.open();
         });
+    }
+
+    // recursive helper to build a CompositePolicyDTO
+    private void openPolicyDialog(List<LeafPolicyDTO> leaves, List<Operator> ops, String scope, Integer contextItemId, ItemCategory contextCategory){
+        Dialog dlg = new Dialog();
+        dlg.setWidth("400px");
+        // 1️⃣ Template chooser
+        ComboBox<PredicateType> typeBox = new ComboBox<>("Predicate type", List.of(PredicateType.values()));
+        // only allow the templates that make sense for this scope
+        if ("Product".equals(scope)) {
+            typeBox.setItems(PredicateType.ITEM_QTY, PredicateType.BASKET_VALUE);
+        } else if ("Category".equals(scope)) {
+            typeBox.setItems(PredicateType.CATEGORY_QTY, PredicateType.BASKET_VALUE);
+        } else { // Global
+            typeBox.setItems(PredicateType.BASKET_VALUE);
+        }
+        typeBox.setItemLabelGenerator(PredicateType::toString);
+
+        // 2️⃣ Dynamic fields
+        NumberField itemIdField      = new NumberField("Item Id");
+        NumberField itemQtyField     = new NumberField("Min quantity");
+        ComboBox<ItemCategory> catBox = new ComboBox<>("Category", Arrays.asList(ItemCategory.values()));
+        NumberField catQtyField    = new NumberField("Min quantity");
+        NumberField basketValField   = new NumberField("Min basket value");
+
+        // ─── PRE-FILL THE ITEM ID ─────────────────────────────────────────────────────
+        if (contextItemId != null) {
+            // NumberField stores a Double
+            itemIdField.setValue(contextItemId.doubleValue());
+            itemIdField.setReadOnly(true);
+            itemIdField.setVisible(true);
+        }
+
+        // ─── PRE-FILL THE CATEGORY ────────────────────────────────────────────────────
+        if (contextCategory != null) {
+            catBox.setValue(contextCategory);
+            catBox.setReadOnly(true);
+            catBox.setVisible(true);
+        }
+        
+        // hide all by default
+        itemIdField.setVisible(false);
+        itemQtyField .setVisible(false);
+        catBox.setVisible(false);
+        catQtyField.setVisible(false);
+        basketValField.setVisible(false);
+
+        typeBox.addValueChangeListener(e -> {
+            PredicateType t = e.getValue();
+            Stream.of(itemIdField, itemQtyField, catBox, catQtyField, basketValField)
+                .forEach(f -> f.setVisible(false));
+            switch(t) {
+                case ITEM_QTY:
+                    itemIdField   .setVisible(true);
+                    itemQtyField  .setVisible(true);
+                    break;
+                case CATEGORY_QTY:
+                    catQtyField      .setVisible(true);
+                    break;
+                case BASKET_VALUE:
+                    basketValField.setVisible(true);
+                    break;
+            }
+        });
+
+        Button save = new Button("Save", ev -> {
+            PredicateType t = typeBox.getValue();
+            if (t == null) {
+                Notification.show("Please choose a predicate type");
+                return;
+            }
+            LeafPolicyDTO leaf;
+            switch(typeBox.getValue()) {
+                case ITEM_QTY:
+                    if (itemQtyField.isEmpty() || itemQtyField.getValue() == null || itemQtyField.getValue().intValue() <= 0) {
+                        Notification.show("Please enter a minimum quantity");
+                        return;
+                    }
+                    int q = itemQtyField.getValue().intValue();
+                    leaf = new LeafPolicyDTO(q, contextItemId, null, 0.0);
+                    break;
+
+                case CATEGORY_QTY:
+                    if (catQtyField.isEmpty() || catQtyField.getValue() == null) {
+                        Notification.show("Please enter a minimum quantity for the category");
+                        return;
+                    }
+                    int qc = catQtyField.getValue().intValue();
+                    leaf = new LeafPolicyDTO(qc, null, contextCategory, 0.0);
+                    break;
+
+                case BASKET_VALUE:
+                    if (basketValField.isEmpty() || basketValField.getValue() == null) {
+                        Notification.show("Please enter a basket value");
+                        return;
+                    }
+                    double v = basketValField.getValue();
+                    leaf = new LeafPolicyDTO(null, null, null, v);
+                    break;
+
+                default: throw new IllegalStateException();
+            }
+
+            leaves.add(leaf);
+            dlg.close();
+
+            // ask if they want another
+            Dialog another = new Dialog();
+            another.add(new H1("Add another predicate?"));
+            Button yes = new Button("Yes",  e -> {
+                another.close();
+                if (leaves.size() >= 1) //// i am hesisating here
+                    openOperatorDialog(leaves, ops, scope, contextItemId, contextCategory);
+                else                    
+                    openPolicyDialog(leaves, ops, scope, contextItemId, contextCategory);
+            });
+            Button no  = new Button("No",   e -> {
+                another.close();
+                CompositePolicyDTO comp = buildComposite(leaves, ops);
+                shopPolicyApi(shop.getShopId(), comp);
+                Notification.show("Policy added");
+                loadShopData(shop.getShopId());
+                displayItems();
+            });
+            another.add(new HorizontalLayout(yes, no));
+            another.open();
+        });
+
+        dlg.add(new VerticalLayout(typeBox, itemIdField, itemQtyField, catQtyField, basketValField, save));
+        dlg.open();
+    }
+
+   private CompositePolicyDTO buildComposite(List<LeafPolicyDTO> leaves, List<Operator> ops) {
+        if (leaves.isEmpty()) {
+            throw new IllegalArgumentException("No predicates provided");
+        }
+        // 1 leaf: wrap it in a composite with no operator
+        if (leaves.size() == 1) {
+            return new CompositePolicyDTO(
+                /*compo1=*/null,
+                /*compo2=*/null,
+                /*leaf1=*/leaves.get(0),
+                /*leaf2=*/null,
+                /*operator=*/null
+            );
+        }
+        // start by combining the first two leaves
+        CompositePolicyDTO current = new CompositePolicyDTO(
+            /*compo1=*/null,
+            /*compo2=*/null,
+            /*leaf1=*/leaves.get(0),
+            /*leaf2=*/leaves.get(1),
+            /*operator=*/ops.get(0)
+        );
+        // then fold in each additional leaf with its operator
+        for (int i = 2; i < leaves.size(); i++) {
+            current = new CompositePolicyDTO(
+                /*compo1=*/current,
+                /*compo2=*/null,
+                /*leaf1=*/null,
+                /*leaf2=*/leaves.get(i),
+                /*operator=*/ops.get(i - 1)
+            );
+        }
+        return current;
+    }
+
+    private void shopPolicyApi(int shopId, CompositePolicyDTO dto) {
+        String url = SHOPS_URL + "/" + shopId + "/discount/policy?policyDto=" + dto + "&token=" + getToken();
+        // 2) Prepare headers to tell Spring that we’re sending JSON
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        // 3) Wrap the CompositePolicyDTO into an HttpEntity
+        HttpEntity<CompositePolicyDTO> requestEntity = new HttpEntity<>(dto, headers);
+        restTemplate.exchange(url, HttpMethod.POST, requestEntity, Void.class);
+    }
+
+    private void openOperatorDialog(List<LeafPolicyDTO> leaves, List<Operator> ops, String scope, Integer contextItemId, ItemCategory contextCategory){
+        Dialog opDlg = new Dialog();
+        RadioButtonGroup<Operator> rg = new RadioButtonGroup<>("Operator", Arrays.asList(Operator.values()));
+        rg.setItems(Operator.values());
+        rg.setItemLabelGenerator(Operator::name);
+        rg.setLabel("Combine with previous rule");
+        //cannot be empty
+        
+        Button ok = new Button("OK", ev -> {
+            ops.add(rg.getValue());
+            opDlg.close();
+            openPolicyDialog(leaves, ops, scope, contextItemId, contextCategory);
+        });
+        opDlg.add(new VerticalLayout(rg, ok));
+        opDlg.open();
     }
 
 
@@ -750,7 +980,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             NumberField newPriceField = new NumberField("New Price");
             Button confirmPrice = new Button("Confirm", evt -> {
                 String token = getToken();
-                String url = "http://localhost:8080/api/shops/" + shop.getShopId() + "/items/"
+                String url = SHOPS_URL + shop.getShopId() + "/items/"
                         + item.getId() + "/price?price=" + newPriceField.getValue().intValue()
                         + "&token=" + token;
                 //print the URL for debugging
@@ -776,7 +1006,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             TextField supplyQuantity = new TextField("Supply Quantity");
             Button confirmSupply = new Button("Confirm", evt -> {
                 String token = getToken();
-                String url = "http://localhost:8080/api/shops/" + shop.getShopId() + "/items/"
+                String url = SHOPS_URL + shop.getShopId() + "/items/"
                         + item.getId() + "/supply?quantity=" + supplyQuantity.getValue()
                         + "&token=" + token;
                 ResponseEntity<Void> supplyResponse = restTemplate.postForEntity(url, null, Void.class);
@@ -797,7 +1027,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
     private Button createDeleteItemButton(ItemDTO item) {
         return new Button("Delete Item", e -> {
             String token = getToken();
-            String url = "http://localhost:8080/api/shops/" + shop.getShopId() + "/items/" + item.getId()
+            String url = SHOPS_URL + shop.getShopId() + "/items/" + item.getId()
                     + "?token=" + token;
             ResponseEntity<Void> deleteResponse = restTemplate.exchange(url, HttpMethod.DELETE, null,
                     Void.class);
@@ -817,7 +1047,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             TextField removeQuantity = new TextField("Remove Quantity");
             Button confirmRemove = new Button("Confirm", evt -> {
                 String token = getToken();
-                String url = "http://localhost:8080/api/shops/" + shop.getShopId() + "/items/"
+                String url = SHOPS_URL + shop.getShopId() + "/items/"
                         + item.getId() + "/supply/remove?supply=" + removeQuantity.getValue()
                         + "&token=" + token;
                 ResponseEntity<Void> removeResponse = restTemplate.postForEntity(url, null, Void.class);

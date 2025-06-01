@@ -6,7 +6,6 @@ import com.example.app.DomainLayer.Item.ItemCategory;
 import com.example.app.DomainLayer.Shop.Operator;
 
 public class PolicyComposite implements Policy{
-    
 
     private Policy policy1;
     private Policy policy2;
@@ -66,6 +65,18 @@ public class PolicyComposite implements Policy{
             default:
                 throw new IllegalArgumentException("Invalid operator: " + operator);
         }
+    }
+
+    public Policy getPolicy1() {
+        return policy1;
+    }
+
+    public Policy getPolicy2() {
+        return policy2;
+    }
+
+    public Operator getOperator() {
+        return operator;
     }
     
 }

@@ -66,5 +66,20 @@ public class GlobalDiscount implements Discount {
     public Integer getPercentage() {
         return percentage;
     }
+
+    @Override
+    public Policy getPolicy() {
+        return policyHead;
+    }
+
+    @Override
+    public ItemCategory getItemCategory() {
+        return null; // Global discount does not apply to a specific category
+    }
+
+    @Override
+    public Integer getItemId() {
+        return null; // Global discount does not apply to a specific item
+    }
 }
 

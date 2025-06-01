@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,11 +27,16 @@ import com.example.app.DomainLayer.Shop.Operator;
 import com.example.app.DomainLayer.Shop.Shop;
 import com.example.app.DomainLayer.Shop.Discount.Discount;
 import com.example.app.PresentationLayer.DTO.Item.ItemDTO;
+import com.example.app.PresentationLayer.DTO.Shop.CompositePolicyDTO;
 import com.example.app.PresentationLayer.DTO.Shop.DiscountDTO;
+import com.example.app.PresentationLayer.DTO.Shop.PoliciesDTO;
 import com.example.app.PresentationLayer.DTO.Shop.ShopDTO;
 import com.example.app.DomainLayer.Shop.Discount.SingleDiscount;
 import com.example.app.DomainLayer.Shop.Discount.CategoryDiscount;
 import com.example.app.DomainLayer.Shop.Discount.GlobalDiscount;
+import com.example.app.DomainLayer.Shop.Discount.Policy;
+import com.example.app.DomainLayer.Shop.Discount.PolicyComposite;
+import com.example.app.DomainLayer.Shop.Discount.PolicyLeaf;
 
 import jakarta.validation.ConstraintViolationException;
 
@@ -159,9 +165,6 @@ public class ShopController {
             Shop shop = shopService.createShop(name, null, null, token);
             List<ItemDTO> itemDTOs = new ArrayList<>(); // No items initially
             ShopDTO shopDTO = ShopDTO.fromDomain(shop, itemDTOs);
-            //print shop id
-            System.out.println("Shop created with ID: " + shopDTO.getShopId());
-
             return ResponseEntity.status(HttpStatus.CREATED).body(shopDTO);
 
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
@@ -685,38 +688,112 @@ public class ShopController {
         }
     }
 
-    @PostMapping("/addDiscountPolicy")
-    public ResponseEntity<?> addDiscountPolicy(@RequestParam String token,
-            @RequestParam int threshold,
-            @RequestParam int itemId,
-            @RequestParam ItemCategory category,
-            @RequestParam double basketValue,
-            @RequestParam Operator operator,
-            @RequestParam int shopId) {
+    // @PostMapping("/addDiscountPolicy")
+    // public ResponseEntity<?> addDiscountPolicy(@RequestParam String token,
+    //         @RequestParam int threshold,
+    //         @RequestParam int itemId,
+    //         @RequestParam ItemCategory category,
+    //         @RequestParam double basketValue,
+    //         @RequestParam Operator operator,
+    //         @RequestParam int shopId) {
+    //     try {
+    //         shopService.addDiscountPolicy(token, threshold, itemId, category, basketValue, operator, shopId);
+    //         return ResponseEntity.ok().build();
+    //     } catch (Exception ex) {
+    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+    //     }
+    // }
+
+    @PostMapping("/{shopId}/discount/policy")
+    public ResponseEntity<?> setDiscountPolicy(
+            @PathVariable int shopId,
+            @RequestBody CompositePolicyDTO policyDto,
+            @RequestParam String token) {
         try {
-            shopService.addDiscountPolicy(token, threshold, itemId, category, basketValue, operator, shopId);
-            return ResponseEntity.ok().build();
+            //print the policy DTO for debugging
+            System.out.println("Setting discount policy for shop " + shopId + ": " + policyDto);
+            shopService.setDiscountPolicy(shopId, policyDto, token);
+            System.out.println("Policy set successfully for shop " + shopId);
+            return ResponseEntity.noContent().build();
+        } catch (ConstraintViolationException|IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
         } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
+
     @GetMapping("/{shopId}/discounts")
-    public ResponseEntity<?> getItemPricesWithDiscounts(
+    public ResponseEntity<?> getDiscounts(
             @PathVariable int shopId,
             @RequestParam String token) {
         try {
+            // fetch domain Discounts (service already validates token/permissions)
             List<Discount> discounts = shopService.getDiscounts(shopId, token);
-            // Convert discounts to a suitable DTO or response format
             List<DiscountDTO> discountDTOs = discounts.stream()
-                    .map(d -> new DiscountDTO(
-                            d.getPercentage(),
-                            d.isDouble(),
-                            //check tpe of discount
-                            d instanceof CategoryDiscount ? ((CategoryDiscount) d).getCategory() : null,
-                            d instanceof SingleDiscount ? ((SingleDiscount) d).getItemId() : 0))
-                            .toList();
-                    return ResponseEntity.ok(discountDTOs);
+                .map(DiscountDTO::fromDomain)
+                .collect(Collectors.toList());
+
+            return ResponseEntity.ok(discountDTOs);
+
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    @GetMapping("/{shopId}/policies")
+    public ResponseEntity<?> getPolicies(
+            @PathVariable int shopId,
+            @RequestParam String token) {
+        try {
+            List<Policy> domainPolicies = shopService.getPolicies(shopId, token);
+            //print ("getPolicies");
+            String s = ""; 
+            for(Policy p : shopService.getPolicies(shopId, token)) {
+                s += " " + p.toString();
+            }
+
+            System.out.println("policiesaflisdjgjghslf: " + s);
+
+            // Map (Policy → item's itemId/itemCategory → frontend policiesDTO)
+            List<PoliciesDTO> responseList = domainPolicies.stream()
+                .map(p -> {
+                    // If you need to know the itemId or category, fetch that from Discount.
+                    // But since repository.getPolicies(...) only returned Policy, you may
+                    // need a repository method to also pull (itemId,itemCategory) for each.
+                    // Alternatively, you could embed that info in PolicyLeaf / PolicyComposite.
+                    // For now, assuming each PolicyLeaf knows its metadata:
+                    if (p instanceof PolicyLeaf leaf) {
+                        return new PoliciesDTO(
+                            leaf.getItemId(),         // assumes PolicyLeaf stores itemId internally
+                            leaf.getCategory(),       // or category
+                            CompositePolicyDTO.fromDomain(p)
+                        );
+                    }
+                    if (p instanceof PolicyComposite comp) {
+                        // Extract metadata from the composite’s leaves if needed…
+                        // Or simply:
+                        return new PoliciesDTO(
+                            null,
+                            null,
+                            CompositePolicyDTO.fromDomain(p)
+                        );
+                    }
+                    // fallback
+                    return new PoliciesDTO(null, null, null);
+                })
+                .collect(Collectors.toList());
+
+            return ResponseEntity.ok(responseList);
+
         } catch (NoSuchElementException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
         } catch (RuntimeException ex) {
