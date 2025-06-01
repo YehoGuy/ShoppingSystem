@@ -1,16 +1,17 @@
-package DTOs;
+package com.example.app.PresentationLayer.DTO.Shop;
 
 import java.io.Serializable;
 import java.util.Objects;
-import Domain.ItemCategory;
-import Domain.Operator;
+
+import com.example.app.DomainLayer.Item.ItemCategory;
+import com.example.app.DomainLayer.Shop.Discount.Policy;
 
 public class PoliciesDTO implements Serializable {
-    private Integer              itemId;        // which item this policy applies to
-    private ItemCategory         itemCategory;  // if category‐level
-    private CompositePolicyDTO   policy;        // the full policy tree
+    private Integer        itemId;        // which item this policy applies to
+    private ItemCategory   itemCategory;  // if category‐level
+    private CompositePolicyDTO policy;    // the full policy tree
 
-    public PoliciesDTO() {}
+    public PoliciesDTO() { }
 
     public PoliciesDTO(Integer itemId,
                        ItemCategory itemCategory,
@@ -48,5 +49,21 @@ public class PoliciesDTO implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(itemId, itemCategory, policy);
+    }
+
+    /**
+     * Factory: convert a domain‐layer PoliciesDTO → this frontend DTO
+     */
+    public static PoliciesDTO fromDomain(PoliciesDTO d) {
+        if (d == null) {
+            return null;
+        }
+        // Convert the embedded Policy → CompositePolicyDTO
+        CompositePolicyDTO dtoPolicy = CompositePolicyDTO.fromDomain((Policy) d.getPolicy());
+        return new PoliciesDTO(
+            d.getItemId(),
+            d.getItemCategory(),
+            dtoPolicy
+        );
     }
 }

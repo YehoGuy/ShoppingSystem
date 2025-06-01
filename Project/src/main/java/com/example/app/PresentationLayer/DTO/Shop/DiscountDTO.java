@@ -7,15 +7,13 @@ public class DiscountDTO {
     private boolean isDouble;
     private ItemCategory itemCategory;
     private int itemId;
+    private CompositePolicyDTO policy;
 
     // no-args ctor for Jackson / other serializers
     public DiscountDTO() {
     }
 
-    public DiscountDTO(Integer percentage,
-                       boolean isDouble,
-                       ItemCategory itemCategory,
-                       int itemId) {
+    public DiscountDTO(Integer percentage,boolean isDouble, ItemCategory itemCategory, int itemId) {
         this.percentage = percentage;
         this.isDouble = isDouble;
         this.itemCategory = itemCategory;
@@ -54,14 +52,39 @@ public class DiscountDTO {
         this.itemId = itemId;
     }
 
+    public CompositePolicyDTO getPolicy() {
+        return policy;
+    }
+
+    public void setPolicy(CompositePolicyDTO policy) {
+        this.policy = policy;
+    }
+
     @Override
     public String toString() {
+        String output = "";
         if (itemId != 0) {
-            return "Discount of " + percentage + "% on item with ID " + itemId;
+            output = "Discount of " + percentage + "% on item with ID " + itemId;
         } else if (itemCategory != null) {
-            return "Discount of " + percentage + "% on category " + itemCategory;
+            output = "Discount of " + percentage + "% on category " + itemCategory;
         } else {
-            return "Discount of " + percentage + "% on the entire shop";
+            output = "Discount of " + percentage + "% on the entire shop";
         }
+        return output + (policy != null ? " | policy: " + policy.toString() : "");
+    }
+
+    public static DiscountDTO fromDomain(com.example.app.DomainLayer.Shop.Discount.Discount d) {
+        DiscountDTO dto = new DiscountDTO();
+        dto.setPercentage(d.getPercentage());
+        dto.setDouble(d.isDouble());
+        // item- vs category- vs global
+        if (d instanceof com.example.app.DomainLayer.Shop.Discount.CategoryDiscount cd) {
+            dto.setItemCategory(cd.getCategory());
+        }
+        if (d instanceof com.example.app.DomainLayer.Shop.Discount.SingleDiscount sd) {
+            dto.setItemId(sd.getItemId());
+        }
+        dto.setPolicy(d.getPolicy() == null ? null : CompositePolicyDTO.fromDomain(d.getPolicy()));
+        return dto;
     }
 }

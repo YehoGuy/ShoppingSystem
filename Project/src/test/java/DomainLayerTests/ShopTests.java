@@ -43,6 +43,7 @@ import com.example.app.DomainLayer.Shop.Operator;
 import com.example.app.DomainLayer.Shop.PurchasePolicy;
 import com.example.app.DomainLayer.Shop.Shop;
 import com.example.app.DomainLayer.Shop.ShopReview;
+import com.example.app.DomainLayer.Shop.Discount.Policy;
 
 public class ShopTests {
 
@@ -657,6 +658,18 @@ public void testRollbackOnDiscountFailure_Success() throws Exception {
         @Override
         public Integer getPercentage() {
             return 0;
+        }
+        @Override
+        public Policy getPolicy() {
+            return null; // no policy for this faulty discount
+        }
+        @Override
+        public ItemCategory getItemCategory() {
+            return null; // no category for this faulty discount
+        }
+        @Override
+        public Integer getItemId() {
+            return 900; // this discount applies to item 900
         }
     });
 

@@ -61,5 +61,10 @@ public enum PermissionsEnum {
     /**
      * enables suspending users.
      */
-    suspension
+    suspension, 
+    
+    /**
+     * enables viewing the shop's policies.
+     */
+    viewPolicy
 }
