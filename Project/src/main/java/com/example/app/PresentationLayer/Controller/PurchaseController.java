@@ -50,6 +50,10 @@ import jakarta.validation.constraints.Min;
  * 6. GET /bids
  * Params : authToken
  * Success: 200 → [ BidRecieptDTO, … ]
+ * 
+ * 7. GET /bids/{bidId}
+ * Params : authToken
+ * Success: 200 → BidRecieptDTO
  *
  * Error mapping (all endpoints)
  * 400 – Bad data / validation failure
@@ -198,6 +202,84 @@ public class PurchaseController {
         }
     }
 
+     @GetMapping("/bids")
+    public ResponseEntity<?> getAllBids(
+            @RequestParam String authToken) {
+
+        try {
+            List<BidReciept> bids = purchaseService.getAllBids(authToken);
+            List<BidRecieptDTO> bidDTOs = bids.stream()
+                    .map(BidRecieptDTO::fromDomain) // convert to DTO
+                    .toList();
+            return ResponseEntity.ok(bidDTOs); // 200 OK, returns list of bids
+
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage()); // 400
+
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage()); // 404
+
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
+
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Internal server error"); // 500
+        }
+    }
+
+    @GetMapping("/shops/{shopId}/bids")
+    public ResponseEntity<?> getStoreBids(
+            @PathVariable @Min(1) int shopId,
+            @RequestParam String authToken) {
+
+        try {
+            List<BidReciept> bids = purchaseService.getShopBids(authToken, shopId);
+            List<BidRecieptDTO> bidDTOs = bids.stream()
+                    .map(BidRecieptDTO::fromDomain) // convert to DTO
+                    .toList();
+            return ResponseEntity.ok(bidDTOs); // 200 OK, returns list of bids
+
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage()); // 400
+
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage()); // 404
+
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
+
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Internal server error"); // 500
+        }
+    }
+
+
+    @GetMapping("/bids/{bidId}")
+    public ResponseEntity<?> getBid(
+            @PathVariable @Min(1) int bidId,
+            @RequestParam String authToken) {
+
+        try {
+            BidReciept rec = purchaseService.getBid(authToken, bidId);
+            return ResponseEntity.ok(BidRecieptDTO.fromDomain(rec)); // 200
+
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage()); // 400
+
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage()); // 404
+
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
+
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Internal server error"); // 500
+        }
+    }
+
     // ────────────────────────── GET PURCHASES ────────────────────────── */
     @GetMapping("/users/{userId}")
     public ResponseEntity<?> getUserPurchases(
@@ -278,30 +360,7 @@ public class PurchaseController {
         }
     }
 
-    @GetMapping("/bids")
-    public ResponseEntity<?> getAllBids(
-            @RequestParam String authToken) {
+   
 
-        try {
-            List<BidReciept> bids = purchaseService.getAllBids(authToken);
-            List<BidRecieptDTO> bidDTOs = bids.stream()
-                    .map(BidRecieptDTO::fromDomain) // convert to DTO
-                    .toList();
-            return ResponseEntity.ok(bidDTOs); // 200 OK, returns list of bids
-
-        } catch (ConstraintViolationException | IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().body(ex.getMessage()); // 400
-
-        } catch (NoSuchElementException ex) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage()); // 404
-
-        } catch (RuntimeException ex) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
-
-        } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Internal server error"); // 500
-        }
-    }
 
 }

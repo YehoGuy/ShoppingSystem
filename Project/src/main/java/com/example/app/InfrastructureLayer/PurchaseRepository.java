@@ -171,6 +171,20 @@ public class PurchaseRepository implements IPurchaseRepository {
                 .map(purchase -> ((Bid) purchase).generateReciept())
                 .toList();
     }
+
+    @Override
+    /**
+     * Retrieves all bids offered by a specific shop.
+     *
+     * @param shopId The ID of the shop whose bids to retrieve.
+     * @return A list of bids offered by the specified shop.
+     */
+    public List<BidReciept> getShopBids(int shopId) {
+        return purchaseStorage.values().stream()
+                .filter(purchase -> purchase instanceof Bid && purchase.getStoreId() == shopId)
+                .map(purchase -> ((Bid) purchase).generateReciept())
+                .toList();
+    }
     
 
 }

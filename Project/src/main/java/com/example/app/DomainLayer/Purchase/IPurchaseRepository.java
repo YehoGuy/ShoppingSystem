@@ -76,6 +76,14 @@ public interface IPurchaseRepository {
      */
     List<BidReciept> getAllBids();
 
+    /**
+     * Retrieves all bids offered by a specific shop.
+     *
+     * @param shopId The ID of the shop whose bids to retrieve.
+     * @return A list of Bid data objects (BidReciept) for the bids offered by the specified shop.
+     */
+    List<BidReciept> getShopBids(int shopId);
+
 
 
 }

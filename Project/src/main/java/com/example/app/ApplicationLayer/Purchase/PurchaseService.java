@@ -126,6 +126,28 @@ public class PurchaseService {
         }
     }
 
+    public BidReciept getBid(String authToken, int purchaseId) {
+        LoggerService.logMethodExecution("getBid", authToken, purchaseId);
+        try {
+            authTokenService.ValidateToken(authToken);
+            Purchase purchase = purchaseRepository.getPurchaseById(purchaseId);
+            if (!(purchase instanceof Bid)) {
+                throw new OurRuntime("Purchase " + purchaseId + " is not a bid");
+            }
+            LoggerService.logMethodExecutionEnd("getBid", purchaseId);
+            return ((Bid) purchase).generateReciept();
+        } catch (OurArg e) {
+            LoggerService.logDebug("getBid", e);
+            throw new OurArg("getBid: " + e.getMessage(), e);
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getBid", e);
+            throw new OurRuntime("getBid: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("getBid", e, authToken, purchaseId);
+            throw new OurRuntime("getBid: " + e.getMessage(), e);
+        }
+    }
+
     public void postBidding(String authToken, int purchaseId, int bidAmount) {
         LoggerService.logMethodExecution("postBidding", authToken, purchaseId, bidAmount);
         try {
@@ -309,6 +331,25 @@ public class PurchaseService {
         } catch (Exception e) {
             LoggerService.logError("getAllBids", e, authToken);
             throw new OurRuntime("Error retrieving all bids: " + e.getMessage(), e);
+        }
+    }
+
+    public List<BidReciept> getShopBids(String authToken, int shopId) {
+        try {
+            LoggerService.logMethodExecution("getShopBids", authToken, shopId);
+            authTokenService.ValidateToken(authToken);
+            List<BidReciept> bids = purchaseRepository.getShopBids(shopId);
+            LoggerService.logMethodExecutionEnd("getShopBids", bids);
+            return bids;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getShopBids", e);
+            throw new OurArg("getShopBids: " + e.getMessage(), e);
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getShopBids", e);
+            throw new OurRuntime("getShopBids: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("getShopBids", e, authToken, shopId);
+            throw new OurRuntime("Error retrieving shop bids: " + e.getMessage(), e);
         }
     }
 
