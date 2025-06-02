@@ -22,7 +22,14 @@ import org.springframework.http.*;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
-
+import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.textfield.NumberField;
+import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.textfield.NumberField;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -32,6 +39,9 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 
 @Route(value = "admin", layout = AppLayoutBasic.class)
 @JsModule("./js/notification-client.js")
+@JsModule("@vaadin/dialog/vaadin-dialog.js")
+// ⬇️ Add this line so NumberField appears in the client
+@JsModule("@vaadin/number-field/vaadin-number-field.js")
 public class AdminView extends VerticalLayout implements BeforeEnterObserver {
 
     private Grid<UserGridRow> userGrid;
@@ -136,6 +146,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
     
 
     public AdminView() {
+        //removeAll();
         setSizeFull();
         setPadding(true);
         setSpacing(true);
@@ -150,16 +161,22 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
 
         userGrid.addComponentColumn(user -> {
             Button adminBtn = new Button("Make Admin");
-            Button suspendBtn = new Button("Suspend 30 Days (2 min)");
-            Button unSuspendBtn = new Button("Un-Suspend");
-            Button baButton = new Button("Ban Account");
+            Button suspendBtn = new Button("Suspend", e -> setSuspentionTime(user.getId()));
+            Button banButton = new Button("Ban");
+            Button unSuspendBtn = new Button("UnSuspend\\Unban");
+
 
             adminBtn.addClickListener(e -> promoteUserToAdmin(user.getId()));
-            suspendBtn.addClickListener(e -> suspendUser(user.getId()));
+            banButton.addClickListener(e -> banUser(user.getId()));
             unSuspendBtn.addClickListener(e -> unSuspendUser(user.getId()));
-            //baButton.addClickListener(e -> banUser(user.getId()));
+            //suspendBtn.addClickListener(e -> setSuspentionTime(user.getId()));
 
-            return new HorizontalLayout(adminBtn, suspendBtn,unSuspendBtn);
+            HorizontalLayout buttonLayout = new HorizontalLayout(adminBtn, suspendBtn, banButton, unSuspendBtn);
+            buttonLayout.setSpacing(true);
+            buttonLayout.getStyle().set("flex-wrap", "wrap"); // key for responsiveness
+            buttonLayout.setWidthFull(); // allows wrapping within column
+
+            return buttonLayout;
         });
 
         userGrid.setWidthFull();
@@ -205,6 +222,13 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
         loadUsers();
         loadShops();
         loadItems();
+        Button testDialogBtn = new Button("Test Dialog", e -> {
+        Dialog dialog = new Dialog();
+        dialog.add(new VerticalLayout(new H2("Test Dialog"), new Button("Close", ev -> dialog.close())));
+        add(dialog);
+        dialog.open();
+        });
+        add(testDialogBtn);
     }
 
     private void loadUsers() {
@@ -290,16 +314,20 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
         }
     }
 
-    private void suspendUser(int userId) {
+    private void suspendUser(int userId, LocalDateTime time, Dialog dialog) {
         try {
             String token = getToken();
             HttpHeaders headers = getHeaders(token);
             HttpEntity<Void> request = new HttpEntity<>(headers);
+
             String url = BASE_URL + "/api/users/" + userId + "/suspension"
-                    + "?token=" + token + "&until=" + LocalDateTime.now().plusMinutes(2);
+                    + "?token=" + token + "&until=" + time;
 
             restTemplate.postForEntity(url, request, Void.class);
-            Notification.show("User " + userId + " suspended");
+            loadUsers();
+            Notification.show("User " + userId + " suspended until " + time);
+            dialog.close();
+
         } catch (Exception e) {
             Notification.show("Suspension failed: " + e.getMessage());
         }
@@ -319,7 +347,86 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             Notification.show("Unsuspension failed: " + e.getMessage());
         }
     }
+
+    private void banUser(int userId) {
+        try {
+            String token = getToken();
+            HttpHeaders headers = getHeaders(token);
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+            String url = BASE_URL + "/api/users/" + userId + "/ban" 
+                    + "?token=" + token;
+
+            restTemplate.postForEntity(url, request, Void.class);
+            Notification.show("User " + userId + " banned");
+        } catch (Exception e) {
+            Notification.show("Ban failed: " + e.getMessage());
+        }
+    }
     
+    private void setSuspentionTime(int userId) {
+        // 1) Create a brand-new Dialog
+        Dialog dialog = new Dialog();
+        dialog.setCloseOnEsc(false);
+        dialog.setCloseOnOutsideClick(false);
+
+        // 2) Create all seven NumberFields
+        NumberField secondsField = new NumberField("Seconds");
+        NumberField minutesField = new NumberField("Minutes");
+        NumberField hoursField   = new NumberField("Hours");
+        NumberField daysField    = new NumberField("Days");
+        NumberField weeksField   = new NumberField("Weeks");
+        NumberField monthsField  = new NumberField("Months");
+        NumberField yearsField   = new NumberField("Years");
+
+        // Optional: if your Vaadin version supports setMin():
+        secondsField.setMin(0);
+        minutesField.setMin(0);
+        hoursField.setMin(0);
+        daysField.setMin(0);
+        weeksField.setMin(0);
+        monthsField.setMin(0);
+        yearsField.setMin(0);
+
+        // 3) “Back” button just closes
+        Button backBtn = new Button("Back", evt -> dialog.close());
+
+        // 4) “Confirm” button reads each NumberField (defaults to 0), builds LocalDateTime, calls suspendUser(...)
+        Button confirmBtn = new Button("Confirm", evt -> {
+            int secs  = (secondsField.getValue() != null) ? secondsField.getValue().intValue() : 0;
+            int mins  = (minutesField.getValue() != null) ? minutesField.getValue().intValue() : 0;
+            int hrs   = (hoursField.getValue()   != null) ? hoursField.getValue().intValue()   : 0;
+            int dys   = (daysField.getValue()    != null) ? daysField.getValue().intValue()    : 0;
+            int wks   = (weeksField.getValue()   != null) ? weeksField.getValue().intValue()   : 0;
+            int mths  = (monthsField.getValue()  != null) ? monthsField.getValue().intValue()  : 0;
+            int yrs   = (yearsField.getValue()   != null) ? yearsField.getValue().intValue()   : 0;
+
+            LocalDateTime suspensionTime = makeTime(secs, mins, hrs, dys, wks, mths, yrs);
+            suspendUser(userId, suspensionTime, dialog);
+        });
+
+        // 5) Arrange fields + buttons in a VerticalLayout
+        VerticalLayout content = new VerticalLayout(
+            secondsField,
+            minutesField,
+            hoursField,
+            daysField,
+            weeksField,
+            monthsField,
+            yearsField,
+            new HorizontalLayout(backBtn, confirmBtn)
+        );
+        content.setPadding(true);
+        content.setSpacing(true);
+
+        dialog.add(content);
+
+        // 6) Attach to UI root and open
+        UI.getCurrent().add(dialog);
+        dialog.open();
+    }
+
+
+
     private void removeShop(int shopId) {
         try {
             String token = getToken();
@@ -329,6 +436,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
 
             restTemplate.exchange(url, HttpMethod.DELETE, request, Void.class);
             Notification.show("Shop " + shopId + " removed");
+            loadShops();
         } catch (Exception e) {
             Notification.show("Failed to remove shop: " + e.getMessage());
         }
@@ -356,5 +464,17 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
 
     private String getToken() {
         return (String) VaadinSession.getCurrent().getAttribute("authToken");
+    }
+
+    private LocalDateTime makeTime(int seconds, int minutes, int hours, int days, int weeks, int months, int years) {
+        LocalDateTime time = LocalDateTime.now();
+        if (seconds != 0) time = time.plusSeconds(seconds);
+        if (minutes != 0) time = time.plusMinutes(minutes);
+        if (hours   != 0) time = time.plusHours(hours);
+        if (days    != 0) time = time.plusDays(days);
+        if (weeks   != 0) time = time.plusWeeks(weeks);
+        if (months  != 0) time = time.plusMonths(months);
+        if (years   != 0) time = time.plusYears(years);
+        return time;
     }
 }

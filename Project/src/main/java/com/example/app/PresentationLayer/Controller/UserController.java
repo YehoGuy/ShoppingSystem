@@ -710,6 +710,29 @@ public class UserController {
         }
     }
 
+
+        /*
+     * Suspend or unsuspend a user (admin-only token).
+     * Pass an ISO-8601 timestamp in `until`. To unsuspend, omit the param.
+     */
+    @PostMapping("/{userId}/ban")
+    public ResponseEntity<Void> banUser(
+            @PathVariable @Min(1) int userId,
+            @RequestParam String token) {
+        try {
+            authService.ValidateToken(token);
+            userService.banUser(userId); // null = lift suspension
+            return ResponseEntity.noContent().build();
+
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().build();
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     @GetMapping("/shops/{shopId}/workers")
     public ResponseEntity<?> getShopMembers(
             @PathVariable @Min(1) int shopId,

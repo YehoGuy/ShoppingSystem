@@ -1892,6 +1892,24 @@ public class UserService {
         }
     }
 
+    public void banUser(int userId) {
+        try {
+            LoggerService.logMethodExecution("banUser", userId);
+            userRepository.banUser(userId);
+            LoggerService.logMethodExecutionEndVoid("banUser");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("banUser", e);
+            throw new OurRuntime("banUser: " + e.getMessage(), e);
+        } catch (OurArg e) {
+            LoggerService.logDebug("banUser", e);
+            throw new OurArg("banUser: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("banUser", e, userId);
+            throw new OurRuntime("Error setting banUser for user ID " + userId + ": " + e.getMessage(), e);
+        }
+    }
+
+
     public List<Integer> getShopIdsByWorkerId(int userId) {
         try {
             LoggerService.logMethodExecution("getShopsByWorkerId", userId);
