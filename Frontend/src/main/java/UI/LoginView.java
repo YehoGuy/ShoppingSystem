@@ -57,6 +57,7 @@ public class LoginView extends VerticalLayout {
                 VaadinSession.getCurrent().setAttribute("authToken", token);
                 VaadinSession.getCurrent().setAttribute("username", "guest");
                 Notification.show("Logged in as guest!");
+                VaadinSession.getCurrent().setAttribute("isAdmin", false);
                 getUI().ifPresent(ui -> ui.navigate("home"));
             } catch (Exception ex) {
                 Notification.show("Guest login failed: " + ex.getMessage(), 3000, Notification.Position.MIDDLE);
