@@ -105,6 +105,8 @@ public class RegistrationView extends VerticalLayout {
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("userId", response.getBody());
+            VaadinSession.getCurrent().setAttribute("isAdmin", false);
+
         } else {
             throw new RuntimeException(
                 "Failed to retrieve user ID: HTTP " + response.getStatusCode().value()
