@@ -1,15 +1,21 @@
 package UI;
 
+import java.io.ObjectInputFilter.Config;
+
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
+import Config.UrlService;
+
 @Route("")
 public class MainView extends VerticalLayout {
 
     public MainView() {
+
+
         setSizeFull();
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.CENTER);
@@ -34,7 +40,12 @@ public class MainView extends VerticalLayout {
     }
 
     private void login() {
-        getUI().ifPresent(ui -> ui.navigate("login"));
+        String url = UrlService.getApiUrl();
+        com.vaadin.flow.component.dialog.Dialog dialog = new com.vaadin.flow.component.dialog.Dialog();
+        dialog.add("API URL: " + url);
+        dialog.setCloseOnOutsideClick(true);
+        dialog.open();
+        //getUI().ifPresent(ui -> ui.navigate("login"));
     }
 
     private void register() {
