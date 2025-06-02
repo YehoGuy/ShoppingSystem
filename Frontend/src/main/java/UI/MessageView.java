@@ -113,6 +113,9 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver{
                 loadAndDisplayConversation(currentChatUserId);
             }
         });
+        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+            sendButton.setVisible(false);
+        }
 
         leftPanel.add(userSelector, threadContainer, messageArea, sendButton);
         page.add(leftPanel);
@@ -154,6 +157,7 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver{
         }
         UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m => m.connectNotifications($0))",
                 getUserId());
+        handleSuspence();
     }
 
     private String getUserId() {
@@ -274,6 +278,9 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver{
                                     null, Void.class);
                             row.remove();
                         });
+                        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+                            accept.setVisible(false);
+                        }
                         accept.getStyle()
                                 .set("background-color", "#4CAF50")
                                 .set("color", "white");
@@ -286,6 +293,9 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver{
                                     null, Void.class);
                             row.remove();
                         });
+                        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+                            reject.setVisible(false);
+                        }
                         reject.getStyle()
                                 .set("background-color", "#f44336")
                                 .set("color", "white");
@@ -308,6 +318,27 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver{
         } catch (Exception ex) {
             Notification.show("❗ Error loading pending roles: " + ex.getMessage(),
                     3000, Notification.Position.MIDDLE);
+        }
+    }
+
+    private void handleSuspence() {
+        Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
+        if (userId == null) {
+            return;
+        }
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            return;
+        }
+        String url = "http://localhost:8080/api/users" + "/"+userId+"/suspension?token=" +token;
+        ResponseEntity<Boolean> response = rest.getForEntity(url, Boolean.class);
+
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
+        } else {
+            throw new RuntimeException(
+                "Failed to check admin status: HTTP " + response.getStatusCode().value()
+            );
         }
     }
 }

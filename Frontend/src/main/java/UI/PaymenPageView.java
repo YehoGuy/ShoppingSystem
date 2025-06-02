@@ -47,6 +47,7 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         }
         UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m -> m.connectNotifications($0))",
                 getUserId());
+        handleSuspence();
     }
 
     private String getUserId() {
@@ -107,6 +108,9 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         buttonLayout.getStyle().set("background-color", "#f9f9f9");
 
         Button methodButton = new Button(paymentMethod.getMethodDetails(), event -> processPayment(paymentMethod));
+        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+            methodButton.setVisible(false);
+        }
         methodButton.setWidthFull();
         buttonLayout.add(methodButton);
 
@@ -142,5 +146,25 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
 
     private String getToken() {
         return (String) VaadinSession.getCurrent().getAttribute("authToken");
+    }
+    private void handleSuspence() {
+        Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
+        if (userId == null) {
+            return;
+        }
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            return;
+        }
+        String url = "http://localhost:8080/api/users" + "/"+userId+"/suspension?token=" +token;
+        ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
+
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
+        } else {
+            throw new RuntimeException(
+                "Failed to check admin status: HTTP " + response.getStatusCode().value()
+            );
+        }
     }
 }

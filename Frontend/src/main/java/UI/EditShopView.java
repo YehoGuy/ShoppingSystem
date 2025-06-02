@@ -66,6 +66,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         }
         UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m => m.connectNotifications())",
                 getUserId());
+        handleSuspence();
     }
 
     private String getUserId() {
@@ -142,6 +143,10 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             closeShopButton = new Button("Close Shop",
                     e -> Notification.show("You do not have permission to close the shop."));
         }
+        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+            addItemButton.setVisible(false);
+            closeShopButton.setVisible(false);
+        }
         add(addItemButton, closeShopButton);
 
         itemsContainer = new VerticalLayout();
@@ -184,6 +189,9 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             changeBtn.addClickListener(e -> {
                 changePermissions(dto);
             });
+            if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+                changeBtn.setVisible(false);
+            }
             return changeBtn;
         }).setHeader("Change");
 
@@ -193,6 +201,9 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             removeBtn.addClickListener(e -> {
                 removeMemberFromShop(dto);
             });
+            if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+                removeBtn.setVisible(false);
+            }
             return removeBtn;
         }).setHeader("Remove");
 
@@ -233,6 +244,9 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             dialog.add(new VerticalLayout(usernameField, checkboxGroup, confirmButton));
             dialog.open();
         });
+        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+            addManager.setVisible(false);
+        }
         rolesLayout.add(addManager);
     }
 
@@ -250,6 +264,9 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             }
             dialog.close();
         });
+        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+            confirmButton.setVisible(false);
+        }
         dialog.add(new VerticalLayout(new Span("Are you sure you want to remove " + dto.getUsername() + "?"),
                 confirmButton));
         dialog.open();
@@ -276,6 +293,9 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             }
             dialog.close();
         });
+        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+            confirmButton.setVisible(false);
+        }
         dialog.add(new VerticalLayout(checkboxGroup, confirmButton));
         dialog.open();
     }
@@ -382,6 +402,9 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                 Notification.show("Failed to add item");
             }
         });
+        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+            confirm.setVisible(false);
+        }
 
         dialog.add(new VerticalLayout(name, desc, price, quantity, category, confirm));
         dialog.open();
@@ -428,6 +451,8 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                 String canManageItemsUrl = PERMISSIONS_URL + "?token=" + getToken() + "&userId="
                         + getUserId() + "&shopId=" + shop.getShopId() + "&permission="
                         + PermissionsEnum.manageItems;
+
+                
                 if (restTemplate.getForEntity(canManageItemsUrl, Boolean.class).getBody()) {
                     addSupply = createAddSupplyButton(item);
                     deleteItem = createDeleteItemButton(item);
@@ -520,6 +545,12 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
     }
 
     private Button RemoveDiscountButton(ItemDTO item) {
+        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) 
+        {
+            return new Button("Remove Discount", e -> {
+                Notification.show("You are suspended and cannot remove discounts.");
+            });
+        }
         return new Button("Remove Discount", e -> {
             Dialog dlg = new Dialog();
 
@@ -628,6 +659,12 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
 
 
     private Button SetDiscountButton(ItemDTO item) {
+        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) 
+        {
+            return new Button("Set Discount", e -> {
+                Notification.show("You are suspended and cannot set discounts.");
+            });
+        }
         return new Button("Set Discount", e -> {
             Dialog dlg = new Dialog();
 
@@ -745,6 +782,12 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
 
 
     private Button createEditPriceButton(ItemDTO item) {
+        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) 
+        {
+            return new Button("Edit Price", e -> {
+                Notification.show("You are suspended and cannot edit prices.");
+            });
+        }
         return new Button("Edit Price", e -> {
             Dialog priceDialog = new Dialog();
             NumberField newPriceField = new NumberField("New Price");
@@ -771,6 +814,13 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
     }
 
     private Button createAddSupplyButton(ItemDTO item) {
+        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) 
+        {
+            return new Button("Add Supply", e -> {
+                Notification.show("You are suspended and cannot add supply.");
+            });
+        }
+        
         return new Button("Add Supply", e -> {
             Dialog supplyDialog = new Dialog();
             TextField supplyQuantity = new TextField("Supply Quantity");
@@ -795,6 +845,12 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
     }
 
     private Button createDeleteItemButton(ItemDTO item) {
+        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) 
+        {
+            return new Button("Delete Item", e -> {
+                Notification.show("You are suspended and cannot delete items.");
+            });
+        }
         return new Button("Delete Item", e -> {
             String token = getToken();
             String url = "http://localhost:8080/api/shops/" + shop.getShopId() + "/items/" + item.getId()
@@ -812,6 +868,12 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
     }
 
     private Button createRemoveSupplyButton(ItemDTO item) {
+        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) 
+        {
+            return new Button("Remove Supply", e -> {
+                Notification.show("You are suspended and cannot remove supply.");
+            });
+        }
         return new Button("Remove Supply", e -> {
             Dialog removeSupplyDialog = new Dialog();
             TextField removeQuantity = new TextField("Remove Quantity");
@@ -905,6 +967,27 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                 sb.append(permission.name()).append(", ");
             }
             return sb.substring(0, sb.length() - 2); // Remove the last comma and space
+        }
+    }
+
+    private void handleSuspence() {
+        Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
+        if (userId == null) {
+            return;
+        }
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            return;
+        }
+        String url = USERS_URL + "/"+userId+"/suspension?token=" +token;
+        ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
+
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
+        } else {
+            throw new RuntimeException(
+                "Failed to check admin status: HTTP " + response.getStatusCode().value()
+            );
         }
     }
 

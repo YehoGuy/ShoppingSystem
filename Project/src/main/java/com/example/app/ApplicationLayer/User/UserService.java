@@ -371,8 +371,8 @@ public class UserService {
                     token = authTokenService.Login(username, password, loginAsMember_id);
                     
                     int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
-                    if (isSuspended(id)) 
-                        {throw new OurRuntime("the user is suspended");}
+                    //if (isSuspended(id)) 
+                        //{throw new OurRuntime("the user is suspended");}
 
                     LoggerService.logMethodExecutionEnd("loginAsMember", loginAsMember_id);
                     return token; // Return the ID of the logged-in member
@@ -1142,15 +1142,15 @@ public class UserService {
             LoggerService.logMethodExecution("hasPermission", id, permission, shopId);
             if (userRepository.getUserMapping().containsKey(id)) {
                 User user = userRepository.getUserById(id);
-                if (userRepository.isSuspended(id)) {
-                    LoggerService.logMethodExecutionEnd("hasPermission", false);
-                    return false; // User is suspended, no permissions granted
-                }
+                // if (userRepository.isSuspended(id)) {
+                //     LoggerService.logMethodExecutionEnd("hasPermission", false);
+                //     return false; // User is suspended, no permissions granted
+                // }
                 validateMemberId(id);
-                if (isSuspended(id)) {
-                    LoggerService.logMethodExecutionEnd("hasPermission", false);
-                    return false; // User is suspended, no permissions granted
-                }
+                // if (isSuspended(id)) {
+                //     LoggerService.logMethodExecutionEnd("hasPermission", false);
+                //     return false; // User is suspended, no permissions granted
+                // }
                 return ((Member) user).hasPermission(permission, shopId); // Check if the user has the specified
                                                                           // permission
             } else {
