@@ -172,8 +172,8 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         add(itemsContainer);
         displayItems();
         rolesLayout = new VerticalLayout();
-        add(rolesLayout);
         DisplayRoles();
+        add(rolesLayout);
     }
 
     private void DisplayRoles() {
@@ -188,6 +188,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         List<MemberDTO> members = getShopWorkers(shop.getShopId());
         List<UserPermissionsDTO> userPermissionsList = new ArrayList<>();
         for (MemberDTO member : members) {
+            System.out.println("Member: " + member.getUsername() + ", ID: " + member.getMemberId());
             PermissionsEnum[] permissions = roles.get(member.getMemberId());
             if (permissions != null) {
                 userPermissionsList
@@ -219,8 +220,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             });
             return removeBtn;
         }).setHeader("Remove");
-
-        add(rolesGrid);
+        rolesGrid.setItems(userPermissionsList);
 
         Button addManager = new Button("Add Manager", e -> {
             Dialog dialog = new Dialog();
@@ -257,15 +257,22 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             dialog.add(new VerticalLayout(usernameField, checkboxGroup, confirmButton));
             dialog.open();
         });
+        System.out.println("Rendering grid with members:");
+        userPermissionsList.forEach(u -> {
+            System.out.println("- " + u.getUsername() + " with " + Arrays.toString(u.getPermissions()));
+        });
+
         rolesLayout.add(addManager);
+        rolesLayout.add(rolesGrid);
     }
 
     private void removeMemberFromShop(UserPermissionsDTO dto) {
         Dialog dialog = new Dialog();
         Button confirmButton = new Button("Confirm", evt -> {
-            String url = USERS_URL + "/shops/" + shop.getShopId() + "/managers?memberId=" + dto.getMemberId()
-                    + "&token=" + getToken();
+            String url = USERS_URL + "/shops/" + shop.getShopId() + "/managers/" + dto.getMemberId()
+                    + "?token=" + getToken();
             ResponseEntity<Void> response = restTemplate.exchange(url, HttpMethod.DELETE, null, Void.class);
+            System.out.println("Removing user from shop: " + dto.getUsername() + ", URL: " + url);
             if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
                 Notification.show(dto.getUsername() + " was removed from the shop.");
                 DisplayRoles();
@@ -290,10 +297,14 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                 Notification.show("Please select at least one permission.");
                 return;
             }
-            String url = USERS_URL + "/shops/" + shop.getShopId() + "/managers?memberId=" + dto.getMemberId()
-                    + "&token=" + getToken();
-            ResponseEntity<Void> response = restTemplate.postForEntity(url, selectedPermissions, Void.class);
-            if (response.getStatusCode() == HttpStatus.CREATED) {
+            String url = USERS_URL + "/shops/" + shop.getShopId() + "/permissions/" + dto.getMemberId()
+                    + "?token=" + getToken();
+            HttpEntity<PermissionsEnum[]> requestEntity = new HttpEntity<>(selectedPermissions);
+            ResponseEntity<Void> response = restTemplate.postForEntity(url,
+                    selectedPermissions, Void.class);
+            System.out.println("Changing permissions for user: " + dto.getUsername() + ", URL: " + url);
+            System.out.println("status code: " + response.getStatusCode());
+            if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
                 Notification.show(dto.getUsername() + "' permissions were changed.");
             } else {
                 Notification.show("Failed to change permissions to user's pending roles: " + response.getStatusCode());
@@ -369,6 +380,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                 });
 
         if (response.getStatusCode() == HttpStatus.OK) {
+            System.out.println("Roles loaded successfully: " + response.getBody());
             return response.getBody();
         } else {
             Notification.show("Failed to load roles: " + response.getStatusCode());
