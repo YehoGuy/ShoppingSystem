@@ -31,6 +31,8 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.NumberField;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -54,14 +56,16 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
         private int id;
         private String username;
         private String email;
+        private String suspensionUntil;
 
         public UserGridRow() {
         }
 
-        public UserGridRow(int id, String username, String email) {
+        public UserGridRow(int id, String username, String email, String suspensionUntil) {
             this.id = id;
             this.username = username;
             this.email = email;
+            this.suspensionUntil = suspensionUntil;
         }
 
         public int getId() {
@@ -74,6 +78,10 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
 
         public String getEmail() {
             return email;
+        }
+
+        public String getSuspensionUntil() {
+            return suspensionUntil;
         }
     }
 
@@ -157,7 +165,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
         // USERS
         add(new H2("System Users"));
         userGrid = new Grid<>(UserGridRow.class);
-        userGrid.setColumns("username", "email");
+        userGrid.setColumns("username", "email" , "suspensionUntil");
 
         userGrid.addComponentColumn(user -> {
             Button adminBtn = new Button("Make Admin");
@@ -231,6 +239,24 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
         add(testDialogBtn);
     }
 
+    private String formatLocalDateTime(LocalDateTime dt) {
+        if (dt == null) {
+            return "";
+        }
+        if (dt.isBefore(LocalDateTime.now())) {
+            return ""; 
+        }
+        if (dt.isEqual(LocalDateTime.of(9999, 12, 31, 23, 59))) {
+            return "banned";
+        }
+        //Notification.show(dt.toString());
+        // Example: "Jun 2, 2025 5:18:15 PM"
+        DateTimeFormatter formatter = DateTimeFormatter
+                .ofLocalizedDateTime(FormatStyle.MEDIUM)
+                .withLocale(Locale.getDefault());
+        return dt.format(formatter);
+    }
+
     private void loadUsers() {
         try {
             String token = getToken();
@@ -245,7 +271,16 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
                     : Collections.emptyList();
 
             List<UserGridRow> rows = members.stream()
-                    .map(m -> new UserGridRow(m.getMemberId(), m.getUsername(), m.getEmail()))
+                    .map(m -> {
+                        // Format the suspensionUntil for display
+                        String formatted = formatLocalDateTime(m.getSuspendedUntil());
+                        return new UserGridRow(
+                                m.getMemberId(),
+                                m.getUsername(),
+                                m.getEmail(),
+                                formatted
+                        );
+                    })
                     .collect(Collectors.toList());
 
             userGrid.setItems(rows);
@@ -343,6 +378,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
 
             restTemplate.postForEntity(url, request, Void.class);
             Notification.show("User " + userId + " unsuspended");
+            loadUsers(); // Refresh the user grid
         } catch (Exception e) {
             Notification.show("Unsuspension failed: " + e.getMessage());
         }
@@ -358,6 +394,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
 
             restTemplate.postForEntity(url, request, Void.class);
             Notification.show("User " + userId + " banned");
+            loadUsers(); // Refresh the user grid
         } catch (Exception e) {
             Notification.show("Ban failed: " + e.getMessage());
         }

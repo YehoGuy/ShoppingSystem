@@ -599,8 +599,8 @@ public class UserRepository implements IUserRepository {
         if (member == null) {
             throw new OurRuntime("User with ID " + userId + " doesn't exist.");
         }
-        LocalDateTime suspendedUntil = LocalDateTime.now().plusYears((long)1000);
-        //LocalDateTime suspendedUntil = LocalDateTime.of(9999, 12, 31, 23, 59);
+        //LocalDateTime suspendedUntil = LocalDateTime.now().plusYears((long)1000);
+        LocalDateTime suspendedUntil = LocalDateTime.of(9999, 12, 31, 23, 59);
         member.setSuspended(suspendedUntil);
     }
 
