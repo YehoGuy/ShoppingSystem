@@ -1,12 +1,12 @@
 package Config;
 
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @Component
-@ConfigurationProperties(prefix = "url")
 public class UrlConfig {
-    
+    @Value("${url.api}")
     private String api;
     
     

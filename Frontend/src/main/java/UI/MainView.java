@@ -2,6 +2,8 @@ package UI;
 
 import java.io.ObjectInputFilter.Config;
 
+import org.springframework.beans.factory.annotation.Value;
+
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -13,8 +15,10 @@ import Config.UrlService;
 @Route("")
 public class MainView extends VerticalLayout {
 
-    public MainView() {
+    private String api;
 
+    public MainView(@Value("${url.api}") String api) {
+        this.api = api;
 
         setSizeFull();
         setAlignItems(Alignment.CENTER);
@@ -40,12 +44,7 @@ public class MainView extends VerticalLayout {
     }
 
     private void login() {
-        String url = UrlService.getApiUrl();
-        com.vaadin.flow.component.dialog.Dialog dialog = new com.vaadin.flow.component.dialog.Dialog();
-        dialog.add("API URL: " + url);
-        dialog.setCloseOnOutsideClick(true);
-        dialog.open();
-        //getUI().ifPresent(ui -> ui.navigate("login"));
+        getUI().ifPresent(ui -> ui.navigate("login"));
     }
 
     private void register() {

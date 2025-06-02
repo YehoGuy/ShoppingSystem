@@ -3,14 +3,14 @@ package Config;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class UrlService {
-    private static UrlConfig config;
+    private static String url;
 
     @Autowired
     public UrlService(UrlConfig injectedConfig) {
-        UrlService.config = injectedConfig;
+        url = new UrlConfig().getApi();
     }
 
     public static String getApiUrl() {
-        return config.getApi();
+        return url;
     }
 }
