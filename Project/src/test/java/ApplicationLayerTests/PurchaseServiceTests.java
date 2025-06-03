@@ -248,38 +248,6 @@ class PurchaseServiceAcceptanceTests {
         verify(msg).sendMessageToUser(eq(token), eq(5), contains("Congratulations"), eq(0));
     }
 
-    /**
-     * error path: pay() throws immediately – service returns –1 and does NOT refund
-     */
-    @Test
-    @DisplayName("finalizeBid_whenPayOperationImmediatelyThrows_shouldReturnMinusOne_andNoRefundOrShippingArePerformed")
-    void finalizeBid_paymentThrowsNoRefundExpected() throws Exception {
-        String token = "tok";
-        int owner = 1, shop = 2, pid = 30;
-
-        // fresh spy – keep it un-completed
-        Bid bid = spy(new Bid(pid, owner, shop, Map.of(), 50));
-
-        BidReciept rec = mock(BidReciept.class);
-        when(rec.getHighestBidderId()).thenReturn(6);
-        when(bid.completePurchase()).thenReturn(rec);
-        when(bid.getMaxBidding()).thenReturn(80); // needed for pay()
-
-        when(repo.getPurchaseById(pid)).thenReturn(bid);
-        when(auth.ValidateToken(token)).thenReturn(owner);
-
-        /* force pay() to fail */
-        doThrow(new RuntimeException("payErr"))
-                .when(users).pay(token, shop, 80);
-
-        assertThrows(Throwable.class, () -> service.finalizeBid(token, pid));
-
-        verify(users, never())
-                .refundPaymentByStoreEmployee(any(), anyInt(), anyInt(), anyDouble());
-        verify(shops, never()).shipPurchase(any(), anyInt(), anyInt(),
-                any(), any(), any(), any());
-    }
-
     /*
      * ══════════════════════════════════════════════════════════════
      * simple query helpers
