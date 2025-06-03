@@ -190,8 +190,7 @@ public class PurchaseService {
             if (initiatingUserId != purchase.getUserId()) {
                 throw new OurRuntime("User " + initiatingUserId + " is not the owner of the bid " + purchaseId);
             }
-            Reciept receipt = purchase.completePurchase();
-            highestBidderId = ((BidReciept) receipt).getHighestBidderId();
+            highestBidderId = ((Bid) purchase).getHighestBidderId();
             finalPrice = ((Bid) purchase).getMaxBidding();
             shopId = purchase.getStoreId();
             userService.pay(authToken, shopId, finalPrice);
@@ -202,12 +201,14 @@ public class PurchaseService {
                     shippingAddress.getCity(), shippingAddress.getStreet(), shippingAddress.getZipCode());
             try {
                 List<Integer> bidders = ((Bid) purchase).getBiddersIds();
+                Reciept receipt = purchase.generateReciept();
                 for (Integer uid : bidders) {
                     String msg = (uid != highestBidderId)
                             ? "Bid " + purchaseId + " has been finalized. You didn't win.\n" + receipt
                             : "Congratulations! You have won the bid " + purchaseId + "!\n" + receipt;
                     messageService.sendMessageToUser(authToken, uid, msg, 0);
                 }
+                purchase.completePurchase();
             } catch (Exception ignored) {
             }
             LoggerService.logMethodExecutionEnd("finalizeBid", highestBidderId);
