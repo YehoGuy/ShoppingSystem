@@ -48,6 +48,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -704,41 +705,43 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             scopeCombo.addValueChangeListener(ev -> categoryCombo.setVisible("Category".equals(ev.getValue())));
 
             Button confirm = new Button("Confirm", clk -> {
-                // 1️ apply the discount exactly as before
+                // Capture discount data first
                 String choice = scopeCombo.getValue();
                 int pct = pctField.getValue().intValue();
                 boolean dbl = dblChk.getValue();
+                ItemCategory chosenCategory = categoryCombo.getValue();
 
-                if ("Global".equals(choice)) {
-                    applyGlobalDiscount(pct, dbl);
-                } else if ("Category".equals(choice)) {
-                    ItemCategory cat = categoryCombo.getValue();
-                    if (cat == null) {
-                        Notification.show("Please pick a category");
-                        return;
-                    }
-                    applyCategoryDiscount(cat, pct, dbl);
-                } else {
-                    applyItemDiscount(item.getId(), pct, dbl);
+                // Validate if needed
+                if ("Category".equals(choice) && chosenCategory == null) {
+                    Notification.show("Please pick a category");
+                    return;
                 }
+
                 dlg.close();
 
-                // 2️ ask if they want to add a policy
+                // Ask if they want to add a policy before applying discount
                 Dialog askPolicy = new Dialog();
                 askPolicy.add(new H1("Add a policy for this discount?"));
+
                 Button yes = new Button("Yes", ev -> {
                     askPolicy.close();
-                    // capture context:
-                    String scope = scopeCombo.getValue(); // "Product" or "Category" or "Global"
-                    Integer contextId = "Product".equals(scope) ? item.getId() : null;
-                    ItemCategory ctxCat = "Category".equals(scope) ? categoryCombo.getValue() : null;
-                    openPolicyDialog(new ArrayList<>(), new ArrayList<>(), scope, contextId, ctxCat);
+                    Integer contextId = "Product".equals(choice) ? item.getId() : null;
+                    ItemCategory ctxCat = "Category".equals(choice) ? chosenCategory : null;
+                    openPolicyDialog(new ArrayList<>(), new ArrayList<>(), choice, contextId, ctxCat, policy -> {
+                        shopPolicyApi(shop.getShopId(), policy);
+                        applyDiscount(choice, item.getId(), chosenCategory, pct, dbl);
+                        Notification.show("Policy added and discount applied");
+                        loadShopData(shop.getShopId());
+                        displayItems();
+                    });
                 });
 
                 Button no = new Button("No", ev -> {
                     askPolicy.close();
+                    applyDiscount(choice, item.getId(), chosenCategory, pct, dbl);
                     Notification.show("Discount applied");
                 });
+
                 askPolicy.add(new HorizontalLayout(yes, no));
                 askPolicy.open();
             });
@@ -748,9 +751,20 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         });
     }
 
+    // Utility method to reduce duplication
+    private void applyDiscount(String scope, int itemId, ItemCategory cat, int pct, boolean dbl) {
+        if ("Global".equals(scope)) {
+            applyGlobalDiscount(pct, dbl);
+        } else if ("Category".equals(scope)) {
+            applyCategoryDiscount(cat, pct, dbl);
+        } else {
+            applyItemDiscount(itemId, pct, dbl);
+        }
+    }
+
     // recursive helper to build a CompositePolicyDTO
     private void openPolicyDialog(List<LeafPolicyDTO> leaves, List<Operator> ops, String scope, Integer contextItemId,
-            ItemCategory contextCategory) {
+            ItemCategory contextCategory, Consumer<CompositePolicyDTO> onSave) {
         Dialog dlg = new Dialog();
         dlg.setWidth("400px");
         // 1️⃣ Template chooser
@@ -865,15 +879,12 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                 if (leaves.size() >= 1) //// i am hesisating here
                     openOperatorDialog(leaves, ops, scope, contextItemId, contextCategory);
                 else
-                    openPolicyDialog(leaves, ops, scope, contextItemId, contextCategory);
+                    openPolicyDialog(leaves, ops, scope, contextItemId, contextCategory, onSave);
             });
             Button no = new Button("No", e -> {
                 another.close();
                 CompositePolicyDTO comp = buildComposite(leaves, ops);
-                shopPolicyApi(shop.getShopId(), comp);
-                Notification.show("Policy added");
-                loadShopData(shop.getShopId());
-                displayItems();
+                onSave.accept(comp);
             });
             another.add(new HorizontalLayout(yes, no));
             another.open();
@@ -937,7 +948,12 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         Button ok = new Button("OK", ev -> {
             ops.add(rg.getValue());
             opDlg.close();
-            openPolicyDialog(leaves, ops, scope, contextItemId, contextCategory);
+            openPolicyDialog(leaves, ops, scope, contextItemId, contextCategory, policy -> {
+                shopPolicyApi(shop.getShopId(), policy);
+                Notification.show("Policy added");
+                loadShopData(shop.getShopId());
+                displayItems();
+            });
         });
         opDlg.add(new VerticalLayout(rg, ok));
         opDlg.open();
