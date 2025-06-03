@@ -27,7 +27,7 @@ public class PurchaseRepository implements IPurchaseRepository {
     // Singleton instance of PurchaseRepository.
     private static PurchaseRepository instance = null;
      // Counter for generating unique purchase IDs
-    private final AtomicInteger purchaseIdCounter = new AtomicInteger(0);
+    private final AtomicInteger purchaseIdCounter = new AtomicInteger(1);
 
     /**
      * Returns the singleton instance of PurchaseRepository.
