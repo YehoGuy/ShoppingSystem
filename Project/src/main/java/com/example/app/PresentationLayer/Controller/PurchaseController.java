@@ -149,29 +149,36 @@ public class PurchaseController {
     }
 
     @PostMapping("/bids/{bidId}/offers")
-    public ResponseEntity<Void> postBidOffer(
+    public ResponseEntity<String> postBidOffer(
             @PathVariable @Min(1) int bidId,
             @RequestParam String authToken,
             @RequestParam @Min(1) int bidAmount) {
 
         try {
             purchaseService.postBidding(authToken, bidId, bidAmount);
-            // success: 202 Accepted, empty body
+            // Success: 202 Accepted, no body needed
             return ResponseEntity.accepted().build();
 
         } catch (IllegalArgumentException | ConstraintViolationException ex) {
-            // bad input from the client
-            return ResponseEntity.badRequest().build();
+            // Bad request: include the exception message in the body
+            return ResponseEntity
+                    .badRequest()
+                    .body(ex.getMessage());
 
         } catch (RuntimeException ex) {
-            // domain/business conflict (e.g., bidding on closed auction)
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            // Conflict: include the domain‐exception message in the body
+            return ResponseEntity
+                    .status(HttpStatus.CONFLICT)
+                    .body(ex.getMessage());
 
         } catch (Exception ex) {
-            // any unexpected error
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            // Internal server error: include a generic message
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Internal server error");
         }
     }
+
 
     @PostMapping("/bids/{bidId}/finalize")
     public ResponseEntity<?> finalizeBid(
