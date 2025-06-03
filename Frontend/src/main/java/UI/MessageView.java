@@ -35,7 +35,7 @@ import DTOs.rolesDTO;
 
 @Route(value = "messages", layout = AppLayoutBasic.class)
 @JsModule("./js/notification-client.js")
-public class MessageView extends VerticalLayout implements BeforeEnterObserver{
+public class MessageView extends VerticalLayout implements BeforeEnterObserver {
     private static final String BASE_URL = "http://localhost:8080/api/messages";
     private static final String NOTIFICATIONS_URL = "http://localhost:8080/api/users/notifications";
     private static final String PENDING_ROLES_URL = "http://localhost:8080/api/users/getPendingRoles";
@@ -59,16 +59,15 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver{
     public MessageView() {
 
         this.token = getToken();
-        ResponseEntity<MemberDTO[]> allmem = rest.getForEntity("http://localhost:8080/api/users/allmembers?token=" + token, MemberDTO[].class);
+        ResponseEntity<MemberDTO[]> allmem = rest
+                .getForEntity("http://localhost:8080/api/users/allmembers?token=" + token, MemberDTO[].class);
 
         ResponseEntity<MessageDTO[]> allmessagesRe = rest.getForEntity(
                 GET_BY_RECIVER + token,
                 MessageDTO[].class);
         this.allmessages = Arrays.asList(allmessagesRe.getBody());
-        
 
-        userDirectory = allmem.getBody() != null ? 
-            Stream.of(allmem.getBody())
+        userDirectory = allmem.getBody() != null ? Stream.of(allmem.getBody())
                 .collect(Collectors.toMap(MemberDTO::getMemberId, MemberDTO::getUsername)) : new HashMap<>();
 
         usernameToId = userDirectory.entrySet().stream()
@@ -143,12 +142,12 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver{
                 .set("justify-content", "space-between");
 
         add(page);
-        
+
     }
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
-        
+
         if (token == null) {
             event.forwardTo("login");
         }
@@ -162,18 +161,18 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver{
 
     private void loadAndDisplayConversation(int fromId) {
         threadContainer.removeAll();
-        try{
+        try {
             List<MessageDTO> conversation = allmessages.stream()
-                .filter(msg -> (msg.getSenderId() == fromId || msg.getReceiverId() == fromId) &&
-                 (msg.getSenderId() != thisUserId || msg.getReceiverId() == thisUserId))
-                .collect(Collectors.toList());
+                    .filter(msg -> (msg.getSenderId() == fromId || msg.getReceiverId() == fromId) &&
+                            (msg.getSenderId() != thisUserId || msg.getReceiverId() == thisUserId))
+                    .collect(Collectors.toList());
 
             conversation.sort(Comparator.comparing(MessageDTO::getTimestamp));
 
             for (MessageDTO msg : conversation) {
                 HorizontalLayout line = new HorizontalLayout();
                 line.setWidthFull();
-                String whoStr = msg.getSenderId() == fromId ? userDirectory.get(msg.getSenderId()) + ":" :  "You:";
+                String whoStr = msg.getSenderId() == fromId ? userDirectory.get(msg.getSenderId()) + ":" : "You:";
                 Span who = new Span(whoStr);
                 Span text = new Span(msg.getContent());
                 Span time = new Span("🕓 " + msg.getTimestamp().toString());
@@ -183,14 +182,12 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver{
                 lastMessageId = msg.getMessageId();
             }
 
-            
         } catch (Exception ex) {
             Notification.show("Error loading messages: " + ex.getMessage(), 3000, Notification.Position.MIDDLE);
         }
     }
 
     // Helper method to get current user id as int
-
 
     private void sendMessageToUser(int receiverId, String content, int previousId) {
         String url = BASE_URL + "/user?authToken=" + token
@@ -258,7 +255,7 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver{
                     for (rolesDTO dto : roles) {
                         int shopId = dto.getShopId();
                         DTOs.ShopDTO shop = rest.getForObject(
-                                "http://localhost:8080/api/shops/" + shopId + "?authToken=" + token,
+                                "http://localhost:8080/api/shops/" + shopId + "?token=" + token,
                                 DTOs.ShopDTO.class);
                         String shopName = shop.getName();
                         String desc = dto.getRoleName() + " @ " + shopName;
@@ -270,7 +267,7 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver{
                         Button accept = new Button("Accept", e -> {
                             rest.postForEntity(
                                     "http://localhost:8080/api/users/roles/" + shopId + "/accept"
-                                            + "?authToken=" + token,
+                                            + "?token=" + token,
                                     null, Void.class);
                             row.remove();
                         });
@@ -282,7 +279,7 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver{
                         Button reject = new Button("Reject", e -> {
                             rest.postForEntity(
                                     "http://localhost:8080/api/users/roles/" + shopId + "/decline"
-                                            + "?authToken=" + token,
+                                            + "?token=" + token,
                                     null, Void.class);
                             row.remove();
                         });
