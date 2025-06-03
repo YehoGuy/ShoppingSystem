@@ -86,11 +86,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
     ////////////////////////
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
-        if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
-            event.forwardTo("login");
-        }
-        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m => m.connectNotifications())",
-                getUserId());
+        return;
     }
 
     private String getUserId() {
@@ -1112,14 +1108,26 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
 
     @Override
     public void setParameter(BeforeEvent event, Integer shopId) {
-        if (shopId == null || shopId <= 0) {
-            Notification.show("Invalid shop ID");
+        try {
+            if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
+                event.forwardTo("login");
+            }
+            UI.getCurrent().getPage().executeJs(
+                    "import(./js/notification-client.js).then(m => m.connectNotifications())",
+                    getUserId());
+
+            if (shopId == null || shopId <= 0) {
+                Notification.show("Invalid shop ID");
+                UI.getCurrent().navigate("home");
+                return;
+            }
+            loadShopData(shopId);
+            if (shop != null) {
+                buildUI();
+            }
+        } catch (Exception e) {
+            Notification.show("Error loading shop data");
             UI.getCurrent().navigate("home");
-            return;
-        }
-        loadShopData(shopId);
-        if (shop != null) {
-            buildUI();
         }
     }
 
