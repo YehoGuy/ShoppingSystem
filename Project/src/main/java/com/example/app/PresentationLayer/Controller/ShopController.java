@@ -803,4 +803,24 @@ public class ShopController {
         }
     }
 
+    // @PostMapping("/shops/{shopId}/cart/add")
+    // public ResponseEntity<Void> addToCart(
+    //     @PathVariable int shopId,
+    //     @RequestParam int itemId,
+    //     @RequestParam int quantity,
+    //     @RequestParam String token
+    // ) {
+    //     try {
+    //         shopService.addToCart(shopId, itemId, quantity, token);
+    //         return ResponseEntity.status(HttpStatus.CREATED).build(); // 201
+    //     } catch (ConstraintViolationException | IllegalArgumentException ex) {
+    //         return ResponseEntity.badRequest().body(ex.getMessage()); // 400
+    //     } catch (NoSuchElementException ex) {
+    //         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage()); // 404
+    //     } catch (RuntimeException ex) {
+    //         return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
+    //     } catch (Exception ex) {
+    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build(); // 500
+    //     }
+    // }
 }
