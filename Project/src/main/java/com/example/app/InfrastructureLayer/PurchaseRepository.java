@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import com.example.app.DomainLayer.Purchase.Address;
 import com.example.app.DomainLayer.Purchase.Bid;
+import com.example.app.DomainLayer.Purchase.BidReciept;
 import com.example.app.DomainLayer.Purchase.IPurchaseRepository;
 import com.example.app.DomainLayer.Purchase.Purchase;
 import com.example.app.DomainLayer.Purchase.Reciept;
@@ -26,7 +27,7 @@ public class PurchaseRepository implements IPurchaseRepository {
     // Singleton instance of PurchaseRepository.
     private static PurchaseRepository instance = null;
      // Counter for generating unique purchase IDs
-    private final AtomicInteger purchaseIdCounter = new AtomicInteger(0);
+    private final AtomicInteger purchaseIdCounter = new AtomicInteger(1);
 
     /**
      * Returns the singleton instance of PurchaseRepository.
@@ -157,6 +158,33 @@ public class PurchaseRepository implements IPurchaseRepository {
                 .map(Purchase::generateReciept)
                 .toList();
     }   
+
+    @Override
+    /**
+     * Retrieves all bids.
+     *
+     * @return A list of bids available in the repository.
+     */
+    public List<BidReciept> getAllBids() {
+        return purchaseStorage.values().stream()
+                .filter(purchase -> purchase instanceof Bid)
+                .map(purchase -> ((Bid) purchase).generateReciept())
+                .toList();
+    }
+
+    @Override
+    /**
+     * Retrieves all bids offered by a specific shop.
+     *
+     * @param shopId The ID of the shop whose bids to retrieve.
+     * @return A list of bids offered by the specified shop.
+     */
+    public List<BidReciept> getShopBids(int shopId) {
+        return purchaseStorage.values().stream()
+                .filter(purchase -> purchase instanceof Bid && purchase.getStoreId() == shopId)
+                .map(purchase -> ((Bid) purchase).generateReciept())
+                .toList();
+    }
     
 
 }

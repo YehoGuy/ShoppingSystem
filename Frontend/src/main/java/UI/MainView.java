@@ -31,6 +31,7 @@ public class MainView extends VerticalLayout {
                 LumoUtility.FontSize.LARGE);
 
         add(title, loginButton, registerButton);
+
     }
 
     private void login() {

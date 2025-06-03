@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.app.ApplicationLayer.Purchase.PurchaseService;
+import com.example.app.DomainLayer.Purchase.BidReciept;
+import com.example.app.PresentationLayer.DTO.Purchase.BidRecieptDTO;
 import com.example.app.PresentationLayer.DTO.Purchase.RecieptDTO;
 
 import jakarta.validation.ConstraintViolationException;
@@ -44,6 +46,14 @@ import jakarta.validation.constraints.Min;
  * 5. GET /api/purchases/users/{userId}
  * Params : authToken
  * Success: 200 → [ RecieptDTO, … ]
+ * 
+ * 6. GET /bids
+ * Params : authToken
+ * Success: 200 → [ BidRecieptDTO, … ]
+ * 
+ * 7. GET /bids/{bidId}
+ * Params : authToken
+ * Success: 200 → BidRecieptDTO
  *
  * Error mapping (all endpoints)
  * 400 – Bad data / validation failure
@@ -139,29 +149,36 @@ public class PurchaseController {
     }
 
     @PostMapping("/bids/{bidId}/offers")
-    public ResponseEntity<Void> postBidOffer(
+    public ResponseEntity<String> postBidOffer(
             @PathVariable @Min(1) int bidId,
             @RequestParam String authToken,
             @RequestParam @Min(1) int bidAmount) {
 
         try {
             purchaseService.postBidding(authToken, bidId, bidAmount);
-            // success: 202 Accepted, empty body
+            // Success: 202 Accepted, no body needed
             return ResponseEntity.accepted().build();
 
         } catch (IllegalArgumentException | ConstraintViolationException ex) {
-            // bad input from the client
-            return ResponseEntity.badRequest().build();
+            // Bad request: include the exception message in the body
+            return ResponseEntity
+                    .badRequest()
+                    .body(ex.getMessage());
 
         } catch (RuntimeException ex) {
-            // domain/business conflict (e.g., bidding on closed auction)
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            // Conflict: include the domain‐exception message in the body
+            return ResponseEntity
+                    .status(HttpStatus.CONFLICT)
+                    .body(ex.getMessage());
 
         } catch (Exception ex) {
-            // any unexpected error
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            // Internal server error: include a generic message
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Internal server error");
         }
     }
+
 
     @PostMapping("/bids/{bidId}/finalize")
     public ResponseEntity<?> finalizeBid(
@@ -189,6 +206,84 @@ public class PurchaseController {
             // anything unexpected → 500
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Internal server error");
+        }
+    }
+
+     @GetMapping("/bids")
+    public ResponseEntity<?> getAllBids(
+            @RequestParam String authToken) {
+
+        try {
+            List<BidReciept> bids = purchaseService.getAllBids(authToken);
+            List<BidRecieptDTO> bidDTOs = bids.stream()
+                    .map(BidRecieptDTO::fromDomain) // convert to DTO
+                    .toList();
+            return ResponseEntity.ok(bidDTOs); // 200 OK, returns list of bids
+
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage()); // 400
+
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage()); // 404
+
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
+
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Internal server error"); // 500
+        }
+    }
+
+    @GetMapping("/shops/{shopId}/bids")
+    public ResponseEntity<?> getStoreBids(
+            @PathVariable @Min(1) int shopId,
+            @RequestParam String authToken) {
+
+        try {
+            List<BidReciept> bids = purchaseService.getShopBids(authToken, shopId);
+            List<BidRecieptDTO> bidDTOs = bids.stream()
+                    .map(BidRecieptDTO::fromDomain) // convert to DTO
+                    .toList();
+            return ResponseEntity.ok(bidDTOs); // 200 OK, returns list of bids
+
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage()); // 400
+
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage()); // 404
+
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
+
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Internal server error"); // 500
+        }
+    }
+
+
+    @GetMapping("/bids/{bidId}")
+    public ResponseEntity<?> getBid(
+            @PathVariable @Min(1) int bidId,
+            @RequestParam String authToken) {
+
+        try {
+            BidReciept rec = purchaseService.getBid(authToken, bidId);
+            return ResponseEntity.ok(BidRecieptDTO.fromDomain(rec)); // 200
+
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage()); // 400
+
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage()); // 404
+
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
+
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Internal server error"); // 500
         }
     }
 
@@ -271,5 +366,8 @@ public class PurchaseController {
                                 .body("Internal server error");                 // 500
         }
     }
+
+   
+
 
 }

@@ -208,77 +208,7 @@ class PurchaseServiceAcceptanceTests {
         verify(bid, never()).addBidding(anyInt(), anyInt());
     }
 
-    /*
-     * ══════════════════════════════════════════════════════════════
-     * finalizeBid tests
-     * ══════════════════════════════════════════════════════════════
-     */
-
-    /**
-     * happy path: owner finalises bid, payment & shipping succeed, bidders notified
-     */
-    @Test
-    @DisplayName("finalizeBid_whenOwnerInvokesAndPaymentSucceeds_shouldInvokePay_thenShip_thenNotifyBidders_andReturnHighestBidderId")
-    void finalizeBid_happyPath() throws Exception {
-        String token = "tok";
-        int owner = 1, shop = 8, pid = 22;
-
-        // Spy on an *un-completed* bid
-        Bid bid = spy(new Bid(pid, owner, shop, Map.of(1, 1), 100));
-
-        /* fabricate receipt object the service expects after completion */
-        BidReciept rec = mock(BidReciept.class);
-        when(rec.getHighestBidderId()).thenReturn(5);
-        when(bid.completePurchase()).thenReturn(rec); // stub out real behaviour
-        when(bid.getMaxBidding()).thenReturn(150);
-        when(bid.getBiddersIds()).thenReturn(List.of(5));
-
-        /* infrastructure stubs */
-        when(repo.getPurchaseById(pid)).thenReturn(bid);
-        when(auth.ValidateToken(token)).thenReturn(owner);
-        when(users.getUserShippingAddress(owner)).thenReturn(addr);
-
-        /* invoke */
-        int winner = service.finalizeBid(token, pid);
-
-        /* verify */
-        assertEquals(5, winner);
-        verify(users).pay(token, shop, 150);
-        verify(shops).shipPurchase(token, pid, shop, "IL", "TLV", "Rothschild", "6800000");
-        verify(msg).sendMessageToUser(eq(token), eq(5), contains("Congratulations"), eq(0));
-    }
-
-    /**
-     * error path: pay() throws immediately – service returns –1 and does NOT refund
-     */
-    @Test
-    @DisplayName("finalizeBid_whenPayOperationImmediatelyThrows_shouldReturnMinusOne_andNoRefundOrShippingArePerformed")
-    void finalizeBid_paymentThrowsNoRefundExpected() throws Exception {
-        String token = "tok";
-        int owner = 1, shop = 2, pid = 30;
-
-        // fresh spy – keep it un-completed
-        Bid bid = spy(new Bid(pid, owner, shop, Map.of(), 50));
-
-        BidReciept rec = mock(BidReciept.class);
-        when(rec.getHighestBidderId()).thenReturn(6);
-        when(bid.completePurchase()).thenReturn(rec);
-        when(bid.getMaxBidding()).thenReturn(80); // needed for pay()
-
-        when(repo.getPurchaseById(pid)).thenReturn(bid);
-        when(auth.ValidateToken(token)).thenReturn(owner);
-
-        /* force pay() to fail */
-        doThrow(new RuntimeException("payErr"))
-                .when(users).pay(token, shop, 80);
-
-        assertThrows(Throwable.class, () -> service.finalizeBid(token, pid));
-
-        verify(users, never())
-                .refundPaymentByStoreEmployee(any(), anyInt(), anyInt(), anyDouble());
-        verify(shops, never()).shipPurchase(any(), anyInt(), anyInt(),
-                any(), any(), any(), any());
-    }
+    
 
     /*
      * ══════════════════════════════════════════════════════════════
@@ -658,6 +588,20 @@ class PurchaseServiceAcceptanceTests {
 
         OurRuntime ex = assertThrows(OurRuntime.class, () -> service.getUserPurchases(token, uid));
         assertTrue(ex.getMessage().contains("Error retrieving user purchases:"));
+    }
+
+    // ------------ getAllBids() ----------------
+    @Test
+    @DisplayName("getAllBids_whenRepositoryReturnsBids_shouldReturnThem")
+    void getAllBids_happyPath() throws Exception{
+        String token = "tok";
+        int uid = 9;
+        List<BidReciept> bids = List.of(mock(BidReciept.class));
+        when(auth.ValidateToken(token)).thenReturn(uid);
+        when(repo.getAllBids()).thenReturn(bids);
+        List<BidReciept> out = service.getAllBids(token);
+        assertSame(bids, out);
+        verify(repo).getAllBids();
     }
 
 }

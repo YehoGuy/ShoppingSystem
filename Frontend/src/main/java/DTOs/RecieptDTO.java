@@ -9,7 +9,7 @@ public class RecieptDTO {
     private int storeId;
     private Map<Integer, Integer> items; // itemId -> quantity
     private AddressDTO shippingAddress;
-    private boolean isCompleted;
+    private boolean completed;
     private LocalDateTime timeOfCompletion;
     private double price;
     private LocalDateTime timestampOfRecieptGeneration;
@@ -22,7 +22,7 @@ public class RecieptDTO {
         this.storeId = storeId;
         this.items = items;
         this.shippingAddress = shippingAddress;
-        this.isCompleted = isCompleted;
+        this.completed = isCompleted;
         this.timeOfCompletion = timeOfCompletion;
         this.price = price;
         this.timestampOfRecieptGeneration = timestampOfRecieptGeneration;
@@ -73,11 +73,11 @@ public class RecieptDTO {
     }
 
     public boolean isCompleted() {
-        return isCompleted;
+        return completed;
     }
 
     public void setCompleted(boolean completed) {
-        isCompleted = completed;
+        completed = completed;
     }
 
     public LocalDateTime getTimeOfCompletion() {

@@ -137,6 +137,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         removeAll();
         Button addItemButton;
         Button closeShopButton;
+        Button createBidButton;
         H1 title = new H1("Edit Shop: " + shop.getName());
         add(title);
         String canManageItemUrl = PERMISSIONS_URL + "?token=" + getToken() + "&userId="
@@ -162,11 +163,17 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                     Notification.show("Failed to close shop");
                 }
             });
+            createBidButton = new Button("Create New Bid", e -> {
+                // shop.getShopId() is the current shop’s ID loaded in loadShopData(...)
+                UI.getCurrent().navigate("shop/" + shop.getShopId() + "/create-bid");
+            });
         } else {
             closeShopButton = new Button("Close Shop",
                     e -> Notification.show("You do not have permission to close the shop."));
+            createBidButton = new Button("Create New Bid",
+                    e -> Notification.show("You do not have permission to create bids."));
         }
-        add(addItemButton, closeShopButton);
+        add(addItemButton, closeShopButton, createBidButton);
 
         itemsContainer = new VerticalLayout();
         add(itemsContainer);
