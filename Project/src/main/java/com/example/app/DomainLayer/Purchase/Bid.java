@@ -62,7 +62,7 @@ public class Bid extends Purchase{
         if(!this.isCompleted()){
             this.isCompleted = true;
             this.timeOfCompletion = LocalDateTime.now();
-            return new BidReciept(this.purchaseId, this.userId, this.storeId, this.items, this.shippingAddress, this.highestBid.get(), this.highestBidderId.get(), this.initialPrice.get(), this.highestBid.get(), this.highestBidderId.get());
+            return new BidReciept(this.purchaseId, this.userId, this.storeId, this.items, this.shippingAddress, this.highestBid.get(), this.highestBidderId.get(), this.initialPrice.get(), this.highestBid.get(), this.highestBidderId.get(), this.isCompleted);
         }
         else{
             throw new IllegalStateException("Purchase is already completed");
@@ -80,7 +80,17 @@ public class Bid extends Purchase{
 
     @Override
     public BidReciept generateReciept() {
-        return new BidReciept(this.purchaseId, this.userId, this.storeId, this.items, this.shippingAddress, this.initialPrice.get(), this.highestBidderId.get(), this.initialPrice.get(), this.highestBid.get(), this.highestBidderId.get());
+        return new BidReciept(this.purchaseId, this.userId, this.storeId, this.items, this.shippingAddress, this.initialPrice.get(), this.highestBidderId.get(), this.initialPrice.get(), this.highestBid.get(), this.highestBidderId.get(), this.isCompleted);
+    }
+
+    public int getInitialPrice() {
+        return initialPrice.get();
+    }
+    public int getHighestBid() {
+        return highestBid.get();
+    }
+    public int getHighestBidderId() {
+        return highestBidderId.get();
     }
 
 

@@ -11,8 +11,8 @@ public class BidReciept extends Reciept{
     private final int highestBid; // initialPrice if no Bidder
     private final int highestBidderId; // -1 if no Bidder
 
-    public BidReciept(int purchaseId, int userId, int storeId, Map<Integer, Integer> items, Address shippingAddress,int price, int thisBidderId, int initialPrice, int highestBid, int highestBidderId) {
-        super(purchaseId, userId, storeId, items, shippingAddress, price);
+    public BidReciept(int purchaseId, int userId, int storeId, Map<Integer, Integer> items, Address shippingAddress,int price, int thisBidderId, int initialPrice, int highestBid, int highestBidderId, boolean isCompleted) {
+        super(purchaseId, userId, storeId, items, shippingAddress, price, isCompleted);
         this.thisBidderId = thisBidderId;
         this.initialPrice = initialPrice;
         this.highestBid = highestBid;

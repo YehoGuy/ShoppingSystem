@@ -28,7 +28,9 @@ public record BidRecieptDTO(
                 b.getPurchaseId(),
                 b.getUserId(),
                 b.getStoreId(),
-                AddressDTO.fromDomain(b.getShippingAddress()),
+                new AddressDTO(
+                    "xxx","xxx", "xxx", "xxx", "xxx", "xxx" // Placeholder, replace with actual address fields
+                ),
                 b.getItems(),
                 b.isCompleted(),
                 b.getTimeOfCompletion(),
