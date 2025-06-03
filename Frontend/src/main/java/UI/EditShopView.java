@@ -5,6 +5,7 @@ import Domain.ItemCategory;
 import Domain.Operator;
 import Domain.PermissionsEnum;
 
+import com.vaadin.flow.component.AbstractField.ComponentValueChangeEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -592,8 +593,12 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             categoryCombo.setItems(presentItemCats);
             categoryCombo.setVisible(false);
 
-            scopeCombo.addValueChangeListener(ev -> categoryCombo.setVisible("Category".equals(ev.getValue())));
-
+            scopeCombo.addValueChangeListener(
+                (ComponentValueChangeEvent<ComboBox<String>, String> ev) -> {
+                    categoryCombo.setVisible("Category".equals(ev.getValue()));
+                }
+            );
+            
             Button confirm = new Button("Confirm", clk -> {
                 String choice = scopeCombo.getValue();
                 if ("Global".equals(choice)) {
@@ -701,8 +706,11 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             pctField.setMax(100);
             Checkbox dblChk = new Checkbox("Double discount", true);
 
-            scopeCombo.addValueChangeListener(ev -> categoryCombo.setVisible("Category".equals(ev.getValue())));
-
+            scopeCombo.addValueChangeListener(
+                (ComponentValueChangeEvent<ComboBox<String>, String> ev) -> {
+                    categoryCombo.setVisible("Category".equals(ev.getValue()));
+                }
+            );
             Button confirm = new Button("Confirm", clk -> {
                 // 1️ apply the discount exactly as before
                 String choice = scopeCombo.getValue();
@@ -796,10 +804,15 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         catQtyField.setVisible(false);
         basketValField.setVisible(false);
 
-        typeBox.addValueChangeListener(e -> {
+        typeBox.addValueChangeListener(
+        // explicitly declare the event type:
+        (ComponentValueChangeEvent<ComboBox<PredicateType>,PredicateType> e) -> {
             PredicateType t = e.getValue();
+            // first hide all fields:
             Stream.of(itemIdField, itemQtyField, catBox, catQtyField, basketValField)
-                    .forEach(f -> f.setVisible(false));
+                .forEach(f -> f.setVisible(false));
+
+            // then show only the ones we need:
             switch (t) {
                 case ITEM_QTY:
                     itemIdField.setVisible(true);
