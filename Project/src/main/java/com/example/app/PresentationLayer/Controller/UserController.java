@@ -810,6 +810,25 @@ public class UserController {
         }
     }
 
+    @PostMapping("/shoppingCart/{shopID}/{itemID}")
+    public ResponseEntity<Void> addNewItemToShoppingCart(
+            @RequestParam int quantity,
+            @RequestParam String token,
+            @PathVariable int shopID,
+            @PathVariable int itemID) {
+        try {
+            authService.ValidateToken(token);
+            userService.addItemToShoppingCart(token, shopID, itemID, quantity);
+            return ResponseEntity.noContent().build();
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().build();
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     @GetMapping("/shoppingCart/{shopID}/{itemID}/plus")
     public ResponseEntity<Void> addItemToShoppingCart(
             @RequestParam String token,

@@ -1,16 +1,27 @@
 package UI;
 
-import java.util.*;
-import org.springframework.http.*;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.web.client.HttpClientErrorException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.JsModule;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Div;
@@ -18,18 +29,17 @@ import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
+import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinSession;
 
 import DTOs.CartEntryDTO;
 import DTOs.ItemDTO;
-import DTOs.ShoppingCartDTO;
 import DTOs.ShopDTO;
+import DTOs.ShoppingCartDTO;
 
 @Route(value = "cart", layout = AppLayoutBasic.class)
 @JsModule("./js/notification-client.js")
@@ -48,6 +58,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
     public void beforeEnter(BeforeEnterEvent event) {
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("");
+            return;
         }
         UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m -> m.connectNotifications($0))",
                 getUserId());
@@ -62,6 +73,11 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         setSpacing(true);
         setPadding(true);
         setAlignItems(Alignment.CENTER);
+
+        if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
+            add(new H2("Please log in to view your cart"));
+            return;
+        }
 
         getData();
 
@@ -193,6 +209,18 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
     private void getData() {
         HashMap<Integer, HashMap<Integer, Integer>> IDs = getCartIDs();
+        
+        // Initialize cart with empty collections first
+        cart = new ShoppingCartDTO();
+        cart.setShopItems(new HashMap<>());
+        cart.setShopItemPrices(new HashMap<>());
+        cart.setShopItemQuantities(new HashMap<>());
+
+        if(IDs.isEmpty()) {
+            shops = new ArrayList<>();
+            return; // Return early if cart is empty
+        }
+        
         shops = getShopNames(IDs.keySet());
         List<ItemDTO> items = getAllItems();
 
@@ -222,7 +250,6 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             shopItemQuantities.put(shopId, itemQuantities);
         }
 
-        cart = new ShoppingCartDTO();
         cart.setShopItems(shopItems);
         cart.setShopItemPrices(shopItemPrices);
         cart.setShopItemQuantities(shopItemQuantities);
@@ -236,10 +263,10 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             HttpEntity<Void> entity = new HttpEntity<>(headers);
 
             ResponseEntity<List<ItemDTO>> response = restTemplate.exchange(
-                URLItem + "/all?authToken={authToken}",
+                URLItem + "/all?token={authToken}",
                 HttpMethod.GET,
                 entity,
-                new ParameterizedTypeReference<>() {},
+                new ParameterizedTypeReference<List<ItemDTO>>() {},
                 token
             );
             List<ItemDTO> items = response.getBody();
@@ -306,6 +333,12 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 token
             );
             HashMap<Integer, HashMap<Integer, Integer>> body = resp.getBody();
+            if(body == null || body.isEmpty()) {
+                Dialog dialog = new Dialog();
+                dialog.add(new H2("No items in your cart!"));
+                dialog.add(new Button("OK", e -> dialog.close()));
+                dialog.open();
+            }
             return (body != null) ? body : new HashMap<>();
         }
         catch (HttpClientErrorException.NotFound nf) {

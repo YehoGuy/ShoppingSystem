@@ -1,7 +1,6 @@
 package UI;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,10 +30,10 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.OptionalParameter;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.VaadinSession;                  // for Map.Entry
+import com.vaadin.flow.server.VaadinSession;
 
-import DTOs.BidRecieptDTO;                 // if you use List elsewhere
-import DTOs.ItemDTO;
+import DTOs.BidRecieptDTO;                  // for Map.Entry
+import DTOs.ItemDTO;                 // if you use List elsewhere
 import DTOs.ShopDTO;
 import DTOs.ShopReviewDTO;
 
@@ -199,14 +198,13 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
                 }
 
                 // Build URL: POST http://localhost:8080/shops/{shopId}/cart/add?itemId={itemId}&quantity={qty}&token={authToken}
-                String url = "http://localhost:8080/shops/"
+                String url = "http://localhost:8080/api/users/"
+                        + "/shoppingCart/"
                         + shop.getShopId()
-                        + "/cart/add?itemId="
+                        + "/"
                         + item.getId()
-                        + "&quantity="
-                        + qty
-                        + "&token="
-                        + authToken;
+                        + "?quantity=" + qty
+                        + "&token=" + authToken;
 
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);
