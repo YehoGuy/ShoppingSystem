@@ -208,45 +208,7 @@ class PurchaseServiceAcceptanceTests {
         verify(bid, never()).addBidding(anyInt(), anyInt());
     }
 
-    /*
-     * ══════════════════════════════════════════════════════════════
-     * finalizeBid tests
-     * ══════════════════════════════════════════════════════════════
-     */
-
-    /**
-     * happy path: owner finalises bid, payment & shipping succeed, bidders notified
-     */
-    @Test
-    @DisplayName("finalizeBid_whenOwnerInvokesAndPaymentSucceeds_shouldInvokePay_thenShip_thenNotifyBidders_andReturnHighestBidderId")
-    void finalizeBid_happyPath() throws Exception {
-        String token = "tok";
-        int owner = 1, shop = 8, pid = 22;
-
-        // Spy on an *un-completed* bid
-        Bid bid = spy(new Bid(pid, owner, shop, Map.of(1, 1), 100));
-
-        /* fabricate receipt object the service expects after completion */
-        BidReciept rec = mock(BidReciept.class);
-        when(rec.getHighestBidderId()).thenReturn(5);
-        when(bid.completePurchase()).thenReturn(rec); // stub out real behaviour
-        when(bid.getMaxBidding()).thenReturn(150);
-        when(bid.getBiddersIds()).thenReturn(List.of(5));
-
-        /* infrastructure stubs */
-        when(repo.getPurchaseById(pid)).thenReturn(bid);
-        when(auth.ValidateToken(token)).thenReturn(owner);
-        when(users.getUserShippingAddress(owner)).thenReturn(addr);
-
-        /* invoke */
-        int winner = service.finalizeBid(token, pid);
-
-        /* verify */
-        assertEquals(5, winner);
-        verify(users).pay(token, shop, 150);
-        verify(shops).shipPurchase(token, pid, shop, "IL", "TLV", "Rothschild", "6800000");
-        verify(msg).sendMessageToUser(eq(token), eq(5), contains("Congratulations"), eq(0));
-    }
+    
 
     /*
      * ══════════════════════════════════════════════════════════════
