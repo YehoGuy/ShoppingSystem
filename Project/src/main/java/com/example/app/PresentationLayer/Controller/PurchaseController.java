@@ -6,6 +6,7 @@ import java.util.NoSuchElementException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.method.P;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,7 +17,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.app.ApplicationLayer.Purchase.PurchaseService;
+import com.example.app.PresentationLayer.DTO.Purchase.PaymentDetailsDTO;
 import com.example.app.PresentationLayer.DTO.Purchase.RecieptDTO;
+import com.example.app.PresentationLayer.DTO.Purchase.PaymentDetailsDTO;
 
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.constraints.Min;
@@ -73,7 +76,8 @@ public class PurchaseController {
             @RequestParam String city,
             @RequestParam String street,
             @RequestParam String houseNumber,
-            @RequestParam(required = false) String zipCode) {
+            @RequestParam(required = false) String zipCode,
+            @RequestParam PaymentDetailsDTO pd) {
 
         try {
             // compose Address inline
@@ -84,7 +88,10 @@ public class PurchaseController {
                     .withHouseNumber(houseNumber)
                     .withZipCode(zipCode);
 
-            List<Integer> ids = purchaseService.checkoutCart(authToken, shipping);
+            List<Integer> ids = purchaseService.checkoutCart(authToken, shipping, pd.getCurrency(),
+                    pd.getCardNumber(), pd.getExpirationDateMonth(),
+                    pd.getExpirationDateYear(), pd.getCardHolderName(),
+                    pd.getCvv(), pd.getId());
             return ResponseEntity.status(HttpStatus.CREATED).body(ids); // 201 Created
 
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
@@ -166,10 +173,14 @@ public class PurchaseController {
     @PostMapping("/bids/{bidId}/finalize")
     public ResponseEntity<?> finalizeBid(
             @PathVariable @Min(1) int bidId,
-            @RequestParam String authToken) {
+            @RequestParam String authToken,
+            @RequestParam PaymentDetailsDTO pd) {
 
         try {
-            int winnerId = purchaseService.finalizeBid(authToken, bidId);
+            int winnerId = purchaseService.finalizeBid(authToken, bidId, pd.getCurrency(),
+                    pd.getCardNumber(), pd.getExpirationDateMonth(),
+                    pd.getExpirationDateYear(), pd.getCardHolderName(),
+                    pd.getCvv(), pd.getId());
             // success → 200 OK, return the winner’s user‑id
             return ResponseEntity.ok(winnerId);
 

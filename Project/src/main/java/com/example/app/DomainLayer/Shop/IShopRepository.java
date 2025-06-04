@@ -233,21 +233,8 @@ public interface IShopRepository {
 
     void rollBackPurchase(Map<Integer, Integer> purchaseLists, Integer shopId);
 
-    /**
-     * Processes a shipment for a purchase.
-     * This method is responsible for handling the logistics of shipping the
-     * purchased items
-     * to the specified address.
-     * 
-     * @param purchaseId The ID of the purchase associated with the shipment.
-     * @param country    The country where the shipment is to be delivered.
-     * @param city       The city where the shipment is to be delivered.
-     * @param street     The street address where the shipment is to be delivered.
-     * @param postalCode The postal code of the delivery address.
-     *                   * @throws IllegalArgumentException if any of the address
-     *                   parameters are null or invalid.
-     */
-    void shipPurchase(int purchaseId, int shopId, String country, String city, String street, String postalCode);
+    public boolean shipPurchase(String name, int shopId, String country, String city, String street,
+            String postalCode);
 
     void addDiscountPolicy(int threshold, int itemId, ItemCategory category, double basketValue, Operator operator,
             int shopId);

@@ -1,5 +1,6 @@
 package com.example.app.ApplicationLayer.Purchase;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -59,12 +60,13 @@ public class PurchaseService {
         this.messageService = messageService;
     }
 
-    public List<Integer> checkoutCart(String authToken, Address shippingAddress) {
+    public List<Integer> checkoutCart(String authToken, Address shippingAddress, String currency, String cardNumber, String expirationDateMonth, String expirationDateYear, String cardHolderName, String cvv, String id) {
         LoggerService.logMethodExecution("checkoutCart", authToken, shippingAddress);
         HashMap<Integer, HashMap<Integer, Integer>> aqcuired = new HashMap<>();
         HashMap<Integer, HashMap<Integer, Integer>> cartBackup = null;
         HashMap<Integer, Double> totalPrices = new HashMap<>();
         HashMap<Integer, Integer> purchaseIds = new HashMap<>();
+        List<Integer> paymentIds = new ArrayList<>();
         int userId = -1;
         try {
             userId = authTokenService.ValidateToken(authToken);
@@ -77,7 +79,9 @@ public class PurchaseService {
                 int pid = purchaseRepository.addPurchase(userId, shopId, aqcuired.get(shopId), totalPrice,
                         shippingAddress);
                 purchaseIds.put(pid, shopId);
-                userService.pay(authToken, shopId, totalPrice);
+                int payid = userService.pay(authToken, shopId, totalPrice, currency, cardNumber,
+                        expirationDateMonth, expirationDateYear, cardHolderName, cvv, id);
+                paymentIds.add(payid);
             }
             userService.clearUserShoppingCart(userId);
             for (Integer purchaseId : purchaseIds.keySet()) {
@@ -101,8 +105,8 @@ public class PurchaseService {
             if (cartBackup != null) {
                 userService.restoreUserShoppingCart(userId, cartBackup);
             }
-            for (Integer shopId : totalPrices.keySet()) {
-                userService.refundPaymentAuto(authToken, shopId, totalPrices.get(shopId));
+            for (Integer pid : paymentIds) {
+                userService.refundPaymentAuto(authToken, pid);
             }
             LoggerService.logError("checkoutCart", e, authToken, shippingAddress);
             throw new OurRuntime("checkoutCart: " + e.getMessage(), e);
@@ -156,7 +160,7 @@ public class PurchaseService {
         }
     }
 
-    public int finalizeBid(String authToken, int purchaseId) {
+    public int finalizeBid(String authToken, int purchaseId, String currency, String cardNumber, String expirationDateMonth, String expirationDateYear, String cardHolderName, String cvv, String id) {
         int initiatingUserId = -1;
         boolean payed = false;
         int highestBidderId = -1;
@@ -176,7 +180,8 @@ public class PurchaseService {
             highestBidderId = ((BidReciept) receipt).getHighestBidderId();
             finalPrice = ((Bid) purchase).getMaxBidding();
             shopId = purchase.getStoreId();
-            userService.pay(authToken, shopId, finalPrice);
+            userService.pay(authToken, shopId, finalPrice, currency, cardNumber,
+                    expirationDateMonth, expirationDateYear, cardHolderName, cvv, id);
             payed = true;
             Address shippingAddress = userService.getUserShippingAddress(initiatingUserId);
             purchase.setAddress(shippingAddress);

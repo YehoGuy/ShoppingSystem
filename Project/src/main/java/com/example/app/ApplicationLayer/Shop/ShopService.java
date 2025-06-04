@@ -23,6 +23,8 @@ import com.example.app.DomainLayer.Shop.Operator;
 import com.example.app.DomainLayer.Shop.PurchasePolicy;
 import com.example.app.DomainLayer.Shop.Shop;
 import com.example.app.DomainLayer.Shop.Discount.Discount;
+import com.example.app.DomainLayer.User;
+import com.example.app.DomainLayer.Member;
 
 @Service
 public class ShopService {
@@ -744,8 +746,20 @@ public class ShopService {
             String postalCode) {
         try {
             LoggerService.logMethodExecution("shipPurchase", purchaseId, country, city, street, postalCode);
-            authTokenService.ValidateToken(token);
-            shopRepository.shipPurchase(purchaseId, shopId, country, city, street, postalCode);
+            Integer userId = authTokenService.ValidateToken(token);
+            User user = userService.getUserById(userId);
+            String userName;
+            if (user instanceof Member) {
+                userName = ((Member)user).getUsername();
+            } else {
+                userName = "guest";
+            }
+            boolean b = shopRepository.shipPurchase(userName, shopId, country, city, street, postalCode);
+            if (!b) {
+                OurRuntime e = new OurRuntime("Failed to ship purchase " + purchaseId + " from shop " + shopId);
+                LoggerService.logDebug("shipPurchase", e);
+                throw e;
+            }
             LoggerService.logMethodExecutionEndVoid("shipPurchase");
         } catch (OurArg e) {
             LoggerService.logDebug("shipPurchase", e);
