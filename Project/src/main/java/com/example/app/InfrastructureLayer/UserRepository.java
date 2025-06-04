@@ -63,10 +63,26 @@ public class UserRepository implements IUserRepository {
     }
 
     @PostConstruct
-    private void initAdmin() {
-        // Now adminPlainPassword, adminUsername, etc. are populated from application.properties
-        String encodedAdminPassword = passwordEncoderUtil.encode(adminPlainPassword);
-        int adminId = addMember(adminUsername, encodedAdminPassword, adminEmail, adminPhoneNumber, adminAddress);
+    public void initAdmin() {
+        if (adminUsername == null || adminUsername.isBlank()) {
+            adminUsername = "admin";
+        }
+        if (adminPlainPassword == null || adminPlainPassword.isBlank()) {
+            adminPlainPassword = "admin";
+        }
+        if (adminEmail == null || adminEmail.isBlank()) {
+            adminEmail = "admin@mail.com";
+        }
+        if (adminPhoneNumber == null || adminPhoneNumber.isBlank()) {
+            adminPhoneNumber = "0";
+        }
+        if (adminAddress == null || adminAddress.isBlank()) {
+            adminAddress = "admin st.";
+        }
+
+        String passwordToStore = adminPlainPassword;
+        int adminId = addMember(adminUsername, passwordToStore, adminEmail, adminPhoneNumber, adminAddress);
+
         managers.add(adminId);
     }
 
