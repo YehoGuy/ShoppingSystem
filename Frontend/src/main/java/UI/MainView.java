@@ -1,15 +1,25 @@
 package UI;
 
+import java.io.ObjectInputFilter.Config;
+
+import org.springframework.beans.factory.annotation.Value;
+
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
+import Config.UrlService;
+
 @Route("")
 public class MainView extends VerticalLayout {
 
-    public MainView() {
+    private String api;
+
+    public MainView(@Value("${url.api}") String api) {
+        this.api = api;
+
         setSizeFull();
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.CENTER);
