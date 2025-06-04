@@ -82,17 +82,18 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         getData();
 
         if (cart.getShopItems() == null || cart.getShopItems().isEmpty()) {
-        H2 empty = new H2("Your shopping cart is empty 😕");
-        empty.getStyle().set("color", "var(--lumo-secondary-text-color)");
-        add(empty);
+            H2 empty = new H2("Your shopping cart is empty 😕");
+            empty.getStyle().set("color", "var(--lumo-secondary-text-color)");
+            add(empty);
 
-        // optional: add a “continue shopping” button
-        Button shopMore = new Button("Continue Shopping", e -> 
-            UI.getCurrent().navigate("items")  // or whatever your product listing route is
-        );
-        add(shopMore);
+            // optional: add a “continue shopping” button
+            Button shopMore = new Button("Continue Shopping", e -> UI.getCurrent().navigate("items") // or whatever your
+                                                                                                     // product listing
+                                                                                                     // route is
+            );
+            add(shopMore);
 
-        return;
+            return;
         }
 
         H1 title = new H1("Shopping cart");
@@ -209,18 +210,18 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
     private void getData() {
         HashMap<Integer, HashMap<Integer, Integer>> IDs = getCartIDs();
-        
+
         // Initialize cart with empty collections first
         cart = new ShoppingCartDTO();
         cart.setShopItems(new HashMap<>());
         cart.setShopItemPrices(new HashMap<>());
         cart.setShopItemQuantities(new HashMap<>());
 
-        if(IDs.isEmpty()) {
+        if (IDs.isEmpty()) {
             shops = new ArrayList<>();
             return; // Return early if cart is empty
         }
-        
+
         shops = getShopNames(IDs.keySet());
         List<ItemDTO> items = getAllItems();
 
@@ -263,21 +264,19 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             HttpEntity<Void> entity = new HttpEntity<>(headers);
 
             ResponseEntity<List<ItemDTO>> response = restTemplate.exchange(
-                URLItem + "/all?token={authToken}",
-                HttpMethod.GET,
-                entity,
-                new ParameterizedTypeReference<List<ItemDTO>>() {},
-                token
-            );
+                    URLItem + "/all?token=" + token,
+                    HttpMethod.GET,
+                    entity,
+                    new ParameterizedTypeReference<List<ItemDTO>>() {
+                    },
+                    token);
             List<ItemDTO> items = response.getBody();
             return (items != null) ? items : Collections.emptyList();
-        }
-        catch (HttpClientErrorException.NotFound nf) {
+        } catch (HttpClientErrorException.NotFound nf) {
             // no items ⇒ empty
             log.warn("No items found in the database, returning empty list");
             return Collections.emptyList();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             // swallow silently
             log.warn("Failed to fetch item list—returning empty", e);
             return Collections.emptyList();
@@ -294,21 +293,18 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         for (Integer id : shopIds) {
             try {
                 ResponseEntity<ShopDTO> resp = restTemplate.exchange(
-                    URLShop + "/" + id + "?authToken={authToken}",
-                    HttpMethod.GET,
-                    entity,
-                    ShopDTO.class,
-                    token
-                );
+                        URLShop + "/" + id + "?token=" + token,
+                        HttpMethod.GET,
+                        entity,
+                        ShopDTO.class,
+                        token);
                 if (resp.getBody() != null) {
                     result.add(resp.getBody());
                 }
-            }
-            catch (HttpClientErrorException.NotFound nf) {
+            } catch (HttpClientErrorException.NotFound nf) {
                 // skip
                 log.warn("Shop with ID {} not found, skipping", id);
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 // skip all other errors silently
                 log.warn("Error fetching shop with ID {}: {}", id, e.getMessage());
                 return Collections.emptyList();
@@ -316,7 +312,6 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         }
         return result;
     }
-
 
     private HashMap<Integer, HashMap<Integer, Integer>> getCartIDs() {
         try {
@@ -326,26 +321,24 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             HttpEntity<Void> entity = new HttpEntity<>(headers);
 
             ResponseEntity<HashMap<Integer, HashMap<Integer, Integer>>> resp = restTemplate.exchange(
-                URLUser + "/shoppingCart?authToken={authToken}",
-                HttpMethod.GET,
-                entity,
-                new ParameterizedTypeReference<>() {},
-                token
-            );
+                    URLUser + "/shoppingCart?token=" + token + "&userId=" + getUserId(),
+                    HttpMethod.GET,
+                    entity,
+                    new ParameterizedTypeReference<>() {
+                    },
+                    token);
             HashMap<Integer, HashMap<Integer, Integer>> body = resp.getBody();
-            if(body == null || body.isEmpty()) {
+            if (body == null || body.isEmpty()) {
                 Dialog dialog = new Dialog();
                 dialog.add(new H2("No items in your cart!"));
                 dialog.add(new Button("OK", e -> dialog.close()));
                 dialog.open();
             }
             return (body != null) ? body : new HashMap<>();
-        }
-        catch (HttpClientErrorException.NotFound nf) {
+        } catch (HttpClientErrorException.NotFound nf) {
             // no cart yet ⇒ empty
             return new HashMap<>();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             // swallow everything else silently
             return new HashMap<>();
         }
@@ -375,21 +368,21 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
             // find itemID …
             int itemID = getAllItems().stream()
-                .filter(item -> item.getName().equals(itemName))
-                .map(ItemDTO::getId)
-                .findFirst()
-                .orElse(-1);
-            if (itemID < 0) return;
+                    .filter(item -> item.getName().equals(itemName))
+                    .map(ItemDTO::getId)
+                    .findFirst()
+                    .orElse(-1);
+            if (itemID < 0)
+                return;
 
             restTemplate.postForEntity(
-                URLUser + "/shoppingCart/" + shopID + "/" + itemID + "/" + action + "?authToken={authToken}",
-                entity,
-                String.class,
-                token
-            );
+                    URLUser + "/shoppingCart/" + shopID + "/" + itemID + "/" + action + "?token=" + token + "&userId="
+                            + getUserId(),
+                    entity,
+                    String.class,
+                    token);
             UI.getCurrent().getPage().reload();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             // completely silent on failure
             log.warn("Could not retrieve shopping cart, treating as empty", e);
         }
