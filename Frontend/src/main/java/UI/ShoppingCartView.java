@@ -69,6 +69,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         }
         UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m -> m.connectNotifications($0))",
                 getUserId());
+        handleSuspence();
     }
 
     private String getUserId() {
@@ -108,6 +109,9 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 .set("padding", "10px");
 
         Button buyButton = new Button("Buy entire cart");
+        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+            buyButton.setVisible(false);
+        }
         buyButton.addClickListener(event -> {
             PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(cart);
             this.removeAll();
@@ -140,6 +144,9 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             }
 
             Button buyBasketButton = new Button("Buy basket from " + shopName + " " + shopTotal + "₪");
+            if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+                buyBasketButton.setVisible(false);
+            }
             buyBasketButton.getStyle().set("background-color", "blue").set("color", "white");
             buyBasketButton.addClickListener(event -> {
                 ShoppingCartDTO shopCart = new ShoppingCartDTO();
@@ -181,6 +188,13 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 Button removeButton = new Button(VaadinIcon.MINUS.create());
                 Button addButton = new Button(VaadinIcon.PLUS.create());
                 Button removeCompletlyButton = new Button(VaadinIcon.TRASH.create());
+                if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+                    removeButton.setVisible(false);
+                    addButton.setVisible(false);
+                    removeCompletlyButton.setVisible(false);
+
+                }
+                
                 removeCompletlyButton.addClickListener(event -> {
                     handleCartAction(shopID, renderer.name(), "remove");
                 });
@@ -377,6 +391,27 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         catch (Exception e) {
             // completely silent on failure
             log.warn("Could not retrieve shopping cart, treating as empty", e);
+        }
+    }
+
+    private void handleSuspence() {
+        Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
+        if (userId == null) {
+            return;
+        }
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            return;
+        }
+        String url = "http://localhost:8080/api/users" + "/"+userId+"/suspension?token=" +token;
+        ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
+
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
+        } else {
+            throw new RuntimeException(
+                "Failed to check admin status: HTTP " + response.getStatusCode().value()
+            );
         }
     }
 }

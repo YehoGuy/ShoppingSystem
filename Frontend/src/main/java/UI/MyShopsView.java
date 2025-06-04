@@ -61,6 +61,9 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
         searchField.addValueChangeListener(e -> filterAndDisplay());
 
         Button addBtn = new Button("➕ Add New Shop", e -> openCreateDialog());
+        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+            addBtn.setVisible(false);
+        }
         HorizontalLayout header = new HorizontalLayout(searchField, addBtn);
         header.setAlignItems(Alignment.CENTER);
         add(header);
@@ -85,6 +88,7 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
         loadShops();
         UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m => m.connectNotifications($0))",
                 getUserId());
+        handleSuspence();
     }
 
     private String getUserId() {
@@ -172,6 +176,26 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
 
             row.add(name, view);
             shopsContainer.add(row);
+        }
+    }
+    private void handleSuspence() {
+        Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
+        if (userId == null) {
+            return;
+        }
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            return;
+        }
+        String url = "http://localhost:8080/api/users" + "/"+userId+"/suspension?token=" +token;
+        ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
+
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
+        } else {
+            throw new RuntimeException(
+                "Failed to check admin status: HTTP " + response.getStatusCode().value()
+            );
         }
     }
 }

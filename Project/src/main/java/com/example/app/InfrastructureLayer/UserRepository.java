@@ -597,6 +597,15 @@ public class UserRepository implements IUserRepository {
         member.setSuspended(suspended);
     }
 
+    public void setUnSuspended(int userId) {
+        Member member = getMemberById(userId);
+        if (member == null) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        member.setUnSuspended();
+    }
+
+
     @Override
     public boolean isSuspended(int userId) {
         Member member;
@@ -626,8 +635,18 @@ public class UserRepository implements IUserRepository {
         return suspendedUsers;
     }
 
-    @Override
+    public void banUser(int userId) {
+        Member member = getMemberById(userId);
+        if (member == null) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        //LocalDateTime suspendedUntil = LocalDateTime.now().plusYears((long)1000);
+        LocalDateTime suspendedUntil = LocalDateTime.of(9999, 12, 31, 23, 59);
+        member.setSuspended(suspendedUntil);
+    }
 
+
+    @Override
     public List<Integer> getShopIdsByWorkerId(int userId) {
         Member member = getMemberById(userId);
         if (member == null) {

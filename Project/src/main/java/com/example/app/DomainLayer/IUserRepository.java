@@ -131,10 +131,14 @@ public interface IUserRepository {
     public List<Member> getOwners(int shopId);
 
     void setSuspended(int userId, LocalDateTime suspended); // Set a user as suspended
+    
+    void setUnSuspended(int userId); // Set a user as suspended
 
     boolean isSuspended(int userId); // Check if a user is suspended
 
     List<Integer> getSuspendedUsers(); // Get a list of suspended users
+
+    void banUser(int userId); // Get a list of suspended users
 
     List<Role> getPendingRoles(int userId);
 

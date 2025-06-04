@@ -64,6 +64,7 @@ public class LoginView extends VerticalLayout {
                 VaadinSession.getCurrent().setAttribute("authToken", token);
                 VaadinSession.getCurrent().setAttribute("username", "guest");
                 Notification.show("Logged in as guest!");
+                VaadinSession.getCurrent().setAttribute("isAdmin", false);
                 getUI().ifPresent(ui -> ui.navigate("home"));
             } catch (Exception ex) {
                 Notification.show("Guest login failed: " + ex.getMessage(), 3000, Notification.Position.MIDDLE);
@@ -130,13 +131,58 @@ public class LoginView extends VerticalLayout {
         String url = AUTH_URL + "/validate?authToken=" + token;
 
         // simply use GET—no HttpHeaders object needed
+        
         ResponseEntity<Integer> response = restTemplate.getForEntity(url, Integer.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("userId", response.getBody());
+            handleSuspence();
+            handleAdmin();
         } else {
             throw new RuntimeException(
                 "Failed to retrieve user ID: HTTP " + response.getStatusCode().value()
+            );
+        }
+    }
+
+    private void handleAdmin() {
+        Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
+        if (userId == null) {
+            return;
+        }
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            return;
+        }
+        String url = BASE_URL + "/"+userId+"/isAdmin?token=" +token;
+        ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
+
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            VaadinSession.getCurrent().setAttribute("isAdmin", response.getBody());
+        } else {
+            throw new RuntimeException(
+                "Failed to check admin status: HTTP " + response.getStatusCode().value()
+            );
+        }
+    }
+    private void handleSuspence() {
+        Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
+        if (userId == null) {
+            return;
+        }
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            return;
+        }
+        String url = BASE_URL + "/"+userId+"/suspension?token=" +token;
+        ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
+
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            Notification.show(response.getBody().toString());
+            VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
+        } else {
+            throw new RuntimeException(
+                "Failed to check admin status: HTTP " + response.getStatusCode().value()
             );
         }
     }
