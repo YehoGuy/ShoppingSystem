@@ -19,13 +19,20 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.beans.factory.annotation.Value;
+
 
 @Route("login")
 public class LoginView extends VerticalLayout {
 
     private final RestTemplate restTemplate = new RestTemplate();
-    private final String BASE_URL = "http://localhost:8080/api/users";
-    private final String AUTH_URL = "http://localhost:8080/api/auth";
+    
+    @Value("${url.api}/users")
+    private String BASE_URL;
+
+    @Value("${url.api}/auth")
+    private String AUTH_URL;
+
 
     public LoginView() {
         setSizeFull();

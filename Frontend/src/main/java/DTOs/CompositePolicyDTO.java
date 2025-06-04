@@ -38,19 +38,33 @@ public class CompositePolicyDTO {
         return operator;
     }
 
+    @Override
     public String toString() {
-        if (compoPolicy1 != null && compoPolicy2 != null) {
-            return "(" + compoPolicy1.toString() + " " + operator.toString() + " " + compoPolicy2.toString() + ")";
-        } else if (compoPolicy1 != null && leafPolicy1 != null) {
-            return "(" + compoPolicy1.toString() + " " + operator.toString() + " " + leafPolicy1.toString() + ")";
-        } else if (compoPolicy2 != null && leafPolicy1 != null) {
-            return "(" + leafPolicy1.toString() + " " + operator.toString() + " " + compoPolicy2.toString() + ")";
-        } else if (leafPolicy1 != null && leafPolicy2 != null) {
-            return "(" + leafPolicy1.toString() + " " + operator.toString() + " " + leafPolicy2.toString() + ")";
-        } else if (compoPolicy2 != null && leafPolicy2 != null) {
-            return "(" + compoPolicy2.toString() + " " + operator.toString() + " " + leafPolicy2.toString() + ")";
-        } else {
-            return "(" + leafPolicy1.toString() + " " + operator.toString() + " " + compoPolicy2.toString() + ")";
+        // Single-leaf: just show that leaf
+        if (leafPolicy1 != null && leafPolicy2 == null
+            && compoPolicy1 == null && compoPolicy2 == null) {
+            return leafPolicy1.toString();
         }
+        if (leafPolicy2 != null && leafPolicy1 == null
+            && compoPolicy1 == null && compoPolicy2 == null) {
+            return leafPolicy2.toString();
+        }
+
+        // Build left part
+        String left = (compoPolicy1 != null)
+            ? compoPolicy1.toString()
+            : (leafPolicy1 != null ? leafPolicy1.toString() : "");
+
+        // Build right part
+        String right = (compoPolicy2 != null)
+            ? compoPolicy2.toString()
+            : (leafPolicy2 != null ? leafPolicy2.toString() : "");
+
+        // Null-safe operator
+        String opText = (operator != null)
+            ? " " + operator.name() + " "
+            : " ";
+
+        return "(" + left + opText + right + ")";
     }
 }

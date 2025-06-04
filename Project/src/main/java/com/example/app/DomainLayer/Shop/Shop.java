@@ -542,6 +542,19 @@ public class Shop {
         }
     }
 
+    public synchronized void setDiscountPolicy(Policy policy) {
+        // clear any previous-in-progress policy
+        this.policytemp      = null;
+        this.policyComposite = null;
+
+        // attach either as a single leaf or a composite
+        if (policy instanceof PolicyComposite) {
+            this.policyComposite = (PolicyComposite) policy;
+        } else {
+            this.policytemp = policy;
+        }
+    }
+
     public Map<Integer, Double> getItemPrices()
     {
         Map<Integer, Double> prices = new HashMap<>();
@@ -576,4 +589,16 @@ public class Shop {
     public List<Discount> getDiscounts() {
         return Collections.unmodifiableList(discounts);
     }
+
+    public List<Policy> getPolicies() {
+        List<Policy> policies = new ArrayList<>();
+        if (policyComposite != null) {
+            policies.add(policyComposite);
+        }
+        if (policytemp != null) {
+            policies.add(policytemp);
+        }
+        return policies;
+    }
+
 }

@@ -478,7 +478,7 @@ public class UserController {
         }
     }
 
-    @PatchMapping(path = "/shops/{shopId}/permissions/{memberId}", consumes = "application/json")
+    @PostMapping(path = "/shops/{shopId}/permissions/{memberId}", consumes = "application/json")
     public ResponseEntity<Void> changePermissions(
             @PathVariable @Min(1) int shopId,
             @PathVariable @Min(1) int memberId,

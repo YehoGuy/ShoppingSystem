@@ -14,6 +14,8 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
+import org.springframework.beans.factory.annotation.Value;
+
 
 import DTOs.MemberDTO;
 import DTOs.rolesDTO;
@@ -21,9 +23,18 @@ import DTOs.rolesDTO;
 @Route(value = "profile", layout = AppLayoutBasic.class)
 @JsModule("./js/notification-client.js")
 public class PersonProfileView extends VerticalLayout implements BeforeEnterObserver {
-    private static final String USER_URL = "http://localhost:8080/api/users";
-    private static final String NOTIF_URL = "http://localhost:8080/api/users/notifications";
-    private static final String ACCEPT_ROLES_URL = "http://localhost:8080/api/users/getAcceptedRoles";
+
+    @Value("${url.api}/users")
+    private String USER_URL;
+
+    @Value("${url.api}/users/notifications")
+    private String NOTIF_URL;
+
+    @Value("${url.api}/users/getAcceptedRoles")
+    private String ACCEPT_ROLES_URL;
+
+    @Value("${url.api}/shops")
+    private String SHOPS_URL;
 
     private final RestTemplate rest = new RestTemplate();
 
@@ -102,7 +113,7 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
             ResponseEntity<MemberDTO> resp = rest.getForEntity(
                     USER_URL + "/" + profileUserId + "?token=" + token,
                     MemberDTO.class);
-            if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 MemberDTO memberDTO = resp.getBody();
                 detailsLayout.add(
                         new Span("User ID: " + memberDTO.getMemberId()),
@@ -123,7 +134,7 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
             ResponseEntity<String[]> resp = rest.getForEntity(
                     NOTIF_URL + "?authToken=" + token,
                     String[].class);
-            if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 for (String note : resp.getBody()) {
                     notificationsLayout.add(new Span("• " + note));
                 }
@@ -141,13 +152,14 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
             ResponseEntity<rolesDTO[]> resp = rest.getForEntity(
                     ACCEPT_ROLES_URL + "?authToken=" + token,
                     rolesDTO[].class);
-            if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 for (rolesDTO r : resp.getBody()) {
                     if (r.getUserName().equalsIgnoreCase( /* your MemberDTO.getUsername() */ "")) {
                         HorizontalLayout row = new HorizontalLayout();
                         DTOs.ShopDTO shop = rest.getForObject(
-                                "http://localhost:8080/api/shops/" + r.getShopId() + "?authToken=" + token,
-                                DTOs.ShopDTO.class);
+                            SHOPS_URL + "/" + r.getShopId() + "?authToken=" + token,
+                            DTOs.ShopDTO.class);
+
                         String shopName = shop.getName();
                         row.add(
                                 new Span(r.getRoleName() + " @ " + shopName),

@@ -2,6 +2,7 @@ package com.example.app.PresentationLayer.DTO.Purchase;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
@@ -33,30 +34,5 @@ import jakarta.validation.constraints.Positive;
             r.getPrice(),
             r.getTimestampOfRecieptGeneration()
         );
-    }
-
-    /** DTO → Domain (rare—used mainly in tests or admin tools) */
-    public com.example.app.DomainLayer.Purchase.Reciept toDomain() {
-        if (completed) {
-            return new com.example.app.DomainLayer.Purchase.Reciept(
-                purchaseId,
-                userId,
-                storeId,
-                items,
-                shippingAddress.toDomain(),
-                timeOfCompletion,
-                price
-            );
-        } else {
-            // not yet completed: no timestamp
-            return new com.example.app.DomainLayer.Purchase.Reciept(
-                purchaseId,
-                userId,
-                storeId,
-                items,
-                shippingAddress.toDomain(),
-                price
-            );
-        }
     }
 }

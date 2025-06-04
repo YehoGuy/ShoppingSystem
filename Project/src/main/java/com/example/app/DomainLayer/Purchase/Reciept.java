@@ -31,13 +31,13 @@ public class Reciept {
      * @param items a map of item IDs to their quantities.
      * @param shippingAddress the shipping address for the purchase.
      */
-    public Reciept(int purchaseId, int userId, int storeId, Map<Integer, Integer> items, Address shippingAddress, double price) {
+    public Reciept(int purchaseId, int userId, int storeId, Map<Integer, Integer> items, Address shippingAddress, double price, boolean isCompleted) {
         this.purchaseId = purchaseId;
         this.userId = userId;
         this.storeId = storeId;
         this.items = Map.copyOf(items);
         this.shippingAddress = shippingAddress;
-        this.isCompleted = new AtomicBoolean(false);
+        this.isCompleted = new AtomicBoolean(isCompleted);
         this.timeOfCompletion = null;
         this.timestampOfRecieptGeneration = LocalDateTime.now();
         this.price = price;

@@ -1,12 +1,23 @@
 package UI;
 
-import java.util.*;
-import org.springframework.http.*;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.web.client.HttpClientErrorException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -18,18 +29,17 @@ import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
+import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinSession;
 
 import DTOs.CartEntryDTO;
 import DTOs.ItemDTO;
-import DTOs.ShoppingCartDTO;
 import DTOs.ShopDTO;
+import DTOs.ShoppingCartDTO;
 
 @Route(value = "cart", layout = AppLayoutBasic.class)
 @JsModule("./js/notification-client.js")
@@ -39,10 +49,18 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
     private List<ShopDTO> shops;
 
     private final RestTemplate restTemplate = new RestTemplate();
-    private static final String URLShop = "http://localhost:8080/api/shops";
-    private static final String URLUser = "http://localhost:8080/api/users";
-    private static final String URLPurchases = "http://localhost:8080/api/purchases";
-    private static final String URLItem = "http://localhost:8080/api/items";
+    
+    @Value("${url.api}/shops")
+    private String URLShop;
+
+    @Value("${url.api}/users")
+    private String URLUser;
+
+    @Value("${url.api}/purchases")
+    private String URLPurchases;
+
+    @Value("${url.api}/items")
+    private String URLItem;
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {

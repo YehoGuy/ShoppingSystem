@@ -38,6 +38,7 @@ public class UserService {
         this.userRepository = userRepository;
         this.authTokenService = authTokenService;
         this.notificationService = notificationService;
+        this.notificationService.setService(this);
     }
 
     public boolean isAdmin(Integer id) {
@@ -927,6 +928,7 @@ public class UserService {
             throw new OurRuntime("addFounderRole: " + e.getMessage(), e); // Indicate failure to add role
         }
     }
+
     /**
      * Removes a role from a member.
      * 
