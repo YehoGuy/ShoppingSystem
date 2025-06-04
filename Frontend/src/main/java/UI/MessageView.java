@@ -39,19 +39,16 @@ import DTOs.rolesDTO;
 @JsModule("./js/notification-client.js")
 public class MessageView extends VerticalLayout implements BeforeEnterObserver {
     
-    @Value("${url.api}/messages")
     private String BASE_URL;
 
-    @Value("${url.api}/users/notifications")
+    private String MSG_BASE_URL;
+
     private String NOTIFICATIONS_URL;
 
-    @Value("${url.api}/users/getPendingRoles")
     private String PENDING_ROLES_URL;
 
-    @Value("${url.api}/messages/receiver?authToken=")
     private String GET_BY_RECIVER;
 
-    @Value("${url.api}/users/roles/")
     private String ROLES_URL;
 
     private final RestTemplate rest = new RestTemplate();
@@ -69,11 +66,17 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
 
     private final String token;
 
-    public MessageView() {
+    public MessageView(@Value("${url.api}") String baseUrl) {
+        this.BASE_URL = baseUrl;
+        this.MSG_BASE_URL = BASE_URL + "/messages";
+        this.NOTIFICATIONS_URL = BASE_URL + "/users/notifications";
+        this.PENDING_ROLES_URL = BASE_URL + "/users/getPendingRoles";
+        this.ROLES_URL = BASE_URL + "/users/roles/";
+        this.GET_BY_RECIVER = MSG_BASE_URL + "/receiver?authToken=";
 
         this.token = getToken();
         ResponseEntity<MemberDTO[]> allmem = rest
-            .getForEntity("${url.api}/users/allmembers?token=" + token, MemberDTO[].class);
+            .getForEntity("http://localhost:8080/api/users/allmembers?token=" + token, MemberDTO[].class);
 
         ResponseEntity<MessageDTO[]> allmessagesRe = rest.getForEntity(
                 GET_BY_RECIVER + token,
@@ -203,7 +206,7 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
     // Helper method to get current user id as int
 
     private void sendMessageToUser(int receiverId, String content, int previousId) {
-        String url = BASE_URL + "/user?authToken=" + token
+        String url = MSG_BASE_URL + "/user?authToken=" + token
                 + "&receiverId=" + receiverId
                 + "&content=" + encode(content)
                 + "&previousMessageId=" + previousId;

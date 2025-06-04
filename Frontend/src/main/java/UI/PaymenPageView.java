@@ -36,7 +36,7 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
     private double totalAmount = 0.0;
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${url.api}")
+    
     private String BASE_URL;
 
     private String country;
@@ -59,7 +59,8 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
     }
 
     public PaymenPageView(double totalAmount, String country, String city, String street, String houseNumber,
-            String zipCode) {
+            String zipCode, @Value("${url.api}") String baseUrl) {
+        this.BASE_URL = baseUrl;
 
         paymentMethod = getUserPaymentMethod();
 
