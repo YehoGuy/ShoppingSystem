@@ -829,7 +829,7 @@ public class UserController {
         }
     }
 
-    @GetMapping("/shoppingCart/{shopID}/{itemID}/plus")
+    @PostMapping("/shoppingCart/{shopID}/{itemID}/plus")
     public ResponseEntity<Void> addItemToShoppingCart(
             @RequestParam String token,
             @RequestParam int userId,
@@ -848,7 +848,7 @@ public class UserController {
         }
     }
 
-    @GetMapping("/shoppingCart/{shopID}/{itemID}/minus")
+    @PostMapping("/shoppingCart/{shopID}/{itemID}/minus")
     public ResponseEntity<Void> decreaseItemInShoppingCart(
             @RequestParam String token,
             @RequestParam int userId,
@@ -867,7 +867,7 @@ public class UserController {
         }
     }
 
-    @GetMapping("/shoppingCart/{shopID}/{itemID}/remove")
+    @PostMapping("/shoppingCart/{shopID}/{itemID}/remove")
     public ResponseEntity<Void> removeCompletelyItemFromShoppingCart(
             @RequestParam String token,
             @RequestParam int userId,

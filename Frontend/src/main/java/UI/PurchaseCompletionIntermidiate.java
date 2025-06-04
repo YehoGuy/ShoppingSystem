@@ -7,6 +7,7 @@ import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 
@@ -96,6 +97,14 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
     }
 
     private void displayCartSummary() {
+        if (cartDto == null) {
+            Notification.show("No cart data available.");
+            return;
+        }
+        if (cartDto.getShopItemPrices() == null || cartDto.getShopItemQuantities() == null) {
+            Notification.show("No items in cart.");
+            return;
+        }
         add(new H1("🛒 Cart Summary"));
 
         cartDto.getShopItemPrices().forEach((shopId, itemPrices) -> {
@@ -126,6 +135,10 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
 
     private void setAllItems() {
         items = new java.util.HashMap<>();
+        if (cartDto == null || cartDto.getItems() == null) {
+            Notification.show(getUserId() + " - No items in cart.");
+            return;
+        }
         cartDto.getShopItemQuantities()
                 .forEach((shopId, itemQuantities) -> {
                     itemQuantities.forEach((itemId, quantity) -> {
@@ -141,6 +154,10 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
     }
 
     private ItemDTO getItemById(int id) {
+        if (items == null || items.isEmpty()) {
+            Notification.show("No items available.");
+            return null;
+        }
         return items.keySet().stream()
                 .filter(item -> item.getId() == id)
                 .findFirst()

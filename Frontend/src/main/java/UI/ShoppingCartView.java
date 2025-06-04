@@ -29,6 +29,7 @@ import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -73,12 +74,10 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         setSpacing(true);
         setPadding(true);
         setAlignItems(Alignment.CENTER);
+        buildView();
+    }
 
-        if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
-            add(new H2("Please log in to view your cart"));
-            return;
-        }
-
+    private void buildView() {
         getData();
 
         if (cart.getShopItems() == null || cart.getShopItems().isEmpty()) {
@@ -87,7 +86,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             add(empty);
 
             // optional: add a “continue shopping” button
-            Button shopMore = new Button("Continue Shopping", e -> UI.getCurrent().navigate("items") // or whatever your
+            Button shopMore = new Button("Continue Shopping", e -> UI.getCurrent().navigate("shops") // or whatever your
                                                                                                      // product listing
                                                                                                      // route is
             );
@@ -108,9 +107,14 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
         Button buyButton = new Button("Buy entire cart");
         buyButton.addClickListener(event -> {
-            PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(cart);
-            this.removeAll();
-            this.add(purchaseCompletion);
+            try {
+                PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(cart);
+                this.add(purchaseCompletion);
+            } catch (Exception e) {
+                Notification.show("Failed to proceed with purchase. Please try again later.",
+                        3000, Notification.Position.MIDDLE);
+                log.warn("Could not proceed with purchase", e);
+            }
         });
         buyButton.getStyle().set("background-color", "red").set("color", "white");
         buyButtonContainer.add(buyButton);
@@ -172,7 +176,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 Double price = itemPricesMap != null && itemPricesMap.containsKey(item.getId())
                         ? itemPricesMap.get(item.getId())
                         : 0;
-                rows.add(new ItemRow(item, quantity, price));
+                rows.add(new ItemRow(item, quantity, price, item.getId()));
             }
 
             grid.setItems(rows);
@@ -181,13 +185,13 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 Button addButton = new Button(VaadinIcon.PLUS.create());
                 Button removeCompletlyButton = new Button(VaadinIcon.TRASH.create());
                 removeCompletlyButton.addClickListener(event -> {
-                    handleCartAction(shopID, renderer.name(), "remove");
+                    handleCartAction(shopID, renderer.itemId(), "remove");
                 });
                 addButton.addClickListener(event -> {
-                    handleCartAction(shopID, renderer.name(), "plus");
+                    handleCartAction(shopID, renderer.itemId(), "plus");
                 });
                 removeButton.addClickListener(event -> {
-                    handleCartAction(shopID, renderer.name(), "minus");
+                    handleCartAction(shopID, renderer.itemId(), "minus");
                 });
                 HorizontalLayout buttonLayout = new HorizontalLayout(addButton, removeButton, removeCompletlyButton);
                 buttonLayout.setAlignItems(Alignment.CENTER);
@@ -345,9 +349,9 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
     }
 
     // Helper record class to populate the grid
-    public record ItemRow(String name, double price, int quantity, double totalPrice, String description) {
-        public ItemRow(ItemDTO item, int quantity, double price) {
-            this(item.getName(), price, quantity, price * quantity, item.getDescription());
+    public record ItemRow(String name, double price, int quantity, double totalPrice, String description, int itemId) {
+        public ItemRow(ItemDTO item, int quantity, double price, int itemId) {
+            this(item.getName(), price, quantity, price * quantity, item.getDescription(), itemId);
         }
     }
 
@@ -359,32 +363,34 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 .orElse("Unknown Shop");
     }
 
-    private void handleCartAction(int shopID, String itemName, String action) {
+    private void handleCartAction(int shopID, int itemId, String action) {
         try {
             String token = VaadinSession.getCurrent().getAttribute("authToken").toString();
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-            // find itemID …
-            int itemID = getAllItems().stream()
-                    .filter(item -> item.getName().equals(itemName))
-                    .map(ItemDTO::getId)
-                    .findFirst()
-                    .orElse(-1);
-            if (itemID < 0)
+            if (itemId < 0)
                 return;
-
             restTemplate.postForEntity(
-                    URLUser + "/shoppingCart/" + shopID + "/" + itemID + "/" + action + "?token=" + token + "&userId="
+                    URLUser + "/shoppingCart/" + shopID + "/" + itemId + "/" + action + "?token=" + token + "&userId="
                             + getUserId(),
                     entity,
-                    String.class,
+                    Void.class,
                     token);
-            UI.getCurrent().getPage().reload();
+            resetView();
         } catch (Exception e) {
             // completely silent on failure
+            Notification.show("Failed to update shopping cart. Please try again later.",
+                    3000, Notification.Position.MIDDLE);
             log.warn("Could not retrieve shopping cart, treating as empty", e);
         }
+    }
+
+    private void resetView() {
+        this.removeAll();
+        this.cart = null;
+        this.shops = null;
+        buildView();
     }
 }
