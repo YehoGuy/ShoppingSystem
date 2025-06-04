@@ -494,68 +494,6 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
     private void displayItems() {
         itemsContainer.removeAll();
 
-        if (restTemplate.getForEntity(USERS_URL + "/hasPermission?token=" + getToken() + "&userId="
-                + getUserId() + "&shopId=" + shop.getShopId() + "&permission=" + PermissionsEnum.manageItems,
-                Boolean.class).getBody()) {
-            if (allItemPrices == null || allItemPrices.isEmpty()) {
-                itemsContainer.add(new Span("No items found."));
-                return;
-            }
-            List<DiscountDTO> discounts = getDiscounts();
-
-            for (ItemDTO item : allItemPrices.keySet()) {
-                Button addSupply, deleteItem, removeSupply, editPrice, setDiscount, removeDiscount;
-                HorizontalLayout itemLayout = new HorizontalLayout();
-                itemLayout.setWidthFull();
-                itemLayout.setAlignItems(FlexComponent.Alignment.CENTER);
-                itemLayout.getStyle().set("border", "1px solid #ccc");
-                itemLayout.getStyle().set("padding", "10px");
-                itemLayout.getStyle().set("border-radius", "8px");
-                itemLayout.getStyle().set("margin-bottom", "10px");
-
-                Span itemName = new Span("Item: " + item.getName());
-                Span itemPrice = new Span("Price: " + allItemPrices.get(item) + " $");
-                Span itemDiscount = new Span("Discount: " +
-                        (discounts.stream()
-                                .filter(d -> d.getItemId() == item.getId())
-                                .findFirst()
-                                .map(DiscountDTO::toString)
-                                .orElse("No Discount")));
-                Span itemCategory = new Span("Category: " + item.getCategory());
-                Span itemDescription = new Span("Description: " + item.getDescription());
-                Span itemRating = new Span("Rating: " + item.getAverageRating());
-                Span itemQuantity = new Span("Quantity: " + shop.getItemQuantities().getOrDefault(item.getId(), 0));
-                VerticalLayout itemDetails = new VerticalLayout(itemName, itemPrice, itemDiscount, itemCategory, itemDescription, itemQuantity,
-                        itemRating);
-                itemDetails.setWidth("70%");
-
-                String canManageItemsUrl = PERMISSIONS_URL + "?token=" + getToken() + "&userId="
-                        + getUserId() + "&shopId=" + shop.getShopId() + "&permission="
-                        + PermissionsEnum.manageItems;
-
-                
-                if (restTemplate.getForEntity(canManageItemsUrl, Boolean.class).getBody()) {
-                    addSupply = createAddSupplyButton(item);
-                    deleteItem = createDeleteItemButton(item);
-                    removeSupply = createRemoveSupplyButton(item);
-                    editPrice = createEditPriceButton(item);
-                    setDiscount = SetDiscountButton(item);
-                    removeDiscount = RemoveDiscountButton(item);
-                } else {
-                    addSupply = new Button("Add Supply",
-                            e -> Notification.show("You do not have permission to add supply."));
-                    deleteItem = new Button("Delete Item",
-                            e -> Notification.show("You do not have permission to delete items."));
-                    removeSupply = new Button("Remove Supply",
-                            e -> Notification.show("You do not have permission to remove supply."));
-                    editPrice = new Button("Edit Price",
-                            e -> Notification.show("You do not have permission to edit prices."));
-                    setDiscount = new Button("Set Discount",
-                            e -> Notification.show("You do not have permission to set discounts."));
-                    removeDiscount = new Button("Remove Discount",
-                            e -> Notification.show("You do not have permission to remove discounts."));
-                }
-
         String permCheckUrl = PERMISSIONS_URL +
                               "?token=" + getToken() +
                               "&userId=" + getUserId() +
@@ -566,7 +504,6 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             itemsContainer.add(new Span("No permission to view items."));
             return;
         }
-              
 
         if (allItemPrices == null || allItemPrices.isEmpty()) {
             itemsContainer.add(new Span("No items found."));
