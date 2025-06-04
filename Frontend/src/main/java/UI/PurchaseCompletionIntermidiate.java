@@ -50,10 +50,12 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
     }
 
     public PurchaseCompletionIntermidiate(ShoppingCartDTO cart) {
-        setAllItems();
 
         this.cartDto = cart;
         this.totalPrice = cart.getTotalPrice();
+
+
+        setAllItems();
         setSizeFull();
         setSpacing(true);
         setPadding(true);
@@ -124,13 +126,16 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
     }
 
     private void completePurchase(AddressDTO address) {
-        PaymenPageView paymentPage = new PaymenPageView(totalPrice, address.getCountry(), address.getCity(),
-                address.getStreet(), address.getHouseNumber(), address.getZipCode());
-        Dialog paymentDialog = new Dialog(paymentPage);
-        paymentDialog.setWidth("400px");
-        paymentDialog.setHeight("300px");
-        paymentDialog.add(new Span("Please complete your payment in the dialog."));
-        paymentDialog.open();
+         Notification.show("Payment service not curently avalible. Please try again later.");
+         return;
+
+        // PaymenPageView paymentPage = new PaymenPageView(totalPrice, address.getCountry(), address.getCity(),
+        //         address.getStreet(), address.getHouseNumber(), address.getZipCode());
+        // Dialog paymentDialog = new Dialog(paymentPage);
+        // paymentDialog.setWidth("400px");
+        // paymentDialog.setHeight("300px");
+        // paymentDialog.add(new Span("Please complete your payment in the dialog."));
+        // paymentDialog.open();
     }
 
     private void setAllItems() {

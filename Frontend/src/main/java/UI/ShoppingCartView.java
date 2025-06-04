@@ -108,8 +108,23 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         Button buyButton = new Button("Buy entire cart");
         buyButton.addClickListener(event -> {
             try {
-                PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(cart);
-                this.add(purchaseCompletion);
+                // PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(cart);
+                // this.add(purchaseCompletion);
+                
+                  PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(cart);
+
+                    Dialog dialog = new Dialog();
+                    dialog.setHeaderTitle("Purchase Summary");
+
+                    // Add your component to the dialog
+                    dialog.add(purchaseCompletion);
+
+                    // Optional: add a close button in the footer
+                    Button closeButton = new Button("Close", e -> dialog.close());
+                    dialog.getFooter().add(closeButton);
+
+                    dialog.open();  // Show the dialog
+                
             } catch (Exception e) {
                 Notification.show("Failed to proceed with purchase. Please try again later.",
                         3000, Notification.Position.MIDDLE);
@@ -258,6 +273,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         cart.setShopItems(shopItems);
         cart.setShopItemPrices(shopItemPrices);
         cart.setShopItemQuantities(shopItemQuantities);
+        cart.setItems(items);
     }
 
     private List<ItemDTO> getAllItems() {
