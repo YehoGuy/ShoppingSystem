@@ -31,7 +31,6 @@ public class NotificationService {
                     userService.addNotification(userId, title, message);
                 }
             }
-            messagingTemplate.convertAndSend("/topic/notifications/" + userId, message);
         } catch (Exception e) {
             // Handle exception
             throw new RuntimeException("Error sending notification", e);
