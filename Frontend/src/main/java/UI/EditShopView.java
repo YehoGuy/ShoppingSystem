@@ -40,6 +40,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,9 +57,16 @@ import java.util.stream.Stream;
 public class EditShopView extends VerticalLayout implements HasUrlParameter<Integer>, BeforeEnterObserver {
 
     private final RestTemplate restTemplate = new RestTemplate();
-    private final String USERS_URL = "http://localhost:8080/api/users";
-    private final String SHOPS_URL = "http://localhost:8080/api/shops/";
-    private final String PERMISSIONS_URL = "http://localhost:8080/api/users/hasPermission";
+    
+    @Value("${url.api}/users")
+    private String USERS_URL;
+
+    @Value("${url.api}/shops")
+    private String SHOPS_URL;
+
+    @Value("${url.api}/users/hasPermission")
+    private String PERMISSIONS_URL;
+
     private ShopDTO shop;
     private Map<ItemDTO, Integer> allItemPrices;
     private VerticalLayout itemsContainer;

@@ -18,6 +18,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
@@ -28,7 +29,8 @@ import DTOs.RecieptDTO;
 @JsModule("./js/notification-client.js")
 public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<Integer>, BeforeEnterObserver {
 
-    private static final String PURCHASE_HISTORY_URL = "http://localhost:8080/api/purchases/shops";
+    @Value("${url.api}/purchases/shops")
+    private String PURCHASE_HISTORY_URL;
 
     private final RestTemplate rest = new RestTemplate();
     private final VerticalLayout receiptsLayout = new VerticalLayout();

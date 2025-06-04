@@ -26,6 +26,9 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
+import org.springframework.beans.factory.annotation.Value;
+import jakarta.annotation.PostConstruct;
+
 
 import DTOs.ItemDTO;
 import DTOs.ItemReviewDTO;
@@ -39,7 +42,9 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
     private VerticalLayout itemsContainer; // <--- FIELD REFERENCE
 
     private final RestTemplate restTemplate = new RestTemplate();
-    private final String URL = "http://localhost:8080/api/items";
+    
+    @Value("${url.api}/items")
+    private String URL;
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
@@ -60,7 +65,10 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
         setJustifyContentMode(JustifyContentMode.START);
         setSpacing(true);
         setPadding(true);
+    }
 
+    @PostConstruct
+    private void init() {
         getItems();
 
         H1 title = new H1("Available Items");
