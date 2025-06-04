@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
 import com.example.app.ApplicationLayer.OurRuntime;
@@ -21,6 +22,9 @@ import com.example.app.DomainLayer.Notification;
 import com.example.app.DomainLayer.Purchase.Address;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
+
+import jakarta.annotation.PostConstruct;
+
 import com.example.app.DomainLayer.ShoppingCart;
 import com.example.app.DomainLayer.User;
 
@@ -35,14 +39,35 @@ public class UserRepository implements IUserRepository {
     private PasswordEncoderUtil passwordEncoderUtil;
     AtomicInteger userIdCounter;
 
+    @Value("${admin.username}")
+    private String adminUsername;
+
+    @Value("${admin.password}")
+    private String adminPlainPassword;
+
+    @Value("${admin.email}")
+    private String adminEmail;
+
+    @Value("${admin.phoneNumber}")
+    private String adminPhoneNumber;
+
+    @Value("${admin.address}")
+    private String adminAddress;
+
     public UserRepository() {
         this.userMapping = new ConcurrentHashMap<>();
         this.userIdCounter = new AtomicInteger(0); // Initialize the user ID counter
         this.managers = new CopyOnWriteArrayList<>(); // Initialize the managers list
         this.passwordEncoderUtil = new PasswordEncoderUtil();
         // TODO: V should be removed when adding database
-        addMember("admin", passwordEncoderUtil.encode("admin"), "admin@mail.com", "0", "admin st.");
-        managers.add(isUsernameAndPasswordValid("admin", "admin"));
+    }
+
+    @PostConstruct
+    private void initAdmin() {
+        // Now adminPlainPassword, adminUsername, etc. are populated from application.properties
+        String encodedAdminPassword = passwordEncoderUtil.encode(adminPlainPassword);
+        int adminId = addMember(adminUsername, encodedAdminPassword, adminEmail, adminPhoneNumber, adminAddress);
+        managers.add(adminId);
     }
 
     public PasswordEncoderUtil getPasswordEncoderUtil() {
