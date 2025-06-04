@@ -1,17 +1,72 @@
-import { showVaadinNotification } from "./notification-helper";
 import SockJS from 'sockjs-client';
-import { Stomp } from '@stomp/stompjs';
+import { Client } from '@stomp/stompjs';
 
-const socket = new SockJS('/ws');
-const stompClient = Stomp.over(socket);
+let stompClient = null;
 
-export function connectNotifications(userId) {
-    stompClient.connect({}, function () {
-        stompClient.subscribe(`/topic/notifications/${userId}`, function (notification) {
-            showVaadinNotification("🔔 " + notification.body, {
-                position: 'top-end',
-                duration: 5000
-            });
-        });
-    });
-}
+const showNotification = (message) => {
+  const notification = document.createElement('vaadin-notification');
+  notification.position = 'top-stretch';
+  notification.duration = 10000;
+  const content = document.createElement('div');
+  content.style.padding = '1em';
+  content.style.background = '#ff9800';
+  content.style.color = 'white';
+  content.style.textAlign = 'center';
+  content.style.fontSize = 'var(--lumo-font-size-m)';
+  content.textContent = message;
+  notification.renderer = (root) => {
+    root.innerHTML = '';
+    root.appendChild(content);
+  };
+  document.body.appendChild(notification);
+  notification.open();
+  setTimeout(() => document.body.removeChild(notification), 10000);
+};
+
+const connectWebSocket = (userId) => {
+  if (!userId) return;
+
+  if (stompClient) {
+    try { stompClient.deactivate(); } catch (e) {}
+  }
+
+  const socket = new SockJS("/ws?userId=${userId}");
+
+  stompClient = new Client({
+    webSocketFactory: () => socket,
+    connectHeaders: { userId },
+    debug: (msg) => console.log('[STOMP DEBUG]', msg),
+    onConnect: () => {
+      const destination = '/user/topic/notifications';
+      stompClient.subscribe(destination, (message) => {
+        console.log('[WS] 🔔 Notification received:', message.body);  
+        showNotification(message.body);
+      });
+    },
+    reconnectDelay: 5000
+  });
+  console.log('[WS] Activating STOMP client...');
+  stompClient.activate();
+  console.log('[WS] Sent CONNECT with userId =', userId);
+  window.stompClient = stompClient;
+};
+
+window.connectWebSocket = connectWebSocket;
+connectWebSocket(window.currentUserId);
+
+
+const waitForUserIdAndConnect = () => {
+  if (window.currentUserId) {
+    sessionStorage.setItem('currentUserId', window.currentUserId);
+    connectWebSocket(window.currentUserId);
+  } else {
+    setTimeout(waitForUserIdAndConnect, 100);
+  }
+};
+
+waitForUserIdAndConnect();
+
+window.addEventListener('storage', (e) => {
+  if (e.key === 'currentUserId' && e.newValue)
+    connectWebSocket(e.newValue);
+});

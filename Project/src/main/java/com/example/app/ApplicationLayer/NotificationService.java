@@ -26,14 +26,14 @@ public class NotificationService {
             if (user instanceof Member) {
                 Member member = (Member) user;
                 if (member.isConnected()) {
-                    messagingTemplate.convertAndSend("/topic/notifications/" + userId, message);
+                    messagingTemplate.convertAndSendToUser(userId + "", "/topic/notifications/", message);
                 } else {
                     userService.addNotification(userId, title, message);
                 }
             }
-            messagingTemplate.convertAndSend("/topic/notifications/" + userId, message);
         } catch (Exception e) {
             // Handle exception
+            userService.addNotification(userId, title, message);
             throw new RuntimeException("Error sending notification", e);
         }
     }

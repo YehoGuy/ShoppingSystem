@@ -10,8 +10,6 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
-import Config.UrlService;
-
 @Route("")
 public class MainView extends VerticalLayout {
 

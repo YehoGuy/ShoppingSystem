@@ -55,10 +55,10 @@ import java.util.stream.Stream;
 
 @Route(value = "edit-shop", layout = AppLayoutBasic.class)
 @JsModule("./js/notification-client.js")
-public class EditShopView extends VerticalLayout implements HasUrlParameter<Integer>, BeforeEnterObserver {
+public class EditShopView extends VerticalLayout implements HasUrlParameter<Integer> {
 
     private final RestTemplate restTemplate = new RestTemplate();
-    
+
     @Value("${url.api}/users")
     private String USERS_URL;
 
@@ -92,10 +92,6 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
     }
 
     ////////////////////////
-    @Override
-    public void beforeEnter(BeforeEnterEvent event) {
-        return;
-    }
 
     private String getUserId() {
         return VaadinSession.getCurrent().getAttribute("userId").toString();
@@ -597,7 +593,9 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             categoryCombo.setItems(presentItemCats);
             categoryCombo.setVisible(false);
 
-            scopeCombo.addValueChangeListener(ev -> categoryCombo.setVisible("Category".equals(ev.getValue())));
+            scopeCombo.addValueChangeListener(event -> {
+                categoryCombo.setVisible("Category".equals(event.getValue()));
+            });
 
             Button confirm = new Button("Confirm", clk -> {
                 String choice = scopeCombo.getValue();
@@ -706,7 +704,9 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             pctField.setMax(100);
             Checkbox dblChk = new Checkbox("Double discount", true);
 
-            scopeCombo.addValueChangeListener(ev -> categoryCombo.setVisible("Category".equals(ev.getValue())));
+            scopeCombo.addValueChangeListener(event -> {
+                categoryCombo.setVisible("Category".equals(event.getValue()));
+            });
 
             Button confirm = new Button("Confirm", clk -> {
                 // Capture discount data first
@@ -819,16 +819,12 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             Stream.of(itemIdField, itemQtyField, catBox, catQtyField, basketValField)
                     .forEach(f -> f.setVisible(false));
             switch (t) {
-                case ITEM_QTY:
+                case ITEM_QTY -> {
                     itemIdField.setVisible(true);
                     itemQtyField.setVisible(true);
-                    break;
-                case CATEGORY_QTY:
-                    catQtyField.setVisible(true);
-                    break;
-                case BASKET_VALUE:
-                    basketValField.setVisible(true);
-                    break;
+                }
+                case CATEGORY_QTY -> catQtyField.setVisible(true);
+                case BASKET_VALUE -> basketValField.setVisible(true);
             }
         });
 
