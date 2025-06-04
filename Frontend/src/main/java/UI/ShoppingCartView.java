@@ -25,6 +25,8 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
+import org.springframework.beans.factory.annotation.Value;
+
 
 import DTOs.CartEntryDTO;
 import DTOs.ItemDTO;
@@ -39,10 +41,18 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
     private List<ShopDTO> shops;
 
     private final RestTemplate restTemplate = new RestTemplate();
-    private static final String URLShop = "http://localhost:8080/api/shops";
-    private static final String URLUser = "http://localhost:8080/api/users";
-    private static final String URLPurchases = "http://localhost:8080/api/purchases";
-    private static final String URLItem = "http://localhost:8080/api/items";
+    
+    @Value("${url.api}/shops")
+    private String URLShop;
+
+    @Value("${url.api}/users")
+    private String URLUser;
+
+    @Value("${url.api}/purchases")
+    private String URLPurchases;
+
+    @Value("${url.api}/items")
+    private String URLItem;
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {

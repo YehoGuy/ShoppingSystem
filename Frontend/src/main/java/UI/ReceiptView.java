@@ -24,12 +24,16 @@ import DTOs.RecieptDTO;
 import DTOs.AddressDTO;
 
 import com.vaadin.flow.server.VaadinSession;
+import org.springframework.beans.factory.annotation.Value;
+
 
 @Route("receipt")
 @JsModule("./js/notification-client.js")
 public class ReceiptView extends VerticalLayout implements BeforeEnterObserver {
 
-    private static final String URL = "http://localhost:8080/api/purchases/";
+    @Value("${url.api}/purchases")
+    private String URL;
+        
     private RecieptDTO receipt;
 
     public ReceiptView() {
@@ -136,7 +140,7 @@ public class ReceiptView extends VerticalLayout implements BeforeEnterObserver {
             return;
         }
 
-        String url = URL + purchaseId;
+        String url = URL + "/" + purchaseId;
         RestTemplate restTemplate = new RestTemplate();
 
         // Add authToken as header if needed, or modify URL with query param

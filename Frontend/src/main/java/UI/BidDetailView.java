@@ -2,6 +2,8 @@ package UI;
 
 import java.util.Optional;
 
+import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Value; 
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -41,7 +43,11 @@ public class BidDetailView extends VerticalLayout implements BeforeEnterObserver
     private BidRecieptDTO bid;              // loaded DTO
 
     private final RestTemplate rest = new RestTemplate();
-    private static final String BID_API_URL = "http://localhost:8080/api/purchases/bids";
+
+    @Value("${url.api}")
+    private String apiBase;    
+    
+    private String BID_API_URL;   
 
     // Read‐only fields for bid details
     private final TextField purchaseIdField = new TextField("Bid ID");
@@ -57,6 +63,12 @@ public class BidDetailView extends VerticalLayout implements BeforeEnterObserver
             new com.vaadin.flow.component.button.Button("Place Bid");
     private final com.vaadin.flow.component.button.Button finalizeBidButton =
             new com.vaadin.flow.component.button.Button("Finalize Bid");
+
+    
+    @PostConstruct
+    private void init() {
+        BID_API_URL = apiBase + "/purchases/bids";
+    }
 
     public BidDetailView() {
         setPadding(true);

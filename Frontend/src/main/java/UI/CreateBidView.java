@@ -27,6 +27,7 @@ import com.vaadin.flow.router.NotFoundException;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
+import org.springframework.beans.factory.annotation.Value;
 
 import DTOs.ItemDTO;
 import DTOs.ShopDTO;
@@ -45,8 +46,12 @@ public class CreateBidView extends VerticalLayout implements BeforeEnterObserver
     private Map<ItemDTO, Double> prices;            // map of item→price
 
     private final RestTemplate rest = new RestTemplate();
-    private static final String SHOP_API_URL   = "http://localhost:8080/api/shops";
-    private static final String CREATE_BID_URL = "http://localhost:8080/api/purchases/bids";
+    
+    @Value("${url.api}/shops")
+    private String SHOP_API_URL;
+
+    @Value("${url.api}/purchases/bids")
+    private String CREATE_BID_URL;
 
     // For each item, we store a NumberField so we can read its numeric quantity later
     private final Map<ItemDTO, NumberField> qtyFields = new HashMap<>();

@@ -15,6 +15,7 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
+import org.springframework.beans.factory.annotation.Value;
 
 import DTOs.ShopDTO;
 
@@ -31,9 +32,14 @@ import java.util.List;
 @JsModule("./js/notification-client.js")
 public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
 
-    private static final String BASE_URL = "http://localhost:8080/api/shops";
-    private static final String GET_ALL = BASE_URL + "/all";
-    private static final String CREATE = BASE_URL + "/create";
+    @Value("${url.api}/shops")
+    private String BASE_URL;
+
+    @Value("${url.api}/shops/all")
+    private String GET_ALL;
+
+    @Value("${url.api}/shops/create")
+    private String CREATE;
 
     private final RestTemplate restTemplate = new RestTemplate();
     private List<ShopDTO> allShops;

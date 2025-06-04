@@ -23,14 +23,19 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
+import org.springframework.beans.factory.annotation.Value;
+
 
 import DTOs.BidRecieptDTO;
+import jakarta.annotation.PostConstruct;
 
 @Route(value = "bids", layout = AppLayoutBasic.class)
 @AnonymousAllowed
 public class BidsListView extends VerticalLayout {
 
-    private final String BASE_URL = "http://localhost:8080/api/purchases/bids";
+    @Value("${url.api}/purchases/bids")
+    private String BASE_URL;
+
     private final RestTemplate restTemplate = new RestTemplate();
     private final Grid<BidRecieptDTO> bidGrid = new Grid<>(BidRecieptDTO.class, false);
 
@@ -68,6 +73,10 @@ public class BidsListView extends VerticalLayout {
             }
         });
 
+    }
+
+    @PostConstruct
+    private void init() {
         fetchAllBids();
     }
 

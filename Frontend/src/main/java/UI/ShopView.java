@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -40,7 +41,12 @@ import DTOs.ShopReviewDTO;
 @JsModule("./js/notification-client.js")
 public class ShopView extends VerticalLayout implements HasUrlParameter<String>, BeforeEnterObserver {
 
-    private static final String SHOP_API_URL = "http://localhost:8080/api/shops";
+    @Value("${url.api}/shops")
+    private String SHOP_API_URL;    
+
+    @Value("${url.api}/purchases/shops")
+    private String PURCHASE_HISTORY_URL;
+
     private final RestTemplate restTemplate = new RestTemplate();
     private ShopDTO shop;
     private Map<ItemDTO, Double> prices;
@@ -102,10 +108,8 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
             // Therefore we must call:
             //    GET /api/purchases/shops/{shopId}/bids?authToken=<token>
             //
-            String url = "http://localhost:8080/api/purchases/shops/"
-                    + shop.getShopId()
-                    + "/bids?authToken="
-                    + authToken;
+            String url = PURCHASE_HISTORY_URL + "/" + shop.getShopId() + "/bids?authToken=" + authToken;
+
 
             // 3. Prepare headers (JSON)
             HttpHeaders headers = new HttpHeaders();

@@ -15,7 +15,9 @@ import com.vaadin.flow.server.VaadinSession;
 
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+
 
 import DTOs.ShopDTO;
 
@@ -28,7 +30,9 @@ import java.util.stream.Collectors;
 @JsModule("./js/notification-client.js")
 public class ShopSearchView extends VerticalLayout implements BeforeEnterObserver {
 
-    private static final String SHOPS_API_URL = "http://localhost:8080/api/shops/all";
+    @Value("${url.api}/shops/all")
+    private String shopsApiUrl;
+    
     private final RestTemplate restTemplate = new RestTemplate();
 
     private final List<ShopDTO> allShops = new ArrayList<>();
@@ -78,7 +82,7 @@ public class ShopSearchView extends VerticalLayout implements BeforeEnterObserve
 
     public void loadShops(String token) {
         try {
-            String url = SHOPS_API_URL + "?token=" + token;
+            String url = shopsApiUrl + "?token=" + token;
             ResponseEntity<ShopDTO[]> response = restTemplate.getForEntity(url, ShopDTO[].class);
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 allShops.clear();

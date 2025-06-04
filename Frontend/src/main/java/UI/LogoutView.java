@@ -19,11 +19,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
+import org.springframework.beans.factory.annotation.Value;
+
 
 @Route("logout")
 public class LogoutView extends VerticalLayout implements BeforeEnterObserver {
 
-    private static final String LOGOUT_API_URL = "http://localhost:8080/api/users/logout";
+    @Value("${url.api}/users/logout")
+    private String LOGOUT_API_URL;
+
     private final RestTemplate restTemplate = new RestTemplate();
 
     @Override

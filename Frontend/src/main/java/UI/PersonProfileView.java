@@ -14,6 +14,8 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
+import org.springframework.beans.factory.annotation.Value;
+
 
 import DTOs.MemberDTO;
 import DTOs.rolesDTO;
@@ -21,9 +23,18 @@ import DTOs.rolesDTO;
 @Route(value = "profile", layout = AppLayoutBasic.class)
 @JsModule("./js/notification-client.js")
 public class PersonProfileView extends VerticalLayout implements BeforeEnterObserver {
-    private static final String USER_URL = "http://localhost:8080/api/users";
-    private static final String NOTIF_URL = "http://localhost:8080/api/users/notifications";
-    private static final String ACCEPT_ROLES_URL = "http://localhost:8080/api/users/getAcceptedRoles";
+
+    @Value("${url.api}/users")
+    private String USER_URL;
+
+    @Value("${url.api}/users/notifications")
+    private String NOTIF_URL;
+
+    @Value("${url.api}/users/getAcceptedRoles")
+    private String ACCEPT_ROLES_URL;
+
+    @Value("${url.api}/shops")
+    private String SHOPS_URL;
 
     private final RestTemplate rest = new RestTemplate();
 
@@ -144,8 +155,9 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
                     if (r.getUserName().equalsIgnoreCase( /* your MemberDTO.getUsername() */ "")) {
                         HorizontalLayout row = new HorizontalLayout();
                         DTOs.ShopDTO shop = rest.getForObject(
-                                "http://localhost:8080/api/shops/" + r.getShopId() + "?authToken=" + token,
-                                DTOs.ShopDTO.class);
+                            SHOPS_URL + "/" + r.getShopId() + "?authToken=" + token,
+                            DTOs.ShopDTO.class);
+
                         String shopName = shop.getName();
                         row.add(
                                 new Span(r.getRoleName() + " @ " + shopName),

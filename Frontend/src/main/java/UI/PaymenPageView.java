@@ -22,6 +22,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.beans.factory.annotation.Value;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +35,10 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
 
     private double totalAmount = 0.0;
     private final RestTemplate restTemplate = new RestTemplate();
-    private final String BASE_URL = "http://localhost:8080/api/";
+
+    @Value("${url.api}")
+    private String BASE_URL;
+
     private String country;
     private String city;
     private String street;
@@ -70,7 +75,7 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
 
     private PaymentMethodDTO getUserPaymentMethod() {
         String token = getToken();
-        String url = BASE_URL + "payment-method?authToken=" + token;
+        String url = BASE_URL + "/payment-method?authToken=" + token;
 
         ResponseEntity<PaymentMethodDTO> response = restTemplate.getForEntity(url, PaymentMethodDTO.class);
         if (response.getStatusCode() == HttpStatus.OK) {
