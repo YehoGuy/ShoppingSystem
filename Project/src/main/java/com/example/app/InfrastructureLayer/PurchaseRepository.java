@@ -41,7 +41,7 @@ public class PurchaseRepository implements IPurchaseRepository {
         return instance;
     }
 
-    private PurchaseRepository() {
+    public PurchaseRepository() {
         this.purchaseStorage = new ConcurrentHashMap<>();
     }
 
