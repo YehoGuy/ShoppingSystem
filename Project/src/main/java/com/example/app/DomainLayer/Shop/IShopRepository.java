@@ -8,7 +8,6 @@ import com.example.app.ApplicationLayer.Purchase.ShippingMethod;
 import com.example.app.DomainLayer.Item.ItemCategory;
 import com.example.app.DomainLayer.Shop.Discount.Discount;
 import com.example.app.DomainLayer.Shop.Discount.Policy;
-import com.example.app.PresentationLayer.DTO.Shop.PoliciesDTO;
 
 public interface IShopRepository {
 
