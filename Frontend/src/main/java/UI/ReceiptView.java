@@ -1,5 +1,14 @@
 package UI;
 
+import java.util.HashMap;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.html.Div;
@@ -7,24 +16,13 @@ import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.router.*;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
-
-import DTOs.PurchaseDTO;
-import DTOs.RecieptDTO;
-import DTOs.AddressDTO;
-
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
+import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
-import org.springframework.beans.factory.annotation.Value;
+
+import DTOs.AddressDTO;
+import DTOs.RecieptDTO;
 
 
 @Route("receipt")
@@ -155,7 +153,7 @@ public class ReceiptView extends VerticalLayout implements BeforeEnterObserver {
                     entity,
                     RecieptDTO.class);
 
-            if (response.getStatusCode() == HttpStatus.OK) {
+            if (response.getStatusCode().is2xxSuccessful()) {
                 receipt = response.getBody();
             } else {
                 Notification.show("Failed to fetch receipt: " + response.getStatusCode());

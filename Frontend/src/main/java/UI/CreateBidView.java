@@ -5,11 +5,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
@@ -27,7 +27,6 @@ import com.vaadin.flow.router.NotFoundException;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
-import org.springframework.beans.factory.annotation.Value;
 
 import DTOs.ItemDTO;
 import DTOs.ShopDTO;
@@ -94,7 +93,7 @@ public class CreateBidView extends VerticalLayout implements BeforeEnterObserver
         String url = SHOP_API_URL + "/" + shopId + "?token=" + token;
         try {
             ResponseEntity<ShopDTO> resp = rest.getForEntity(url, ShopDTO.class);
-            if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 shop = resp.getBody();
                 // Build the item→price map (ShopDTO provides getItems() and getItemPrices())
                 prices = ShopDTO.itemPricesToMapConverter(

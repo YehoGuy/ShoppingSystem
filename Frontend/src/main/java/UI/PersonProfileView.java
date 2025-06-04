@@ -111,7 +111,7 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
             ResponseEntity<MemberDTO> resp = rest.getForEntity(
                     USER_URL + "/" + profileUserId + "?token=" + token,
                     MemberDTO.class);
-            if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 MemberDTO memberDTO = resp.getBody();
                 detailsLayout.add(
                         new Span("User ID: " + memberDTO.getMemberId()),
@@ -132,7 +132,7 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
             ResponseEntity<String[]> resp = rest.getForEntity(
                     NOTIF_URL + "?authToken=" + token,
                     String[].class);
-            if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 for (String note : resp.getBody()) {
                     notificationsLayout.add(new Span("• " + note));
                 }
@@ -150,7 +150,7 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
             ResponseEntity<rolesDTO[]> resp = rest.getForEntity(
                     ACCEPT_ROLES_URL + "?authToken=" + token,
                     rolesDTO[].class);
-            if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 for (rolesDTO r : resp.getBody()) {
                     if (r.getUserName().equalsIgnoreCase( /* your MemberDTO.getUsername() */ "")) {
                         HorizontalLayout row = new HorizontalLayout();

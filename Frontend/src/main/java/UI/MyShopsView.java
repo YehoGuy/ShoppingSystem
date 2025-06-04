@@ -1,5 +1,15 @@
 package UI;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.JsModule;
@@ -15,18 +25,8 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
-import org.springframework.beans.factory.annotation.Value;
 
 import DTOs.ShopDTO;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
-
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
 
 @Route(value = "myshops", layout = AppLayoutBasic.class)
 @JsModule("./js/notification-client.js")
@@ -74,8 +74,6 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
                 .set("gap", "10px");
         add(shopsContainer);
 
-        // Initial load
-        loadShops();
     }
 
     @Override
@@ -84,6 +82,7 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
         if (token == null) {
             event.forwardTo("login");
         }
+        loadShops();
         UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m => m.connectNotifications($0))",
                 getUserId());
     }
@@ -96,7 +95,7 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
         try {
             ResponseEntity<ShopDTO[]> resp = restTemplate.getForEntity(GET_ALL + "?token=" + token, ShopDTO[].class);
-            if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 allShops = Arrays.asList(resp.getBody());
                 filterAndDisplay();
             } else {

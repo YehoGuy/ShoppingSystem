@@ -7,11 +7,11 @@ package UI;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
@@ -23,8 +23,6 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
-import org.springframework.beans.factory.annotation.Value;
-
 
 import DTOs.BidRecieptDTO;
 import jakarta.annotation.PostConstruct;
@@ -101,7 +99,7 @@ public class BidsListView extends VerticalLayout {
                     new ParameterizedTypeReference<>() {}
             );
 
-            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 bidGrid.setItems(response.getBody());
             } else {
                 add(new Text("Failed to load bids: " + response.getStatusCode()));
