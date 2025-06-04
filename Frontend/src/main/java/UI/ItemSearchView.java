@@ -104,7 +104,7 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
                 new ParameterizedTypeReference<List<ItemDTO>>() {
                 });
 
-        if (response.getStatusCode() == HttpStatus.OK) {
+        if (response.getStatusCode().is2xxSuccessful()) {
             List<ItemDTO> items = response.getBody();
             allItems.clear();
             if (items != null && !items.isEmpty()) {

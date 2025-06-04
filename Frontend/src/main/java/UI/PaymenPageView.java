@@ -1,7 +1,9 @@
 package UI;
 
-import com.vaadin.flow.router.Route;
-import DTOs.PaymentMethodDTO;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -13,20 +15,9 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
-import com.vaadin.flow.router.BeforeEvent;
-import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.server.VaadinSession;
 
-import org.springframework.boot.autoconfigure.security.SecurityProperties.User;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.beans.factory.annotation.Value;
-
-
-import java.util.ArrayList;
-import java.util.List;
+import DTOs.PaymentMethodDTO;
 
 @JsModule("./js/notification-client.js")
 public class PaymenPageView extends VerticalLayout implements BeforeEnterObserver {
@@ -78,7 +69,7 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         String url = BASE_URL + "/payment-method?authToken=" + token;
 
         ResponseEntity<PaymentMethodDTO> response = restTemplate.getForEntity(url, PaymentMethodDTO.class);
-        if (response.getStatusCode() == HttpStatus.OK) {
+        if (response.getStatusCode().is2xxSuccessful()) {
             PaymentMethodDTO paymentMethod = response.getBody();
             if (paymentMethod != null) {
                 return paymentMethod; // Return the first payment method

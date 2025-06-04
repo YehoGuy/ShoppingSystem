@@ -9,7 +9,6 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
@@ -30,10 +29,10 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.OptionalParameter;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.VaadinSession;                  // for Map.Entry
+import com.vaadin.flow.server.VaadinSession;
 
-import DTOs.BidRecieptDTO;                 // if you use List elsewhere
-import DTOs.ItemDTO;
+import DTOs.BidRecieptDTO;                  // for Map.Entry
+import DTOs.ItemDTO;                 // if you use List elsewhere
 import DTOs.ShopDTO;
 import DTOs.ShopReviewDTO;
 
@@ -75,7 +74,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         String url = SHOP_API_URL + "/" + shopId + "?token=" + token;
         try {
             ResponseEntity<ShopDTO> resp = restTemplate.getForEntity(url, ShopDTO.class);
-            if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 shop = resp.getBody();
                 prices = ShopDTO.itemPricesToMapConverter(shop.getItems(), shop.getItemPrices());
                 buildPage();
@@ -125,7 +124,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
             );
 
             // 5. If 200 OK, bind the response body (List<BidRecieptDTO>) to the grid
-            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 shopBidsGrid.setItems(response.getBody());
             } else {
                 // If we get a 4xx or 5xx, show an error header

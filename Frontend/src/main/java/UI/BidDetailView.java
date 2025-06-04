@@ -2,7 +2,6 @@ package UI;
 
 import java.util.Optional;
 
-import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value; 
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -26,6 +25,7 @@ import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 
 import DTOs.BidRecieptDTO;
+import jakarta.annotation.PostConstruct;
 
 /**
  * Route: /bid/{bidId}
@@ -120,7 +120,7 @@ public class BidDetailView extends VerticalLayout implements BeforeEnterObserver
                     new HttpEntity<>(new HttpHeaders()),
                     BidRecieptDTO.class
             );
-            if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 bid = resp.getBody();
             } else if (resp.getStatusCode() == HttpStatus.NOT_FOUND) {
                 bid = null;

@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
@@ -28,8 +29,6 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
-import org.springframework.beans.factory.annotation.Value;
-
 
 import DTOs.MemberDTO;
 import DTOs.MessageDTO;
@@ -233,7 +232,7 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
         try {
             ResponseEntity<String[]> resp = rest.getForEntity(
                     NOTIFICATIONS_URL + "?authToken=" + token, String[].class);
-            if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 String[] notes = resp.getBody();
                 if (notes.length > 0) {
                     for (String note : notes) {
@@ -261,7 +260,7 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
                     PENDING_ROLES_URL + "?authToken=" + token,
                     rolesDTO[].class);
 
-            if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 rolesDTO[] roles = resp.getBody();
 
                 if (roles.length > 0) {

@@ -3,6 +3,10 @@ package UI;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.details.Details;
@@ -17,11 +21,6 @@ import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.theme.lumo.LumoUtility;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
 
 import DTOs.RecieptDTO;
 
@@ -75,7 +74,7 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
                 + VaadinSession.getCurrent().getAttribute("authToken");
         try {
             ResponseEntity<RecieptDTO[]> resp = rest.getForEntity(url, RecieptDTO[].class);
-            if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 RecieptDTO[] receipts = resp.getBody();
                 if (receipts.length == 0) {
                     receiptsLayout.add(new H3("No purchase history for this shop."));
