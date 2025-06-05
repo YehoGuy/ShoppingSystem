@@ -218,6 +218,7 @@ public class UserServiceTest {
         assertTrue(userService.pay(token, 1, 100.0));
     }
 
+    // *env* Concurrency stress test: spawn 50 threads to call addGuest() simultaneously and verify that the shared repository remains consistent (i.e., thread-safe behavior under concurrent guest additions)
     @Test
     void testConcurrentAddGuest() throws InterruptedException {
         int threads = 50;
@@ -241,6 +242,7 @@ public class UserServiceTest {
         assertEquals(threads + 1, userRepository.getUserMapping().size()); // +1 for the default admin
     }
 
+    // *env* Concurrency stress test: launch 50 threads to call addMember(...) simultaneously and ensure the shared repository remains consistent (i.e., thread-safe behavior under concurrent member additions)
     @Test
     void testConcurrentAddMembers() throws InterruptedException {
         int threads = 50;
@@ -266,6 +268,7 @@ public class UserServiceTest {
         assertEquals(threads + 1, userRepository.getUserMapping().size()); // +1 for default admin
     }
 
+    // *env* Concurrency stress test: spawn 100 threads that randomly add or remove the same admin ID in parallel, verifying that the repository remains consistent (i.e., thread-safe behavior under concurrent add/remove operations)
     @Test
     void testConcurrentAddRemoveAdmin() throws InterruptedException {
         int userId = userRepository.isUsernameAndPasswordValid("admin", "admin");
@@ -3849,6 +3852,7 @@ public class UserServiceTest {
         userService.clearShoppingCart(guestToken);
     }
 
+    // Combined concurrency stress test: first spawn 50 threads to add guests, then spawn 50 threads to add members, ensuring the repository remains consistent under mixed parallel operations
     @Test
     void testConcurrencyGuestsAndMembers() throws InterruptedException {
         final int threads = 50;
