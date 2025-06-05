@@ -35,8 +35,8 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
     @Value("${url.api}/shops")
     private String BASE_URL;
 
-    @Value("${url.api}/shops/all")
-    private String GET_ALL;
+    @Value("${url.api}/shops/ByWorkerId")
+    private String GET_SHOPS;
 
     @Value("${url.api}/shops/create")
     private String CREATE;
@@ -92,13 +92,20 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
     }
 
     private String getUserId() {
-        return VaadinSession.getCurrent().getAttribute("userId").toString();
+        if (VaadinSession.getCurrent().getAttribute("userId") == null) {
+            Notification.show("You are not connected!");
+            getUI().ifPresent(ui -> ui.navigate(""));
+        } else
+            return VaadinSession.getCurrent().getAttribute("userId").toString();
+        return "";
     }
 
     private void loadShops() {
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
         try {
-            ResponseEntity<ShopDTO[]> resp = restTemplate.getForEntity(GET_ALL + "?token=" + token, ShopDTO[].class);
+            System.out.println("url: " + GET_SHOPS + "?workerId=" + getUserId() + "&token=" + token);
+            ResponseEntity<ShopDTO[]> resp = restTemplate
+                    .getForEntity(GET_SHOPS + "?workerId=" + getUserId() + "&token=" + token, ShopDTO[].class);
             if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 allShops = Arrays.asList(resp.getBody());
                 filterAndDisplay();
@@ -178,6 +185,7 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
             shopsContainer.add(row);
         }
     }
+
     private void handleSuspence() {
         Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
         if (userId == null) {
@@ -187,15 +195,14 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/"+userId+"/suspension?token=" +token;
+        String url = "http://localhost:8080/api/users" + "/" + userId + "/suspension?token=" + token;
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
         } else {
             throw new RuntimeException(
-                "Failed to check admin status: HTTP " + response.getStatusCode().value()
-            );
+                    "Failed to check admin status: HTTP " + response.getStatusCode().value());
         }
     }
 }
