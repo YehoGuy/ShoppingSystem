@@ -1,21 +1,42 @@
 package com.example.app.DomainLayer.Purchase;
 
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Entity
+@Table(name = "purchases")
 public class Purchase {
 
-    protected final int purchaseId;                     // purchase ID
-    protected final int userId;                        // initiating user ID
-    protected final int storeId;                      // store ID
-    protected final ConcurrentHashMap<Integer, Integer> items; // itemId -> quantity
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "purchase_id", nullable = false, unique = true)
+    protected int purchaseId;                     // purchase ID
+    
+    @Column(name = "user_id", nullable = false)
+    protected int userId;                        // initiating user ID
+    
+    @Column(name = "store_id", nullable = false)
+    protected int storeId;                      // store ID
+    
+    @Transient
+    protected ConcurrentHashMap<Integer, Integer> items = new ConcurrentHashMap<>(); // itemId -> quantity
+    
+    @OneToOne(cascade = CascadeType.ALL)    
+    @JoinColumn(name = "zip_code", referencedColumnName = "zip_code", nullable = false) ///does is enough for referencing?
     protected Address shippingAddress;              // shipping address
+    
+    @Column(name = "is_completed", nullable = false)
     protected boolean isCompleted;                 // purchase status   
+    
+    @Column(name = "time_of_completion", nullable = true)
     protected LocalDateTime timeOfCompletion;     // time of purchase completion
 
-    protected double price = 0; // total price of the purchase
+    @Column(name = "price", nullable = false)
+    protected double price = 0.0; // total price of the purchase
       
+    public Purchase(){}
 
     /**
      * Constructs a new {@code Purchase} with the specified user ID, store ID, and items.
@@ -28,7 +49,6 @@ public class Purchase {
         this.purchaseId = purchaseId;
         this.userId = userId;
         this.storeId = storeId;
-        this.items = new ConcurrentHashMap<>(items);
         this.shippingAddress = shippingAddress;
         this.isCompleted = false;
         this.price = price;
@@ -46,7 +66,6 @@ public class Purchase {
         this.purchaseId = purchaseId;
         this.userId = userId;
         this.storeId = storeId;
-        this.items = new ConcurrentHashMap<>();
         this.shippingAddress = shippingAddress;
         this.isCompleted = false;
         this.price = -1;

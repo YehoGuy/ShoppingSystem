@@ -1,5 +1,7 @@
 package com.example.app.DomainLayer.Purchase;
 
+import jakarta.persistence.*;
+
 /**
  * The {@code Address} class represents a physical real-world address in the shopping system.
  * 
@@ -27,15 +29,23 @@ package com.example.app.DomainLayer.Purchase;
  * }</pre>
  * 
  */
+
+@Entity
+@Table(name = "addresses")
 public class Address {
     
+    @Column(name = "country", nullable = false)
     protected String Country;
+    @Column(name = "city", nullable = false)
     protected String City;
+    @Column(name = "street", nullable = false)
     protected String Street;
+    @Column(name = "house_number", nullable = false)
     protected String HouseNumber;
+    @Column(name = "apartment_number", nullable = false)
     protected String ApartmentNumber;
+    @Column(name = "zip_code", nullable = false)
     protected String ZipCode;
-
 
 
     /**

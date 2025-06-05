@@ -1,13 +1,31 @@
 package com.example.app.DomainLayer.Roles;
 
+import jakarta.persistence.*;
 import java.util.Arrays;
-
+///////////////////not finished yet
+@Entity
+@Table(name = "roles")
 public class Role {
 
-    private final int assigneeId;
-    private final int shopId;
+    @Column(name = "assignee_id", nullable = false)
+    private int assigneeId;
+
+    @Column(name = "shop_id", nullable = false)
+    private int shopId;
+
+    /**
+     * Flatten an array of enums into a CSV‐string column. 
+     */
+    @Column(name = "permissions", columnDefinition = "")
+    private String permissionsCsv;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private PermissionsEnum[] permissions;
-    private final Object lock = new Object(); // lock object for synchronization
+
+    private final Object lock = new Object();
+
+    public Role() { }
 
     /**
      * Constructor for Role class.

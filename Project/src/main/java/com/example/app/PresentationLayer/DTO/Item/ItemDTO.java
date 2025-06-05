@@ -31,7 +31,7 @@ public record ItemDTO(
     public com.example.app.DomainLayer.Item.Item toDomain() {
         com.example.app.DomainLayer.Item.Item i = new com.example.app.DomainLayer.Item.Item(
                 id, name, description,
-                com.example.app.DomainLayer.Item.ItemCategory.valueOf(category).ordinal()
+                com.example.app.DomainLayer.Item.ItemCategory.valueOf(category)
         );
         reviews.forEach(r -> i.addReview(r.toDomain()));
         return i;

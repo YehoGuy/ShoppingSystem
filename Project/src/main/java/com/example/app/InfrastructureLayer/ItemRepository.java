@@ -26,7 +26,8 @@ public class ItemRepository implements IItemRepository {
     @Override
     public Integer createItem(String name, String description, Integer category) {
         int id = itemIdCounter.getAndIncrement();
-        Item item = new Item(id, name, description, category);
+        ItemCategory itemCategory = ItemCategory.values()[category];
+        Item item = new Item(id, name, description, itemCategory);
         Item previous = items.putIfAbsent(id, item);
         if (previous != null) {
             // Should never happen unless IDs clash

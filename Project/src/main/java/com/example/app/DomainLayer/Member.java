@@ -11,19 +11,46 @@ import com.example.app.DomainLayer.Purchase.Address;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
 
+import jakarta.persistence.*;
+
+@Entity
+@DiscriminatorValue("MEMBER")
 public class Member extends User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     final private int memberId;
+
+    @Column(name = "username", nullable = false, unique = true)
     private volatile String username; // Username of the user
+
+    @Column(name = "password", nullable = false)
     private volatile String password; // Password of the user
+
+    @Column(name = "email", nullable = false, unique = true)
     private volatile String email; // Email address of the user
+
+    @Column(name = "phone_number", nullable = false, unique = true)
     private volatile String phoneNumber; // Phone number of the user
+
+
     private volatile LocalDateTime suspended; // Suspension status of the user
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "role_name")
     private final List<Role> roles; // List of roles associated with the user
+   
+   
     private final List<Integer> orderHistory;// List of order IDs
+
+
     private final List<Role> pending_roles; // List of pending roles not yet confirmed/declined by the user
+    
+    
     private final List<Notification> notifications; // List of notifications for the user
 
+    @Column(name = "is_connected", nullable = false)
     private boolean isConnected; // Connection status of the user, used for notification purposes
 
     private final Object rolesLock = new Object();

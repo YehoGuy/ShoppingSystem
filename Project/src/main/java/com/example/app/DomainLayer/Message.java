@@ -1,14 +1,36 @@
 package com.example.app.DomainLayer;
 
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "messages")
 public class Message {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private final int messageId;
+
+    @Column(name = "sender_id", nullable = false)
     private final int senderId; // User ID of the sender
+    
+    @Column(name = "receiver_id", nullable = false)
     private final int receiverId; // User/Shop ID of the receiver (depends on userToUser flag)
+    
+    @Column(columnDefinition = "", nullable = false)
     private final String content; // Message content
+    
+    @Column(name = "timestamp", nullable = false)
     private final String timestamp; // Timestamp of when the message was sent
+    
+    @Column(name = "user_to_user", nullable = false)
     private final boolean userToUser; // true if the message is between users, false if it's User to Shop
+    
+    @Column(name = "previous_message_id", nullable = false)
     private final int previousMessageId; // ID of the previous message in the conversation, -1 if none
+    
+    @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted; // Flag to indicate if the message is deleted
+    
     private final Object lock = new Object(); // Synchronization lock
 
     public Message(int messageId, int senderId, int receiverId, String content, String timestamp, boolean userToUser, int previousMessageId) {

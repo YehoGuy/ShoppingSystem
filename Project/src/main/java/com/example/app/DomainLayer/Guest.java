@@ -1,5 +1,9 @@
 package com.example.app.DomainLayer;
 
+import jakarta.persistence.*;
+
+@Entity
+@DiscriminatorValue("Guest")
 public class Guest extends User {
     final private int guestId; // Unique identifier for the guest user
 

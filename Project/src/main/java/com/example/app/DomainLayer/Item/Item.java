@@ -1,55 +1,81 @@
 package com.example.app.DomainLayer.Item;
 
+import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Represents an item that contains an id, name, description, category, and a list of reviews.
- */
+@Entity
+@Table(name = "items")
 public class Item {
 
-    private final int id;
-    private final String name;
-    private final String description;
-    private final ItemCategory category;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
 
-    // List to hold reviews.
-    private final List<ItemReview> reviews = new ArrayList<>();
+    @Column(nullable = false)
+    private String name;
 
-    public Item(int id, String name, String description, Integer category) {
+    @Column(columnDefinition = "", nullable = false)
+    private String description;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ItemCategory category;
+ 
+    @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<ItemReview> reviews = new ArrayList<>();
+
+    public Item() { }
+
+    public Item(Integer id, String name, String description, ItemCategory category) {
         this.id = id;
         this.name = name;
         this.description = description;
-        // Convert the integer category to ItemCategory enum.
-        this.category = ItemCategory.values()[category];
+        this.category = category;
+        this.reviews = new ArrayList<>();
     }
 
-    public int getId() {
+    // ──────────────────────────────────────────────────────────────────────────────
+    // Getters & setters for all persisted fields:
+    // ──────────────────────────────────────────────────────────────────────────────
+    public Integer getId() {
         return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
     }
 
     public String getName() {
         return name;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public String getDescription() {
         return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public ItemCategory getCategory() {
         return category;
     }
 
-    /**
-     * Returns an unmodifiable view of the reviews.
-     *
-     * @return a list of reviews.
-     */
+    public void setCategory(ItemCategory category) {
+        this.category = category;
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────────
+    // In‐memory reviews (JPA ignores them):
+    // ──────────────────────────────────────────────────────────────────────────────
     public List<ItemReview> getReviews() {
-        synchronized (reviews) {
-            return Collections.unmodifiableList(new ArrayList<>(reviews));
-        }
+        return Collections.unmodifiableList(reviews);
     }
 
     /**
@@ -73,21 +99,14 @@ public class Item {
         }
     }
 
-    /**
-     * Calculates and returns the average rating.
-     *
-     * @return the average rating, or -1.0 if there are no reviews.
-     */
+    // ──────────────────────────────────────────────────────────────────────────────
+    // Other business logic unchanged:
+    // ──────────────────────────────────────────────────────────────────────────────
     public double getAverageRating() {
-        List<ItemReview> currentReviews = getReviews();
-        if (currentReviews.isEmpty()) {
-            return 0.0;
-        }
+        if (reviews.isEmpty()) return 0.0;
         int sum = 0;
-        for (ItemReview review : currentReviews) {
-            sum += review.getRating();
-        }
-        return (double) sum / currentReviews.size();
+        for (ItemReview r : reviews) sum += r.getRating();
+        return (double) sum / reviews.size();
     }
 
     @Override
@@ -97,8 +116,7 @@ public class Item {
                ", name='" + name + '\'' +
                ", description='" + description + '\'' +
                ", category=" + category +
-               ", averageRating=" + getAverageRating() +
-               ", reviews=" + reviews +
+               ", avgRating=" + getAverageRating() +
                '}';
     }
 }

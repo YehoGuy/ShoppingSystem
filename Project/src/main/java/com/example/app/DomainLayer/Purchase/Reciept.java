@@ -1,5 +1,6 @@
 package com.example.app.DomainLayer.Purchase;
 
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -8,17 +9,36 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * This Data Object class represents a receipt for a purchase.
  * It contains information about the items purchased, their prices, the purchase status etc...
  */
+
 public class Reciept {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     protected final int purchaseId;                     // purchase ID
+    
+    @Column(name = "user_id", nullable = false)
     protected final int userId;                        // initiating user ID
+    
+    @Column(name = "store_id", nullable = false)
     protected final int storeId;                      // store ID
+    
+    @Transient
     protected final Map<Integer, Integer> items; // itemId -> quantity
+    
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "zip_code")
     protected final Address shippingAddress;              // shipping address
+    
+    @Column(name = "is_completed", nullable = false)
     protected final AtomicBoolean isCompleted;                 // purchase status   
+    
+    @Column(name = "time_of_completion", nullable = false)
     protected final LocalDateTime timeOfCompletion;     // time of purchase completion
+    
+    @Column(name = "price", nullable = false)
     protected final double price; // total price of the purchase
 
     // very important to make sure a reciept is concurrent עכשווית
+    @Column(name = "timestamp_of_reciept_generation", nullable = false)
     protected final LocalDateTime timestampOfRecieptGeneration; // time of receipt generation!!
 
     /**

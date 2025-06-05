@@ -3,10 +3,18 @@ package com.example.app.DomainLayer;
 import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
 import com.example.app.DomainLayer.Purchase.Address;
 
+import jakarta.persistence.*;
 
+@Entity
+@Table(name = "users")
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "user_type", discriminatorType = DiscriminatorType.STRING)
 public abstract class User {
     protected ShoppingCart shoppingCart; // Shopping cart associated with the user
     protected PaymentMethod paymentMethod; // Payment method associated with the user
+
+    @Column(name = "address", nullable = true)
+    @Embedded
     protected Address address; // Shipping address associated with the user
 
     public User(int cartId) {

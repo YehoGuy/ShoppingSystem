@@ -20,14 +20,24 @@ import com.example.app.DomainLayer.Shop.Discount.PolicyLeaf;
 import com.example.app.DomainLayer.Shop.Discount.SingleDiscount;
 import com.example.app.DomainLayer.Shop.Discount.TriPredicate;
 
+import jakarta.persistence.*;
+
 /**
  * The Shop class representing a shop entity in your system.
  * It supports safe concurrent modifications and multi-threaded access.
  */
+
+@Entity
+@Table(name = "shops")
 public class Shop {
 
     // Immutable fields (set once at construction).
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "shop_id", nullable = false, unique = true)
     private final int id;
+
+    @Column(name = "shop_name", nullable = false)
     private final String name;
 
     private final List<Discount> discounts;

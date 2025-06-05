@@ -1,17 +1,48 @@
 package com.example.app.DomainLayer.Purchase;
 
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@Entity
+@Table(name = "bids")
+@PrimaryKeyJoinColumn(name = "purchase_BID_id")
 public class Bid extends Purchase{
 
-    private final AtomicInteger initialPrice;
-    private final ConcurrentHashMap<Integer,Object> biddersIds = new ConcurrentHashMap<>();
-    private final AtomicInteger highestBid; // initialPrice if no Bidder
-    private final AtomicInteger highestBidderId; // -1 if no Bidder
+    /** 
+     * Notice: we do NOT put @Id here. 
+     * JPA will inherit purchaseId from Purchase and store it in column purchase_BID_id in this table.
+     **/
+
+    // Persisted as a normal INT column
+    @Column(name = "initial_price", nullable = false)
+    private int initialPriceForJPA; // initial price of the bid
+
+    // This is purely in‐memory; JPA will ignore it
+    @Transient
+    private AtomicInteger initialPrice;
+    
+    @Transient
+    private ConcurrentHashMap<Integer,Object> biddersIds = new ConcurrentHashMap<>();
+    
+    @Column(name = "highest_bid", nullable = false)
+    private int highestBidForJPA; // highest bid of the bid
+
+    @Transient
+    private AtomicInteger highestBid; // initialPrice if no Bidder
+
+    @Column(name = "highest_bidder_id", nullable = false)
+    private int highestBidderIdForJPA; // ID of the user with the highest bid
+
+    @Transient
+    private AtomicInteger highestBidderId; // -1 if no Bidder
+
+
+    public Bid() {}
+    
     /**
      * Constructs a new {@code Bid} with the specified user ID, store ID, and items.
      *
@@ -24,6 +55,10 @@ public class Bid extends Purchase{
         this.initialPrice = new AtomicInteger(initialPrice);
         highestBid = new AtomicInteger(initialPrice);
         highestBidderId = new AtomicInteger(-1);
+
+        this.initialPriceForJPA = this.initialPrice.get();
+        this.highestBidForJPA = this.highestBid.get();
+        this.highestBidderIdForJPA = this.highestBidderId.get();
     }
 
     /**
@@ -40,6 +75,10 @@ public class Bid extends Purchase{
                 highestBid.set(bidAmount);
                 highestBidderId.set(userId);
                 biddersIds.put(userId, Boolean.TRUE);   // ← ALWAYS non-null, thread-safe marker
+
+                // Update JPA fields
+                this.highestBidForJPA = this.highestBid.get();
+                this.highestBidderIdForJPA = this.highestBidderId.get();
             }
         }
     }
@@ -92,7 +131,4 @@ public class Bid extends Purchase{
     public int getHighestBidderId() {
         return highestBidderId.get();
     }
-
-
-
 }
