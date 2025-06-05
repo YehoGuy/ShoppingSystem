@@ -1443,90 +1443,91 @@ class ShopServiceAcceptanceTests {
         assertTrue(ex.getMessage().contains("Error removing global discount for shop"));
     }
 
-    // This test verifies that setDiscountPolicy correctly transforms a CompositePolicyDTO containing three leaf policies
     @Test
     void testSetDiscountPolicy_ThreeLeafPolicies() throws Exception {
         String token = "tok";
         int shopId = 100;
         int userId = 42;
-
+    
         // Arrange mocks
         when(authTokenService.ValidateToken(token)).thenReturn(userId);
         when(userService.hasPermission(userId, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
-
-        // Create three leaf policies:
-        // 1) Item-level: at least 5 of itemId=10
+    
+        // 1) Create three LeafPolicyDTO instances via DTO setters
+        //    a) Item-level: at least 5 of itemId=10
         LeafPolicyDTO leaf1 = new LeafPolicyDTO();
         leaf1.setThreshold(5);
         leaf1.setItemId(10);
-        // 2) Category-level: at least 3 items in category ELECTRONICS
+    
+        //    b) Category-level: at least 3 items in category ELECTRONICS
         LeafPolicyDTO leaf2 = new LeafPolicyDTO();
         leaf2.setThreshold(3);
         leaf2.setItemCategory(ItemCategory.ELECTRONICS);
-        // 3) Basket-value: total basket >= 50.0
+    
+        //    c) Basket-value: total basket >= 50.0
         LeafPolicyDTO leaf3 = new LeafPolicyDTO();
         leaf3.setBasketValue(50.0);
-
-        // Build an inner composite: leaf2 OR leaf3
+    
+        // 2) Build an inner CompositePolicyDTO for (leaf2 OR leaf3)
         CompositePolicyDTO innerComposite = new CompositePolicyDTO();
         innerComposite.setLeafPolicy1(leaf2);
         innerComposite.setLeafPolicy2(leaf3);
         innerComposite.setOperator(Operator.OR);
-
-        // Build the outer composite: leaf1 AND (leaf2 OR leaf3)
+    
+        // 3) Build the outer CompositePolicyDTO for (leaf1 AND (leaf2 OR leaf3))
         CompositePolicyDTO outerComposite = new CompositePolicyDTO();
         outerComposite.setLeafPolicy1(leaf1);
         outerComposite.setCompoPolicy2(innerComposite);
         outerComposite.setOperator(Operator.AND);
-
-        // Act
+    
+        // Act: call setDiscountPolicy() on the service with the composed DTO
         shopService.setDiscountPolicy(shopId, outerComposite, token);
-
-        // Assert: verify repository was called exactly once with shopId and some Policy
+    
+        // Assert: verify that the repository was invoked exactly once with the expected Policy structure
         ArgumentCaptor<Policy> captor = ArgumentCaptor.forClass(Policy.class);
         verify(shopRepository).setDiscountPolicy(eq(shopId), captor.capture());
-
-        // We expect a PolicyComposite (outer) whose left is a leaf and right is another composite
+    
+        // Extract the captured Policy
         Policy capturedPolicy = captor.getValue();
         assertTrue(capturedPolicy instanceof PolicyComposite, "Top-level policy should be a composite");
-
+    
+        // Top-level composite: left = leaf1, right = (leaf2 OR leaf3)
         PolicyComposite topComposite = (PolicyComposite) capturedPolicy;
         Policy leftLeaf = topComposite.getPolicy1();
-        Policy rightComposite = topComposite.getPolicy2();
-        assertNotNull(leftLeaf, "Left subtree should not be null");
-        assertNotNull(rightComposite, "Right subtree should not be null");
-
-        // Left leaf corresponds to leaf1: threshold=5, itemId=10
-        assertTrue(leftLeaf instanceof PolicyLeaf, "Left subtree should be a leaf");
+        Policy rightBranch = topComposite.getPolicy2();
+        assertNotNull(leftLeaf, "Left subtree must not be null");
+        assertNotNull(rightBranch, "Right subtree must not be null");
+    
+        // Verify leftLeaf corresponds to leaf1: threshold=5, itemId=10
+        assertTrue(leftLeaf instanceof PolicyLeaf, "Left subtree should be a PolicyLeaf");
         PolicyLeaf leftLeafCasted = (PolicyLeaf) leftLeaf;
         assertEquals(5, leftLeafCasted.getThreshold());
         assertEquals(10, leftLeafCasted.getItemId());
-
-        // Right subtree is itself a composite of leaf2 and leaf3
-        assertTrue(rightComposite instanceof PolicyComposite, "Right subtree should be a composite");
-        PolicyComposite middleComposite = (PolicyComposite) rightComposite;
+    
+        // Verify rightBranch is itself a composite of leaf2 and leaf3
+        assertTrue(rightBranch instanceof PolicyComposite, "Right subtree should be a PolicyComposite");
+        PolicyComposite middleComposite = (PolicyComposite) rightBranch;
         Policy middleLeft = middleComposite.getPolicy1();
         Policy middleRight = middleComposite.getPolicy2();
-        assertNotNull(middleLeft);
-        assertNotNull(middleRight);
-
-        // middleLeft matches leaf2: threshold=3, category=ELECTRONICS
-        assertTrue(middleLeft instanceof PolicyLeaf, "Middle left should be a leaf");
+        assertNotNull(middleLeft, "Middle-left subtree must not be null");
+        assertNotNull(middleRight, "Middle-right subtree must not be null");
+    
+        // middleLeft corresponds to leaf2: threshold=3, category=ELECTRONICS
+        assertTrue(middleLeft instanceof PolicyLeaf, "Middle-left should be a PolicyLeaf");
         PolicyLeaf middleLeftLeaf = (PolicyLeaf) middleLeft;
         assertEquals(3, middleLeftLeaf.getThreshold());
         assertNull(middleLeftLeaf.getItemId());
         assertEquals(ItemCategory.ELECTRONICS, middleLeftLeaf.getCategory());
-
-        // middleRight matches leaf3: basketValue=50.0
-        assertTrue(middleRight instanceof PolicyLeaf, "Middle right should be a leaf");
+    
+        // middleRight corresponds to leaf3: basketValue=50.0
+        assertTrue(middleRight instanceof PolicyLeaf, "Middle-right should be a PolicyLeaf");
         PolicyLeaf middleRightLeaf = (PolicyLeaf) middleRight;
         assertNull(middleRightLeaf.getThreshold());
         assertNull(middleRightLeaf.getItemId());
         assertNull(middleRightLeaf.getCategory());
         assertEquals(50.0, middleRightLeaf.getBasketValue());
     }
-
-
+    
 
     // getShopAverageRating – invalid token (OurRuntime path)
     @Test
