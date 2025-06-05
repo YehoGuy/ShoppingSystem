@@ -17,6 +17,8 @@ import org.junit.jupiter.api.AfterEach;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -25,6 +27,8 @@ import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import static org.mockito.Mockito.clearInvocations;
@@ -53,7 +57,12 @@ import com.example.app.DomainLayer.Shop.Operator;
 import com.example.app.DomainLayer.Shop.PurchasePolicy;
 import com.example.app.DomainLayer.Shop.Shop;
 import com.example.app.DomainLayer.Shop.ShopReview;
+import com.example.app.DomainLayer.Shop.Discount.Policy;
+import com.example.app.DomainLayer.Shop.Discount.PolicyComposite;
+import com.example.app.DomainLayer.Shop.Discount.PolicyLeaf;
 import com.example.app.InfrastructureLayer.ShopRepository;
+import com.example.app.PresentationLayer.DTO.Shop.CompositePolicyDTO;
+import com.example.app.PresentationLayer.DTO.Shop.LeafPolicyDTO;
 
 class ShopServiceAcceptanceTests {
 
@@ -1434,33 +1443,89 @@ class ShopServiceAcceptanceTests {
         assertTrue(ex.getMessage().contains("Error removing global discount for shop"));
     }
 
-    // ----- add multiple discount policies in a single shop -----
+    // This test verifies that setDiscountPolicy correctly transforms a CompositePolicyDTO containing three leaf policies
     @Test
-    void testAddThreeDiscountPolicies_Success() throws Exception {
-        String token = "t";
-        int shopId = 20;
-        int userId = 5;
+    void testSetDiscountPolicy_ThreeLeafPolicies() throws Exception {
+        String token = "tok";
+        int shopId = 100;
+        int userId = 42;
 
-        // Arrange: valid token and permission
+        // Arrange mocks
         when(authTokenService.ValidateToken(token)).thenReturn(userId);
         when(userService.hasPermission(userId, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
 
-        // Act: add three distinct discount policies to the same shop
-        shopService.addDiscountPolicy(token, /*discountId=*/1, /*priority=*/10, ItemCategory.BOOKS, 10.0, Operator.AND, shopId);
-        shopService.addDiscountPolicy(token, /*discountId=*/2, /*priority=*/20, ItemCategory.ELECTRONICS, 15.0, Operator.OR, shopId);
-        shopService.addDiscountPolicy(token, /*discountId=*/3, /*priority=*/30, ItemCategory.CLOTHING, 20.0, Operator.AND, shopId);
+        // Create three leaf policies:
+        // 1) Item-level: at least 5 of itemId=10
+        LeafPolicyDTO leaf1 = new LeafPolicyDTO();
+        leaf1.setThreshold(5);
+        leaf1.setItemId(10);
+        // 2) Category-level: at least 3 items in category ELECTRONICS
+        LeafPolicyDTO leaf2 = new LeafPolicyDTO();
+        leaf2.setThreshold(3);
+        leaf2.setItemCategory(ItemCategory.ELECTRONICS);
+        // 3) Basket-value: total basket >= 50.0
+        LeafPolicyDTO leaf3 = new LeafPolicyDTO();
+        leaf3.setBasketValue(50.0);
 
-        // Assert: verify that each call was forwarded to the repository correctly
-        verify(shopRepository).addDiscountPolicy(
-            eq(1), eq(10), eq(ItemCategory.BOOKS), eq(10.0), eq(Operator.AND), eq(shopId)
-        );
-        verify(shopRepository).addDiscountPolicy(
-            eq(2), eq(20), eq(ItemCategory.ELECTRONICS), eq(15.0), eq(Operator.OR), eq(shopId)
-        );
-        verify(shopRepository).addDiscountPolicy(
-            eq(3), eq(30), eq(ItemCategory.CLOTHING), eq(20.0), eq(Operator.AND), eq(shopId)
-        );
+        // Build an inner composite: leaf2 OR leaf3
+        CompositePolicyDTO innerComposite = new CompositePolicyDTO();
+        innerComposite.setLeafPolicy1(leaf2);
+        innerComposite.setLeafPolicy2(leaf3);
+        innerComposite.setOperator(Operator.OR);
+
+        // Build the outer composite: leaf1 AND (leaf2 OR leaf3)
+        CompositePolicyDTO outerComposite = new CompositePolicyDTO();
+        outerComposite.setLeafPolicy1(leaf1);
+        outerComposite.setCompoPolicy2(innerComposite);
+        outerComposite.setOperator(Operator.AND);
+
+        // Act
+        shopService.setDiscountPolicy(shopId, outerComposite, token);
+
+        // Assert: verify repository was called exactly once with shopId and some Policy
+        ArgumentCaptor<Policy> captor = ArgumentCaptor.forClass(Policy.class);
+        verify(shopRepository).setDiscountPolicy(eq(shopId), captor.capture());
+
+        // We expect a PolicyComposite (outer) whose left is a leaf and right is another composite
+        Policy capturedPolicy = captor.getValue();
+        assertTrue(capturedPolicy instanceof PolicyComposite, "Top-level policy should be a composite");
+
+        PolicyComposite topComposite = (PolicyComposite) capturedPolicy;
+        Policy leftLeaf = topComposite.getPolicy1();
+        Policy rightComposite = topComposite.getPolicy2();
+        assertNotNull(leftLeaf, "Left subtree should not be null");
+        assertNotNull(rightComposite, "Right subtree should not be null");
+
+        // Left leaf corresponds to leaf1: threshold=5, itemId=10
+        assertTrue(leftLeaf instanceof PolicyLeaf, "Left subtree should be a leaf");
+        PolicyLeaf leftLeafCasted = (PolicyLeaf) leftLeaf;
+        assertEquals(5, leftLeafCasted.getThreshold());
+        assertEquals(10, leftLeafCasted.getItemId());
+
+        // Right subtree is itself a composite of leaf2 and leaf3
+        assertTrue(rightComposite instanceof PolicyComposite, "Right subtree should be a composite");
+        PolicyComposite middleComposite = (PolicyComposite) rightComposite;
+        Policy middleLeft = middleComposite.getPolicy1();
+        Policy middleRight = middleComposite.getPolicy2();
+        assertNotNull(middleLeft);
+        assertNotNull(middleRight);
+
+        // middleLeft matches leaf2: threshold=3, category=ELECTRONICS
+        assertTrue(middleLeft instanceof PolicyLeaf, "Middle left should be a leaf");
+        PolicyLeaf middleLeftLeaf = (PolicyLeaf) middleLeft;
+        assertEquals(3, middleLeftLeaf.getThreshold());
+        assertNull(middleLeftLeaf.getItemId());
+        assertEquals(ItemCategory.ELECTRONICS, middleLeftLeaf.getCategory());
+
+        // middleRight matches leaf3: basketValue=50.0
+        assertTrue(middleRight instanceof PolicyLeaf, "Middle right should be a leaf");
+        PolicyLeaf middleRightLeaf = (PolicyLeaf) middleRight;
+        assertNull(middleRightLeaf.getThreshold());
+        assertNull(middleRightLeaf.getItemId());
+        assertNull(middleRightLeaf.getCategory());
+        assertEquals(50.0, middleRightLeaf.getBasketValue());
     }
+
 
 
     // getShopAverageRating – invalid token (OurRuntime path)
