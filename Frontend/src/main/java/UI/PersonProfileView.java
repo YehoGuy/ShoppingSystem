@@ -4,10 +4,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -16,12 +18,11 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import org.springframework.beans.factory.annotation.Value;
 
-
 import DTOs.MemberDTO;
 import DTOs.rolesDTO;
 
 @Route(value = "profile", layout = AppLayoutBasic.class)
-@JsModule("./js/notification-client.js")
+@JsModule("./Frontend/frontend/js/notification-client.js")
 public class PersonProfileView extends VerticalLayout implements BeforeEnterObserver {
 
     @Value("${url.api}/users")
@@ -53,8 +54,13 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
             event.forwardTo("login");
             return;
         }
-        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m => m.connectNotifications($0))",
-                getUserId());
+
+        UI.getCurrent().getPage().executeJs("""
+                    import { connectWebSocket } from './Frontend/frontend/js/notification-client.js';
+                    connectWebSocket($0, function(msg) {
+                        $1.$server.showNotificationFromJS(msg);
+                    });
+                """, getUserId(), getElement());
 
         handleSuspence();
 
@@ -71,6 +77,11 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
         loadProfile();
         loadNotifications();
         loadRoles();
+    }
+
+    @ClientCallable
+    public void showNotificationFromJS(String message) {
+        Notification.show(message, 5000, Notification.Position.TOP_CENTER);
     }
 
     private String getUserId() {
@@ -157,8 +168,8 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
                     if (r.getUserName().equalsIgnoreCase( /* your MemberDTO.getUsername() */ "")) {
                         HorizontalLayout row = new HorizontalLayout();
                         DTOs.ShopDTO shop = rest.getForObject(
-                            SHOPS_URL + "/" + r.getShopId() + "?authToken=" + token,
-                            DTOs.ShopDTO.class);
+                                SHOPS_URL + "/" + r.getShopId() + "?authToken=" + token,
+                                DTOs.ShopDTO.class);
 
                         String shopName = shop.getName();
                         row.add(
@@ -177,6 +188,7 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
             rolesLayout.add(new Span("Error: " + ex.getMessage()));
         }
     }
+
     private void handleSuspence() {
         Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
         if (userId == null) {
@@ -186,15 +198,14 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/"+userId+"/suspension?token=" +token;
+        String url = "http://localhost:8080/api/users" + "/" + userId + "/suspension?token=" + token;
         ResponseEntity<Boolean> response = rest.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
         } else {
             throw new RuntimeException(
-                "Failed to check admin status: HTTP " + response.getStatusCode().value()
-            );
+                    "Failed to check admin status: HTTP " + response.getStatusCode().value());
         }
     }
 }

@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.html.H1;
@@ -25,12 +26,12 @@ import com.vaadin.flow.server.VaadinSession;
 import DTOs.ShopDTO;
 
 @Route(value = "shops", layout = AppLayoutBasic.class)
-@JsModule("./js/notification-client.js")
+@JsModule("./Frontend/frontend/js/notification-client.js")
 public class ShopSearchView extends VerticalLayout implements BeforeEnterObserver {
 
     @Value("${url.api}/shops/all")
     private String shopsApiUrl;
-    
+
     private final RestTemplate restTemplate = new RestTemplate();
 
     private final List<ShopDTO> allShops = new ArrayList<>();
@@ -44,11 +45,21 @@ public class ShopSearchView extends VerticalLayout implements BeforeEnterObserve
             event.forwardTo("");
             return;
         }
-        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m -> m.connectNotifications($0))",
-                getUserId());
+
+        UI.getCurrent().getPage().executeJs("""
+                    import { connectWebSocket } from './Frontend/frontend/js/notification-client.js';
+                    connectWebSocket($0, function(msg) {
+                        $1.$server.showNotificationFromJS(msg);
+                    });
+                """, getUserId(), getElement());
         loadShops(token);
         displayShops(filteredShops);
         handleSuspence();
+    }
+
+    @ClientCallable
+    public void showNotificationFromJS(String message) {
+        Notification.show(message, 5000, Notification.Position.TOP_CENTER);
     }
 
     private String getUserId() {
@@ -141,15 +152,14 @@ public class ShopSearchView extends VerticalLayout implements BeforeEnterObserve
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/"+userId+"/suspension?token=" +token;
+        String url = "http://localhost:8080/api/users" + "/" + userId + "/suspension?token=" + token;
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
         } else {
             throw new RuntimeException(
-                "Failed to check admin status: HTTP " + response.getStatusCode().value()
-            );
+                    "Failed to check admin status: HTTP " + response.getStatusCode().value());
         }
     }
 }

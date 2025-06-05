@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.JsModule;
@@ -29,6 +30,7 @@ import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -42,14 +44,14 @@ import DTOs.ShopDTO;
 import DTOs.ShoppingCartDTO;
 
 @Route(value = "cart", layout = AppLayoutBasic.class)
-@JsModule("./js/notification-client.js")
+@JsModule("./Frontend/frontend/js/notification-client.js")
 public class ShoppingCartView extends VerticalLayout implements BeforeEnterObserver {
     private static final Logger log = LoggerFactory.getLogger(ShoppingCartView.class);
     private ShoppingCartDTO cart;
     private List<ShopDTO> shops;
 
     private final RestTemplate restTemplate = new RestTemplate();
-    
+
     @Value("${url.api}/shops")
     private String URLShop;
 
@@ -67,9 +69,19 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("");
         }
-        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m -> m.connectNotifications($0))",
-                getUserId());
+
+        UI.getCurrent().getPage().executeJs("""
+                    import { connectWebSocket } from './Frontend/frontend/js/notification-client.js';
+                    connectWebSocket($0, function(msg) {
+                        $1.$server.showNotificationFromJS(msg);
+                    });
+                """, getUserId(), getElement());
         handleSuspence();
+    }
+
+    @ClientCallable
+    public void showNotificationFromJS(String message) {
+        Notification.show(message, 5000, Notification.Position.TOP_CENTER);
     }
 
     private String getUserId() {
@@ -85,17 +97,18 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         getData();
 
         if (cart.getShopItems() == null || cart.getShopItems().isEmpty()) {
-        H2 empty = new H2("Your shopping cart is empty 😕");
-        empty.getStyle().set("color", "var(--lumo-secondary-text-color)");
-        add(empty);
+            H2 empty = new H2("Your shopping cart is empty 😕");
+            empty.getStyle().set("color", "var(--lumo-secondary-text-color)");
+            add(empty);
 
-        // optional: add a “continue shopping” button
-        Button shopMore = new Button("Continue Shopping", e -> 
-            UI.getCurrent().navigate("items")  // or whatever your product listing route is
-        );
-        add(shopMore);
+            // optional: add a “continue shopping” button
+            Button shopMore = new Button("Continue Shopping", e -> UI.getCurrent().navigate("items") // or whatever your
+                                                                                                     // product listing
+                                                                                                     // route is
+            );
+            add(shopMore);
 
-        return;
+            return;
         }
 
         H1 title = new H1("Shopping cart");
@@ -194,7 +207,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                     removeCompletlyButton.setVisible(false);
 
                 }
-                
+
                 removeCompletlyButton.addClickListener(event -> {
                     handleCartAction(shopID, renderer.name(), "remove");
                 });
@@ -268,21 +281,19 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             HttpEntity<Void> entity = new HttpEntity<>(headers);
 
             ResponseEntity<List<ItemDTO>> response = restTemplate.exchange(
-                URLItem + "/all?authToken={authToken}",
-                HttpMethod.GET,
-                entity,
-                new ParameterizedTypeReference<>() {},
-                token
-            );
+                    URLItem + "/all?authToken={authToken}",
+                    HttpMethod.GET,
+                    entity,
+                    new ParameterizedTypeReference<>() {
+                    },
+                    token);
             List<ItemDTO> items = response.getBody();
             return (items != null) ? items : Collections.emptyList();
-        }
-        catch (HttpClientErrorException.NotFound nf) {
+        } catch (HttpClientErrorException.NotFound nf) {
             // no items ⇒ empty
             log.warn("No items found in the database, returning empty list");
             return Collections.emptyList();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             // swallow silently
             log.warn("Failed to fetch item list—returning empty", e);
             return Collections.emptyList();
@@ -299,21 +310,18 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         for (Integer id : shopIds) {
             try {
                 ResponseEntity<ShopDTO> resp = restTemplate.exchange(
-                    URLShop + "/" + id + "?authToken={authToken}",
-                    HttpMethod.GET,
-                    entity,
-                    ShopDTO.class,
-                    token
-                );
+                        URLShop + "/" + id + "?authToken={authToken}",
+                        HttpMethod.GET,
+                        entity,
+                        ShopDTO.class,
+                        token);
                 if (resp.getBody() != null) {
                     result.add(resp.getBody());
                 }
-            }
-            catch (HttpClientErrorException.NotFound nf) {
+            } catch (HttpClientErrorException.NotFound nf) {
                 // skip
                 log.warn("Shop with ID {} not found, skipping", id);
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 // skip all other errors silently
                 log.warn("Error fetching shop with ID {}: {}", id, e.getMessage());
                 return Collections.emptyList();
@@ -321,7 +329,6 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         }
         return result;
     }
-
 
     private HashMap<Integer, HashMap<Integer, Integer>> getCartIDs() {
         try {
@@ -331,20 +338,18 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             HttpEntity<Void> entity = new HttpEntity<>(headers);
 
             ResponseEntity<HashMap<Integer, HashMap<Integer, Integer>>> resp = restTemplate.exchange(
-                URLUser + "/shoppingCart?authToken={authToken}",
-                HttpMethod.GET,
-                entity,
-                new ParameterizedTypeReference<>() {},
-                token
-            );
+                    URLUser + "/shoppingCart?authToken={authToken}",
+                    HttpMethod.GET,
+                    entity,
+                    new ParameterizedTypeReference<>() {
+                    },
+                    token);
             HashMap<Integer, HashMap<Integer, Integer>> body = resp.getBody();
             return (body != null) ? body : new HashMap<>();
-        }
-        catch (HttpClientErrorException.NotFound nf) {
+        } catch (HttpClientErrorException.NotFound nf) {
             // no cart yet ⇒ empty
             return new HashMap<>();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             // swallow everything else silently
             return new HashMap<>();
         }
@@ -374,21 +379,20 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
             // find itemID …
             int itemID = getAllItems().stream()
-                .filter(item -> item.getName().equals(itemName))
-                .map(ItemDTO::getId)
-                .findFirst()
-                .orElse(-1);
-            if (itemID < 0) return;
+                    .filter(item -> item.getName().equals(itemName))
+                    .map(ItemDTO::getId)
+                    .findFirst()
+                    .orElse(-1);
+            if (itemID < 0)
+                return;
 
             restTemplate.postForEntity(
-                URLUser + "/shoppingCart/" + shopID + "/" + itemID + "/" + action + "?authToken={authToken}",
-                entity,
-                String.class,
-                token
-            );
+                    URLUser + "/shoppingCart/" + shopID + "/" + itemID + "/" + action + "?authToken={authToken}",
+                    entity,
+                    String.class,
+                    token);
             UI.getCurrent().getPage().reload();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             // completely silent on failure
             log.warn("Could not retrieve shopping cart, treating as empty", e);
         }
@@ -403,15 +407,14 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/"+userId+"/suspension?token=" +token;
+        String url = "http://localhost:8080/api/users" + "/" + userId + "/suspension?token=" + token;
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
         } else {
             throw new RuntimeException(
-                "Failed to check admin status: HTTP " + response.getStatusCode().value()
-            );
+                    "Failed to check admin status: HTTP " + response.getStatusCode().value());
         }
     }
 }
