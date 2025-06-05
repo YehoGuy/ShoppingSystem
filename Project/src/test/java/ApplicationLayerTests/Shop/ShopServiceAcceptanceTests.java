@@ -1434,6 +1434,35 @@ class ShopServiceAcceptanceTests {
         assertTrue(ex.getMessage().contains("Error removing global discount for shop"));
     }
 
+    // ----- add multiple discount policies in a single shop -----
+    @Test
+    void testAddThreeDiscountPolicies_Success() throws Exception {
+        String token = "t";
+        int shopId = 20;
+        int userId = 5;
+
+        // Arrange: valid token and permission
+        when(authTokenService.ValidateToken(token)).thenReturn(userId);
+        when(userService.hasPermission(userId, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
+
+        // Act: add three distinct discount policies to the same shop
+        shopService.addDiscountPolicy(token, /*discountId=*/1, /*priority=*/10, ItemCategory.BOOKS, 10.0, Operator.AND, shopId);
+        shopService.addDiscountPolicy(token, /*discountId=*/2, /*priority=*/20, ItemCategory.ELECTRONICS, 15.0, Operator.OR, shopId);
+        shopService.addDiscountPolicy(token, /*discountId=*/3, /*priority=*/30, ItemCategory.CLOTHING, 20.0, Operator.AND, shopId);
+
+        // Assert: verify that each call was forwarded to the repository correctly
+        verify(shopRepository).addDiscountPolicy(
+            eq(1), eq(10), eq(ItemCategory.BOOKS), eq(10.0), eq(Operator.AND), eq(shopId)
+        );
+        verify(shopRepository).addDiscountPolicy(
+            eq(2), eq(20), eq(ItemCategory.ELECTRONICS), eq(15.0), eq(Operator.OR), eq(shopId)
+        );
+        verify(shopRepository).addDiscountPolicy(
+            eq(3), eq(30), eq(ItemCategory.CLOTHING), eq(20.0), eq(Operator.AND), eq(shopId)
+        );
+    }
+
+
     // getShopAverageRating – invalid token (OurRuntime path)
     @Test
     void testGetShopAverageRating_InvalidToken() throws Exception {
