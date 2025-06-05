@@ -668,7 +668,7 @@ public class ShopController {
         }
     }
 
-    @GetMapping("/shops/ByWorkerId")
+    @GetMapping("/ByWorkerId")
     public ResponseEntity<?> getShopsByWorkerId(
             @RequestParam int workerId,
             @RequestParam String token) {
@@ -690,18 +690,20 @@ public class ShopController {
 
     // @PostMapping("/addDiscountPolicy")
     // public ResponseEntity<?> addDiscountPolicy(@RequestParam String token,
-    //         @RequestParam int threshold,
-    //         @RequestParam int itemId,
-    //         @RequestParam ItemCategory category,
-    //         @RequestParam double basketValue,
-    //         @RequestParam Operator operator,
-    //         @RequestParam int shopId) {
-    //     try {
-    //         shopService.addDiscountPolicy(token, threshold, itemId, category, basketValue, operator, shopId);
-    //         return ResponseEntity.ok().build();
-    //     } catch (Exception ex) {
-    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
-    //     }
+    // @RequestParam int threshold,
+    // @RequestParam int itemId,
+    // @RequestParam ItemCategory category,
+    // @RequestParam double basketValue,
+    // @RequestParam Operator operator,
+    // @RequestParam int shopId) {
+    // try {
+    // shopService.addDiscountPolicy(token, threshold, itemId, category,
+    // basketValue, operator, shopId);
+    // return ResponseEntity.ok().build();
+    // } catch (Exception ex) {
+    // return
+    // ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+    // }
     // }
 
     @PostMapping("/{shopId}/discount/policy")
@@ -710,12 +712,12 @@ public class ShopController {
             @RequestBody CompositePolicyDTO policyDto,
             @RequestParam String token) {
         try {
-            //print the policy DTO for debugging
+            // print the policy DTO for debugging
             System.out.println("Setting discount policy for shop " + shopId + ": " + policyDto);
             shopService.setDiscountPolicy(shopId, policyDto, token);
             System.out.println("Policy set successfully for shop " + shopId);
             return ResponseEntity.noContent().build();
-        } catch (ConstraintViolationException|IllegalArgumentException ex) {
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
         } catch (NoSuchElementException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
@@ -726,7 +728,6 @@ public class ShopController {
         }
     }
 
-
     @GetMapping("/{shopId}/discounts")
     public ResponseEntity<?> getDiscounts(
             @PathVariable int shopId,
@@ -735,8 +736,8 @@ public class ShopController {
             // fetch domain Discounts (service already validates token/permissions)
             List<Discount> discounts = shopService.getDiscounts(shopId, token);
             List<DiscountDTO> discountDTOs = discounts.stream()
-                .map(DiscountDTO::fromDomain)
-                .collect(Collectors.toList());
+                    .map(DiscountDTO::fromDomain)
+                    .collect(Collectors.toList());
 
             return ResponseEntity.ok(discountDTOs);
 
@@ -748,16 +749,16 @@ public class ShopController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-    
+
     @GetMapping("/{shopId}/policies")
     public ResponseEntity<?> getPolicies(
             @PathVariable int shopId,
             @RequestParam String token) {
         try {
             List<Policy> domainPolicies = shopService.getPolicies(shopId, token);
-            //print ("getPolicies");
-            String s = ""; 
-            for(Policy p : shopService.getPolicies(shopId, token)) {
+            // print ("getPolicies");
+            String s = "";
+            for (Policy p : shopService.getPolicies(shopId, token)) {
                 s += " " + p.toString();
             }
 
@@ -765,32 +766,30 @@ public class ShopController {
 
             // Map (Policy → item's itemId/itemCategory → frontend policiesDTO)
             List<PoliciesDTO> responseList = domainPolicies.stream()
-                .map(p -> {
-                    // If you need to know the itemId or category, fetch that from Discount.
-                    // But since repository.getPolicies(...) only returned Policy, you may
-                    // need a repository method to also pull (itemId,itemCategory) for each.
-                    // Alternatively, you could embed that info in PolicyLeaf / PolicyComposite.
-                    // For now, assuming each PolicyLeaf knows its metadata:
-                    if (p instanceof PolicyLeaf leaf) {
-                        return new PoliciesDTO(
-                            leaf.getItemId(),         // assumes PolicyLeaf stores itemId internally
-                            leaf.getCategory(),       // or category
-                            CompositePolicyDTO.fromDomain(p)
-                        );
-                    }
-                    if (p instanceof PolicyComposite comp) {
-                        // Extract metadata from the composite’s leaves if needed…
-                        // Or simply:
-                        return new PoliciesDTO(
-                            null,
-                            null,
-                            CompositePolicyDTO.fromDomain(p)
-                        );
-                    }
-                    // fallback
-                    return new PoliciesDTO(null, null, null);
-                })
-                .collect(Collectors.toList());
+                    .map(p -> {
+                        // If you need to know the itemId or category, fetch that from Discount.
+                        // But since repository.getPolicies(...) only returned Policy, you may
+                        // need a repository method to also pull (itemId,itemCategory) for each.
+                        // Alternatively, you could embed that info in PolicyLeaf / PolicyComposite.
+                        // For now, assuming each PolicyLeaf knows its metadata:
+                        if (p instanceof PolicyLeaf leaf) {
+                            return new PoliciesDTO(
+                                    leaf.getItemId(), // assumes PolicyLeaf stores itemId internally
+                                    leaf.getCategory(), // or category
+                                    CompositePolicyDTO.fromDomain(p));
+                        }
+                        if (p instanceof PolicyComposite comp) {
+                            // Extract metadata from the composite’s leaves if needed…
+                            // Or simply:
+                            return new PoliciesDTO(
+                                    null,
+                                    null,
+                                    CompositePolicyDTO.fromDomain(p));
+                        }
+                        // fallback
+                        return new PoliciesDTO(null, null, null);
+                    })
+                    .collect(Collectors.toList());
 
             return ResponseEntity.ok(responseList);
 
