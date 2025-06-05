@@ -76,8 +76,7 @@ public record MemberDTO(
                 m.getUsername(),
                 m.getEmail(),
                 m.getPhoneNumber(),
-                // Member#isSuspended() hides the instant; expose the timestamp instead
-                m.isSuspended() ? LocalDateTime.now().plusYears(100) : null,
+                m.getSuspended(),
                 m.getAddress() != null ? AddressDTO.fromDomain(m.getAddress()) : null,
                 roles,
                 pendingRoles,

@@ -38,7 +38,8 @@ public class UserRepositoryTests {
 
     @BeforeEach
     public void setup() {
-        repo = new UserRepository();    
+        repo = new UserRepository();  
+        repo.initAdmin(); 
         repo.setEncoderToTest(true); // Set the encoder to test mode
         guestId = repo.addGuest();  
         guest = repo.getUserById(guestId);

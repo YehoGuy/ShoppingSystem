@@ -38,6 +38,7 @@ public class UserService {
         this.userRepository = userRepository;
         this.authTokenService = authTokenService;
         this.notificationService = notificationService;
+        this.notificationService.setService(this);
     }
 
     public boolean isAdmin(Integer id) {
@@ -369,6 +370,11 @@ public class UserService {
                 member.setConnected(true);
                 if (token_if_guest == null || token_if_guest.equals("") || token_if_guest.isEmpty()) {
                     token = authTokenService.Login(username, password, loginAsMember_id);
+                    
+                    int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+                    //if (isSuspended(id)) 
+                        //{throw new OurRuntime("the user is suspended");}
+
                     LoggerService.logMethodExecutionEnd("loginAsMember", loginAsMember_id);
                     return token; // Return the ID of the logged-in member
                 } else {
@@ -922,6 +928,7 @@ public class UserService {
             throw new OurRuntime("addFounderRole: " + e.getMessage(), e); // Indicate failure to add role
         }
     }
+
     /**
      * Removes a role from a member.
      * 
@@ -1137,15 +1144,15 @@ public class UserService {
             LoggerService.logMethodExecution("hasPermission", id, permission, shopId);
             if (userRepository.getUserMapping().containsKey(id)) {
                 User user = userRepository.getUserById(id);
-                if (userRepository.isSuspended(id)) {
-                    LoggerService.logMethodExecutionEnd("hasPermission", false);
-                    return false; // User is suspended, no permissions granted
-                }
+                // if (userRepository.isSuspended(id)) {
+                //     LoggerService.logMethodExecutionEnd("hasPermission", false);
+                //     return false; // User is suspended, no permissions granted
+                // }
                 validateMemberId(id);
-                if (isSuspended(id)) {
-                    LoggerService.logMethodExecutionEnd("hasPermission", false);
-                    return false; // User is suspended, no permissions granted
-                }
+                // if (isSuspended(id)) {
+                //     LoggerService.logMethodExecutionEnd("hasPermission", false);
+                //     return false; // User is suspended, no permissions granted
+                // }
                 return ((Member) user).hasPermission(permission, shopId); // Check if the user has the specified
                                                                           // permission
             } else {
@@ -1830,7 +1837,26 @@ public class UserService {
             throw new OurRuntime("Error setting suspension for user ID " + userId + ": " + e.getMessage(), e);
         }
     }
-
+    
+    public void setUnSuspended(int userId) {
+        try {
+            if(!isSuspended(userId)) {
+                throw new OurRuntime("User is already unsuspended");
+            }
+            LoggerService.logMethodExecution("setUnSuspended", userId);
+            userRepository.setUnSuspended(userId);
+            LoggerService.logMethodExecutionEndVoid("setSuspended");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("setSuspended", e);
+            throw new OurRuntime("setSuspended: " + e.getMessage(), e);
+        } catch (OurArg e) {
+            LoggerService.logDebug("setSuspended", e);
+            throw new OurArg("setSuspended: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("setSuspended", e, userId);
+            throw new OurRuntime("Error setting suspension for user ID " + userId + ": " + e.getMessage(), e);
+        }
+    }
     public boolean isSuspended(int userId) {
         try {
             LoggerService.logMethodExecution("isSuspended", userId);
@@ -1867,6 +1893,24 @@ public class UserService {
             throw new OurRuntime("getSuspendedUsers: " + e.getMessage(), e);
         }
     }
+
+    public void banUser(int userId) {
+        try {
+            LoggerService.logMethodExecution("banUser", userId);
+            userRepository.banUser(userId);
+            LoggerService.logMethodExecutionEndVoid("banUser");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("banUser", e);
+            throw new OurRuntime("banUser: " + e.getMessage(), e);
+        } catch (OurArg e) {
+            LoggerService.logDebug("banUser", e);
+            throw new OurArg("banUser: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("banUser", e, userId);
+            throw new OurRuntime("Error setting banUser for user ID " + userId + ": " + e.getMessage(), e);
+        }
+    }
+
 
     public List<Integer> getShopIdsByWorkerId(int userId) {
         try {

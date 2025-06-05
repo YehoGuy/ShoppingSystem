@@ -17,6 +17,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.MockitoAnnotations;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
 import com.example.app.ApplicationLayer.NotificationService;
@@ -37,6 +38,9 @@ public class UserServiceAcceptanceTests {
     private NotificationService notificationService;
     private AutoCloseable mocks;
 
+    @Mock(lenient = true)
+    private SimpMessagingTemplate simpMessagingTemplate;
+
     private final String token = "token123";
     private final int userId = 42;
     private final int shopId = 7;
@@ -47,6 +51,7 @@ public class UserServiceAcceptanceTests {
     void setUp() {
         mocks = MockitoAnnotations.openMocks(this);
         userRepository.setEncoderToTest(true); // Set the encoder to test mode
+        notificationService = new NotificationService(simpMessagingTemplate);
         userService = spy(new UserService(userRepository, authTokenService, notificationService));
         userService.setEncoderToTest(true); // Set the encoder to test mode
     }
@@ -75,8 +80,7 @@ public class UserServiceAcceptanceTests {
         when(userRepository.addGuest()).thenReturn(-1);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> userService.loginAsGuest()
-        );
+                () -> userService.loginAsGuest());
         assertTrue(ex.getMessage().contains("Failed to create a guest user"));
     }
 
@@ -101,7 +105,7 @@ public class UserServiceAcceptanceTests {
     @Test
     void testGuestExitError() throws Exception {
         when(authTokenService.ValidateToken(token))
-            .thenThrow(new Exception("Token expired"));
+                .thenThrow(new Exception("Token expired"));
 
         String result = userService.logout(token);
         assertNull(result);
@@ -110,16 +114,18 @@ public class UserServiceAcceptanceTests {
     // UC4 – Register (positive)
     @Test
     void testRegisterSuccess() {
-        String username = "uusseerr11", pwd = "Password111!", email = "user@gmail.com", phone = "0123456789", addr = "addr";
-        when(userRepository.isUsernameAndPasswordValid(username,pwd)).thenReturn(-1);
+        String username = "uusseerr11", pwd = "Password111!", email = "user@gmail.com", phone = "0123456789",
+                addr = "addr";
+        when(userRepository.isUsernameAndPasswordValid(username, pwd)).thenReturn(-1);
         doReturn(2).when(userRepository).addMember(username, pwd, email, phone, addr);
 
         userService.addMember(username, pwd, email, phone, addr);
-        when(userRepository.isUsernameAndPasswordValid(username,pwd)).thenReturn(5);
-        when(authTokenService.Login(username,pwd,5)).thenReturn("tokenM");
-        when(userRepository.getMemberById(5)).thenReturn(new com.example.app.DomainLayer.Member(5, username, pwd, email, phone, addr));
+        when(userRepository.isUsernameAndPasswordValid(username, pwd)).thenReturn(5);
+        when(authTokenService.Login(username, pwd, 5)).thenReturn("tokenM");
+        when(userRepository.getMemberById(5))
+                .thenReturn(new com.example.app.DomainLayer.Member(5, username, pwd, email, phone, addr));
 
-        String tk = userService.loginAsMember(username,pwd,"");
+        String tk = userService.loginAsMember(username, pwd, "");
         assertEquals("tokenM", tk);
     }
 
@@ -129,9 +135,8 @@ public class UserServiceAcceptanceTests {
         String username = "user1";
         when(userRepository.isUsernameTaken(username)).thenReturn(true);
 
-        RuntimeException ex = assertThrows(RuntimeException.class, () ->
-            userService.addMember(username, "Password1!", "user@gmail.com", "0123456789", "addr")
-        );
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> userService.addMember(username, "Password1!", "user@gmail.com", "0123456789", "addr"));
         assertTrue(ex.getMessage().contains("Username is already taken"));
     }
 
@@ -141,11 +146,10 @@ public class UserServiceAcceptanceTests {
         String username = "user1", pwd = "Password1!", email = "invalidEmail", phone = "0123456789", addr = "addr";
         when(userRepository.isUsernameTaken(username)).thenReturn(false);
         doThrow(new RuntimeException("Invalid Email."))
-            .when(userRepository).addMember(username, pwd, email, phone, addr);
+                .when(userRepository).addMember(username, pwd, email, phone, addr);
 
-        RuntimeException ex = assertThrows(RuntimeException.class, () ->
-            userService.addMember(username, pwd, email, phone, addr)
-        );
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> userService.addMember(username, pwd, email, phone, addr));
         assertTrue(ex.getMessage().contains("Invalid Email."));
     }
 
@@ -154,7 +158,8 @@ public class UserServiceAcceptanceTests {
     void testLoginSuccess() {
         when(userRepository.isUsernameAndPasswordValid("user1", "Password1!")).thenReturn(5);
         when(authTokenService.Login("user1", "Password1!", 5)).thenReturn("memToken");
-        when(userRepository.getMemberById(5)).thenReturn(new com.example.app.DomainLayer.Member(5, "user1", "Password1!", "email@test.com", "1234567890", "address"));
+        when(userRepository.getMemberById(5)).thenReturn(new com.example.app.DomainLayer.Member(5, "user1",
+                "Password1!", "email@test.com", "1234567890", "address"));
 
         String tk = userService.loginAsMember("user1", "Password1!", "");
         assertEquals("memToken", tk);
@@ -165,9 +170,7 @@ public class UserServiceAcceptanceTests {
     void testLoginPassword() {
         when(userRepository.isUsernameAndPasswordValid("user1", "Wrong1!")).thenReturn(-1);
 
-        assertThrows(RuntimeException.class, () ->
-            userService.loginAsMember("user1", "Wrong1!", "")
-        );
+        assertThrows(RuntimeException.class, () -> userService.loginAsMember("user1", "Wrong1!", ""));
     }
 
     // UC9 – Login (wrong username)
@@ -175,10 +178,8 @@ public class UserServiceAcceptanceTests {
     void testLoginUsername() {
         when(userRepository.isUsernameAndPasswordValid("wrong", "Password1!")).thenReturn(-1);
 
-        assertThrows(RuntimeException.class, () ->
-            userService.loginAsMember("wrong", "Password1!", "")
-        );
-        
+        assertThrows(RuntimeException.class, () -> userService.loginAsMember("wrong", "Password1!", ""));
+
     }
 
     // UC6 – Add Item to Cart (positive)
@@ -196,9 +197,8 @@ public class UserServiceAcceptanceTests {
     void testAddItemToCartInvalidToken() throws Exception {
         when(authTokenService.ValidateToken(token)).thenThrow(new RuntimeException("Invalid token"));
 
-        RuntimeException ex = assertThrows(RuntimeException.class, () ->
-            userService.addItemToShoppingCart(token, shopId, itemId, quantity)
-        );
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> userService.addItemToShoppingCart(token, shopId, itemId, quantity));
         assertTrue(ex.getMessage().contains("Invalid token"));
     }
 
@@ -207,11 +207,9 @@ public class UserServiceAcceptanceTests {
     void testAddItemToCartRepoError() throws Exception {
         when(authTokenService.ValidateToken(token)).thenReturn(userId);
         doThrow(new RuntimeException("DB error"))
-            .when(userRepository).addItemToShoppingCart(userId, shopId, itemId, quantity);
+                .when(userRepository).addItemToShoppingCart(userId, shopId, itemId, quantity);
 
-        assertThrows(RuntimeException.class, () ->
-            userService.addItemToShoppingCart(token, shopId, itemId, quantity)
-        );
+        assertThrows(RuntimeException.class, () -> userService.addItemToShoppingCart(token, shopId, itemId, quantity));
     }
 
     // UC7 – Remove Item from Cart (positive)
@@ -229,9 +227,8 @@ public class UserServiceAcceptanceTests {
     void testRemoveItemFromCartInvalidToken() throws Exception {
         when(authTokenService.ValidateToken(token)).thenThrow(new RuntimeException("Bad token"));
 
-        RuntimeException ex = assertThrows(RuntimeException.class, () ->
-            userService.removeItemFromShoppingCart(token, shopId, itemId)
-        );
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> userService.removeItemFromShoppingCart(token, shopId, itemId));
         assertTrue(ex.getMessage().contains("Bad token"));
     }
 
@@ -240,11 +237,9 @@ public class UserServiceAcceptanceTests {
     void testRemoveItemFromCartRepoError() throws Exception {
         when(authTokenService.ValidateToken(token)).thenReturn(userId);
         doThrow(new RuntimeException("Removal failed"))
-            .when(userRepository).removeItemFromShoppingCart(userId, shopId, itemId);
+                .when(userRepository).removeItemFromShoppingCart(userId, shopId, itemId);
 
-        assertThrows(RuntimeException.class, () ->
-            userService.removeItemFromShoppingCart(token, shopId, itemId)
-        );
+        assertThrows(RuntimeException.class, () -> userService.removeItemFromShoppingCart(token, shopId, itemId));
     }
 
     // UC20 - assigning an owner to a shop (positive)
@@ -255,18 +250,18 @@ public class UserServiceAcceptanceTests {
 
         int shopId = 11;
         int newOwnerId = 20;
-        PermissionsEnum[] pr = {PermissionsEnum.manageOwners};
-        
+        PermissionsEnum[] pr = { PermissionsEnum.manageOwners };
+
         when(authTokenService.ValidateToken(firstOwnerToken)).thenReturn(17);
         when(authTokenService.ValidateToken(newOwnerToken)).thenReturn(20);
 
         when(userService.hasPermission(17, PermissionsEnum.manageOwners, shopId)).thenReturn(true);
-        doNothing().when(userService).makeManagerOfStore(firstOwnerToken,newOwnerId,shopId, pr);
+        doNothing().when(userService).makeManagerOfStore(firstOwnerToken, newOwnerId, shopId, pr);
         doNothing().when(userService).acceptRole(newOwnerToken, shopId);
 
-        userService.makeManagerOfStore(firstOwnerToken,newOwnerId,shopId, pr);
+        userService.makeManagerOfStore(firstOwnerToken, newOwnerId, shopId, pr);
         userService.acceptRole(newOwnerToken, shopId);
-        verify(userService).acceptRole(newOwnerToken,shopId);
+        verify(userService).acceptRole(newOwnerToken, shopId);
     }
 
     // UC20 - assigning an owner to a shop (negative: role declined)
@@ -277,18 +272,18 @@ public class UserServiceAcceptanceTests {
 
         int shopId = 11;
         int newOwnerId = 20;
-        PermissionsEnum[] pr = {PermissionsEnum.manageOwners};
-        
+        PermissionsEnum[] pr = { PermissionsEnum.manageOwners };
+
         when(authTokenService.ValidateToken(firstOwnerToken)).thenReturn(17);
         when(authTokenService.ValidateToken(newOwnerToken)).thenReturn(20);
 
         when(userService.hasPermission(17, PermissionsEnum.manageOwners, shopId)).thenReturn(true);
-        doNothing().when(userService).makeManagerOfStore(firstOwnerToken,newOwnerId,shopId, pr);
+        doNothing().when(userService).makeManagerOfStore(firstOwnerToken, newOwnerId, shopId, pr);
         doNothing().when(userService).declineRole(newOwnerToken, shopId);
 
-        userService.makeManagerOfStore(firstOwnerToken,newOwnerId,shopId, pr);
+        userService.makeManagerOfStore(firstOwnerToken, newOwnerId, shopId, pr);
         userService.declineRole(newOwnerToken, shopId);
-        verify(userService).declineRole(newOwnerToken,shopId);
+        verify(userService).declineRole(newOwnerToken, shopId);
     }
 
     // UC20 - assigning an owner to a shop (negative: assigner is not an owner)
@@ -299,7 +294,7 @@ public class UserServiceAcceptanceTests {
 
         int shopId = 11;
         int newOwnerId = 20;
-        PermissionsEnum[] pr = {PermissionsEnum.manageOwners};
+        PermissionsEnum[] pr = { PermissionsEnum.manageOwners };
 
         when(authTokenService.ValidateToken(firstOwnerToken)).thenReturn(17);
         when(authTokenService.ValidateToken(newOwnerToken)).thenReturn(20);
@@ -327,7 +322,7 @@ public class UserServiceAcceptanceTests {
         int shopId = 11;
         int originalOwnerId = 123;
         int assignedOwnerId = 456;
-        PermissionsEnum[] ownerPermissions = {PermissionsEnum.manageOwners};
+        PermissionsEnum[] ownerPermissions = { PermissionsEnum.manageOwners };
 
         // Setup: tokens and IDs
         when(authTokenService.ValidateToken(originalOwnerToken)).thenReturn(originalOwnerId);
@@ -361,7 +356,7 @@ public class UserServiceAcceptanceTests {
         int shopId = 11;
         int originalOwnerId = 123;
         int assignedOwnerId = 456;
-        PermissionsEnum[] ownerPermissions = {PermissionsEnum.manageOwners};
+        PermissionsEnum[] ownerPermissions = { PermissionsEnum.manageOwners };
 
         // Setup: tokens and IDs
         when(authTokenService.ValidateToken(originalOwnerToken)).thenReturn(originalOwnerId);
@@ -375,19 +370,20 @@ public class UserServiceAcceptanceTests {
         doNothing().when(userService).acceptRole(assignedOwnerToken, shopId);
 
         // Simulate invalid removal (assigned owner tries to remove original owner)
-        doThrow(new OurRuntime("Member ID " + assignedOwnerId + " is not the assignee of member ID " + originalOwnerId + " in shop ID " + shopId))
-            .when(userService).removeManagerFromStore(assignedOwnerToken, originalOwnerId, shopId);
+        doThrow(new OurRuntime("Member ID " + assignedOwnerId + " is not the assignee of member ID " + originalOwnerId
+                + " in shop ID " + shopId))
+                .when(userService).removeManagerFromStore(assignedOwnerToken, originalOwnerId, shopId);
 
         // Flow
         userService.makeManagerOfStore(originalOwnerToken, assignedOwnerId, shopId, ownerPermissions);
         userService.acceptRole(assignedOwnerToken, shopId);
 
         // Try invalid removal and assert the exception
-        Exception exception = assertThrows(OurRuntime.class, () ->
-            userService.removeManagerFromStore(assignedOwnerToken, originalOwnerId, shopId)
-        );
+        Exception exception = assertThrows(OurRuntime.class,
+                () -> userService.removeManagerFromStore(assignedOwnerToken, originalOwnerId, shopId));
 
-        assertTrue(exception.getMessage().contains("Member ID " + assignedOwnerId + " is not the assignee of member ID " + originalOwnerId + " in shop ID " + shopId));
+        assertTrue(exception.getMessage().contains("Member ID " + assignedOwnerId + " is not the assignee of member ID "
+                + originalOwnerId + " in shop ID " + shopId));
     }
 
     // UC22 - Successful assignment of a manager to a shop
@@ -416,7 +412,6 @@ public class UserServiceAcceptanceTests {
         verify(userService).acceptRole(managerToken, shopId);
     }
 
-
     // UC22 - Assignment refusal (manager disagrees)
     @Test
     void testAssignmentRefusal() throws Exception {
@@ -437,17 +432,14 @@ public class UserServiceAcceptanceTests {
 
         // Simulate disagreement
         doThrow(new RuntimeException("Manager disagreed to the assignment"))
-            .when(userService).acceptRole(managerToken, shopId);
+                .when(userService).acceptRole(managerToken, shopId);
 
         userService.makeManagerOfStore(ownerToken, managerId, shopId, noPermissions);
 
-        Exception exception = assertThrows(RuntimeException.class, () ->
-            userService.acceptRole(managerToken, shopId)
-        );
+        Exception exception = assertThrows(RuntimeException.class, () -> userService.acceptRole(managerToken, shopId));
 
         assertTrue(exception.getMessage().contains("disagreed"));
     }
-
 
     // UC22 - Attempt to assign someone who is already a manager
     @Test
@@ -467,11 +459,10 @@ public class UserServiceAcceptanceTests {
 
         // Simulate user already being a manager
         doThrow(new RuntimeException("User is already a manager"))
-            .when(userService).makeManagerOfStore(ownerToken, managerId, shopId, noPermissions);
+                .when(userService).makeManagerOfStore(ownerToken, managerId, shopId, noPermissions);
 
-        Exception exception = assertThrows(RuntimeException.class, () ->
-            userService.makeManagerOfStore(ownerToken, managerId, shopId, noPermissions)
-        );
+        Exception exception = assertThrows(RuntimeException.class,
+                () -> userService.makeManagerOfStore(ownerToken, managerId, shopId, noPermissions));
 
         assertTrue(exception.getMessage().contains("already"));
     }
@@ -492,20 +483,21 @@ public class UserServiceAcceptanceTests {
 
         when(userService.hasPermission(ownerId, PermissionsEnum.manageOwners, shopId)).thenReturn(true);
 
-        doNothing().when(userService).makeManagerOfStore(ownerToken, managerId, shopId, new PermissionsEnum[]{});
+        doNothing().when(userService).makeManagerOfStore(ownerToken, managerId, shopId, new PermissionsEnum[] {});
         doNothing().when(userService).acceptRole(managerToken, shopId);
         doNothing().when(userService).validateMemberId(ownerId);
         doNothing().when(userService).validateMemberId(managerId);
         when(userRepository.getRole(managerId, shopId)).thenReturn(new Role(ownerId, shopId, null));
 
         when(userService.addPermission(ownerToken, managerId, permissionToAdd, shopId)).thenReturn(true);
-        
-        userService.makeManagerOfStore(ownerToken, managerId, shopId, new PermissionsEnum[]{});
+
+        userService.makeManagerOfStore(ownerToken, managerId, shopId, new PermissionsEnum[] {});
         userService.acceptRole(managerToken, shopId);
         boolean result = userService.addPermission(ownerToken, managerId, permissionToAdd, shopId);
 
         assertTrue(result);
-        //verify(userService).addPermission(ownerToken, managerId, permissionToAdd, shopId);
+        // verify(userService).addPermission(ownerToken, managerId, permissionToAdd,
+        // shopId);
     }
 
     // UC23 - Attempt to add permission to a manager not assigned by you
@@ -525,21 +517,21 @@ public class UserServiceAcceptanceTests {
 
         when(userService.hasPermission(ownerId, PermissionsEnum.manageOwners, shopId)).thenReturn(true);
 
-        doNothing().when(userService).makeManagerOfStore(ownerToken, managerId, shopId, new PermissionsEnum[]{});
+        doNothing().when(userService).makeManagerOfStore(ownerToken, managerId, shopId, new PermissionsEnum[] {});
         doNothing().when(userService).acceptRole(otherOwnerToken, shopId);
 
         doThrow(new OurRuntime("789 wasn't assigned by you"))
-            .when(userService).addPermission(otherOwnerToken, managerId, permissionToAdd, shopId);
+                .when(userService).addPermission(otherOwnerToken, managerId, permissionToAdd, shopId);
 
-        userService.makeManagerOfStore(ownerToken, managerId, shopId, new PermissionsEnum[]{});
+        userService.makeManagerOfStore(ownerToken, managerId, shopId, new PermissionsEnum[] {});
         userService.acceptRole(otherOwnerToken, shopId);
 
-        OurRuntime exception = assertThrows(OurRuntime.class, () ->
-            userService.addPermission(otherOwnerToken, managerId, permissionToAdd, shopId)
-        );
+        OurRuntime exception = assertThrows(OurRuntime.class,
+                () -> userService.addPermission(otherOwnerToken, managerId, permissionToAdd, shopId));
 
         assertTrue(exception.getMessage().contains("wasn't assigned by you"));
     }
+
     // UC23 - Attempt to add a permission not available for managers
     @Test
     void testAddInvalidPermission() throws Exception {
@@ -556,21 +548,19 @@ public class UserServiceAcceptanceTests {
 
         when(userService.hasPermission(ownerId, PermissionsEnum.manageOwners, shopId)).thenReturn(true);
 
-        doNothing().when(userService).makeManagerOfStore(ownerToken, managerId, shopId, new PermissionsEnum[]{});
+        doNothing().when(userService).makeManagerOfStore(ownerToken, managerId, shopId, new PermissionsEnum[] {});
         doNothing().when(userService).acceptRole(managerToken, shopId);
 
         doThrow(new IllegalArgumentException("Manager can't have such permissions"))
-            .when(userService).addPermission(ownerToken, managerId, invalidPermission, shopId);
+                .when(userService).addPermission(ownerToken, managerId, invalidPermission, shopId);
 
-        userService.makeManagerOfStore(ownerToken, managerId, shopId, new PermissionsEnum[]{});
+        userService.makeManagerOfStore(ownerToken, managerId, shopId, new PermissionsEnum[] {});
         userService.acceptRole(managerToken, shopId);
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-            userService.addPermission(ownerToken, managerId, invalidPermission, shopId)
-        );
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> userService.addPermission(ownerToken, managerId, invalidPermission, shopId));
 
         assertTrue(exception.getMessage().contains("can't have such permissions"));
     }
-
 
 }

@@ -83,12 +83,20 @@ public class Member extends User {
         return phoneNumber; // Return the phone number
     }
 
+    public LocalDateTime getSuspended() {
+        return suspended; // Return the suspension status
+    }
+
     public Boolean isSuspended() {
         return suspended.isAfter(LocalDateTime.now()); // Check if the user is suspended
     }
 
     public void setSuspended(LocalDateTime suspended) {
         this.suspended = suspended; // Set the suspension status
+    }
+    
+    public void setUnSuspended() {
+        this.suspended = LocalDateTime.now(); // Set the suspension status to now (unsuspended)
     }
 
     public synchronized void setUsername(String username) {

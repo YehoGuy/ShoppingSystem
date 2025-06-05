@@ -1,5 +1,15 @@
 package UI;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.JsModule;
@@ -18,22 +28,18 @@ import com.vaadin.flow.server.VaadinSession;
 
 import DTOs.ShopDTO;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
-
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
-
 @Route(value = "myshops", layout = AppLayoutBasic.class)
 @JsModule("./js/notification-client.js")
 public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
 
-    private static final String BASE_URL = "http://localhost:8080/api/shops";
-    private static final String GET_ALL = BASE_URL + "/all";
-    private static final String CREATE = BASE_URL + "/create";
+    @Value("${url.api}/shops")
+    private String BASE_URL;
+
+    @Value("${url.api}/shops/all")
+    private String GET_ALL;
+
+    @Value("${url.api}/shops/create")
+    private String CREATE;
 
     private final RestTemplate restTemplate = new RestTemplate();
     private List<ShopDTO> allShops;
@@ -55,6 +61,9 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
         searchField.addValueChangeListener(e -> filterAndDisplay());
 
         Button addBtn = new Button("➕ Add New Shop", e -> openCreateDialog());
+        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+            addBtn.setVisible(false);
+        }
         HorizontalLayout header = new HorizontalLayout(searchField, addBtn);
         header.setAlignItems(Alignment.CENTER);
         add(header);
@@ -68,8 +77,6 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
                 .set("gap", "10px");
         add(shopsContainer);
 
-        // Initial load
-        loadShops();
     }
 
     @Override
@@ -78,8 +85,10 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
         if (token == null) {
             event.forwardTo("login");
         }
+        loadShops();
         UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m => m.connectNotifications($0))",
                 getUserId());
+        handleSuspence();
     }
 
     private String getUserId() {
@@ -90,7 +99,7 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
         try {
             ResponseEntity<ShopDTO[]> resp = restTemplate.getForEntity(GET_ALL + "?token=" + token, ShopDTO[].class);
-            if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 allShops = Arrays.asList(resp.getBody());
                 filterAndDisplay();
             } else {
@@ -167,6 +176,26 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
 
             row.add(name, view);
             shopsContainer.add(row);
+        }
+    }
+    private void handleSuspence() {
+        Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
+        if (userId == null) {
+            return;
+        }
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            return;
+        }
+        String url = "http://localhost:8080/api/users" + "/"+userId+"/suspension?token=" +token;
+        ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
+
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
+        } else {
+            throw new RuntimeException(
+                "Failed to check admin status: HTTP " + response.getStatusCode().value()
+            );
         }
     }
 }

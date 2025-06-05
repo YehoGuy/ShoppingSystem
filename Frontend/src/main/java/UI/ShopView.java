@@ -4,11 +4,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
@@ -41,7 +41,12 @@ import DTOs.ShopReviewDTO;
 @JsModule("./js/notification-client.js")
 public class ShopView extends VerticalLayout implements HasUrlParameter<String>, BeforeEnterObserver {
 
-    private static final String SHOP_API_URL = "http://localhost:8080/api/shops";
+    @Value("${url.api}/shops")
+    private String SHOP_API_URL;    
+
+    @Value("${url.api}/purchases/shops")
+    private String PURCHASE_HISTORY_URL;
+
     private final RestTemplate restTemplate = new RestTemplate();
     private ShopDTO shop;
     private Map<ItemDTO, Double> prices;
@@ -53,6 +58,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         }
         UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m -> m.connectNotifications($0))",
                 getUserId());
+        handleSuspence();
     }
 
     private String getUserId() {
@@ -70,7 +76,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         String url = SHOP_API_URL + "/" + shopId + "?token=" + token;
         try {
             ResponseEntity<ShopDTO> resp = restTemplate.getForEntity(url, ShopDTO.class);
-            if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 shop = resp.getBody();
                 prices = ShopDTO.itemPricesToMapConverter(shop.getItems(), shop.getItemPrices());
                 buildPage();
@@ -103,10 +109,8 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
             // Therefore we must call:
             //    GET /api/purchases/shops/{shopId}/bids?authToken=<token>
             //
-            String url = "http://localhost:8080/api/purchases/shops/"
-                    + shop.getShopId()
-                    + "/bids?authToken="
-                    + authToken;
+            String url = PURCHASE_HISTORY_URL + "/" + shop.getShopId() + "/bids?authToken=" + authToken;
+
 
             // 3. Prepare headers (JSON)
             HttpHeaders headers = new HttpHeaders();
@@ -122,7 +126,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
             );
 
             // 5. If 200 OK, bind the response body (List<BidRecieptDTO>) to the grid
-            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 shopBidsGrid.setItems(response.getBody());
             } else {
                 // If we get a 4xx or 5xx, show an error header
@@ -257,6 +261,27 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         for (ShopReviewDTO rev : shop.getReviews()) {
             add(new Paragraph("👤 " + rev.getUserId() + ": "
                             + rev.getReviewText() + " (" + rev.getRating() + ")"));
+        }
+    }
+    
+    private void handleSuspence() {
+        Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
+        if (userId == null) {
+            return;
+        }
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            return;
+        }
+        String url = "http://localhost:8080/api/users" + "/"+userId+"/suspension?token=" +token;
+        ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
+
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
+        } else {
+            throw new RuntimeException(
+                "Failed to check admin status: HTTP " + response.getStatusCode().value()
+            );
         }
     }
 }

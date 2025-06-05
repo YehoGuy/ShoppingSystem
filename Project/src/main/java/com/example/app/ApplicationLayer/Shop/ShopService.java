@@ -444,7 +444,7 @@ public class ShopService {
         try {
             LoggerService.logMethodExecution("closeShop", shopId);
             Integer userId = authTokenService.ValidateToken(token);
-            if (!userService.hasPermission(userId, PermissionsEnum.closeShop, shopId)) {
+            if ((!userService.isAdmin(userId))&&(!userService.hasPermission(userId, PermissionsEnum.closeShop, shopId))) {
                 OurRuntime e = new OurRuntime("User does not have permission to close shop " + shopId);
                 LoggerService.logDebug("closeShop", e);
                 throw e;

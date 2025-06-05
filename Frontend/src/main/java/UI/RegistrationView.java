@@ -7,6 +7,8 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 import com.vaadin.flow.router.Route;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
@@ -15,13 +17,18 @@ import com.vaadin.flow.server.VaadinSession;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.swing.GroupLayout.Alignment;
+import org.springframework.beans.factory.annotation.Value;
+
 
 @Route("register")
 public class RegistrationView extends VerticalLayout {
 
-    private static final String REGISTER_API_URL = "http://localhost:8080/api/users/register";
-    private static final String AUTH_URL = "http://localhost:8080/api/auth";
+    @Value("${url.api}/users/register")
+    private String REGISTER_API_URL;
+
+    @Value("${url.api}/auth")
+    private String AUTH_URL;
+
     private final RestTemplate restTemplate = new RestTemplate();
 
     public RegistrationView() {
@@ -105,6 +112,8 @@ public class RegistrationView extends VerticalLayout {
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("userId", response.getBody());
+            VaadinSession.getCurrent().setAttribute("isAdmin", false);
+
         } else {
             throw new RuntimeException(
                 "Failed to retrieve user ID: HTTP " + response.getStatusCode().value()

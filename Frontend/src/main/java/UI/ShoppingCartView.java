@@ -9,6 +9,7 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -29,7 +30,6 @@ import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -50,10 +50,18 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
     private List<ShopDTO> shops;
 
     private final RestTemplate restTemplate = new RestTemplate();
-    private static final String URLShop = "http://localhost:8080/api/shops";
-    private static final String URLUser = "http://localhost:8080/api/users";
-    private static final String URLPurchases = "http://localhost:8080/api/purchases";
-    private static final String URLItem = "http://localhost:8080/api/items";
+    
+    @Value("${url.api}/shops")
+    private String URLShop;
+
+    @Value("${url.api}/users")
+    private String URLUser;
+
+    @Value("${url.api}/purchases")
+    private String URLPurchases;
+
+    @Value("${url.api}/items")
+    private String URLItem;
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
@@ -63,6 +71,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         }
         UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m -> m.connectNotifications($0))",
                 getUserId());
+        handleSuspence();
     }
 
     private String getUserId() {
@@ -106,6 +115,9 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 .set("padding", "10px");
 
         Button buyButton = new Button("Buy entire cart");
+        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+            buyButton.setVisible(false);
+        }
         buyButton.addClickListener(event -> {
             try {
                 // PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(cart);
@@ -158,6 +170,9 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             }
 
             Button buyBasketButton = new Button("Buy basket from " + shopName + " " + shopTotal + "₪");
+            if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+                buyBasketButton.setVisible(false);
+            }
             buyBasketButton.getStyle().set("background-color", "blue").set("color", "white");
             buyBasketButton.addClickListener(event -> {
                 ShoppingCartDTO shopCart = new ShoppingCartDTO();
@@ -199,6 +214,13 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 Button removeButton = new Button(VaadinIcon.MINUS.create());
                 Button addButton = new Button(VaadinIcon.PLUS.create());
                 Button removeCompletlyButton = new Button(VaadinIcon.TRASH.create());
+                if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+                    removeButton.setVisible(false);
+                    addButton.setVisible(false);
+                    removeCompletlyButton.setVisible(false);
+
+                }
+                
                 removeCompletlyButton.addClickListener(event -> {
                     handleCartAction(shopID, renderer.itemId(), "remove");
                 });
@@ -403,10 +425,32 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         }
     }
 
+
     private void resetView() {
         this.removeAll();
         this.cart = null;
         this.shops = null;
         buildView();
+    }
+  
+    private void handleSuspence() {
+        Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
+        if (userId == null) {
+            return;
+        }
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            return;
+        }
+        String url = "http://localhost:8080/api/users" + "/"+userId+"/suspension?token=" +token;
+        ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
+
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
+        } else {
+            throw new RuntimeException(
+                "Failed to check admin status: HTTP " + response.getStatusCode().value()
+            );
+        }
     }
 }

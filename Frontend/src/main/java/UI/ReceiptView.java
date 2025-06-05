@@ -1,5 +1,14 @@
 package UI;
 
+import java.util.HashMap;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.html.Div;
@@ -7,29 +16,22 @@ import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.router.*;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
-
-import DTOs.PurchaseDTO;
-import DTOs.RecieptDTO;
-import DTOs.AddressDTO;
-
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
+import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
+
+import DTOs.AddressDTO;
+import DTOs.RecieptDTO;
+
 
 @Route("receipt")
 @JsModule("./js/notification-client.js")
 public class ReceiptView extends VerticalLayout implements BeforeEnterObserver {
 
-    private static final String URL = "http://localhost:8080/api/purchases/";
+    @Value("${url.api}/purchases")
+    private String URL;
+        
     private RecieptDTO receipt;
 
     public ReceiptView() {
@@ -65,6 +67,7 @@ public class ReceiptView extends VerticalLayout implements BeforeEnterObserver {
         }
         UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m -> m.connectNotifications($0))",
                 getUserId());
+        handleSuspence();
     }
 
     private String getUserId() {
@@ -136,7 +139,7 @@ public class ReceiptView extends VerticalLayout implements BeforeEnterObserver {
             return;
         }
 
-        String url = URL + purchaseId;
+        String url = URL + "/" + purchaseId;
         RestTemplate restTemplate = new RestTemplate();
 
         // Add authToken as header if needed, or modify URL with query param
@@ -151,13 +154,35 @@ public class ReceiptView extends VerticalLayout implements BeforeEnterObserver {
                     entity,
                     RecieptDTO.class);
 
-            if (response.getStatusCode() == HttpStatus.OK) {
+            if (response.getStatusCode().is2xxSuccessful()) {
                 receipt = response.getBody();
             } else {
                 Notification.show("Failed to fetch receipt: " + response.getStatusCode());
             }
         } catch (Exception e) {
             Notification.show("Error fetching receipt: " + e.getMessage(), 4000, Notification.Position.MIDDLE);
+        }
+    }
+    private void handleSuspence() {
+        RestTemplate restTemplate = new RestTemplate();
+
+        Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
+        if (userId == null) {
+            return;
+        }
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            return;
+        }
+        String url = "http://localhost:8080/api/users" + "/"+userId+"/suspension?token=" +token;
+        ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
+
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
+        } else {
+            throw new RuntimeException(
+                "Failed to check admin status: HTTP " + response.getStatusCode().value()
+            );
         }
     }
 }

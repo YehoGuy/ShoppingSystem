@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
@@ -36,10 +37,21 @@ import DTOs.rolesDTO;
 @Route(value = "messages", layout = AppLayoutBasic.class)
 @JsModule("./js/notification-client.js")
 public class MessageView extends VerticalLayout implements BeforeEnterObserver {
-    private static final String BASE_URL = "http://localhost:8080/api/messages";
-    private static final String NOTIFICATIONS_URL = "http://localhost:8080/api/users/notifications";
-    private static final String PENDING_ROLES_URL = "http://localhost:8080/api/users/getPendingRoles";
-    private static final String GET_BY_RECIVER = "http://localhost:8080/api/messages/receiver?authToken=";
+    
+    @Value("${url.api}/messages")
+    private String BASE_URL;
+
+    @Value("${url.api}/users/notifications")
+    private String NOTIFICATIONS_URL;
+
+    @Value("${url.api}/users/getPendingRoles")
+    private String PENDING_ROLES_URL;
+
+    @Value("${url.api}/messages/receiver?authToken=")
+    private String GET_BY_RECIVER;
+
+    @Value("${url.api}/users/roles/")
+    private String ROLES_URL;
 
     private final RestTemplate rest = new RestTemplate();
     private final VerticalLayout threadContainer = new VerticalLayout();
@@ -60,7 +72,7 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
 
         this.token = getToken();
         ResponseEntity<MemberDTO[]> allmem = rest
-                .getForEntity("http://localhost:8080/api/users/allmembers?token=" + token, MemberDTO[].class);
+            .getForEntity("${url.api}/users/allmembers?token=" + token, MemberDTO[].class);
 
         ResponseEntity<MessageDTO[]> allmessagesRe = rest.getForEntity(
                 GET_BY_RECIVER + token,
@@ -112,6 +124,9 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
                 loadAndDisplayConversation(currentChatUserId);
             }
         });
+        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+            sendButton.setVisible(false);
+        }
 
         leftPanel.add(userSelector, threadContainer, messageArea, sendButton);
         page.add(leftPanel);
@@ -153,6 +168,7 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
         }
         UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m => m.connectNotifications($0))",
                 getUserId());
+        handleSuspence();
     }
 
     private String getUserId() {
@@ -220,7 +236,7 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
         try {
             ResponseEntity<String[]> resp = rest.getForEntity(
                     NOTIFICATIONS_URL + "?authToken=" + token, String[].class);
-            if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 String[] notes = resp.getBody();
                 if (notes.length > 0) {
                     for (String note : notes) {
@@ -248,15 +264,16 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
                     PENDING_ROLES_URL + "?authToken=" + token,
                     rolesDTO[].class);
 
-            if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 rolesDTO[] roles = resp.getBody();
 
                 if (roles.length > 0) {
                     for (rolesDTO dto : roles) {
                         int shopId = dto.getShopId();
                         DTOs.ShopDTO shop = rest.getForObject(
-                                "http://localhost:8080/api/shops/" + shopId + "?token=" + token,
+                            "${url.api}/shops/" + shopId + "?token=" + token,
                                 DTOs.ShopDTO.class);
+                
                         String shopName = shop.getName();
                         String desc = dto.getRoleName() + " @ " + shopName;
 
@@ -266,11 +283,15 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
                         // 2) Accept button
                         Button accept = new Button("Accept", e -> {
                             rest.postForEntity(
-                                    "http://localhost:8080/api/users/roles/" + shopId + "/accept"
-                                            + "?token=" + token,
-                                    null, Void.class);
+                                ROLES_URL + shopId + "/accept?token=" + token,
+                                null,
+                                Void.class
+                            );
                             row.remove();
                         });
+                        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+                            accept.setVisible(false);
+                        }
                         accept.getStyle()
                                 .set("background-color", "#4CAF50")
                                 .set("color", "white");
@@ -278,11 +299,17 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
                         // 3) Reject button
                         Button reject = new Button("Reject", e -> {
                             rest.postForEntity(
-                                    "http://localhost:8080/api/users/roles/" + shopId + "/decline"
-                                            + "?token=" + token,
-                                    null, Void.class);
+                                ROLES_URL + shopId + "/decline?token=" + token,
+                                null,
+                                Void.class
+                            );
                             row.remove();
+
                         });
+                        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+                            reject.setVisible(false);
+                        }
+
                         reject.getStyle()
                                 .set("background-color", "#f44336")
                                 .set("color", "white");
@@ -305,6 +332,27 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
         } catch (Exception ex) {
             Notification.show("❗ Error loading pending roles: " + ex.getMessage(),
                     3000, Notification.Position.MIDDLE);
+        }
+    }
+
+    private void handleSuspence() {
+        Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
+        if (userId == null) {
+            return;
+        }
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            return;
+        }
+        String url = "http://localhost:8080/api/users" + "/"+userId+"/suspension?token=" +token;
+        ResponseEntity<Boolean> response = rest.getForEntity(url, Boolean.class);
+
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
+        } else {
+            throw new RuntimeException(
+                "Failed to check admin status: HTTP " + response.getStatusCode().value()
+            );
         }
     }
 }
