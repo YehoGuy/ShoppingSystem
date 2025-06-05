@@ -268,7 +268,7 @@ public class UserRepositoryTests {
     
         // clear all baskets → getBasket returns null
         repo.clearShoppingCart(uid);
-        assertNull(repo.getBasket(uid, 20), "After clearShoppingCart, there should be no basket at all");
+        assertTrue(repo.getBasket(uid, 20).isEmpty(), "After clearShoppingCart, there should be no basket at all");
     }
     
 

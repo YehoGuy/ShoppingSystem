@@ -1,15 +1,6 @@
 package ApplicationLayerTests.User;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadLocalRandom;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+it.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -19,25 +10,14 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.mockito.ArgumentMatchers.any;
+import org.junit.ju
+kito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.messaging.support.AbstractMessageChannel;
-
-import static org.mockito.Mockito.doAnswer;
+import org.mockit
+kito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -46,7 +26,32 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import com.example.app.ApplicationLayer.AuthTokenService;
+import com.exampl
+
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;ncurrent.ThreadLocalRandom;
+import com.example.
+
+ter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import static org
+jectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.springfr
+ality.Strictness;
+
+@MockitoSettings(amework.messaging.simp.SimpMessagingTemplate;
+import org.springfre.app.ApplicationLayer.AuthTokenService;
 import com.example.app.ApplicationLayer.NotificationService;
 import com.example.app.ApplicationLayer.OurArg;
 import com.example.app.ApplicationLayer.OurRuntime;
@@ -54,7 +59,6 @@ import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
 import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.IUserRepository;
 import com.example.app.DomainLayer.Member;
-import com.example.app.DomainLayer.Notification;
 import com.example.app.DomainLayer.ShoppingCart;
 import com.example.app.DomainLayer.User;
 import com.example.app.DomainLayer.Purchase.Address;
@@ -63,9 +67,7 @@ import com.example.app.DomainLayer.Roles.Role;
 import com.example.app.InfrastructureLayer.AuthTokenRepository;
 import com.example.app.InfrastructureLayer.UserRepository;
 
-import org.mockito.quality.Strictness;
-
-@MockitoSettings(strictness = Strictness.LENIENT)
+import org.mockitstrictness = Strictness.LENIENT)
 @ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
 
