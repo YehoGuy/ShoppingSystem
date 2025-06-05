@@ -59,6 +59,8 @@ public class UserRepository implements IUserRepository {
         this.userIdCounter = new AtomicInteger(0); // Initialize the user ID counter
         this.managers = new CopyOnWriteArrayList<>(); // Initialize the managers list
         this.passwordEncoderUtil = new PasswordEncoderUtil();
+        int adminId = addMember("admin", "admin", "admin@mail.com", "0555555555", "admin st.");
+        managers.add(adminId);
         // TODO: V should be removed when adding database
     }
 
@@ -81,6 +83,9 @@ public class UserRepository implements IUserRepository {
         }
 
         String passwordToStore = adminPlainPassword;
+        if(isAdmin(1)){
+            return;
+        }
         int adminId = addMember(adminUsername, passwordToStore, adminEmail, adminPhoneNumber, adminAddress);
 
         managers.add(adminId);
