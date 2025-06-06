@@ -35,7 +35,7 @@ import DTOs.ItemReviewDTO;
 import Domain.ItemCategory;
 
 @Route(value = "items", layout = AppLayoutBasic.class)
-@JsModule("./Frontend/frontend/js/notification-client.js")
+@JsModule("./notification-client.js")
 public class ItemSearchView extends VerticalLayout implements BeforeEnterObserver {
     private List<ItemDTO> allItems = new ArrayList<>();
     private List<ItemDTO> filteredItems = new ArrayList<>();
@@ -52,12 +52,7 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
             event.forwardTo("");
         }
 
-        UI.getCurrent().getPage().executeJs("""
-                    import { connectWebSocket } from './Frontend/frontend/js/notification-client.js';
-                    connectWebSocket($0, function(msg) {
-                        $1.$server.showNotificationFromJS(msg);
-                    });
-                """, getUserId(), getElement());
+        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
         handleSuspence();
     }
 

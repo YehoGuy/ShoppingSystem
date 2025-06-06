@@ -53,7 +53,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Route(value = "edit-shop", layout = AppLayoutBasic.class)
-@JsModule("./Frontend/frontend/js/notification-client.js")
+@JsModule("./notification-client.js")
 public class EditShopView extends VerticalLayout implements HasUrlParameter<Integer>, BeforeEnterObserver {
 
     private final RestTemplate restTemplate = new RestTemplate();
@@ -91,12 +91,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             event.forwardTo("login");
         }
 
-        UI.getCurrent().getPage().executeJs("""
-                    import { connectWebSocket } from './Frontend/frontend/js/notification-client.js';
-                    connectWebSocket($0, function(msg) {
-                        $1.$server.showNotificationFromJS(msg);
-                    });
-                """, getUserId(), getElement());
+        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
     }
 
     @ClientCallable

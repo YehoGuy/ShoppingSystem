@@ -27,7 +27,7 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import DTOs.RecieptDTO;
 
 @Route(value = "history", layout = AppLayoutBasic.class)
-@JsModule("./Frontend/frontend/js/notification-client.js")
+@JsModule("./notification-client.js")
 public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<Integer>, BeforeEnterObserver {
 
     @Value("${url.api}/purchases/shops")
@@ -56,12 +56,7 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
             return;
         }
 
-        UI.getCurrent().getPage().executeJs("""
-                    import { connectWebSocket } from './Frontend/frontend/js/notification-client.js';
-                    connectWebSocket($0, function(msg) {
-                        $1.$server.showNotificationFromJS(msg);
-                    });
-                """, getUserId(), getElement());
+        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
         handleSuspence();
     }
 

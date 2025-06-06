@@ -38,7 +38,7 @@ import DTOs.ShopDTO;
 import DTOs.ShopReviewDTO;
 
 @Route(value = "shop", layout = AppLayoutBasic.class)
-@JsModule("./Frontend/frontend/js/notification-client.js")
+@JsModule("./notification-client.js")
 public class ShopView extends VerticalLayout implements HasUrlParameter<String>, BeforeEnterObserver {
 
     @Value("${url.api}/shops")
@@ -57,12 +57,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
             event.forwardTo("login");
         }
 
-        UI.getCurrent().getPage().executeJs("""
-                    import { connectWebSocket } from './Frontend/frontend/js/notification-client.js';
-                    connectWebSocket($0, function(msg) {
-                        $1.$server.showNotificationFromJS(msg);
-                    });
-                """, getUserId(), getElement());
+        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
         handleSuspence();
     }
 

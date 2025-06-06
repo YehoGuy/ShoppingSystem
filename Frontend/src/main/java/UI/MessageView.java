@@ -36,7 +36,7 @@ import DTOs.MessageDTO;
 import DTOs.rolesDTO;
 
 @Route(value = "messages", layout = AppLayoutBasic.class)
-@JsModule("./Frontend/frontend/js/notification-client.js")
+@JsModule("./notification-client.js")
 public class MessageView extends VerticalLayout implements BeforeEnterObserver {
 
     @Value("${url.api}/messages")
@@ -168,12 +168,7 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
             event.forwardTo("login");
         }
 
-        UI.getCurrent().getPage().executeJs("""
-                    import { connectWebSocket } from './Frontend/frontend/js/notification-client.js';
-                    connectWebSocket($0, function(msg) {
-                        $1.$server.showNotificationFromJS(msg);
-                    });
-                """, getUserId(), getElement());
+        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
         handleSuspence();
     }
 

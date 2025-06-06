@@ -20,7 +20,7 @@ import com.vaadin.flow.server.VaadinSession;
 
 import DTOs.PaymentMethodDTO;
 
-@JsModule("./Frontend/frontend/js/notification-client.js")
+@JsModule("./notification-client.js")
 public class PaymenPageView extends VerticalLayout implements BeforeEnterObserver {
 
     private final PaymentMethodDTO paymentMethod;
@@ -43,12 +43,7 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
             event.forwardTo("login");
         }
 
-        UI.getCurrent().getPage().executeJs("""
-                    import { connectWebSocket } from './Frontend/frontend/js/notification-client.js';
-                    connectWebSocket($0, function(msg) {
-                        $1.$server.showNotificationFromJS(msg);
-                    });
-                """, getUserId(), getElement());
+        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
         handleSuspence();
     }
 

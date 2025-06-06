@@ -30,7 +30,7 @@ import com.vaadin.flow.server.VaadinSession;
 import DTOs.ShopDTO;
 
 @Route(value = "myshops", layout = AppLayoutBasic.class)
-@JsModule("./Frontend/frontend/js/notification-client.js")
+@JsModule("./notification-client.js")
 public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
 
     @Value("${url.api}/shops")
@@ -88,12 +88,7 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
         }
         loadShops();
 
-        UI.getCurrent().getPage().executeJs("""
-                    import { connectWebSocket } from './Frontend/frontend/js/notification-client.js';
-                    connectWebSocket($0, function(msg) {
-                        $1.$server.showNotificationFromJS(msg);
-                    });
-                """, getUserId(), getElement());
+        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
         handleSuspence();
     }
 

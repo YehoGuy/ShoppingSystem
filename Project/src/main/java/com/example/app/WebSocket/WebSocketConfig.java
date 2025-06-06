@@ -9,13 +9,16 @@ import org.springframework.web.socket.config.annotation.*;
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
-    public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws-notifications").setAllowedOrigins("*").withSockJS();
+    public void configureMessageBroker(MessageBrokerRegistry config) {
+        config.enableSimpleBroker("/topic", "/queue"); // for broadcasting
+        config.setApplicationDestinationPrefixes("/app"); // for @MessageMapping
+        config.setUserDestinationPrefix("/user"); // for user-specific messages
     }
 
     @Override
-    public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableSimpleBroker("/user");
-        registry.setApplicationDestinationPrefixes("/app");
+    public void registerStompEndpoints(StompEndpointRegistry registry) {
+        registry.addEndpoint("/ws-notifications")
+                .setAllowedOrigins("http://localhost:8081") // ✅ allow your frontend
+                .withSockJS(); // enable SockJS fallback
     }
 }

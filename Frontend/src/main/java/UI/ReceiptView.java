@@ -26,7 +26,7 @@ import DTOs.AddressDTO;
 import DTOs.RecieptDTO;
 
 @Route("receipt")
-@JsModule("./Frontend/frontend/js/notification-client.js")
+@JsModule("./notification-client.js")
 public class ReceiptView extends VerticalLayout implements BeforeEnterObserver {
 
     @Value("${url.api}/purchases")
@@ -66,12 +66,7 @@ public class ReceiptView extends VerticalLayout implements BeforeEnterObserver {
             event.forwardTo("home");
         }
 
-        UI.getCurrent().getPage().executeJs("""
-                    import { connectWebSocket } from './Frontend/frontend/js/notification-client.js';
-                    connectWebSocket($0, function(msg) {
-                        $1.$server.showNotificationFromJS(msg);
-                    });
-                """, getUserId(), getElement());
+        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
         handleSuspence();
     }
 

@@ -22,7 +22,7 @@ import DTOs.MemberDTO;
 import DTOs.rolesDTO;
 
 @Route(value = "profile", layout = AppLayoutBasic.class)
-@JsModule("./Frontend/frontend/js/notification-client.js")
+@JsModule("./notification-client.js")
 public class PersonProfileView extends VerticalLayout implements BeforeEnterObserver {
 
     @Value("${url.api}/users")
@@ -55,12 +55,7 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
             return;
         }
 
-        UI.getCurrent().getPage().executeJs("""
-                    import { connectWebSocket } from './Frontend/frontend/js/notification-client.js';
-                    connectWebSocket($0, function(msg) {
-                        $1.$server.showNotificationFromJS(msg);
-                    });
-                """, getUserId(), getElement());
+        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
 
         handleSuspence();
 
