@@ -9,6 +9,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.html.Div;
@@ -24,14 +25,13 @@ import com.vaadin.flow.server.VaadinSession;
 import DTOs.AddressDTO;
 import DTOs.RecieptDTO;
 
-
 @Route("receipt")
-@JsModule("./js/notification-client.js")
+
 public class ReceiptView extends VerticalLayout implements BeforeEnterObserver {
 
     @Value("${url.api}/purchases")
     private String URL;
-        
+
     private RecieptDTO receipt;
 
     public ReceiptView() {
@@ -65,8 +65,7 @@ public class ReceiptView extends VerticalLayout implements BeforeEnterObserver {
         if (VaadinSession.getCurrent().getAttribute("purchaseId") == null) {
             event.forwardTo("home");
         }
-        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m -> m.connectNotifications($0))",
-                getUserId());
+
         handleSuspence();
     }
 
@@ -163,6 +162,7 @@ public class ReceiptView extends VerticalLayout implements BeforeEnterObserver {
             Notification.show("Error fetching receipt: " + e.getMessage(), 4000, Notification.Position.MIDDLE);
         }
     }
+
     private void handleSuspence() {
         RestTemplate restTemplate = new RestTemplate();
 
@@ -174,15 +174,14 @@ public class ReceiptView extends VerticalLayout implements BeforeEnterObserver {
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/"+userId+"/suspension?token=" +token;
+        String url = "http://localhost:8080/api/users" + "/" + userId + "/suspension?token=" + token;
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
         } else {
             throw new RuntimeException(
-                "Failed to check admin status: HTTP " + response.getStatusCode().value()
-            );
+                    "Failed to check admin status: HTTP " + response.getStatusCode().value());
         }
     }
 }

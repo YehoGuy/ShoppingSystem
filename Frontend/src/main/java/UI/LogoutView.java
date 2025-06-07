@@ -1,5 +1,6 @@
 package UI;
 
+import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
@@ -21,7 +22,6 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.beans.factory.annotation.Value;
 
-
 @Route("logout")
 public class LogoutView extends VerticalLayout implements BeforeEnterObserver {
 
@@ -36,6 +36,14 @@ public class LogoutView extends VerticalLayout implements BeforeEnterObserver {
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("");
         }
+    }
+
+    public Integer getUserId() {
+        if (VaadinSession.getCurrent().getAttribute("userId") == null) {
+            Notification.show("You are not connected.");
+            UI.getCurrent().navigate("");
+        }
+        return (Integer) VaadinSession.getCurrent().getAttribute("userId");
     }
 
     public LogoutView() {
@@ -65,11 +73,10 @@ public class LogoutView extends VerticalLayout implements BeforeEnterObserver {
 
             HttpEntity<?> requestEntity = new HttpEntity<>(headers);
             ResponseEntity<String> response = restTemplate.exchange(
-                urlWithParam,
-                HttpMethod.POST,
-                requestEntity,
-                String.class
-            );
+                    urlWithParam,
+                    HttpMethod.POST,
+                    requestEntity,
+                    String.class);
 
             // Treat any 2xx response as success
             if (response.getStatusCode().is2xxSuccessful()) {

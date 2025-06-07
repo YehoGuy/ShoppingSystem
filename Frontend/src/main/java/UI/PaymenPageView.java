@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.JsModule;
@@ -19,7 +20,6 @@ import com.vaadin.flow.server.VaadinSession;
 
 import DTOs.PaymentMethodDTO;
 
-@JsModule("./js/notification-client.js")
 public class PaymenPageView extends VerticalLayout implements BeforeEnterObserver {
 
     private final PaymentMethodDTO paymentMethod;
@@ -41,8 +41,7 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("login");
         }
-        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m -> m.connectNotifications($0))",
-                getUserId());
+
         handleSuspence();
     }
 
@@ -143,6 +142,7 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
     private String getToken() {
         return (String) VaadinSession.getCurrent().getAttribute("authToken");
     }
+
     private void handleSuspence() {
         Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
         if (userId == null) {
@@ -152,15 +152,14 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/"+userId+"/suspension?token=" +token;
+        String url = "http://localhost:8080/api/users" + "/" + userId + "/suspension?token=" + token;
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
         } else {
             throw new RuntimeException(
-                "Failed to check admin status: HTTP " + response.getStatusCode().value()
-            );
+                    "Failed to check admin status: HTTP " + response.getStatusCode().value());
         }
     }
 }

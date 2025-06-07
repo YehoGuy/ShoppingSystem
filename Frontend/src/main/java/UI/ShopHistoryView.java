@@ -7,11 +7,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -25,7 +27,7 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import DTOs.RecieptDTO;
 
 @Route(value = "history", layout = AppLayoutBasic.class)
-@JsModule("./js/notification-client.js")
+
 public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<Integer>, BeforeEnterObserver {
 
     @Value("${url.api}/purchases/shops")
@@ -53,8 +55,7 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
             event.forwardTo("login");
             return;
         }
-        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m => m.connectNotifications($0))",
-                getUserId());
+
         handleSuspence();
     }
 
@@ -132,7 +133,7 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         card.add(box);
         receiptsLayout.add(card);
     }
-    
+
     private void handleSuspence() {
 
         Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
@@ -143,15 +144,14 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/"+userId+"/suspension?token=" +token;
-        ResponseEntity<Boolean> response =  rest.getForEntity(url, Boolean.class);
+        String url = "http://localhost:8080/api/users" + "/" + userId + "/suspension?token=" + token;
+        ResponseEntity<Boolean> response = rest.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
         } else {
             throw new RuntimeException(
-                "Failed to check admin status: HTTP " + response.getStatusCode().value()
-            );
+                    "Failed to check admin status: HTTP " + response.getStatusCode().value());
         }
     }
 

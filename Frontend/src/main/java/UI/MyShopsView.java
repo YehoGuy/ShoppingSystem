@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.JsModule;
@@ -29,7 +30,7 @@ import com.vaadin.flow.server.VaadinSession;
 import DTOs.ShopDTO;
 
 @Route(value = "myshops", layout = AppLayoutBasic.class)
-@JsModule("./js/notification-client.js")
+
 public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
 
     @Value("${url.api}/shops")
@@ -86,8 +87,7 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
             event.forwardTo("login");
         }
         loadShops();
-        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m => m.connectNotifications($0))",
-                getUserId());
+
         handleSuspence();
     }
 

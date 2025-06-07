@@ -1,5 +1,6 @@
 package UI;
 
+import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -7,6 +8,7 @@ import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 
@@ -23,7 +25,6 @@ import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 
-@JsModule("./js/notification-client.js")
 public class PurchaseCompletionIntermidiate extends VerticalLayout implements BeforeEnterObserver {
 
     private ComboBox<String> shippingTypeCombo;
@@ -43,8 +44,7 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("");
         }
-        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m -> m.connectNotifications($0))",
-                getUserId());
+
         handleSuspence();
     }
 
@@ -152,7 +152,7 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
                 .findFirst()
                 .orElse(null);
     }
-    
+
     private void handleSuspence() {
         RestTemplate restTemplate = new RestTemplate();
 
@@ -164,15 +164,14 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/"+userId+"/suspension?token=" +token;
+        String url = "http://localhost:8080/api/users" + "/" + userId + "/suspension?token=" + token;
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
         } else {
             throw new RuntimeException(
-                "Failed to check admin status: HTTP " + response.getStatusCode().value()
-            );
+                    "Failed to check admin status: HTTP " + response.getStatusCode().value());
         }
     }
 
