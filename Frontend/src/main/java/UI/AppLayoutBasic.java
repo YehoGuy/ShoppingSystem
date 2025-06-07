@@ -1,6 +1,9 @@
 package UI;
 
+import java.io.Serializable;
+
 import com.vaadin.flow.component.ClientCallable;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.dependency.JsModule;
@@ -19,6 +22,7 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 public class AppLayoutBasic extends AppLayout implements RouterLayout {
 
     public AppLayoutBasic() {
+        UI.getCurrent().getPage().executeJs("window.connectWebSocket();", getUserId());
         DrawerToggle toggle = new DrawerToggle();
 
         SideNav nav = getSideNav();
@@ -30,6 +34,13 @@ public class AppLayoutBasic extends AppLayout implements RouterLayout {
         addToNavbar(toggle);
     }
     // end::snippet[]
+
+    private Integer getUserId() {
+        if (VaadinSession.getCurrent().getAttribute("userId") != null) {
+            return Integer.parseInt(VaadinSession.getCurrent().getAttribute("userId").toString());
+        }
+        return null; // or throw an exception if userId is mandatory
+    }
 
     private SideNav getSideNav() {
         SideNav sideNav = new SideNav();

@@ -57,7 +57,6 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
             event.forwardTo("login");
         }
 
-        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
         handleSuspence();
     }
 

@@ -56,7 +56,6 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
             return;
         }
 
-        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
         handleSuspence();
     }
 

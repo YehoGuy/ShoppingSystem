@@ -42,7 +42,6 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
             event.forwardTo("login");
         }
 
-        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
         handleSuspence();
     }
 

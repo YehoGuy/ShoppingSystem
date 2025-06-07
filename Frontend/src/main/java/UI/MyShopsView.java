@@ -88,7 +88,6 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
         }
         loadShops();
 
-        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
         handleSuspence();
     }
 

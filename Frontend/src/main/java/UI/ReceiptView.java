@@ -66,7 +66,6 @@ public class ReceiptView extends VerticalLayout implements BeforeEnterObserver {
             event.forwardTo("home");
         }
 
-        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
         handleSuspence();
     }
 

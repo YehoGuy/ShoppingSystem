@@ -46,7 +46,6 @@ public class ShopSearchView extends VerticalLayout implements BeforeEnterObserve
             return;
         }
 
-        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
         loadShops(token);
         displayShops(filteredShops);
         handleSuspence();

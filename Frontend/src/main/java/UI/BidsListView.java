@@ -44,8 +44,6 @@ public class BidsListView extends VerticalLayout {
         setPadding(true);
         setSpacing(true);
 
-        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
-
         H2 header = new H2("Available Bids");
         add(header);
 

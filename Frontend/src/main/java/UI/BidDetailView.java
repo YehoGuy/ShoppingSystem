@@ -94,8 +94,6 @@ public class BidDetailView extends VerticalLayout implements BeforeEnterObserver
             return;
         }
 
-        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
-
         // 2) Parse to integer
         try {
             bidId = Integer.parseInt(bidIdStr);

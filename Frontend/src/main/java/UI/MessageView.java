@@ -168,7 +168,6 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
             event.forwardTo("login");
         }
 
-        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
         handleSuspence();
     }
 

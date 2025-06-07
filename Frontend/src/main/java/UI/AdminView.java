@@ -144,7 +144,6 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("login");
         }
-        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
     }
 
     private String getUserId() {

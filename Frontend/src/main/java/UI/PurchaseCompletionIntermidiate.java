@@ -45,7 +45,6 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
             event.forwardTo("");
         }
 
-        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
         handleSuspence();
     }
 

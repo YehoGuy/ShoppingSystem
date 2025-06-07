@@ -36,7 +36,6 @@ public class LogoutView extends VerticalLayout implements BeforeEnterObserver {
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("");
         }
-        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
     }
 
     public Integer getUserId() {

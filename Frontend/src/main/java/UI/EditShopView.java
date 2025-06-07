@@ -91,7 +91,6 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             event.forwardTo("login");
         }
 
-        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
     }
 
     private String getUserId() {

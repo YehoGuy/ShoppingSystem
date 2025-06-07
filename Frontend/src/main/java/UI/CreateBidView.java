@@ -78,7 +78,6 @@ public class CreateBidView extends VerticalLayout implements BeforeEnterObserver
             return;
         }
 
-        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
         // 2) Load the ShopDTO (with items & prices)
         loadShop();
         // 3) Build the UI once we have shop data

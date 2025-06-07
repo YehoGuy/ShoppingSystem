@@ -52,7 +52,6 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
             event.forwardTo("");
         }
 
-        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
         handleSuspence();
     }
 

@@ -70,7 +70,6 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             event.forwardTo("");
         }
 
-        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
         handleSuspence();
     }
 

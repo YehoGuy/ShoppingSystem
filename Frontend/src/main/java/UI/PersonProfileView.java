@@ -55,8 +55,6 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
             return;
         }
 
-        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
-
         handleSuspence();
 
         // 2) Parse ?userId= from URL
