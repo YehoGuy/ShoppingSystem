@@ -14,14 +14,22 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 
 @Route(value = "home", layout = AppLayoutBasic.class)
-
 public class HomeView extends VerticalLayout implements BeforeEnterObserver {
+
+    static boolean isConnected = false;
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("");
         }
+        if (!isConnected) {
+            connectWebSocket();
+            isConnected = true;
+        }
+    }
+
+    private void connectWebSocket() {
         UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
     }
 
