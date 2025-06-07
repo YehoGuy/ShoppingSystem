@@ -89,11 +89,11 @@ public class ShopSearchView extends VerticalLayout implements BeforeEnterObserve
                 filteredShops.clear();
                 filteredShops.addAll(allShops);
             } else {
-                Notification.show("Failed to load shops: " + response.getStatusCode(), 3000,
+                Notification.show("Failed to load shops", 3000,
                         Notification.Position.MIDDLE);
             }
         } catch (Exception ex) {
-            Notification.show("Error loading shops: " + ex.getMessage(), 5000, Notification.Position.MIDDLE);
+            Notification.show("Error loading shops", 5000, Notification.Position.MIDDLE);
         }
     }
 
@@ -147,8 +147,8 @@ public class ShopSearchView extends VerticalLayout implements BeforeEnterObserve
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
         } else {
-            throw new RuntimeException(
-                    "Failed to check admin status: HTTP " + response.getStatusCode().value());
+            Notification.show(
+                    "Failed to check admin status");
         }
     }
 }

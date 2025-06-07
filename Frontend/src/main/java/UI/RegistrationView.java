@@ -19,7 +19,6 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
 
-
 @Route("register")
 public class RegistrationView extends VerticalLayout {
 
@@ -86,10 +85,10 @@ public class RegistrationView extends VerticalLayout {
                     setUserId();
                     getUI().ifPresent(ui -> ui.navigate("home"));
                 } else {
-                    Notification.show("Registration failed (" + response.getStatusCode() + ")");
+                    Notification.show("Registration failed");
                 }
             } catch (Exception ex) {
-                Notification.show("Error: " + ex.getMessage(), 5000, Notification.Position.MIDDLE);
+                Notification.show("Error", 5000, Notification.Position.MIDDLE);
             }
         });
 
@@ -115,9 +114,8 @@ public class RegistrationView extends VerticalLayout {
             VaadinSession.getCurrent().setAttribute("isAdmin", false);
 
         } else {
-            throw new RuntimeException(
-                "Failed to retrieve user ID: HTTP " + response.getStatusCode().value()
-            );
+            Notification.show(
+                    "Failed to retrieve user ID");
         }
     }
 }

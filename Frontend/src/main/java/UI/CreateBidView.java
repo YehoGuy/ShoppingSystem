@@ -113,13 +113,13 @@ public class CreateBidView extends VerticalLayout implements BeforeEnterObserver
                         shop.getItemPrices()// List<Double>, same length
                 );
             } else {
-                Notification.show("⚠️ Failed to load shop: " + resp.getStatusCode(),
+                Notification.show("⚠️ Failed to load shop",
                         3000, Notification.Position.MIDDLE);
                 shop = null;
                 prices = null;
             }
         } catch (Exception e) {
-            Notification.show("❗ Error loading shop: " + e.getMessage(),
+            Notification.show("❗ Error loading shop",
                     3000, Notification.Position.MIDDLE);
             shop = null;
             prices = null;
@@ -253,12 +253,12 @@ public class CreateBidView extends VerticalLayout implements BeforeEnterObserver
                         2000, Notification.Position.MIDDLE);
                 UI.getCurrent().navigate("bid/" + newBidId);
             } else {
-                Notification.show("Failed to create bid: " + resp.getStatusCode(),
+                Notification.show("Failed to create bid",
                         3000, Notification.Position.MIDDLE);
             }
         } catch (Exception ex) {
             ex.printStackTrace();
-            Notification.show("❗ Error creating bid: " + ex.getMessage(),
+            Notification.show("❗ Error creating bid",
                     4000, Notification.Position.MIDDLE);
         }
     }

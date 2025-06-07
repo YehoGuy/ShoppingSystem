@@ -114,11 +114,11 @@ public class BidsListView extends VerticalLayout {
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 bidGrid.setItems(response.getBody());
             } else {
-                add(new Text("Failed to load bids: " + response.getStatusCode()));
+                add(new Text("Failed to load bids"));
             }
         } catch (Exception ex) {
             ex.printStackTrace();
-            add(new Text("Error fetching bids: " + ex.getMessage()));
+            add(new Text("Error fetching bids"));
         }
     }
 }

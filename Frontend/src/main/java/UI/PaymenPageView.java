@@ -135,7 +135,7 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
                 Notification.show("Payment failed:");
             }
         } catch (Exception e) {
-            Notification.show("Payment error: " + e.getMessage());
+            Notification.show("Payment error");
         }
     }
 
@@ -158,8 +158,8 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
         } else {
-            throw new RuntimeException(
-                    "Failed to check admin status: HTTP " + response.getStatusCode().value());
+            Notification.show(
+                    "Failed to check admin status");
         }
     }
 }

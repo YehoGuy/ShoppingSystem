@@ -156,10 +156,10 @@ public class ReceiptView extends VerticalLayout implements BeforeEnterObserver {
             if (response.getStatusCode().is2xxSuccessful()) {
                 receipt = response.getBody();
             } else {
-                Notification.show("Failed to fetch receipt: " + response.getStatusCode());
+                Notification.show("Failed to fetch receipt");
             }
         } catch (Exception e) {
-            Notification.show("Error fetching receipt: " + e.getMessage(), 4000, Notification.Position.MIDDLE);
+            Notification.show("Error fetching receipt", 4000, Notification.Position.MIDDLE);
         }
     }
 
@@ -180,8 +180,8 @@ public class ReceiptView extends VerticalLayout implements BeforeEnterObserver {
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
         } else {
-            throw new RuntimeException(
-                    "Failed to check admin status: HTTP " + response.getStatusCode().value());
+            Notification.show(
+                    "Failed to check admin status");
         }
     }
 }

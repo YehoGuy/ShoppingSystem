@@ -136,12 +136,12 @@ public class BidDetailView extends VerticalLayout implements BeforeEnterObserver
                 // Keep bid null; buildPage() will show “not found”
             } else {
                 bid = null;
-                Notification.show("⚠️ Failed to load bid: " + resp.getStatusCode(),
+                Notification.show("⚠️ Failed to load bid",
                         3000, Notification.Position.MIDDLE);
             }
         } catch (Exception e) {
             bid = null;
-            Notification.show("❗ Error loading bid: " + e.getMessage(),
+            Notification.show("❗ Error loading bid",
                     3000, Notification.Position.MIDDLE);
         }
     }
@@ -253,12 +253,12 @@ public class BidDetailView extends VerticalLayout implements BeforeEnterObserver
                 loadBid();
                 buildPage();
             } else {
-                Notification.show("Failed to place bid: " + resp.getStatusCode(),
+                Notification.show("Failed to place bid",
                         3000, Notification.Position.MIDDLE);
             }
         } catch (Exception ex) {
             ex.printStackTrace();
-            Notification.show("Error placing bid: " + ex.getMessage(),
+            Notification.show("Error placing bid",
                     4000, Notification.Position.MIDDLE);
         }
     }
@@ -284,14 +284,11 @@ public class BidDetailView extends VerticalLayout implements BeforeEnterObserver
                 loadBid();
                 buildPage();
             } else {
-                Notification.show("Error finalizing bid: "
-                        + resp.getStatusCode()
-                        + ((resp.hasBody()) ? " : " + resp.getBody() : ""),
+                Notification.show("Error finalizing bid",
                         3000, Notification.Position.MIDDLE);
             }
         } catch (Exception ex) {
-            Notification.show("Error finalizing bid: "
-                    + ex.getMessage(),
+            Notification.show("Error finalizing bid",
                     3000, Notification.Position.MIDDLE);
         }
     }
