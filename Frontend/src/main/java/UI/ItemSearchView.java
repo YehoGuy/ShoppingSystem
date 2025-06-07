@@ -123,7 +123,7 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
                 filteredItems.add(item1);
             }
         } else {
-            Notification.show("Failed to fetch items: " + response.getStatusCode());
+            Notification.show("Failed to fetch items");
         }
 
     }
@@ -216,8 +216,8 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
         } else {
-            throw new RuntimeException(
-                    "Failed to check admin status: HTTP " + response.getStatusCode().value());
+            Notification.show(
+                    "Failed to check admin status");
         }
     }
 }

@@ -86,10 +86,10 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
                     }
                 }
             } else {
-                receiptsLayout.add(new H3("Failed to load history: HTTP " + resp.getStatusCode()));
+                receiptsLayout.add(new H3("Failed to load history"));
             }
         } catch (Exception ex) {
-            receiptsLayout.add(new H3("Error loading history: " + ex.getMessage()));
+            receiptsLayout.add(new H3("Error loading history"));
         }
     }
 
@@ -150,8 +150,8 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
         } else {
-            throw new RuntimeException(
-                    "Failed to check admin status: HTTP " + response.getStatusCode().value());
+            Notification.show(
+                    "Failed to check admin status");
         }
     }
 

@@ -80,10 +80,10 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
                 prices = ShopDTO.itemPricesToMapConverter(shop.getItems(), shop.getItemPrices());
                 buildPage();
             } else {
-                Notification.show("⚠️ Failed to load shop: " + resp.getStatusCode());
+                Notification.show("⚠️ Failed to load shop");
             }
         } catch (Exception e) {
-            Notification.show("❗ Error loading shop: " + e.getMessage());
+            Notification.show("❗ Error loading shop");
         }
     }
 
@@ -128,11 +128,11 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
                 shopBidsGrid.setItems(response.getBody());
             } else {
                 // If we get a 4xx or 5xx, show an error header
-                add(new H2("Failed to load shop’s bids: " + response.getStatusCode()));
+                add(new H2("Failed to load shop’s bids"));
             }
         } catch (Exception ex) {
             ex.printStackTrace();
-            add(new H2("Error fetching shop’s bids: " + ex.getMessage()));
+            add(new H2("Error fetching shop’s bids"));
         }
     }
 
@@ -224,8 +224,8 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
         } else {
-            throw new RuntimeException(
-                    "Failed to check admin status: HTTP " + response.getStatusCode().value());
+            Notification.show(
+                    "Failed to check admin status");
         }
     }
 }

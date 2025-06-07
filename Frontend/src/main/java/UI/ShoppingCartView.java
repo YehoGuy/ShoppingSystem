@@ -312,7 +312,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 log.warn("Shop with ID {} not found, skipping", id);
             } catch (Exception e) {
                 // skip all other errors silently
-                log.warn("Error fetching shop with ID {}: {}", id, e.getMessage());
+                log.warn("Error fetching shop with ID {}", id);
                 return Collections.emptyList();
             }
         }
@@ -402,8 +402,8 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
         } else {
-            throw new RuntimeException(
-                    "Failed to check admin status: HTTP " + response.getStatusCode().value());
+            Notification.show(
+                    "Failed to check admin status");
         }
     }
 }

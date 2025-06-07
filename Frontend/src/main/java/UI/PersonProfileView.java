@@ -120,10 +120,10 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
                         new Span("Email: " + memberDTO.getEmail()),
                         new Span("Phone: " + memberDTO.getPhoneNumber()));
             } else {
-                detailsLayout.add(new Span("Cannot load profile: " + resp.getStatusCode()));
+                detailsLayout.add(new Span("Cannot load profile"));
             }
         } catch (Exception ex) {
-            detailsLayout.add(new Span("Error: " + ex.getMessage()));
+            detailsLayout.add(new Span("Error"));
         }
     }
 
@@ -141,7 +141,7 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
                 notificationsLayout.add(new Span("No notifications"));
             }
         } catch (Exception ex) {
-            notificationsLayout.add(new Span("Error: " + ex.getMessage()));
+            notificationsLayout.add(new Span("Error"));
         }
     }
 
@@ -170,10 +170,10 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
                     rolesLayout.add(new Span("No roles for this user"));
                 }
             } else {
-                rolesLayout.add(new Span("Cannot load roles: " + resp.getStatusCode()));
+                rolesLayout.add(new Span("Cannot load roles"));
             }
         } catch (Exception ex) {
-            rolesLayout.add(new Span("Error: " + ex.getMessage()));
+            rolesLayout.add(new Span("Error"));
         }
     }
 
@@ -192,8 +192,8 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
         } else {
-            throw new RuntimeException(
-                    "Failed to check admin status: HTTP " + response.getStatusCode().value());
+            Notification.show(
+                    "Failed to check admin status");
         }
     }
 }

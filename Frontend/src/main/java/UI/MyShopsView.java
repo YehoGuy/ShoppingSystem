@@ -110,10 +110,10 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
                 allShops = Arrays.asList(resp.getBody());
                 filterAndDisplay();
             } else {
-                Notification.show("⚠️ Failed to load shops: " + resp.getStatusCode());
+                Notification.show("⚠️ Failed to load shops");
             }
         } catch (Exception ex) {
-            Notification.show("❗ Error loading shops: " + ex.getMessage());
+            Notification.show("❗ Error loading shops");
         }
     }
 
@@ -147,10 +147,10 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
                 Notification.show("✅ Shop created: " + name);
                 loadShops();
             } else {
-                Notification.show("⚠️ Could not create shop: " + resp.getStatusCode());
+                Notification.show("⚠️ Could not create shop");
             }
         } catch (Exception ex) {
-            Notification.show("❗ Error creating shop: " + ex.getMessage());
+            Notification.show("❗ Error creating shop");
         }
     }
 
@@ -201,8 +201,8 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
         } else {
-            throw new RuntimeException(
-                    "Failed to check admin status: HTTP " + response.getStatusCode().value());
+            Notification.show(
+                    "Failed to check admin status");
         }
     }
 }

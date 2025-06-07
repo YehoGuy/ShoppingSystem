@@ -199,7 +199,7 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
             }
 
         } catch (Exception ex) {
-            Notification.show("Error loading messages: " + ex.getMessage(), 3000, Notification.Position.MIDDLE);
+            Notification.show("Error loading messages", 3000, Notification.Position.MIDDLE);
         }
     }
 
@@ -215,10 +215,10 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
             if (resp.getStatusCode() == HttpStatus.ACCEPTED) {
                 Notification.show("✅ Message sent", 2000, Notification.Position.MIDDLE);
             } else {
-                Notification.show("⚠️ " + resp.getBody(), 3000, Notification.Position.MIDDLE);
+                Notification.show("⚠️", 3000, Notification.Position.MIDDLE);
             }
         } catch (Exception ex) {
-            Notification.show("❗ Error sending message: " + ex.getMessage(), 3000, Notification.Position.MIDDLE);
+            Notification.show("❗ Error sending message", 3000, Notification.Position.MIDDLE);
         }
     }
 
@@ -248,10 +248,10 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
                     container.add(new Span("No new notifications."));
                 }
             } else {
-                Notification.show("⚠️ Failed to load notifications: " + resp.getStatusCode());
+                Notification.show("⚠️ Failed to load notifications");
             }
         } catch (Exception ex) {
-            Notification.show("❗ Error loading notifications: " + ex.getMessage(), 3000, Notification.Position.MIDDLE);
+            Notification.show("❗ Error loading notifications", 3000, Notification.Position.MIDDLE);
         }
     }
 
@@ -324,11 +324,11 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
                 }
 
             } else {
-                Notification.show("⚠️ Failed to load pending roles: " + resp.getStatusCode());
+                Notification.show("⚠️ Failed to load pending roles");
             }
 
         } catch (Exception ex) {
-            Notification.show("❗ Error loading pending roles: " + ex.getMessage(),
+            Notification.show("❗ Error loading pending roles",
                     3000, Notification.Position.MIDDLE);
         }
     }
@@ -348,8 +348,8 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
         } else {
-            throw new RuntimeException(
-                    "Failed to check admin status: HTTP " + response.getStatusCode().value());
+            Notification.show(
+                    "Failed to check admin status");
         }
     }
 }

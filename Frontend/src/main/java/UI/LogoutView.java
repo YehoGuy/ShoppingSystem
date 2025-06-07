@@ -84,10 +84,10 @@ public class LogoutView extends VerticalLayout implements BeforeEnterObserver {
                 VaadinSession.getCurrent().setAttribute("authToken", null);
                 Notification.show("Logged out successfully", 3000, Notification.Position.MIDDLE);
             } else {
-                Notification.show("Logout failed: " + response.getStatusCode(), 3000, Notification.Position.MIDDLE);
+                Notification.show("Logout failed", 3000, Notification.Position.MIDDLE);
             }
         } catch (Exception ex) {
-            Notification.show("Error during logout: " + ex.getMessage(), 5000, Notification.Position.MIDDLE);
+            Notification.show("Error during logout", 5000, Notification.Position.MIDDLE);
         }
 
         UI.getCurrent().navigate("");

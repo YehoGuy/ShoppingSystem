@@ -280,7 +280,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
 
             userGrid.setItems(rows);
         } catch (Exception e) {
-            Notification.show("Failed to load users: " + e.getMessage());
+            Notification.show("Failed to load users");
         }
     }
 
@@ -303,7 +303,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
 
             shopGrid.setItems(rows);
         } catch (Exception e) {
-            Notification.show("Failed to load shops: " + e.getMessage());
+            Notification.show("Failed to load shops");
         }
     }
 
@@ -326,7 +326,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
 
             itemGrid.setItems(rows);
         } catch (Exception e) {
-            Notification.show("Failed to load items: " + e.getMessage());
+            Notification.show("Failed to load items");
         }
     }
 
@@ -340,7 +340,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             restTemplate.postForEntity(url, request, Void.class);
             Notification.show("User " + userId + " promoted to admin");
         } catch (Exception e) {
-            Notification.show("Promotion failed: " + e.getMessage());
+            Notification.show("Promotion failed");
         }
     }
 
@@ -359,7 +359,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             dialog.close();
 
         } catch (Exception e) {
-            Notification.show("Suspension failed: " + e.getMessage());
+            Notification.show("Suspension failed");
         }
     }
 
@@ -375,7 +375,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             Notification.show("User " + userId + " unsuspended");
             loadUsers(); // Refresh the user grid
         } catch (Exception e) {
-            Notification.show("Unsuspension failed: " + e.getMessage());
+            Notification.show("Unsuspension failed");
         }
     }
 
@@ -391,7 +391,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             Notification.show("User " + userId + " banned");
             loadUsers(); // Refresh the user grid
         } catch (Exception e) {
-            Notification.show("Ban failed: " + e.getMessage());
+            Notification.show("Ban failed");
         }
     }
 
@@ -468,7 +468,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             Notification.show("Shop " + shopId + " removed");
             loadShops();
         } catch (Exception e) {
-            Notification.show("Failed to remove shop: " + e.getMessage());
+            Notification.show("Failed to remove shop");
         }
     }
 
@@ -482,7 +482,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             restTemplate.exchange(url, HttpMethod.DELETE, request, Void.class);
             Notification.show("Item " + itemId + " removed");
         } catch (Exception e) {
-            Notification.show("Failed to remove item: " + e.getMessage());
+            Notification.show("Failed to remove item");
         }
     }
 

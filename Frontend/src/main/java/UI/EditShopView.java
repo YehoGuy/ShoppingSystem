@@ -141,10 +141,10 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                     }
                 }
             } else {
-                Notification.show("Failed to load shop: " + response.getStatusCode());
+                Notification.show("Failed to load shop");
             }
         } catch (Exception e) {
-            Notification.show("Error loading shop: " + e.getMessage());
+            Notification.show("Error loading shop");
         }
     }
 
@@ -306,7 +306,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                 if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
                     Notification.show(username + " got a new role in his pending roles.");
                 } else {
-                    Notification.show("Failed to add role to user's pending roles: " + response.getStatusCode());
+                    Notification.show("Failed to add role to user's pending roles");
                 }
                 dialog.close();
             });
@@ -334,7 +334,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                 Notification.show(dto.getUsername() + " was removed from the shop.");
                 DisplayRoles();
             } else {
-                Notification.show("Failed to remove user from the shop: " + response.getStatusCode());
+                Notification.show("Failed to remove user from the shop");
             }
             dialog.close();
         });
@@ -368,7 +368,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
                 Notification.show(dto.getUsername() + "' permissions were changed.");
             } else {
-                Notification.show("Failed to change permissions: " + response.getStatusCode());
+                Notification.show("Failed to change permissions");
             }
             dialog.close();
         });
@@ -384,7 +384,10 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                 .filter(member -> member.getUsername().equals(username))
                 .findFirst()
                 .map(MemberDTO::getMemberId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+                .orElseGet(() -> {
+                    Notification.show("User not found");
+                    return -1; // or throw an exception
+                });
     }
 
     private Collection<String> getUserNames(List<MemberDTO> notWorkingMembers) {
@@ -411,7 +414,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                             .noneMatch(m -> m.getMemberId() == member.getMemberId()))
                     .collect(Collectors.toList());
         } else {
-            Notification.show("Failed to load members: " + response.getStatusCode());
+            Notification.show("Failed to load members");
             return new ArrayList<>();
         }
     }
@@ -429,7 +432,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         if (response.getStatusCode().is2xxSuccessful()) {
             return response.getBody();
         } else {
-            Notification.show("Failed to load shop workers: " + response.getStatusCode());
+            Notification.show("Failed to load shop workers");
             return new ArrayList<>();
         }
     }
@@ -447,7 +450,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         if (response.getStatusCode().is2xxSuccessful()) {
             return response.getBody();
         } else {
-            Notification.show("Failed to load roles: " + response.getStatusCode());
+            Notification.show("Failed to load roles");
             return new HashMap<>();
         }
     }
@@ -622,7 +625,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         if (response.getStatusCode().is2xxSuccessful()) {
             return response.getBody() != null ? response.getBody() : new ArrayList<>();
         } else {
-            Notification.show("Failed to load discounts: " + response.getStatusCode());
+            Notification.show("Failed to load discounts");
             return new ArrayList<>();
         }
     }
@@ -958,7 +961,8 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                     break;
 
                 default:
-                    throw new IllegalStateException("Unexpected predicate type: " + t);
+                    Notification.show("Unexpected predicate type: " + t);
+                    return;
             }
 
             leaves.add(leaf);
@@ -994,7 +998,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
 
     private CompositePolicyDTO buildComposite(List<LeafPolicyDTO> leaves, List<Operator> ops) {
         if (leaves.isEmpty()) {
-            throw new IllegalArgumentException("No predicates provided");
+            Notification.show("No predicates provided");
         }
         if (leaves.size() == 1) {
             return new CompositePolicyDTO(
@@ -1310,8 +1314,8 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
         } else {
-            throw new RuntimeException(
-                    "Failed to check admin status: HTTP " + response.getStatusCode().value());
+            Notification.show(
+                    "Failed to check admin status");
         }
     }
 
