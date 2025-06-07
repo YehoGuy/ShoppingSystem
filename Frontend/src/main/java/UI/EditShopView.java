@@ -53,7 +53,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Route(value = "edit-shop", layout = AppLayoutBasic.class)
-@JsModule("./notification-client.js")
+
 public class EditShopView extends VerticalLayout implements HasUrlParameter<Integer>, BeforeEnterObserver {
 
     private final RestTemplate restTemplate = new RestTemplate();
@@ -94,13 +94,14 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
     }
 
-    @ClientCallable
-    public void showNotificationFromJS(String message) {
-        Notification.show(message, 5000, Notification.Position.TOP_CENTER);
-    }
-
     private String getUserId() {
         return VaadinSession.getCurrent().getAttribute("userId").toString();
+    }
+
+    @ClientCallable
+    public void showNotificationFromJS(String message) {
+        System.out.println("Notification from JS: " + message);
+        Notification.show(message, 5000, Notification.Position.TOP_CENTER);
     }
 
     private void loadShopData(int shopId) {
@@ -1223,9 +1224,6 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                 event.forwardTo("login");
                 return;
             }
-            UI.getCurrent().getPage().executeJs(
-                    "import(./js/notification-client.js).then(m => m.connectNotifications())",
-                    getUserId());
 
             if (shopId == null || shopId <= 0) {
                 Notification.show("Invalid shop ID");

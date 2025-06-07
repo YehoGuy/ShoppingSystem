@@ -36,7 +36,7 @@ import DTOs.MessageDTO;
 import DTOs.rolesDTO;
 
 @Route(value = "messages", layout = AppLayoutBasic.class)
-@JsModule("./notification-client.js")
+
 public class MessageView extends VerticalLayout implements BeforeEnterObserver {
 
     @Value("${url.api}/messages")
@@ -170,11 +170,6 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
 
         UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
         handleSuspence();
-    }
-
-    @ClientCallable
-    public void showNotificationFromJS(String message) {
-        Notification.show(message, 5000, Notification.Position.TOP_CENTER);
     }
 
     private String getUserId() {

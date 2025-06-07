@@ -35,7 +35,7 @@ import DTOs.ItemReviewDTO;
 import Domain.ItemCategory;
 
 @Route(value = "items", layout = AppLayoutBasic.class)
-@JsModule("./notification-client.js")
+
 public class ItemSearchView extends VerticalLayout implements BeforeEnterObserver {
     private List<ItemDTO> allItems = new ArrayList<>();
     private List<ItemDTO> filteredItems = new ArrayList<>();
@@ -54,11 +54,6 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
 
         UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
         handleSuspence();
-    }
-
-    @ClientCallable
-    public void showNotificationFromJS(String message) {
-        Notification.show(message, 5000, Notification.Position.TOP_CENTER);
     }
 
     private String getUserId() {

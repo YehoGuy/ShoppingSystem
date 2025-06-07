@@ -47,11 +47,6 @@ public class LogoutView extends VerticalLayout implements BeforeEnterObserver {
         return (Integer) VaadinSession.getCurrent().getAttribute("userId");
     }
 
-    @ClientCallable
-    public void showNotificationFromJS(String message) {
-        Notification.show(message, 5000, Notification.Position.TOP_CENTER);
-    }
-
     public LogoutView() {
         setSizeFull();
         setAlignItems(Alignment.CENTER);

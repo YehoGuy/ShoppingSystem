@@ -39,8 +39,13 @@ public class NotificationService {
             userService.addNotification(userId, title, message);
             return;
         }
+        System.out.println("Sending to user: " + userId + ", sessionIds=" + sessionIds);
         for (String sessionId : sessionIds) {
-            messagingTemplate.convertAndSendToUser(userId.toString(), "/notifications", title + '\n' + message,
+            System.out.println("Sending to sessionId=" + sessionId);
+            messagingTemplate.convertAndSendToUser(
+                    userId.toString(),
+                    "/notifications",
+                    title + '\n' + message,
                     createHeaders(sessionId));
         }
     }

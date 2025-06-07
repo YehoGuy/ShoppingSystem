@@ -87,11 +87,6 @@ public class BidsListView extends VerticalLayout {
         return (Integer) VaadinSession.getCurrent().getAttribute("userId");
     }
 
-    @ClientCallable
-    public void showNotificationFromJS(String message) {
-        Notification.show(message, 5000, Notification.Position.TOP_CENTER);
-    }
-
     @PostConstruct
     private void init() {
         fetchAllBids();

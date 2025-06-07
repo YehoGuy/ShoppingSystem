@@ -25,7 +25,6 @@ import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 
-@JsModule("./notification-client.js")
 public class PurchaseCompletionIntermidiate extends VerticalLayout implements BeforeEnterObserver {
 
     private ComboBox<String> shippingTypeCombo;
@@ -48,11 +47,6 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
 
         UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
         handleSuspence();
-    }
-
-    @ClientCallable
-    public void showNotificationFromJS(String message) {
-        Notification.show(message, 5000, Notification.Position.TOP_CENTER);
     }
 
     private String getUserId() {

@@ -14,7 +14,7 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 
 @Route(value = "home", layout = AppLayoutBasic.class)
-@JsModule("./notification-client.js")
+
 public class HomeView extends VerticalLayout implements BeforeEnterObserver {
 
     @Override
@@ -25,13 +25,14 @@ public class HomeView extends VerticalLayout implements BeforeEnterObserver {
         UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
     }
 
-    @ClientCallable
-    public void showNotificationFromJS(String message) {
-        Notification.show(message, 5000, Notification.Position.TOP_CENTER);
-    }
-
     private String getUserId() {
         return VaadinSession.getCurrent().getAttribute("userId").toString();
+    }
+
+    @ClientCallable
+    public void showNotificationFromJS(String message) {
+        System.out.println("Notification from JS: " + message);
+        Notification.show(message, 5000, Notification.Position.TOP_CENTER);
     }
 
     public HomeView() {

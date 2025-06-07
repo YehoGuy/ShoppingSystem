@@ -26,7 +26,7 @@ import com.vaadin.flow.server.VaadinSession;
 import DTOs.ShopDTO;
 
 @Route(value = "shops", layout = AppLayoutBasic.class)
-@JsModule("./notification-client.js")
+
 public class ShopSearchView extends VerticalLayout implements BeforeEnterObserver {
 
     @Value("${url.api}/shops/all")
@@ -50,11 +50,6 @@ public class ShopSearchView extends VerticalLayout implements BeforeEnterObserve
         loadShops(token);
         displayShops(filteredShops);
         handleSuspence();
-    }
-
-    @ClientCallable
-    public void showNotificationFromJS(String message) {
-        Notification.show(message, 5000, Notification.Position.TOP_CENTER);
     }
 
     private String getUserId() {

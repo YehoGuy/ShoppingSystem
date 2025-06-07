@@ -1,8 +1,11 @@
 package UI;
 
+import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
+import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
@@ -11,10 +14,8 @@ import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.theme.Theme;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
-
 // tag::snippet[]
-
-
+@JsModule("./notification-client.js")
 public class AppLayoutBasic extends AppLayout implements RouterLayout {
 
     public AppLayoutBasic() {
@@ -40,9 +41,7 @@ public class AppLayoutBasic extends AppLayout implements RouterLayout {
                 new SideNavItem("Search Shop", "/shops", VaadinIcon.SHOP.create()),
                 new SideNavItem("Bids", "/bids", VaadinIcon.MONEY.create()),
                 new SideNavItem("My Shops", "/myshops", VaadinIcon.LIST_UL.create()),
-                new SideNavItem("My Messages", "/messages", VaadinIcon.ENVELOPE.create())
-        );
-
+                new SideNavItem("My Messages", "/messages", VaadinIcon.ENVELOPE.create()));
 
         // only for admins
         Boolean isAdmin = (Boolean) VaadinSession.getCurrent().getAttribute("isAdmin");
@@ -50,12 +49,16 @@ public class AppLayoutBasic extends AppLayout implements RouterLayout {
             sideNav.addItem(new SideNavItem("Admin Panel", "/admin", VaadinIcon.SHIELD.create()));
         }
 
-
-
         sideNav.addItem(new SideNavItem("Logout", "/logout", VaadinIcon.SIGN_OUT.create()));
         return sideNav;
     }
 
-      // tag::snippet[]
+    @ClientCallable
+    public void showNotificationFromJS(String message) {
+        System.out.println("Notification from JS: " + message);
+        Notification.show(message, 5000, Notification.Position.TOP_CENTER);
+    }
+
+    // tag::snippet[]
 }
 // end::snippet[]

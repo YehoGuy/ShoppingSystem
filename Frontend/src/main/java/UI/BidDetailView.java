@@ -115,11 +115,6 @@ public class BidDetailView extends VerticalLayout implements BeforeEnterObserver
         buildPage();
     }
 
-    @ClientCallable
-    public void showNotificationFromJS(String message) {
-        Notification.show(message, 5000, Notification.Position.TOP_CENTER);
-    }
-
     private void loadBid() {
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
         if (token == null || token.isBlank()) {

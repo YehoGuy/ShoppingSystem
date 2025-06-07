@@ -44,7 +44,7 @@ import DTOs.ShopDTO;
 import DTOs.ShoppingCartDTO;
 
 @Route(value = "cart", layout = AppLayoutBasic.class)
-@JsModule("./notification-client.js")
+
 public class ShoppingCartView extends VerticalLayout implements BeforeEnterObserver {
     private static final Logger log = LoggerFactory.getLogger(ShoppingCartView.class);
     private ShoppingCartDTO cart;
@@ -72,11 +72,6 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
         UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
         handleSuspence();
-    }
-
-    @ClientCallable
-    public void showNotificationFromJS(String message) {
-        Notification.show(message, 5000, Notification.Position.TOP_CENTER);
     }
 
     private String getUserId() {

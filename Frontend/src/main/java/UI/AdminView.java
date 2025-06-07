@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 
 @Route(value = "admin", layout = AppLayoutBasic.class)
-@JsModule("./notification-client.js")
+
 @JsModule("@vaadin/dialog/vaadin-dialog.js")
 // ⬇️ Add this line so NumberField appears in the client
 @JsModule("@vaadin/number-field/vaadin-number-field.js")
@@ -145,11 +145,6 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             event.forwardTo("login");
         }
         UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
-    }
-
-    @ClientCallable
-    public void showNotificationFromJS(String message) {
-        Notification.show(message, 5000, Notification.Position.TOP_CENTER);
     }
 
     private String getUserId() {

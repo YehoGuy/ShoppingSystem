@@ -22,7 +22,7 @@ import DTOs.MemberDTO;
 import DTOs.rolesDTO;
 
 @Route(value = "profile", layout = AppLayoutBasic.class)
-@JsModule("./notification-client.js")
+
 public class PersonProfileView extends VerticalLayout implements BeforeEnterObserver {
 
     @Value("${url.api}/users")
@@ -72,11 +72,6 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
         loadProfile();
         loadNotifications();
         loadRoles();
-    }
-
-    @ClientCallable
-    public void showNotificationFromJS(String message) {
-        Notification.show(message, 5000, Notification.Position.TOP_CENTER);
     }
 
     private String getUserId() {
