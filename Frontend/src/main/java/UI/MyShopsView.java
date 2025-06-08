@@ -82,6 +82,7 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
+        getUserId(); // Ensure userId is set in session
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
         if (token == null) {
             event.forwardTo("login");
@@ -91,13 +92,12 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
         handleSuspence();
     }
 
-    private String getUserId() {
-        if (VaadinSession.getCurrent().getAttribute("userId") == null) {
-            Notification.show("You are not connected!");
-            getUI().ifPresent(ui -> ui.navigate(""));
-        } else
-            return VaadinSession.getCurrent().getAttribute("userId").toString();
-        return "";
+    public Integer getUserId() {
+        if (VaadinSession.getCurrent().getAttribute("userId") != null) {
+            return Integer.parseInt(VaadinSession.getCurrent().getAttribute("userId").toString());
+        }
+        UI.getCurrent().navigate(""); // Redirect to login if userId is not set
+        return null; // Return null if userId is not available
     }
 
     private void loadShops() {

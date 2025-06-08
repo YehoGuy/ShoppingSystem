@@ -41,6 +41,7 @@ public class BidsListView extends VerticalLayout {
     private final Grid<BidRecieptDTO> bidGrid = new Grid<>(BidRecieptDTO.class, false);
 
     public BidsListView() {
+        getUserId(); // Ensure userId is set in session
         setPadding(true);
         setSpacing(true);
 
@@ -78,11 +79,11 @@ public class BidsListView extends VerticalLayout {
     }
 
     public Integer getUserId() {
-        if (VaadinSession.getCurrent().getAttribute("userId") == null) {
-            Notification.show("You are not connected.");
-            UI.getCurrent().navigate("");
+        if (VaadinSession.getCurrent().getAttribute("userId") != null) {
+            return Integer.parseInt(VaadinSession.getCurrent().getAttribute("userId").toString());
         }
-        return (Integer) VaadinSession.getCurrent().getAttribute("userId");
+        UI.getCurrent().navigate(""); // Redirect to login if userId is not set
+        return null; // Return null if userId is not available
     }
 
     @PostConstruct

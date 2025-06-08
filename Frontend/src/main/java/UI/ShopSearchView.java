@@ -40,6 +40,7 @@ public class ShopSearchView extends VerticalLayout implements BeforeEnterObserve
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
+        getUserId(); // Ensure userId is set in session
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
         if (token == null) {
             event.forwardTo("");
@@ -51,8 +52,12 @@ public class ShopSearchView extends VerticalLayout implements BeforeEnterObserve
         handleSuspence();
     }
 
-    private String getUserId() {
-        return VaadinSession.getCurrent().getAttribute("userId").toString();
+    public Integer getUserId() {
+        if (VaadinSession.getCurrent().getAttribute("userId") != null) {
+            return Integer.parseInt(VaadinSession.getCurrent().getAttribute("userId").toString());
+        }
+        UI.getCurrent().navigate(""); // Redirect to login if userId is not set
+        return null; // Return null if userId is not available
     }
 
     public ShopSearchView() {

@@ -66,6 +66,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
+        getUserId(); // Ensure userId is set in session
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("");
         }
@@ -73,8 +74,12 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         handleSuspence();
     }
 
-    private String getUserId() {
-        return VaadinSession.getCurrent().getAttribute("userId").toString();
+    public Integer getUserId() {
+        if (VaadinSession.getCurrent().getAttribute("userId") != null) {
+            return Integer.parseInt(VaadinSession.getCurrent().getAttribute("userId").toString());
+        }
+        UI.getCurrent().navigate(""); // Redirect to login if userId is not set
+        return null; // Return null if userId is not available
     }
 
     public ShoppingCartView() {
