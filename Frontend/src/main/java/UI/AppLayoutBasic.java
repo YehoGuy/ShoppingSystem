@@ -22,6 +22,7 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 public class AppLayoutBasic extends AppLayout implements RouterLayout {
 
     public AppLayoutBasic() {
+        getUserId(); // Ensure userId is set before connecting WebSocket
         UI.getCurrent().getPage().executeJs("window.connectWebSocket();", getUserId());
         DrawerToggle toggle = new DrawerToggle();
 
@@ -39,7 +40,8 @@ public class AppLayoutBasic extends AppLayout implements RouterLayout {
         if (VaadinSession.getCurrent().getAttribute("userId") != null) {
             return Integer.parseInt(VaadinSession.getCurrent().getAttribute("userId").toString());
         }
-        return null; // or throw an exception if userId is mandatory
+        UI.getCurrent().navigate(""); // Redirect to login if userId is not set
+        return null; // Return null if userId is not available
     }
 
     private SideNav getSideNav() {

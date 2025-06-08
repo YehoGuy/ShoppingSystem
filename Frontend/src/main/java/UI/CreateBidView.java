@@ -71,6 +71,7 @@ public class CreateBidView extends VerticalLayout implements BeforeEnterObserver
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
+        getUserId(); // Ensure userId is set in session
         // 1) Extract the shopId path parameter
         shopId = event.getRouteParameters().get("shopId").orElse(null);
         if (shopId == null || shopId.trim().isEmpty()) {
@@ -85,11 +86,11 @@ public class CreateBidView extends VerticalLayout implements BeforeEnterObserver
     }
 
     public Integer getUserId() {
-        if (VaadinSession.getCurrent().getAttribute("userId") == null) {
-            Notification.show("You are not connected.");
-            UI.getCurrent().navigate("");
+        if (VaadinSession.getCurrent().getAttribute("userId") != null) {
+            return Integer.parseInt(VaadinSession.getCurrent().getAttribute("userId").toString());
         }
-        return (Integer) VaadinSession.getCurrent().getAttribute("userId");
+        UI.getCurrent().navigate(""); // Redirect to login if userId is not set
+        return null; // Return null if userId is not available
     }
 
     private void loadShop() {

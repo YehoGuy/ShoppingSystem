@@ -32,6 +32,7 @@ public class LogoutView extends VerticalLayout implements BeforeEnterObserver {
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
+        getUserId(); // Ensure userId is set in session
         // Check if the user is logged in
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("");
