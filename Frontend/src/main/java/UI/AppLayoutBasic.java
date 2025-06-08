@@ -22,8 +22,7 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 public class AppLayoutBasic extends AppLayout implements RouterLayout {
 
     public AppLayoutBasic() {
-        getUserId(); // Ensure userId is set before connecting WebSocket
-        UI.getCurrent().getPage().executeJs("window.connectWebSocket();", getUserId());
+        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
         DrawerToggle toggle = new DrawerToggle();
 
         SideNav nav = getSideNav();

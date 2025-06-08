@@ -24,14 +24,6 @@ public class HomeView extends VerticalLayout implements BeforeEnterObserver {
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("");
         }
-        if (!isConnected) {
-            connectWebSocket();
-            isConnected = true;
-        }
-    }
-
-    private void connectWebSocket() {
-        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
     }
 
     private Integer getUserId() {
