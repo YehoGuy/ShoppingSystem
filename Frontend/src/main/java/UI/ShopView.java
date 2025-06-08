@@ -53,6 +53,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
+        getUserId(); // Ensure userId is set in session
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("login");
         }
@@ -60,8 +61,12 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         handleSuspence();
     }
 
-    private String getUserId() {
-        return VaadinSession.getCurrent().getAttribute("userId").toString();
+    public Integer getUserId() {
+        if (VaadinSession.getCurrent().getAttribute("userId") != null) {
+            return Integer.parseInt(VaadinSession.getCurrent().getAttribute("userId").toString());
+        }
+        UI.getCurrent().navigate(""); // Redirect to login if userId is not set
+        return null; // Return null if userId is not available
     }
 
     @Override

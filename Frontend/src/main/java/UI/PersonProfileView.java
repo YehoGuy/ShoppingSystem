@@ -48,6 +48,7 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
+        getUserId(); // Ensure userId is set in session
         // 1) Auth
         token = (String) VaadinSession.getCurrent().getAttribute("authToken");
         if (token == null) {
@@ -72,8 +73,12 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
         loadRoles();
     }
 
-    private String getUserId() {
-        return VaadinSession.getCurrent().getAttribute("userId").toString();
+    public Integer getUserId() {
+        if (VaadinSession.getCurrent().getAttribute("userId") != null) {
+            return Integer.parseInt(VaadinSession.getCurrent().getAttribute("userId").toString());
+        }
+        UI.getCurrent().navigate(""); // Redirect to login if userId is not set
+        return null; // Return null if userId is not available
     }
 
     private void buildLayout() {
