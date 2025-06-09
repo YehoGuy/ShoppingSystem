@@ -12,6 +12,8 @@ public class Bid extends Purchase{
     private final ConcurrentHashMap<Integer,Object> biddersIds = new ConcurrentHashMap<>();
     private final AtomicInteger highestBid; // initialPrice if no Bidder
     private final AtomicInteger highestBidderId; // -1 if no Bidder
+    private LocalDateTime auctionStartTime;
+    private LocalDateTime auctionEndTime;
     /**
      * Constructs a new {@code Bid} with the specified user ID, store ID, and items.
      *
@@ -24,6 +26,25 @@ public class Bid extends Purchase{
         this.initialPrice = new AtomicInteger(initialPrice);
         highestBid = new AtomicInteger(initialPrice);
         highestBidderId = new AtomicInteger(-1);
+        this.auctionStartTime = null;
+        this.auctionEndTime = null;
+    }
+
+    /**
+     * Constructs a new {@code Bid} with the specified user ID, store ID, items, auction start time, and auction end time.
+     *
+     * @param purchaseId the ID of the purchase.
+     * @param userId the ID of the user initiating the bid.
+     * @param storeId the ID of the store where the bid is made.
+     * @param items a map of item IDs to their quantities.
+     * @param initialPrice the initial price of the bid.
+     * @param auctionStartTime the start time of the auction.
+     * @param auctionEndTime the end time of the auction.
+     */
+    public Bid(int purchaseId, int userId, int storeId, Map<Integer, Integer> items, int initialPrice, LocalDateTime auctionStartTime, LocalDateTime auctionEndTime) {
+        this(purchaseId, userId, storeId, items, initialPrice);
+        this.auctionStartTime = auctionStartTime;
+        this.auctionEndTime = auctionEndTime;
     }
 
     /**
@@ -33,6 +54,13 @@ public class Bid extends Purchase{
      * @param bidAmount the amount of the bid.
      */
     public synchronized void addBidding(int userId, int bidAmount) {
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isBefore(auctionStartTime)) {
+            throw new IllegalStateException("Auction has not started yet. Current time: " + now + ", Auction start time: " + auctionStartTime);
+        }
+        if (now.isAfter(auctionEndTime) || isCompleted) {
+            throw new IllegalStateException("Auction has already ended or is completed. Current time: " + now + ", Auction end time: " + auctionEndTime);
+        }
         if(bidAmount > highestBid.get()) {
             if(!isCompleted){
                 highestBid.set(bidAmount);
@@ -41,6 +69,7 @@ public class Bid extends Purchase{
             }
         }
     }
+
 
 
     /**
@@ -91,6 +120,11 @@ public class Bid extends Purchase{
         return highestBidderId.get();
     }
 
-
+    public LocalDateTime getAuctionStartTime() {
+        return auctionStartTime;
+    }
+    public LocalDateTime getAuctionEndTime() {
+        return auctionEndTime;
+    }
 
 }

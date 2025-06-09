@@ -1,11 +1,15 @@
 package com.example.app.ApplicationLayer.Purchase;
 
+import java.sql.Date;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.time.ZoneId;
 
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
@@ -26,26 +30,30 @@ import com.example.app.DomainLayer.Roles.PermissionsEnum;
 
 @Service
 public class PurchaseService {
-
+    
     private final IPurchaseRepository purchaseRepository;
     private AuthTokenService authTokenService;
     private UserService userService;
     private ItemService itemService;
     private ShopService shopService;
     private MessageService messageService;
+    // private NotificationService notificationService; 
+    private TaskScheduler taskscheduler;
 
     public PurchaseService(IPurchaseRepository purchaseRepository,
             AuthTokenService authTokenService,
             UserService userService,
             ShopService shopService,
             ItemService itemService,
-            MessageService messageService) {
+            MessageService messageService,
+            TaskScheduler taskscheduler) {
         this.messageService = messageService;
         this.purchaseRepository = purchaseRepository;
         this.authTokenService = authTokenService;
         this.userService = userService;
         this.shopService = shopService;
         this.itemService = itemService;
+        this.taskscheduler = taskscheduler;
     }
 
     public void setServices(AuthTokenService authTokenService, UserService userService, ItemService itemService,
@@ -363,6 +371,83 @@ public class PurchaseService {
             throw new OurRuntime("Error retrieving shop bids: " + e.getMessage(), e);
         }
     }
+
+    @SuppressWarnings("deprecation")
+    public int startAuction(String authToken, int storeId, Map<Integer, Integer> items, int initialPrice, LocalDateTime auctionEndTime) {
+        LoggerService.logMethodExecution("startAuction", authToken, storeId, items, initialPrice, auctionEndTime);
+        try {
+            int userId = authTokenService.ValidateToken(authToken);
+            shopService.purchaseItems(items, storeId, authToken);
+            int auctionId = purchaseRepository.addBid(userId, storeId, items, initialPrice, LocalDateTime.now(), auctionEndTime);
+            taskscheduler.schedule(
+                () -> finalizeAuctionInternal(auctionId, authToken),
+                Date.from(auctionEndTime.atZone(ZoneId.systemDefault()).toInstant())
+            );
+            LoggerService.logMethodExecutionEnd("startAuction", auctionId);
+            return auctionId;
+        } catch (OurArg e) {
+            LoggerService.logDebug("startAuction", e);
+            throw new OurArg("startAuction: " + e.getMessage(), e);
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("startAuction", e);
+            throw new OurRuntime("startAuction: " + e.getMessage(), e);
+        } catch (Exception e) {
+            shopService.rollBackPurchase(items, storeId);
+            LoggerService.logError("startAuction", e, authToken, storeId, items);
+            throw new OurRuntime("startAuction: " + e.getMessage(), e);
+        }
+    }
+
+
+    public void postBiddingAcution(String authToken, int auctionId, int amount) {
+        LoggerService.logMethodExecution("postBiddingAuction", authToken, auctionId, amount);
+        try {
+            int userId =authTokenService.ValidateToken(authToken);
+            Purchase purchase = purchaseRepository.getPurchaseById(auctionId);
+            if (!(purchase instanceof Bid)) {
+                throw new OurRuntime("Purchase " + auctionId + " is not a bid");
+            }
+            if (purchase.getUserId() == userId) {
+                throw new OurRuntime(
+                        "User " + userId + " is the owner of the bid " + auctionId + " and cannot bid on it");
+            }
+            ((Bid) purchase).addBidding(userId, amount);
+            
+            postBidding(authToken, auctionId, amount);
+            LoggerService.logMethodExecutionEndVoid("postBiddingAuction");
+        } catch (OurArg e) {
+            LoggerService.logDebug("postBiddingAuction", e);
+            throw new OurArg("postBiddingAuction: " + e.getMessage(), e);
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("postBiddingAuction", e);
+            throw new OurRuntime("postBiddingAuction: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("postBiddingAuction", e, authToken, auctionId, amount);
+            throw new OurRuntime("postBiddingAuction: " + e.getMessage(), e);
+        }
+    }
+
+    private void finalizeAuctionInternal(int auctionId, String authToken) {
+        Bid bid = (Bid) purchaseRepository.getPurchaseById(auctionId);
+        BidReciept receipt = bid.completePurchase();
+        purchaseRepository.deletePurchase(auctionId);
+
+        int winner = receipt.getHighestBidderId();
+        int finalP = receipt.getHighestBid();
+
+        // notify everyone
+        for (int pid : bid.getBiddersIds()) {
+            messageService.sendMessageToUser(
+                authToken,
+                pid,
+                "Auction " + auctionId + " ended." +
+                (pid == winner ? " You won with a bid of " + winner + "." : " You lost. The winning bid was " + finalP + "."),
+                -1
+            );
+        }
+    }
+
+        
 
     
 

@@ -1,5 +1,6 @@
 package com.example.app.InfrastructureLayer;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -89,6 +90,25 @@ public class PurchaseRepository implements IPurchaseRepository {
         purchaseStorage.put(id, bid);
         return id;
     }
+
+    @Override
+    /**
+     * Adds a bid to the repository with auction start and end times.
+     *
+     * @param userId The ID of the user making the bid.
+     * @param storeId The ID of the store where the bid is made.
+     * @param items A map of item IDs to their quantities.
+     * @param initialPrice The initial price for the bid.
+     * @param auctionStart The start time of the auction.
+     * @param auctionEnd The end time of the auction.
+     * @return The ID of the newly created bid.
+     */
+    public int addBid(int userId, int storeId, Map<Integer,Integer> items, int initialPrice, LocalDateTime auctionStart, LocalDateTime auctionEnd) {
+        int id = getNewPurchaseId();
+        Bid bid = new Bid(id, userId, storeId, items, initialPrice, auctionStart, auctionEnd);
+        purchaseStorage.put(id, bid);
+        return id;
+    }   
 
     @Override
     /**
