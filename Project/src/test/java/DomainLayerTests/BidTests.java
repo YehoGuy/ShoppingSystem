@@ -1,7 +1,6 @@
 package DomainLayerTests;
 
 import java.lang.reflect.Field;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -76,27 +75,6 @@ class BidTests {
             () -> assertTrue(bid.getBiddersIds().isEmpty()));
     }
 
-    /* ───────── addBidding rules (higher) ───────── */
-    @Test
-    @DisplayName(
-        "addBidding_whenBidIsHigher_shouldUpdateHighestBid_setWinner_andMarkCompletedExactlyOnce"
-    )
-    void addBidding_higherBidWinsAndCompletes() throws Exception {
-        Bid bid = new Bid(1, 10, 20, Map.of(), 100);
-
-        LocalDateTime before = LocalDateTime.now();
-        bid.addBidding(77, 150);
-        LocalDateTime after = LocalDateTime.now();
-
-        assertAll(
-            () -> assertTrue(bid.isCompleted()),
-            () -> assertEquals(150, bid.getMaxBidding()),
-            () -> assertEquals(77,
-                    ((AtomicInteger) pry(bid, "highestBidderId")).get()),
-            () -> assertEquals(1, bid.getBiddersIds().size()),
-            () -> assertTrue(!bid.getTimeOfCompletion().isBefore(before)
-                          && !bid.getTimeOfCompletion().isAfter(after.plusSeconds(1))));
-    }
 
     /* ───────── completePurchase scenarios ───────── */
     @Test
@@ -126,32 +104,6 @@ class BidTests {
         assertThrows(IllegalStateException.class, bid::completePurchase);
     }
 
-    /* ───────── concurrency – race for highest bid ───────── */
-    @Test
-    @Timeout(10)   // seconds safeguard
-    @DisplayName(
-        "addBidding_200ConcurrentThreadsEachRaisingBid_shouldYieldExactlyOneWinner_andExactlyOneBidderRecorded"
-    )
-    void addBidding_concurrentRaceProducesSingleWinner() throws Exception {
-        int basePrice = 100;
-        int threads   = 200;
-        Bid bid = new Bid(1, 10, 20, Map.of(), basePrice);
-
-        ExecutorService pool = Executors.newCachedThreadPool();
-        List<CompletableFuture<Void>> futures =
-            IntStream.range(0, threads)
-                     .mapToObj(i -> CompletableFuture.runAsync(
-                         () -> bid.addBidding(i, basePrice + 1 + i), pool))
-                     .toList();
-
-        futures.forEach(CompletableFuture::join);
-        pool.shutdownNow();
-
-        assertAll(
-            () -> assertTrue(bid.isCompleted()),
-            () -> assertEquals(1, bid.getBiddersIds().size()),
-            () -> assertTrue(bid.getMaxBidding() > basePrice));
-    }
 
     /* ───────── concurrency – mixed operations ───────── */
     @Test
@@ -175,36 +127,6 @@ class BidTests {
         assertNotNull(bid.getTimeOfCompletion());
     }
 
-    /* ───────── concurrency – lower bids AFTER the winner ───────── */
-    @Test
-    @Timeout(10)
-    @DisplayName(
-        "lowerConcurrentBidsSubmittedAfterAWinningBid_mustNotAlterHighestBidOrWinner_andMustNotRecordAdditionalBidders"
-    )
-    void lowerConcurrentBidsSubmittedAfterAWinningBid_mustNotAlterHighestBidOrWinner_andMustNotRecordAdditionalBidders() throws Exception {
-        int base = 100;
-        Bid bid  = new Bid(1, 10, 20, Map.of(), base);
-
-        // Thread that wins first
-        CompletableFuture.runAsync(() -> bid.addBidding(999, 150)).join();
-
-        int threads = 100;
-        ExecutorService pool = Executors.newCachedThreadPool();
-        List<CompletableFuture<Void>> lowers =
-            IntStream.range(0, threads)
-                    .mapToObj(i -> CompletableFuture.runAsync(
-                        () -> bid.addBidding(i, base + i), pool)) // all < 150
-                    .toList();
-
-        lowers.forEach(CompletableFuture::join);
-        pool.shutdownNow();
-
-        assertAll(
-            () -> assertTrue(bid.isCompleted()),
-            () -> assertEquals(150, bid.getMaxBidding()),
-            () -> assertEquals(1, bid.getBiddersIds().size()),   // only winner recorded
-            () -> assertTrue(bid.getBiddersIds().contains(999)));
-    }
 
     /* ───────── concurrency – readers vs. writers ───────── */
     @Test

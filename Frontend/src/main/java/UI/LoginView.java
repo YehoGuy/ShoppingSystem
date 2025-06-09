@@ -19,13 +19,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.beans.factory.annotation.Value;
 
 @Route("login")
 public class LoginView extends VerticalLayout {
 
     private final RestTemplate restTemplate = new RestTemplate();
-    private final String BASE_URL = "http://localhost:8080/api/users";
-    private final String AUTH_URL = "http://localhost:8080/api/auth";
+
+    @Value("${url.api}/users")
+    private String BASE_URL;
+
+    @Value("${url.api}/auth")
+    private String AUTH_URL;
 
     public LoginView() {
         setSizeFull();
@@ -47,7 +52,7 @@ public class LoginView extends VerticalLayout {
                 getUI().ifPresent(ui -> ui.navigate("home"));
             } catch (Exception ex) {
                 loginForm.setError(true);
-                Notification.show("Login failed: " + ex.getMessage(), 3000, Notification.Position.MIDDLE);
+                Notification.show("Login failed", 3000, Notification.Position.MIDDLE);
             }
         });
 
@@ -57,9 +62,10 @@ public class LoginView extends VerticalLayout {
                 VaadinSession.getCurrent().setAttribute("authToken", token);
                 VaadinSession.getCurrent().setAttribute("username", "guest");
                 Notification.show("Logged in as guest!");
+                VaadinSession.getCurrent().setAttribute("isAdmin", false);
                 getUI().ifPresent(ui -> ui.navigate("home"));
             } catch (Exception ex) {
-                Notification.show("Guest login failed: " + ex.getMessage(), 3000, Notification.Position.MIDDLE);
+                Notification.show("Guest login failed", 3000, Notification.Position.MIDDLE);
             }
         });
 
@@ -83,7 +89,8 @@ public class LoginView extends VerticalLayout {
         if (response.getStatusCode().is2xxSuccessful()) {
             return response.getBody();
         } else {
-            throw new RuntimeException("Member login failed: HTTP " + response.getStatusCodeValue());
+            Notification.show("Member login failed");
+            return null;
         }
     }
 
@@ -98,7 +105,8 @@ public class LoginView extends VerticalLayout {
         if (response.getStatusCode().is2xxSuccessful()) {
             return response.getBody();
         } else {
-            throw new RuntimeException("Guest login failed: HTTP " + response.getStatusCodeValue());
+            Notification.show("Guest login failed");
+            return null;
         }
     }
 
@@ -123,15 +131,56 @@ public class LoginView extends VerticalLayout {
         String url = AUTH_URL + "/validate?authToken=" + token;
 
         // simply use GET—no HttpHeaders object needed
+
         ResponseEntity<Integer> response = restTemplate.getForEntity(url, Integer.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("userId", response.getBody());
+            handleSuspence();
+            handleAdmin();
         } else {
-            throw new RuntimeException(
-                "Failed to retrieve user ID: HTTP " + response.getStatusCode().value()
-            );
+            Notification.show(
+                    "Failed to retrieve user ID");
+        }
+    }
+
+    private void handleAdmin() {
+        Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
+        if (userId == null) {
+            return;
+        }
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            return;
+        }
+        String url = BASE_URL + "/" + userId + "/isAdmin?token=" + token;
+        ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
+
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            VaadinSession.getCurrent().setAttribute("isAdmin", response.getBody());
+        } else {
+            Notification.show(
+                    "Failed to check admin status");
+        }
+    }
+
+    private void handleSuspence() {
+        Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
+        if (userId == null) {
+            return;
+        }
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            return;
+        }
+        String url = BASE_URL + "/" + userId + "/suspension?token=" + token;
+        ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
+
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            Notification.show(response.getBody().toString());
+            VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
+        } else {
+            Notification.show("Failed to check suspension status", 3000, Notification.Position.MIDDLE);
         }
     }
 }
-

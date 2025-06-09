@@ -1,8 +1,11 @@
 package UI;
 
-import com.vaadin.flow.router.Route;
-import DTOs.PaymentMethodDTO;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
 
+import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.JsModule;
@@ -13,27 +16,20 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
-import com.vaadin.flow.router.BeforeEvent;
-import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.server.VaadinSession;
 
-import org.springframework.boot.autoconfigure.security.SecurityProperties.User;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.client.RestTemplate;
+import DTOs.PaymentMethodDTO;
 
-import java.util.ArrayList;
-import java.util.List;
-
-@JsModule("./js/notification-client.js")
 public class PaymenPageView extends VerticalLayout implements BeforeEnterObserver {
 
     private final PaymentMethodDTO paymentMethod;
 
     private double totalAmount = 0.0;
     private final RestTemplate restTemplate = new RestTemplate();
-    private final String BASE_URL = "http://localhost:8080/api/";
+
+    @Value("${url.api}")
+    private String BASE_URL;
+
     private String country;
     private String city;
     private String street;
@@ -42,15 +38,20 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
+        getUserId(); // Ensure userId is set in session
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("login");
         }
-        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m -> m.connectNotifications($0))",
-                getUserId());
+
+        handleSuspence();
     }
 
-    private String getUserId() {
-        return VaadinSession.getCurrent().getAttribute("userId").toString();
+    public Integer getUserId() {
+        if (VaadinSession.getCurrent().getAttribute("userId") != null) {
+            return Integer.parseInt(VaadinSession.getCurrent().getAttribute("userId").toString());
+        }
+        UI.getCurrent().navigate(""); // Redirect to login if userId is not set
+        return null; // Return null if userId is not available
     }
 
     public PaymenPageView(double totalAmount, String country, String city, String street, String houseNumber,
@@ -70,10 +71,10 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
 
     private PaymentMethodDTO getUserPaymentMethod() {
         String token = getToken();
-        String url = BASE_URL + "payment-method?authToken=" + token;
+        String url = BASE_URL + "/payment-method?authToken=" + token;
 
         ResponseEntity<PaymentMethodDTO> response = restTemplate.getForEntity(url, PaymentMethodDTO.class);
-        if (response.getStatusCode() == HttpStatus.OK) {
+        if (response.getStatusCode().is2xxSuccessful()) {
             PaymentMethodDTO paymentMethod = response.getBody();
             if (paymentMethod != null) {
                 return paymentMethod; // Return the first payment method
@@ -107,6 +108,9 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         buttonLayout.getStyle().set("background-color", "#f9f9f9");
 
         Button methodButton = new Button(paymentMethod.getMethodDetails(), event -> processPayment(paymentMethod));
+        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+            methodButton.setVisible(false);
+        }
         methodButton.setWidthFull();
         buttonLayout.add(methodButton);
 
@@ -136,11 +140,31 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
                 Notification.show("Payment failed:");
             }
         } catch (Exception e) {
-            Notification.show("Payment error: " + e.getMessage());
+            Notification.show("Payment error");
         }
     }
 
     private String getToken() {
         return (String) VaadinSession.getCurrent().getAttribute("authToken");
+    }
+
+    private void handleSuspence() {
+        Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
+        if (userId == null) {
+            return;
+        }
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            return;
+        }
+        String url = "http://localhost:8080/api/users" + "/" + userId + "/suspension?token=" + token;
+        ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
+
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
+        } else {
+            Notification.show(
+                    "Failed to check admin status");
+        }
     }
 }

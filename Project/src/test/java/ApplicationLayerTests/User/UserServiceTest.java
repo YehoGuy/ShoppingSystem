@@ -93,6 +93,18 @@ public class UserServiceTest {
         notificationService = mock(NotificationService.class);
         userService = new UserService(userRepository, authTokenService, notificationService);
         notificationService.setService(userService);
+
+        // ─── Manually create the “admin” user exactly as initAdmin() would have ───
+        String rawAdminPassword = "admin"; // must match adminPlainPassword
+        String encodedAdminPassword = userRepository.getPasswordEncoderUtil().encode(rawAdminPassword);
+        int adminId = userRepository.addMember(
+            "admin", 
+            encodedAdminPassword, 
+            "admin@mail.com", 
+            "0", 
+            "admin st."
+        );
+        userRepository.addAdmin(adminId);
     }
 
     @Test

@@ -458,7 +458,7 @@ public class UserController {
         }
     }
 
-    @PatchMapping(path = "/shops/{shopId}/permissions/{memberId}", consumes = "application/json")
+    @PostMapping(path = "/shops/{shopId}/permissions/{memberId}", consumes = "application/json")
     public ResponseEntity<Void> changePermissions(
             @PathVariable @Min(1) int shopId,
             @PathVariable @Min(1) int memberId,
@@ -609,7 +609,7 @@ public class UserController {
      * Suspend or unsuspend a user (admin-only token).
      * Pass an ISO-8601 timestamp in `until`. To unsuspend, omit the param.
      */
-    @PatchMapping("/{userId}/suspension")
+    @PostMapping("/{userId}/suspension")
     public ResponseEntity<Void> setSuspended(
             @PathVariable @Min(1) int userId,
             @RequestParam String token,
@@ -618,6 +618,29 @@ public class UserController {
         try {
             authService.ValidateToken(token);
             userService.setSuspended(userId, suspendedUntil); // null = lift suspension
+            return ResponseEntity.noContent().build();
+
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().build();
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /*
+     * Suspend or unsuspend a user (admin-only token).
+     * Pass an ISO-8601 timestamp in `until`. To unsuspend, omit the param.
+     */
+    @PostMapping("/{userId}/unsuspension")
+    public ResponseEntity<Void> setUnSuspended(
+            @PathVariable @Min(1) int userId,
+            @RequestParam String token) {
+
+        try {
+            authService.ValidateToken(token);
+            userService.setUnSuspended(userId); // null = lift suspension
             return ResponseEntity.noContent().build();
 
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
@@ -664,6 +687,29 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
+    }
+
+
+        /*
+     * Suspend or unsuspend a user (admin-only token).
+     * Pass an ISO-8601 timestamp in `until`. To unsuspend, omit the param.
+     */
+    @PostMapping("/{userId}/ban")
+    public ResponseEntity<Void> banUser(
+            @PathVariable @Min(1) int userId,
+            @RequestParam String token) {
+        try {
+            authService.ValidateToken(token);
+            userService.banUser(userId); // null = lift suspension
+            return ResponseEntity.noContent().build();
+
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().build();
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

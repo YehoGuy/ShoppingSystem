@@ -40,7 +40,7 @@ public class ItemService {
      * @param description the item description.
      * @return the newly created Item.
      */
-    public Integer createItem(int shopId, String name, String description, Integer category, String token) {
+    public Integer createItem(int shopId, String name, String description, ItemCategory category, String token) {
         try {
             LoggerService.logMethodExecution("createItem", name, description, category);
             if (name == null || name.isEmpty()) {
@@ -49,7 +49,7 @@ public class ItemService {
             if (description == null || description.isEmpty()) {
                 throw new OurArg("Item description cannot be null or empty");
             }
-            if (category == null || category < 0 || category >= ItemCategory.values().length) {
+            if (category == null || category.ordinal() < 0 || category.ordinal() >= ItemCategory.values().length) {
                 throw new OurArg("Item category cannot be null");
             }
             if (shopId < 0) {
@@ -59,7 +59,7 @@ public class ItemService {
             if(!userService.hasPermission(userId,PermissionsEnum.manageItems,shopId)){
                 throw new OurRuntime("User does not have permission to add item to shop " + shopId);
             }
-            Integer returnItemId = itemRepository.createItem(name, description, category);
+            Integer returnItemId = itemRepository.createItem(name, description, (Integer)category.ordinal());
             LoggerService.logMethodExecutionEnd("createItem", itemRepository.getItem(returnItemId));
             return returnItemId;
         } catch (OurArg e) {

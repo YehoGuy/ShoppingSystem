@@ -219,7 +219,7 @@ class ShopServiceAcceptanceTests {
         when(userService.hasPermission(8, PermissionsEnum.manageItems, shopId)).thenReturn(true);
         doNothing().when(shopRepository).addItemToShop(shopId, itemId, qty, price);
 
-        shopService.addItemToShop(shopId, "item1", "no description", qty, price, token);
+        shopService.addItemToShop(shopId, "item1", "no description", qty,ItemCategory.ELECTRONICS, price, token);
         verify(shopRepository).addItemToShop(shopId, itemId, qty, price);
     }
 
@@ -235,7 +235,7 @@ class ShopServiceAcceptanceTests {
             .when(shopRepository).addItemToShop(shopId, itemId, -1, 5);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.addItemToShop(shopId, "item1", "no description", -1, 5, token));
+            () -> shopService.addItemToShop(shopId, "item1", "no description", -1,ItemCategory.ELECTRONICS, 5, token));
         assertTrue(ex.getMessage().contains("Error adding item"));
     }
 
@@ -249,7 +249,7 @@ class ShopServiceAcceptanceTests {
         when(userService.hasPermission(8, PermissionsEnum.manageItems, shopId)).thenReturn(false);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.addItemToShop(shopId, "item1", "no description", 5, 100, token));
+            () -> shopService.addItemToShop(shopId, "item1", "no description", 5,ItemCategory.ELECTRONICS, 100, token));
         assertTrue(ex.getMessage().contains("does not have permission"));
     }
 
@@ -265,7 +265,7 @@ class ShopServiceAcceptanceTests {
             .when(shopRepository).addItemToShop(shopId, itemId, 5, -100);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.addItemToShop(shopId, "item1", "no description", 5, -100, token));
+            () -> shopService.addItemToShop(shopId, "item1", "no description", 5,ItemCategory.ELECTRONICS, -100, token));
         assertTrue(ex.getMessage().contains("Error adding item"));
     }
 
@@ -573,7 +573,7 @@ class ShopServiceAcceptanceTests {
         when(userService.hasPermission(16, PermissionsEnum.manageItems, shopId)).thenReturn(false);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.addItemToShop(shopId, "item1", "no description", 5, 100, token));
+            () -> shopService.addItemToShop(shopId, "item1", "no description", 5,ItemCategory.ELECTRONICS, 100, token));
         assertTrue(ex.getMessage().contains("does not have permission"));
     }
 
@@ -1015,10 +1015,10 @@ class ShopServiceAcceptanceTests {
         String token = "tok"; int shopId = 3;
         when(authTokenService.ValidateToken(token)).thenReturn(8);
         when(userService.hasPermission(8, PermissionsEnum.manageItems, shopId)).thenReturn(true);
-        when(itemService.createItem(eq(shopId), any(), any(), eq(8), eq(token)))
+        when(itemService.createItem(eq(shopId), any(), any(), eq(ItemCategory.AUTOMOTIVE), eq(token)))
             .thenThrow(new RuntimeException("create failed"));
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.addItemToShop(shopId, "n", "d", 1, 1, token)
+            () -> shopService.addItemToShop(shopId, "n", "d", 1,ItemCategory.AUTOMOTIVE, 1, token)
         );
         assertTrue(ex.getMessage().contains("Error adding item to shop"));
     }

@@ -262,10 +262,11 @@ class ShopControllerTests {
     class ItemMgmt {
         @Test
         void addItem_201() throws Exception {
-            doNothing().when(shopService).addItemToShop(1, "I", "D", 3, 100, "tok");
+            doNothing().when(shopService).addItemToShop(1, "I", "D", 3, ItemCategory.ELECTRONICS,100, "tok");
             mvc.perform(post("/api/shops/1/items")
                     .param("name", "I").param("description", "D")
-                    .param("quantity", "3").param("price", "100")
+                    .param("quantity", "3").param("category", "ELECTRONICS")
+                    .param("price", "100")
                     .param("token", "tok"))
                     .andExpect(status().isCreated());
         }

@@ -3,11 +3,17 @@ package UI;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+
+import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -18,17 +24,14 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
-
 import DTOs.RecieptDTO;
 
 @Route(value = "history", layout = AppLayoutBasic.class)
-@JsModule("./js/notification-client.js")
+
 public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<Integer>, BeforeEnterObserver {
 
-    private static final String PURCHASE_HISTORY_URL = "http://localhost:8080/api/purchases/shops";
+    @Value("${url.api}/purchases/shops")
+    private String PURCHASE_HISTORY_URL;
 
     private final RestTemplate rest = new RestTemplate();
     private final VerticalLayout receiptsLayout = new VerticalLayout();
@@ -47,17 +50,22 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
+        getUserId(); // Ensure userId is set in session
         token = (String) VaadinSession.getCurrent().getAttribute("authToken");
         if (token == null) {
             event.forwardTo("login");
             return;
         }
-        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m => m.connectNotifications($0))",
-                getUserId());
+
+        handleSuspence();
     }
 
-    private String getUserId() {
-        return VaadinSession.getCurrent().getAttribute("userId").toString();
+    public Integer getUserId() {
+        if (VaadinSession.getCurrent().getAttribute("userId") != null) {
+            return Integer.parseInt(VaadinSession.getCurrent().getAttribute("userId").toString());
+        }
+        UI.getCurrent().navigate(""); // Redirect to login if userId is not set
+        return null; // Return null if userId is not available
     }
 
     @Override
@@ -73,7 +81,7 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
                 + VaadinSession.getCurrent().getAttribute("authToken");
         try {
             ResponseEntity<RecieptDTO[]> resp = rest.getForEntity(url, RecieptDTO[].class);
-            if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 RecieptDTO[] receipts = resp.getBody();
                 if (receipts.length == 0) {
                     receiptsLayout.add(new H3("No purchase history for this shop."));
@@ -83,10 +91,10 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
                     }
                 }
             } else {
-                receiptsLayout.add(new H3("Failed to load history: HTTP " + resp.getStatusCode()));
+                receiptsLayout.add(new H3("Failed to load history"));
             }
         } catch (Exception ex) {
-            receiptsLayout.add(new H3("Error loading history: " + ex.getMessage()));
+            receiptsLayout.add(new H3("Error loading history"));
         }
     }
 
@@ -129,6 +137,27 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         box.setWidthFull();
         card.add(box);
         receiptsLayout.add(card);
+    }
+
+    private void handleSuspence() {
+
+        Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
+        if (userId == null) {
+            return;
+        }
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            return;
+        }
+        String url = "http://localhost:8080/api/users" + "/" + userId + "/suspension?token=" + token;
+        ResponseEntity<Boolean> response = rest.getForEntity(url, Boolean.class);
+
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
+        } else {
+            Notification.show(
+                    "Failed to check admin status");
+        }
     }
 
 }

@@ -1,34 +1,37 @@
 package UI;
 
-import com.vaadin.flow.component.UI;
-import com.vaadin.flow.component.dependency.JsModule;
-import com.vaadin.flow.component.html.H1;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
-import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
-import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.router.Route;
-import com.vaadin.flow.router.BeforeEnterEvent;
-import com.vaadin.flow.router.BeforeEnterObserver;
-import com.vaadin.flow.server.VaadinSession;
-
-import org.springframework.web.client.RestTemplate;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpStatus;
-
-import DTOs.ShopDTO;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+
+import com.vaadin.flow.component.ClientCallable;
+import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.dependency.JsModule;
+import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
+import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinSession;
+
+import DTOs.ShopDTO;
+
 @Route(value = "shops", layout = AppLayoutBasic.class)
-@JsModule("./js/notification-client.js")
+
 public class ShopSearchView extends VerticalLayout implements BeforeEnterObserver {
 
-    private static final String SHOPS_API_URL = "http://localhost:8080/api/shops/all";
+    @Value("${url.api}/shops/all")
+    private String shopsApiUrl;
+
     private final RestTemplate restTemplate = new RestTemplate();
 
     private final List<ShopDTO> allShops = new ArrayList<>();
@@ -37,19 +40,24 @@ public class ShopSearchView extends VerticalLayout implements BeforeEnterObserve
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
+        getUserId(); // Ensure userId is set in session
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
         if (token == null) {
             event.forwardTo("");
             return;
         }
-        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m -> m.connectNotifications($0))",
-                getUserId());
+
         loadShops(token);
         displayShops(filteredShops);
+        handleSuspence();
     }
 
-    private String getUserId() {
-        return VaadinSession.getCurrent().getAttribute("userId").toString();
+    public Integer getUserId() {
+        if (VaadinSession.getCurrent().getAttribute("userId") != null) {
+            return Integer.parseInt(VaadinSession.getCurrent().getAttribute("userId").toString());
+        }
+        UI.getCurrent().navigate(""); // Redirect to login if userId is not set
+        return null; // Return null if userId is not available
     }
 
     public ShopSearchView() {
@@ -78,19 +86,19 @@ public class ShopSearchView extends VerticalLayout implements BeforeEnterObserve
 
     public void loadShops(String token) {
         try {
-            String url = SHOPS_API_URL + "?token=" + token;
+            String url = shopsApiUrl + "?token=" + token;
             ResponseEntity<ShopDTO[]> response = restTemplate.getForEntity(url, ShopDTO[].class);
-            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 allShops.clear();
                 allShops.addAll(Arrays.asList(response.getBody()));
                 filteredShops.clear();
                 filteredShops.addAll(allShops);
             } else {
-                Notification.show("Failed to load shops: " + response.getStatusCode(), 3000,
+                Notification.show("Failed to load shops", 3000,
                         Notification.Position.MIDDLE);
             }
         } catch (Exception ex) {
-            Notification.show("Error loading shops: " + ex.getMessage(), 5000, Notification.Position.MIDDLE);
+            Notification.show("Error loading shops", 5000, Notification.Position.MIDDLE);
         }
     }
 
@@ -127,5 +135,25 @@ public class ShopSearchView extends VerticalLayout implements BeforeEnterObserve
             shopsContainer.add(shopLayout);
         });
         shopsContainer.setAlignItems(Alignment.CENTER);
+    }
+
+    private void handleSuspence() {
+        Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
+        if (userId == null) {
+            return;
+        }
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            return;
+        }
+        String url = "http://localhost:8080/api/users" + "/" + userId + "/suspension?token=" + token;
+        ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
+
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
+        } else {
+            Notification.show(
+                    "Failed to check admin status");
+        }
     }
 }

@@ -81,6 +81,19 @@ public class AuthTokenService {
         }
     }
 
+    public int getUserIdByToken(String token) throws Exception {
+        LoggerService.logMethodExecution("getUserIdByToken",token);
+        if (token == null || token.isEmpty()) {
+            throw new OurArg("Token cannot be null or empty");
+        }
+        int userId = authTokenRepository.getUserIdByToken(token); 
+        if (userId == -1) {
+            throw new OurRuntime("Token not found in repository"); 
+        }
+        LoggerService.logMethodExecutionEnd("getUserIdByToken",userId);
+        return userId; 
+    }
+
     public String generateAuthToken(String username) {
         LoggerService.logMethodExecution("generateAuthToken",username);
         if (username == null || username.isEmpty()) {

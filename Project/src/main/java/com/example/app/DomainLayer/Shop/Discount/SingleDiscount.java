@@ -63,6 +63,7 @@ public class SingleDiscount implements Discount {
         return policyHead.test(items, prices, itemsCategory);
     }
 
+    @Override
     public Integer getItemId() {
         return itemId;
     }
@@ -82,4 +83,16 @@ public class SingleDiscount implements Discount {
     public Integer getPercentage() {
         return percentage;
     }
+
+    @Override
+    public Policy getPolicy() {
+        return policyHead;
+    }
+
+    @Override
+    public ItemCategory getItemCategory() {
+        return null; // SingleDiscount does not apply to categories
+    }
+
+    
 }

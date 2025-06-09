@@ -1,7 +1,7 @@
 package com.example.app.DomainLayer;
 
 public class Notification {
-    
+
     private String title;
     private String message;
 
@@ -28,10 +28,7 @@ public class Notification {
 
     @Override
     public String toString() {
-        return "Notification{" +
-                "title='" + title + '\'' +
-                ", message='" + message + '\'' +
-                '}';
+        return title + '\n' + message;
     }
-    
+
 }

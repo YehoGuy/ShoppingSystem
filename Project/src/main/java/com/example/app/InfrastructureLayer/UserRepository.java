@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
 import com.example.app.ApplicationLayer.OurRuntime;
@@ -21,6 +22,9 @@ import com.example.app.DomainLayer.Notification;
 import com.example.app.DomainLayer.Purchase.Address;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
+
+import jakarta.annotation.PostConstruct;
+
 import com.example.app.DomainLayer.ShoppingCart;
 import com.example.app.DomainLayer.User;
 
@@ -35,14 +39,51 @@ public class UserRepository implements IUserRepository {
     private PasswordEncoderUtil passwordEncoderUtil;
     AtomicInteger userIdCounter;
 
+    @Value("${admin.username}")
+    private String adminUsername;
+
+    @Value("${admin.password}")
+    private String adminPlainPassword;
+
+    @Value("${admin.email}")
+    private String adminEmail;
+
+    @Value("${admin.phoneNumber}")
+    private String adminPhoneNumber;
+
+    @Value("${admin.address}")
+    private String adminAddress;
+
     public UserRepository() {
         this.userMapping = new ConcurrentHashMap<>();
         this.userIdCounter = new AtomicInteger(0); // Initialize the user ID counter
         this.managers = new CopyOnWriteArrayList<>(); // Initialize the managers list
         this.passwordEncoderUtil = new PasswordEncoderUtil();
         // TODO: V should be removed when adding database
-        addMember("admin", passwordEncoderUtil.encode("admin"), "admin@mail.com", "0", "admin st.");
-        managers.add(isUsernameAndPasswordValid("admin", "admin"));
+    }
+
+    @PostConstruct
+    public void initAdmin() {
+        if (adminUsername == null || adminUsername.isBlank()) {
+            adminUsername = "admin";
+        }
+        if (adminPlainPassword == null || adminPlainPassword.isBlank()) {
+            adminPlainPassword = "admin";
+        }
+        if (adminEmail == null || adminEmail.isBlank()) {
+            adminEmail = "admin@mail.com";
+        }
+        if (adminPhoneNumber == null || adminPhoneNumber.isBlank()) {
+            adminPhoneNumber = "0";
+        }
+        if (adminAddress == null || adminAddress.isBlank()) {
+            adminAddress = "admin st.";
+        }
+
+        String passwordToStore = adminPlainPassword;
+        int adminId = addMember(adminUsername, passwordToStore, adminEmail, adminPhoneNumber, adminAddress);
+
+        managers.add(adminId);
     }
 
     public PasswordEncoderUtil getPasswordEncoderUtil() {
@@ -573,6 +614,15 @@ public class UserRepository implements IUserRepository {
         member.setSuspended(suspended);
     }
 
+    public void setUnSuspended(int userId) {
+        Member member = getMemberById(userId);
+        if (member == null) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        member.setUnSuspended();
+    }
+
+
     @Override
     public boolean isSuspended(int userId) {
         Member member;
@@ -602,8 +652,18 @@ public class UserRepository implements IUserRepository {
         return suspendedUsers;
     }
 
-    @Override
+    public void banUser(int userId) {
+        Member member = getMemberById(userId);
+        if (member == null) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        //LocalDateTime suspendedUntil = LocalDateTime.now().plusYears((long)1000);
+        LocalDateTime suspendedUntil = LocalDateTime.of(9999, 12, 31, 23, 59);
+        member.setSuspended(suspendedUntil);
+    }
 
+
+    @Override
     public List<Integer> getShopIdsByWorkerId(int userId) {
         Member member = getMemberById(userId);
         if (member == null) {

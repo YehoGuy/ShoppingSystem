@@ -211,7 +211,7 @@ public class MessageControllerTests {
         void success_returns200AndMessages() throws Exception {
                 Message mA = new Message(1, 3, 4, "Hello", "2025-05-07T13:45:30Z", true, 0);
                 Message mB = new Message(2, 3, 4, "Hello", "2025-05-07T13:45:30Z", true, 0);
-                when(messageService.getMessagesByReceiverId("tok", 4))
+                when(messageService.getMessagesByReceiverId("tok"))
                         .thenReturn(Arrays.asList(mA, mB));
 
                  mvc.perform(get("/api/messages/receiver/4")

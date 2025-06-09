@@ -25,5 +25,11 @@ public interface Discount {
 
     Integer getPercentage() ;
 
+    Policy getPolicy();
+
+    ItemCategory getItemCategory();
+    Integer getItemId();
+    
+
 
 }

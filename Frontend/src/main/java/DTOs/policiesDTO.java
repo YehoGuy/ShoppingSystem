@@ -1,41 +1,52 @@
 package DTOs;
 
-public class policiesDTO {
-    private String policyName; // The name of the policy.
-    private boolean isDiscount;
-    private String description; // A description of the policy.
-    private String shopName; // The name of the shop associated with the policy.
+import java.io.Serializable;
+import java.util.Objects;
+import Domain.ItemCategory;
+import Domain.Operator;
 
-    public policiesDTO(String policyName, String description, String shopName, boolean isDiscount) {
-        this.isDiscount = isDiscount;
-        this.policyName = policyName;
-        this.description = description;
-        this.shopName = shopName;
+public class PoliciesDTO implements Serializable {
+    private Integer              itemId;        // which item this policy applies to
+    private ItemCategory         itemCategory;  // if category‐level
+    private CompositePolicyDTO   policy;        // the full policy tree
+
+    public PoliciesDTO() {}
+
+    public PoliciesDTO(Integer itemId,
+                       ItemCategory itemCategory,
+                       CompositePolicyDTO policy) {
+        this.itemId       = itemId;
+        this.itemCategory = itemCategory;
+        this.policy       = policy;
     }
 
-    public boolean isDiscount() {
-        return isDiscount;
-    }
+    public Integer getItemId() { return itemId; }
+    public void setItemId(Integer itemId) { this.itemId = itemId; }
 
-    public String getPolicyName() {
-        return policyName;
-    }
+    public ItemCategory getItemCategory() { return itemCategory; }
+    public void setItemCategory(ItemCategory itemCategory) { this.itemCategory = itemCategory; }
 
-    public String getDescription() {
-        return description;
-    }
-
-    public String getShopName() {
-        return shopName;
-    }
+    public CompositePolicyDTO getPolicy() { return policy; }
+    public void setPolicy(CompositePolicyDTO policy) { this.policy = policy; }
 
     @Override
     public String toString() {
-        return "Policy{" +
-                "policyName='" + policyName + '\'' +
-                ", description='" + description + '\'' +
-                ", shopName='" + shopName + '\'' +
-                '}';
+        if (policy == null) return "No Policy";
+        return policy.toString();
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof PoliciesDTO)) return false;
+        PoliciesDTO that = (PoliciesDTO) o;
+        return Objects.equals(itemId, that.itemId)
+            && itemCategory == that.itemCategory
+            && Objects.equals(policy, that.policy);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(itemId, itemCategory, policy);
+    }
 }

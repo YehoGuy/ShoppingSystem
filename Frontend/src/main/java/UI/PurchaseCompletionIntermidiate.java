@@ -1,5 +1,6 @@
 package UI;
 
+import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -7,10 +8,14 @@ import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 
 import java.util.Map;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
 
 import DTOs.AddressDTO;
 import DTOs.ItemDTO;
@@ -20,7 +25,6 @@ import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 
-@JsModule("./js/notification-client.js")
 public class PurchaseCompletionIntermidiate extends VerticalLayout implements BeforeEnterObserver {
 
     private ComboBox<String> shippingTypeCombo;
@@ -37,15 +41,20 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
+        getUserId(); // Ensure userId is set in session
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("");
         }
-        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m -> m.connectNotifications($0))",
-                getUserId());
+
+        handleSuspence();
     }
 
-    private String getUserId() {
-        return VaadinSession.getCurrent().getAttribute("userId").toString();
+    public Integer getUserId() {
+        if (VaadinSession.getCurrent().getAttribute("userId") != null) {
+            return Integer.parseInt(VaadinSession.getCurrent().getAttribute("userId").toString());
+        }
+        UI.getCurrent().navigate(""); // Redirect to login if userId is not set
+        return null; // Return null if userId is not available
     }
 
     public PurchaseCompletionIntermidiate(ShoppingCartDTO cart) {
@@ -66,7 +75,9 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
             AddressDTO address = getAddressFromForm();
             completePurchase(address);
         });
-
+        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+            completeButton.setVisible(false);
+        }
         add(completeButton);
     }
 
@@ -146,4 +157,27 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
                 .findFirst()
                 .orElse(null);
     }
+
+    private void handleSuspence() {
+        RestTemplate restTemplate = new RestTemplate();
+
+        Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
+        if (userId == null) {
+            return;
+        }
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            return;
+        }
+        String url = "http://localhost:8080/api/users" + "/" + userId + "/suspension?token=" + token;
+        ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
+
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
+        } else {
+            Notification.show(
+                    "Failed to check admin status");
+        }
+    }
+
 }

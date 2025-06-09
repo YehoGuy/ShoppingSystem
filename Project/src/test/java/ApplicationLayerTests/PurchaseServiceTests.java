@@ -26,9 +26,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.Mock;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -63,8 +65,7 @@ import com.example.app.SimpleHttpServerApplication;
  * Each test uses full mocking to validate observable behaviour across the
  * service’s public API, including happy-paths and rollback paths.
  */
-@ExtendWith({ SpringExtension.class, MockitoExtension.class })
-@SpringBootTest(classes = SimpleHttpServerApplication.class)
+@ExtendWith(MockitoExtension.class)
 @AutoConfigureMockMvc(addFilters = false)
 class PurchaseServiceTests {
 
@@ -84,6 +85,9 @@ class PurchaseServiceTests {
     PurchaseService service;
 
     Address addr = new Address().withCountry("IL").withCity("TLV")
+            .withStreet("Rothschild").withZipCode("6800000");
+    Address defaultAddr = new Address()
+            .withCountry("IL").withCity("TLV")
             .withStreet("Rothschild").withZipCode("6800000");
 
     @BeforeEach
@@ -314,7 +318,7 @@ class PurchaseServiceTests {
     class Concurrency {
 
         @Autowired
-        PurchaseRepository purchaseRepo;
+        PurchaseRepository purchaseRepo = PurchaseRepository.getInstance();
 
         private static final int THREADS = 16;
         private ExecutorService pool;
@@ -656,4 +660,117 @@ class PurchaseServiceTests {
         assertTrue(ex.getMessage().contains("Error retrieving user purchases:"));
     }
 
+    // ------------ getAllBids() ----------------
+    @Test
+    @DisplayName("getAllBids_whenRepositoryReturnsBids_shouldReturnThem")
+    void getAllBids_happyPath() throws Exception {
+        String token = "tok";
+        int uid = 9;
+        List<BidReciept> bids = List.of(mock(BidReciept.class));
+        when(auth.ValidateToken(token)).thenReturn(uid);
+        when(repo.getAllBids()).thenReturn(bids);
+        List<BidReciept> out = service.getAllBids(token);
+        assertSame(bids, out);
+        verify(repo).getAllBids();
+    }
+
+    // ───────────────────── getBid invariants ─────────────────────
+
+    @Test
+    @DisplayName("getBid_whenBidExists_shouldReturnItsReceipt_andCallGenerateReceipt")
+    void getBid_happyPath() throws Exception {
+        String token = "tok";
+        int uid = 7, pid = 18, shopId = 4;
+
+        Bid bid = spy(new Bid(pid, uid, shopId, Map.of(1, 1), 50));
+        BidReciept rcpt = mock(BidReciept.class);
+
+        when(bid.generateReciept()).thenReturn(rcpt);
+        when(repo.getPurchaseById(pid)).thenReturn(bid);
+        when(auth.ValidateToken(token)).thenReturn(uid);
+
+        BidReciept out = service.getBid(token, pid);
+
+        assertSame(rcpt, out);
+        verify(bid).generateReciept();
+    }
+
+    // ───────────────────── finalizeBid invariants ─────────────────────
+
+    @Test
+    @DisplayName("finalizeBid_whenAllValid_shouldPayShipNotifyComplete_andReturnWinnerId")
+    void finalizeBid_happyPath() throws Exception {
+        String token = "tok";
+        int owner = 2, pid = 30, shopId = 6, winner = 5, finalPrice = 120;
+
+        Bid bid = mock(Bid.class);
+        when(bid.getUserId()).thenReturn(owner);
+        when(bid.getHighestBidderId()).thenReturn(winner);
+        when(bid.getMaxBidding()).thenReturn(finalPrice);
+        when(bid.getStoreId()).thenReturn(shopId);
+        when(bid.getBiddersIds()).thenReturn(List.of(winner, 8));
+
+        when(repo.getPurchaseById(pid)).thenReturn(bid);
+        when(auth.ValidateToken(token)).thenReturn(owner);
+        when(users.getUserShippingAddress(owner)).thenReturn(defaultAddr);
+
+        int out = service.finalizeBid(token, pid);
+
+        assertEquals(winner, out);
+        verify(users).pay(token, shopId, finalPrice);
+        verify(shops).shipPurchase(token, pid, shopId, "IL", "TLV", "Rothschild", "6800000");
+        verify(msg, atLeastOnce()).sendMessageToUser(eq(token), anyInt(), anyString(), anyInt());
+        verify(bid).completePurchase();
+    }
+
+    // ───────────────────── finalizeBid refund path ─────────────────────
+    @Test
+    @DisplayName("finalizeBid – shipping fails ➜ payment is refunded and exception bubbles up")
+    void finalizeBid_refundOnShipFailure() throws Exception {
+        String token = "tok";
+        int owner = 3;
+        int pid = 31;
+        int shopId = 10;
+        int winner = 4;
+        int price = 200;
+
+        Bid bid = mock(Bid.class);
+
+        // Only the stubs that the code really touches ↓
+        when(bid.getUserId()).thenReturn(owner);
+        when(bid.getHighestBidderId()).thenReturn(winner);
+        when(bid.getMaxBidding()).thenReturn(price);
+        when(bid.getStoreId()).thenReturn(shopId);
+
+        when(repo.getPurchaseById(pid)).thenReturn(bid);
+        when(auth.ValidateToken(token)).thenReturn(owner);
+        when(users.getUserShippingAddress(owner)).thenReturn(defaultAddr);
+
+        // Generic (non-OurRuntime) exception triggers the refund branch
+        doThrow(new RuntimeException("shipping failed"))
+                .when(shops)
+                .shipPurchase(anyString(), anyInt(), anyInt(),
+                        anyString(), anyString(), anyString(), anyString());
+
+        // ── act & assert ──
+        assertThrows(RuntimeException.class,
+                () -> service.finalizeBid(token, pid));
+
+        // verify side-effects
+        verify(users).pay(token, shopId, price);
+        verify(users).refundPaymentByStoreEmployee(token, winner, shopId, price);
+    }
+
+    // ───────────────────── postBidding invariants ─────────────────────
+
+    @Test
+    @DisplayName("postBidding_whenValidateTokenThrowsOurArg_shouldPropagateOurArg")
+    void postBidding_validateTokenThrows() throws Exception {
+        String token = "tok";
+        int pid = 40;
+
+        when(auth.ValidateToken(token)).thenThrow(new OurArg("bad token"));
+
+        assertThrows(OurArg.class, () -> service.postBidding(token, pid, 99));
+    }
 }

@@ -3,13 +3,13 @@ package DTOs;
 import Domain.ItemCategory;
 public class LeafPolicyDTO {
     private Integer threshold;
-    private String itemName;
+    private Integer itemId;
     private ItemCategory itemCategory;
     private Double basketValue;
 
-    public LeafPolicyDTO(Integer threshold, String itemName, ItemCategory itemCategory, Double basketValue) {
+    public LeafPolicyDTO(Integer threshold, Integer itemId, ItemCategory itemCategory, Double basketValue) {
         this.threshold = threshold;
-        this.itemName = itemName;
+        this.itemId = itemId;
         this.itemCategory = itemCategory;
         this.basketValue = basketValue;
     }
@@ -18,8 +18,8 @@ public class LeafPolicyDTO {
         return threshold;
     }
 
-    public String getItemName() {
-        return itemName;
+    public Integer getItemId() {
+        return itemId;
     }
 
     public ItemCategory getItemCategory() {
@@ -32,7 +32,7 @@ public class LeafPolicyDTO {
 
     public String toString() {
         if (threshold != null && itemCategory == null)
-            return "Minimum quantity of item " + itemName + " is " + threshold;
+            return "Minimum quantity of item " + itemId + " is " + threshold;
         else if (threshold != null && itemCategory != null)
             return "Minimum quantity of category " + itemCategory + " is " + threshold;
         else

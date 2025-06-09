@@ -4,6 +4,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -19,6 +21,8 @@ import com.example.app.DomainLayer.Shop.Operator;
 import com.example.app.DomainLayer.Shop.PurchasePolicy;
 import com.example.app.DomainLayer.Shop.Shop;
 import com.example.app.DomainLayer.Shop.Discount.Discount;
+import com.example.app.DomainLayer.Shop.Discount.Policy;
+import com.example.app.PresentationLayer.DTO.Shop.PoliciesDTO;
 
 @Repository
 public class ShopRepository implements IShopRepository {
@@ -26,6 +30,8 @@ public class ShopRepository implements IShopRepository {
     private final ConcurrentHashMap<Integer, Shop> shops = new ConcurrentHashMap<>();
     private final AtomicInteger shopIdCounter = new AtomicInteger(1);
     private final List<Shop> closedShops = new CopyOnWriteArrayList<>();
+    private final Map<Integer, Shop> inMemory = new HashMap<>();
+
 
     @Override
     public Shop createShop(String name, PurchasePolicy purchasePolicy, ShippingMethod shippingMethod) {
@@ -242,7 +248,10 @@ public class ShopRepository implements IShopRepository {
     @Override
     public void closeShop(Integer shopId) {
         try {
+            
             Shop removed = shops.remove(shopId);
+            //print the removed shop for debugging purposes
+            System.out.println("Closing shop: " + removed);
             if (removed == null) {
                 throw new IllegalArgumentException("Shop not found: " + shopId);
             }
@@ -428,6 +437,19 @@ public class ShopRepository implements IShopRepository {
     }
 
     @Override
+    public void setDiscountPolicy(int shopId, Policy policy) {
+        try {
+            Shop shop = shops.get(shopId);
+            if (shop == null) {
+                throw new IllegalArgumentException("Shop not found: " + shopId);
+            }
+            shop.setDiscountPolicy(policy);
+        } catch (Exception e) {
+            throw new RuntimeException("Error setting discount policy: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
     public List<Discount> getDiscounts(int shopId) {
         try {
             Shop shop = shops.get(shopId);
@@ -440,4 +462,13 @@ public class ShopRepository implements IShopRepository {
         }
     }
 
+    @Override
+    public List<Policy> getPolicies(int shopId) {
+        // 1) Load the Shop aggregate
+        Shop shop = shops.get(shopId);
+        if (shop == null) {
+            throw new NoSuchElementException("Shop not found: " + shopId);
+        }
+        return shop.getPolicies();
+    }
 }

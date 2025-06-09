@@ -72,4 +72,20 @@ public class CategoryDiscount implements Discount {
     public Integer getPercentage() {
         return percentage;
     }
+
+    @Override
+    public Policy getPolicy() {
+        return policyHead;
+    }
+
+    @Override
+    public Integer getItemId() {
+        return null; // CategoryDiscount does not apply to a specific item
+    }
+
+    @Override
+    public ItemCategory getItemCategory() {
+        return itemCategory; // Returns the category this discount applies to
+    }
+
 }
