@@ -378,30 +378,71 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
 
     private void changePermissions(UserPermissionsDTO dto) {
         Dialog dialog = new Dialog();
+        // Build a checkbox group without 'manageOwners'
+        List<PermissionsEnum> perms = Arrays.stream(PermissionsEnum.values())
+            .filter(p -> p != PermissionsEnum.openClosedShop // Exclude manageOwners
+                    && p != PermissionsEnum.closeShop) // Exclude closeShop
+            .collect(Collectors.toList());
         CheckboxGroup<PermissionsEnum> checkboxGroup = new CheckboxGroup<>();
         checkboxGroup.setLabel("Select Permissions");
-        checkboxGroup.setItems(PermissionsEnum.values());
+        checkboxGroup.setItems(perms);
+    
+        // Pre-select existing ones (minus manageOwners)
+        Set<PermissionsEnum> current = Stream.of(dto.getPermissions())
+            .filter(perms::contains)
+            .collect(Collectors.toSet());
+        checkboxGroup.setValue(current);
+    
         Button confirmButton = new Button("Confirm", evt -> {
-            PermissionsEnum[] selectedPermissions = checkboxGroup.getValue()
-                    .toArray(new PermissionsEnum[0]);
-            if (selectedPermissions.length == 0) {
+            Set<PermissionsEnum> selected = checkboxGroup.getValue();
+            if (selected.isEmpty()) {
                 Notification.show("Please select at least one permission.");
                 return;
             }
+    
             String url = USERS_URL + "/shops/" + shop.getShopId() +
-                    "/permissions/" + dto.getMemberId() +
-                    "?token=" + getToken();
-            ResponseEntity<Void> response = restTemplate.postForEntity(url, selectedPermissions, Void.class);
-            if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
-                Notification.show(dto.getUsername() + "' permissions were changed.");
-            } else {
-                Notification.show("Failed to change permissions");
+                         "/permissions/" + dto.getMemberId() +
+                         "?token=" + getToken();
+    
+            // Build JSON headers
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+    
+            // Wrap your enum array
+            PermissionsEnum[] payload = selected.toArray(new PermissionsEnum[0]);
+            HttpEntity<PermissionsEnum[]> request = new HttpEntity<>(payload, headers);
+    
+            try {
+                // Use POST to avoid the 405
+                ResponseEntity<Void> response = restTemplate.exchange(
+                    url, HttpMethod.POST, request, Void.class);
+    
+                if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
+                    Notification.show(dto.getUsername() + "'s permissions were changed.");
+                    DisplayRoles();   // refresh the grid
+                } else {
+                    Notification.show("Failed to change permissions: " + response.getStatusCode());
+                }
+            } catch (HttpClientErrorException e) {
+                String body = e.getResponseBodyAsString();
+                if (e.getStatusCode() == HttpStatus.CONFLICT) {
+                    Notification.show("Conflict updating permissions: " + body);
+                } else if (e.getStatusCode() == HttpStatus.FORBIDDEN) {
+                    Notification.show("You don’t have permission to change roles.");
+                } else {
+                    Notification.show("Error changing permissions: "
+                                      + e.getStatusCode()
+                                      + " — " + body);
+                }
+            } finally {
+                dialog.close();
             }
-            dialog.close();
         });
-        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
-            confirmButton.setVisible(false);
-        }
+    
+        boolean isSuspended = Boolean.TRUE.equals(
+            VaadinSession.getCurrent().getAttribute("isSuspended"));
+        confirmButton.setVisible(!isSuspended);
+    
         dialog.add(new VerticalLayout(checkboxGroup, confirmButton));
         dialog.open();
     }

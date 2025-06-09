@@ -50,19 +50,17 @@ public class Role {
     public void setFoundersPermissions() {
         synchronized (lock) {
             this.permissions = new PermissionsEnum[]{
-                PermissionsEnum.manageItems,
-                PermissionsEnum.setPolicy,
-                PermissionsEnum.manageOwners,
-                PermissionsEnum.leaveShopAsOwner,
-                PermissionsEnum.manageManagers,
-                PermissionsEnum.getStaffInfo,
-                PermissionsEnum.handleMessages,
-                PermissionsEnum.getHistory,
-                PermissionsEnum.closeShop,
-                PermissionsEnum.manageOwners,
-                PermissionsEnum.openClosedShop,
-                PermissionsEnum.suspension, 
-                PermissionsEnum.viewPolicy
+                    PermissionsEnum.manageItems,
+                    PermissionsEnum.setPolicy,
+                    PermissionsEnum.manageOwners,
+                    PermissionsEnum.leaveShopAsOwner,
+                    PermissionsEnum.manageManagers,
+                    PermissionsEnum.getStaffInfo,
+                    PermissionsEnum.handleMessages,
+                    PermissionsEnum.getHistory,
+                    PermissionsEnum.closeShop,
+                    PermissionsEnum.openClosedShop,
+                    PermissionsEnum.suspension
             };
         }
     }
@@ -72,14 +70,13 @@ public class Role {
             this.permissions = new PermissionsEnum[]{
                 PermissionsEnum.manageItems,
                 PermissionsEnum.setPolicy,
+                PermissionsEnum.manageOwners,
                 PermissionsEnum.leaveShopAsOwner,
                 PermissionsEnum.manageManagers,
                 PermissionsEnum.getStaffInfo,
                 PermissionsEnum.handleMessages,
                 PermissionsEnum.getHistory,
-                PermissionsEnum.manageOwners,
-                PermissionsEnum.suspension, 
-                PermissionsEnum.viewPolicy
+                PermissionsEnum.suspension
             };
         }
     }

@@ -582,11 +582,6 @@ public class UserService {
                                     new OurRuntime("Permission closeShop cannot be changed."));
                             throw new OurRuntime("Permission closeShop cannot be changed.");
                         }
-                        if(permission == PermissionsEnum.manageOwners && !userRepository.isOwner(memberId, shopId)){Add commentMore actions
-                            LoggerService.logDebug("changePermissions",
-                                    new OurRuntime("Member ID " + memberId + " is not an owner of shop ID " + shopId));
-                            throw new OurRuntime("Member ID " + memberId + " is not an owner of shop ID " + shopId);
-                        }
                     }
                     userRepository.setPermissions(memberId, shopId, role, permissions);
                     LoggerService.logMethodExecutionEndVoid("changePermissions");
