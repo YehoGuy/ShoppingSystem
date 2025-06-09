@@ -514,15 +514,15 @@ public class UserRepositoryTests {
         assertThrows(OurRuntime.class,
             () -> repo.setPaymentMethod(9999, 0, pm));
         assertThrows(OurRuntime.class,
-            () -> repo.pay(9999, 0, 1.0));
+            () -> repo.pay(9999, 1.0, "1234567890123456", "123", "12", "2025", "John Doe", "123 Main St", "12345"));
         assertThrows(OurRuntime.class,
-            () -> repo.refund(9999, 0, 1.0));
+            () -> repo.refund(9999, 0));
 
         // user exists but no payment method set
         assertThrows(OurRuntime.class,
-            () -> repo.pay(memberId, 0, 1.0));
+            () -> repo.pay(memberId, 1.0, "1234567890123456", "123", "12", "2025", "John Doe", "123 Main St", "12345"));
         assertThrows(OurRuntime.class,
-            () -> repo.refund(memberId, 0, 1.0));
+            () -> repo.refund(memberId, 0));
     }
 
     // ─── updateMemberUsername/email/password/phone failure ────────────────

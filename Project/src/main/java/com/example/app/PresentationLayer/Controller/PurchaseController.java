@@ -6,7 +6,6 @@ import java.util.NoSuchElementException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.method.P;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.app.ApplicationLayer.Purchase.PurchaseService;
 import com.example.app.PresentationLayer.DTO.Purchase.PaymentDetailsDTO;
 import com.example.app.PresentationLayer.DTO.Purchase.RecieptDTO;
-import com.example.app.PresentationLayer.DTO.Purchase.PaymentDetailsDTO;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.constraints.Min;
@@ -67,8 +66,7 @@ public class PurchaseController {
         this.purchaseService = purchaseService;
     }
 
-    /* ────────────────────────── CHECKOUT ───────────────────────── */
-
+    /* ────────────────────────── CHECKOUT ───────────────────────── */    
     @PostMapping("/checkout")
     public ResponseEntity<?> checkout(
             @RequestParam String authToken,
@@ -77,9 +75,13 @@ public class PurchaseController {
             @RequestParam String street,
             @RequestParam String houseNumber,
             @RequestParam(required = false) String zipCode,
-            @RequestParam PaymentDetailsDTO pd) {
+            @RequestParam String pd) {
 
         try {
+            // Parse the payment details JSON
+            ObjectMapper mapper = new ObjectMapper();
+            PaymentDetailsDTO paymentDetails = mapper.readValue(pd, PaymentDetailsDTO.class);
+            
             // compose Address inline
             com.example.app.DomainLayer.Purchase.Address shipping = new com.example.app.DomainLayer.Purchase.Address()
                     .withCity(city)
@@ -88,12 +90,15 @@ public class PurchaseController {
                     .withHouseNumber(houseNumber)
                     .withZipCode(zipCode);
 
-            List<Integer> ids = purchaseService.checkoutCart(authToken, shipping, pd.getCurrency(),
-                    pd.getCardNumber(), pd.getExpirationDateMonth(),
-                    pd.getExpirationDateYear(), pd.getCardHolderName(),
-                    pd.getCvv(), pd.getId());
-            return ResponseEntity.status(HttpStatus.CREATED).body(ids); // 201 Created
+            List<Integer> ids = purchaseService.checkoutCart(authToken, shipping, paymentDetails.getCurrency(),
+                    paymentDetails.getCardNumber(), paymentDetails.getExpirationDateMonth(),
+                    paymentDetails.getExpirationDateYear(), paymentDetails.getCardHolderName(),
+                    paymentDetails.getCvv(), paymentDetails.getId());
+            return ResponseEntity.status(HttpStatus.CREATED).body(ids); // 201 Created
 
+        } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
+            // JSON parsing error
+            return ResponseEntity.badRequest().body("Invalid payment details JSON: " + ex.getMessage()); // 400
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
             // bad parameters (e.g., empty city or invalid token format)
             return ResponseEntity.badRequest().body(ex.getMessage()); // 400
@@ -173,23 +178,20 @@ public class PurchaseController {
     @PostMapping("/bids/{bidId}/finalize")
     public ResponseEntity<?> finalizeBid(
             @PathVariable @Min(1) int bidId,
-            @RequestParam String authToken,
-            @RequestParam PaymentDetailsDTO pd) {
+            @RequestParam String authToken) {
 
         try {
-            int winnerId = purchaseService.finalizeBid(authToken, bidId, pd.getCurrency(),
-                    pd.getCardNumber(), pd.getExpirationDateMonth(),
-                    pd.getExpirationDateYear(), pd.getCardHolderName(),
-                    pd.getCvv(), pd.getId());
-            // success → 200 OK, return the winner’s user‑id
+            // Parse the payment details JSON
+            
+            int winnerId = purchaseService.finalizeBid(authToken, bidId);
+            // success → 200 OK, return the winner's user‑id
             return ResponseEntity.ok(winnerId);
-
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
             // bad parameters (e.g., negative id, malformed token) → 400
             return ResponseEntity.badRequest().body(ex.getMessage());
 
         } catch (NoSuchElementException ex) {
-            // bid doesn’t exist → 404
+            // bid doesn't exist → 404
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
 
         } catch (RuntimeException ex) {

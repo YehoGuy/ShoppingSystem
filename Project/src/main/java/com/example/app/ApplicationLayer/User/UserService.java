@@ -1578,6 +1578,24 @@ public class UserService {
         }
     }
 
+    public boolean addBidToUserShoppingCart(int userId, int shopId, Map<Integer, Integer> items) {
+        try {
+            LoggerService.logMethodExecution("addToUserShoppingCart", userId, items);
+            userRepository.addBidToShoppingCart(userId, shopId, items); // Add the items to the user's shopping cart
+            LoggerService.logMethodExecutionEndVoid("addToUserShoppingCart");
+            return true; // Items added successfully
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("addToUserShoppingCart", e);
+            throw new OurRuntime("addToUserShoppingCart: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("addToUserShoppingCart", e);
+            throw new OurArg("addToUserShoppingCart: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("addToUserShoppingCart", e, userId, items);
+            throw new OurRuntime("addToUserShoppingCart: " + e.getMessage(), e);
+        }
+    }
+
     /**
      * Pays for user's order
      * 
@@ -1596,7 +1614,7 @@ public class UserService {
             if (isSuspended(userId)) {
                 throw new OurRuntime("the user is suspended");
             }
-            int pid = userRepository.pay(amount, currency, cardNumber, expirationDateMonth, expirationDateYear, cardHolderName, cvv, id); // Process the payment
+            int pid = userRepository.pay(userId, amount, currency, cardNumber, expirationDateMonth, expirationDateYear, cardHolderName, cvv, id); // Process the payment
             LoggerService.logMethodExecutionEnd("pay", true);
             return pid;
         } catch (OurRuntime e) {

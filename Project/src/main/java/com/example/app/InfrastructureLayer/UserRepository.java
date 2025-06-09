@@ -483,14 +483,14 @@ public class UserRepository implements IUserRepository {
     }
 
     @Override
-    public int pay(double amount, String currency, String cardNumber, String expirationDateMonth, String expirationDateYear, String cardHolderName, String cvv, String id) {
-        User user = userMapping.get(id);
+    public int pay(int userId, double amount, String currency, String cardNumber, String expirationDateMonth, String expirationDateYear, String cardHolderName, String cvv, String id) {
+        User user = userMapping.get(userId);
         if (user == null) {
-            throw new OurRuntime("User with ID " + id + " doesn't exist.");
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
         }
         PaymentMethod paymentMethod = user.getPaymentMethod();
         if (paymentMethod == null) {
-            throw new OurRuntime("Payment method not set for user with ID " + id);
+            throw new OurRuntime("Payment method not set for user with ID " + userId);
         }
         try {
             int pid = paymentMethod.processPayment(amount, currency, cardNumber, expirationDateMonth, expirationDateYear, cardHolderName, cvv, id);
@@ -521,6 +521,15 @@ public class UserRepository implements IUserRepository {
         } catch (Exception e) {
             throw new OurRuntime("Refund failed: " + e.getMessage());
         }
+    }
+
+    public void addBidToShoppingCart(int userId, int shopId, Map<Integer, Integer> items) {
+        if (!userMapping.containsKey(userId)) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        User user = userMapping.get(userId);
+        ShoppingCart shoppingCart = user.getShoppingCart();
+        shoppingCart.addBid(shopId, items); // Assuming ShoppingCart has a method to add a bid
     }
 
     @Override

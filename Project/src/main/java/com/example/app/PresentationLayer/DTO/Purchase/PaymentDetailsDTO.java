@@ -9,6 +9,10 @@ public class PaymentDetailsDTO {
     private String cvv;
     private String id;
 
+    // Default constructor for Jackson
+    public PaymentDetailsDTO() {
+    }
+
     public PaymentDetailsDTO(String currency, String cardNumber, String expirationDateMonth, String expirationDateYear, String cardHolderName, String cvv, String id) {
         this.currency = currency;
         this.cardNumber = cardNumber;

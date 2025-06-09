@@ -232,13 +232,13 @@ public class ShopRepositoryTests {
         Shop s = repo.createShop("Z", purchasePolicy, shippingMethod);
         int shopId = s.getId();
         // exercise
-        repo.shipPurchase(123, shopId, "C","Ci","St","PC");
+        repo.shipPurchase("123", shopId, "C","Ci","St","PC");
         // verify delegate
-        verify(shippingMethod).processShipment(123, "C","Ci","St","PC");
+        verify(shippingMethod).processShipping("123", "St", "Ci", "C", "PC");
 
         // bad shop
         assertThrows(RuntimeException.class,
-            () -> repo.shipPurchase(1, 999, "a","b","c","d"));
+            () -> repo.shipPurchase("1", 999, "a","b","c","d"));
     }
 
     // UC15 – getClosedShops and closeShop

@@ -3,13 +3,17 @@ package com.example.app.DomainLayer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import com.example.app.ApplicationLayer.OurRuntime;
 
 public class ShoppingCart {
     final private ConcurrentHashMap<Integer, ConcurrentHashMap<Integer,Integer>> items; // shopID, (productID, quantity)  
                                                                     //every entry in the HashMap is a basket.
+    final private ConcurrentHashMap<Integer, CopyOnWriteArrayList<Integer>> bids; // shopID, productID
     
     public ShoppingCart() {
         this.items = new ConcurrentHashMap<>();
+        this.bids = new ConcurrentHashMap<>();
     }
 
     public void clearCart() {
@@ -48,6 +52,13 @@ public class ShoppingCart {
     }
 
     public void updateProduct(int shopId, int productId, int quantity) {
+        if(bids.containsKey(shopId)) {
+            CopyOnWriteArrayList<Integer> productBids = bids.get(shopId);
+            if (productBids.contains(productId)) {
+                // If the product is bid on, we do not allow quantity updates
+                throw new OurRuntime("Cannot update quantity for a product that has bids.");
+            }
+        }
         ConcurrentHashMap<Integer, Integer> shopItems = items.get(shopId);
         if (shopItems != null) {
             shopItems.put(productId, quantity);
@@ -106,6 +117,34 @@ public class ShoppingCart {
             cartCopy.put(entry.getKey(), new HashMap<>(entry.getValue()));
         }
         return cartCopy;
+    }
+
+    public void addBid(int shopId, Map<Integer, Integer> newItems) {
+        bids.putIfAbsent(shopId, new CopyOnWriteArrayList<>());
+        CopyOnWriteArrayList<Integer> productBids = bids.get(shopId);
+        
+        for (Map.Entry<Integer, Integer> entry : newItems.entrySet()) {
+            Integer productId = entry.getKey();
+            if (!productBids.contains(productId)) {
+                productBids.add(productId);
+            }
+        }
+
+        ConcurrentHashMap<Integer, Integer> shopItems = items.get(shopId);
+        if (shopItems == null) {
+            shopItems = new ConcurrentHashMap<>();
+            items.put(shopId, shopItems);
+        }
+        for (Map.Entry<Integer, Integer> entry : newItems.entrySet()) {
+            if (!productBids.contains(entry.getKey())) {
+                productBids.add(entry.getKey());
+            }
+            else{
+                Integer productId = entry.getKey();
+                Integer quantity = entry.getValue();
+                shopItems.merge(productId, quantity, Integer::sum); // Add to the basket
+            }
+        }
     }
 
 }

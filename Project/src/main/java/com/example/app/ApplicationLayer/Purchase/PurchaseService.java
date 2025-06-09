@@ -160,7 +160,7 @@ public class PurchaseService {
         }
     }
 
-    public int finalizeBid(String authToken, int purchaseId, String currency, String cardNumber, String expirationDateMonth, String expirationDateYear, String cardHolderName, String cvv, String id) {
+    public int finalizeBid(String authToken, int purchaseId) {
         int initiatingUserId = -1;
         boolean payed = false;
         int highestBidderId = -1;
@@ -180,13 +180,17 @@ public class PurchaseService {
             highestBidderId = ((BidReciept) receipt).getHighestBidderId();
             finalPrice = ((Bid) purchase).getMaxBidding();
             shopId = purchase.getStoreId();
-            userService.pay(authToken, shopId, finalPrice, currency, cardNumber,
-                    expirationDateMonth, expirationDateYear, cardHolderName, cvv, id);
-            payed = true;
-            Address shippingAddress = userService.getUserShippingAddress(initiatingUserId);
-            purchase.setAddress(shippingAddress);
-            shopService.shipPurchase(authToken, purchaseId, shopId, shippingAddress.getCountry(),
-                    shippingAddress.getCity(), shippingAddress.getStreet(), shippingAddress.getZipCode());
+            if (highestBidderId == -1) {
+                throw new OurRuntime("No bids were placed on purchase " + purchaseId);
+            }
+            if (finalPrice == -1) {
+                throw new OurRuntime("No final price was set for purchase " + purchaseId);
+            }
+            if (shopId == -1) {
+                throw new OurRuntime("No shop ID was set for purchase " + purchaseId);
+            }
+            Map<Integer, Integer> items = purchase.getItems();
+            userService.addBidToUserShoppingCart(highestBidderId, shopId, items);
             try {
                 List<Integer> bidders = ((Bid) purchase).getBiddersIds();
                 for (Integer uid : bidders) {
