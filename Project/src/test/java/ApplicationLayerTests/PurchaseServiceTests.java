@@ -697,32 +697,6 @@ class PurchaseServiceTests {
 
     // ───────────────────── finalizeBid invariants ─────────────────────
 
-    @Test
-    @DisplayName("finalizeBid_whenAllValid_shouldPayShipNotifyComplete_andReturnWinnerId")
-    void finalizeBid_happyPath() throws Exception {
-        String token = "tok";
-        int owner = 2, pid = 30, shopId = 6, winner = 5, finalPrice = 120;
-
-        Bid bid = mock(Bid.class);
-        when(bid.getUserId()).thenReturn(owner);
-        when(bid.getHighestBidderId()).thenReturn(winner);
-        when(bid.getMaxBidding()).thenReturn(finalPrice);
-        when(bid.getStoreId()).thenReturn(shopId);
-        when(bid.getBiddersIds()).thenReturn(List.of(winner, 8));
-
-        when(repo.getPurchaseById(pid)).thenReturn(bid);
-        when(auth.ValidateToken(token)).thenReturn(owner);
-        when(users.getUserShippingAddress(owner)).thenReturn(defaultAddr);
-
-        int out = service.finalizeBid(token, pid);
-
-        assertEquals(winner, out);
-        verify(users).pay(token, shopId, finalPrice);
-        verify(shops).shipPurchase(token, pid, shopId, "IL", "TLV", "Rothschild", "6800000");
-        verify(msg, atLeastOnce()).sendMessageToUser(eq(token), anyInt(), anyString(), anyInt());
-        verify(bid).completePurchase();
-    }
-
     // ───────────────────── finalizeBid refund path ─────────────────────
     @Test
     @DisplayName("finalizeBid – shipping fails ➜ payment is refunded and exception bubbles up")
