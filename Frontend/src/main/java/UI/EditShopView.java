@@ -224,108 +224,131 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         H2 rolesTitle = new H2("Roles and Permissions");
         rolesLayout.removeAll();
         rolesLayout.add(rolesTitle);
-
+    
         if (roles.isEmpty()) {
             rolesLayout.add(new Span("No roles found."));
             return;
         }
-
+    
+        // Check permissions once
+        String changePermUrl = PERMISSIONS_URL +
+            "?token=" + getToken() +
+            "&userId=" + getUserId() +
+            "&shopId=" + shop.getShopId() +
+            "&permission=" + PermissionsEnum.manageOwners;
+        boolean canChangePermissions = restTemplate
+            .getForEntity(changePermUrl, Boolean.class)
+            .getBody();
+    
+        String removePermUrl = PERMISSIONS_URL +
+            "?token=" + getToken() +
+            "&userId=" + getUserId() +
+            "&shopId=" + shop.getShopId() +
+            "&permission=" + PermissionsEnum.manageManagers;
+        boolean canRemoveMembers = restTemplate
+            .getForEntity(removePermUrl, Boolean.class)
+            .getBody();
+    
+        // Build list of users with roles
         List<MemberDTO> members = getShopWorkers(shop.getShopId());
         List<UserPermissionsDTO> userPermissionsList = new ArrayList<>();
         for (MemberDTO member : members) {
-            PermissionsEnum[] permissions = roles.get(member.getMemberId());
-            if (permissions != null) {
+            PermissionsEnum[] perms = roles.get(member.getMemberId());
+            if (perms != null) {
                 userPermissionsList.add(
-                        new UserPermissionsDTO(member.getMemberId(), member.getUsername(), permissions));
+                    new UserPermissionsDTO(member.getMemberId(), member.getUsername(), perms));
             }
         }
-
+    
         if (userPermissionsList.isEmpty()) {
             rolesLayout.add(new Span("No users with roles found."));
             return;
         }
-
+    
+        // Configure grid
         Grid<UserPermissionsDTO> rolesGrid = new Grid<>(UserPermissionsDTO.class, false);
-        rolesGrid.addColumn(UserPermissionsDTO::getUsername).setHeader("Username").setFlexGrow(1);
-        rolesGrid.addColumn(UserPermissionsDTO::getRoleName).setHeader("Role").setFlexGrow(1);
-        rolesGrid.addColumn(UserPermissionsDTO::showPermissions).setHeader("Permissions").setFlexGrow(2);
-
+        rolesGrid.addColumn(UserPermissionsDTO::getUsername)
+                 .setHeader("Username").setFlexGrow(1);
+        rolesGrid.addColumn(UserPermissionsDTO::getRoleName)
+                 .setHeader("Role").setFlexGrow(1);
+        rolesGrid.addColumn(UserPermissionsDTO::showPermissions)
+                 .setHeader("Permissions").setFlexGrow(2);
+    
+        // Change Permissions column (only for manageOwners)
         rolesGrid.addComponentColumn(dto -> {
-            Button changeBtn = new Button("Change Permissions");
-
-            changeBtn.addClickListener(e -> {
-                changePermissions(dto);
-            });
-            if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
-                changeBtn.setVisible(false);
-            }
-
+            Button changeBtn = new Button("Change Permissions", e -> changePermissions(dto));
+            boolean suspended = Boolean.TRUE.equals(VaadinSession.getCurrent().getAttribute("isSuspended"));
+            changeBtn.setVisible(canChangePermissions && !suspended);
             return changeBtn;
         }).setHeader("Change");
-
+    
+        // ── Remove column ──
         rolesGrid.addComponentColumn(dto -> {
-            Button removeBtn = new Button("Remove");
-
-            removeBtn.addClickListener(e -> {
-                removeMemberFromShop(dto);
-            });
-            if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
-                removeBtn.setVisible(false);
-            }
-
+            Button removeBtn = new Button("Remove", e -> removeMemberFromShop(dto));
+            boolean suspended = Boolean.TRUE.equals(VaadinSession.getCurrent().getAttribute("isSuspended"));
+            boolean targetIsFounder = Arrays.stream(dto.getPermissions())
+                                            .anyMatch(p -> p == PermissionsEnum.manageOwners);
+            removeBtn.setVisible(canRemoveMembers && !suspended && !targetIsFounder);
             return removeBtn;
         }).setHeader("Remove");
-
+    
         rolesGrid.setItems(userPermissionsList);
-
-        Button addManager = new Button("Add Manager", e -> {
-            Dialog dialog = new Dialog();
-            ComboBox<String> usernameField = new ComboBox<>("Username");
-            List<MemberDTO> notWorkingMembers = getNotWorkingMembers(members);
-            usernameField.setItems(getUserNames(notWorkingMembers));
-            usernameField.setPlaceholder("Select a user");
-            usernameField.setClearButtonVisible(true);
-
-            CheckboxGroup<PermissionsEnum> checkboxGroup = new CheckboxGroup<>();
-            checkboxGroup.setLabel("Select Permissions");
-            checkboxGroup.setItems(PermissionsEnum.values());
-
-            Button confirmButton = new Button("Confirm", evt -> {
-                String username = usernameField.getValue();
-                if (username == null || username.isEmpty()) {
-                    Notification.show("Please select a user.");
-                    return;
-                }
-                PermissionsEnum[] selectedPermissions = checkboxGroup.getValue()
-                        .toArray(new PermissionsEnum[0]);
-                if (selectedPermissions.length == 0) {
-                    Notification.show("Please select at least one permission.");
-                    return;
-                }
-                int memberId = getSelectedMemberId(username, notWorkingMembers);
-                String url = USERS_URL + "/shops/" + shop.getShopId() +
-                        "/managers?memberId=" + memberId +
-                        "&token=" + getToken();
-                ResponseEntity<Void> response = restTemplate.postForEntity(url, selectedPermissions, Void.class);
-                if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
-                    Notification.show(username + " got a new role in his pending roles.");
-                } else {
-                    Notification.show("Failed to add role to user's pending roles");
-                }
-                dialog.close();
-            });
-
-            dialog.add(new VerticalLayout(usernameField, checkboxGroup, confirmButton));
-            dialog.open();
-        });
-
-        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+    
+        // Add Manager button
+        Button addManager = new Button("Add Manager", e -> openAddManagerDialog(members));
+        if (Boolean.TRUE.equals(VaadinSession.getCurrent().getAttribute("isSuspended"))) {
             addManager.setVisible(false);
         }
-
-        rolesLayout.add(addManager);
-        rolesLayout.add(rolesGrid);
+    
+        rolesLayout.add(addManager, rolesGrid);
     }
+    
+    // Helper to open the "Add Manager" dialog
+    private void openAddManagerDialog(List<MemberDTO> members) {
+        Dialog dialog = new Dialog();
+        ComboBox<String> usernameField = new ComboBox<>("Username");
+        List<MemberDTO> notWorking = getNotWorkingMembers(members);
+        usernameField.setItems(getUserNames(notWorking));
+        usernameField.setPlaceholder("Select a user");
+        usernameField.setClearButtonVisible(true);
+    
+        // Exclude manageOwners from new assignments
+        List<PermissionsEnum> availablePerms = Arrays.stream(PermissionsEnum.values())
+            .filter(p -> p != PermissionsEnum.manageOwners)
+            .collect(Collectors.toList());
+    
+        CheckboxGroup<PermissionsEnum> checkboxGroup = new CheckboxGroup<>();
+        checkboxGroup.setLabel("Select Permissions");
+        checkboxGroup.setItems(availablePerms);
+    
+        Button confirm = new Button("Confirm", evt -> {
+            String username = usernameField.getValue();
+            if (username == null || username.isEmpty()) {
+                Notification.show("Please select a user.");
+                return;
+            }
+            PermissionsEnum[] selected = checkboxGroup.getValue().toArray(new PermissionsEnum[0]);
+            if (selected.length == 0) {
+                Notification.show("Please select at least one permission.");
+                return;
+            }
+            int memberId = getSelectedMemberId(username, notWorking);
+            String url = USERS_URL + "/shops/" + shop.getShopId() +
+                         "/managers?memberId=" + memberId +
+                         "&token=" + getToken();
+            ResponseEntity<Void> resp = restTemplate.postForEntity(url, selected, Void.class);
+            if (resp.getStatusCode() == HttpStatus.NO_CONTENT) {
+                Notification.show(username + " got a new role in pending roles.");
+                DisplayRoles();
+            } else {
+                Notification.show("Failed to add pending role");
+            }
+            dialog.close();
+        });
+    
+        dialog.add(new VerticalLayout(usernameField, checkboxGroup, confirm));
+        dialog.open();
+    }    
 
     private void removeMemberFromShop(UserPermissionsDTO dto) {
         Dialog dialog = new Dialog();
@@ -1264,15 +1287,16 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             if (permissions == null || permissions.length == 0) {
                 return "No Role";
             }
+            String answer = "No Role";
             for (PermissionsEnum permission : permissions) {
                 if (permission == PermissionsEnum.closeShop)
-                    return "Founder";
-                if (permission == PermissionsEnum.leaveShopAsOwner)
-                    return "Owner";
-                if (permission == PermissionsEnum.leaveShopAsManager)
-                    return "Manager";
+                    answer = "Founder";
+                if (permission == PermissionsEnum.leaveShopAsOwner && (answer.equals("No Role")|| answer.equals("Manager")))
+                    answer = "Owner";
+                if (permission == PermissionsEnum.leaveShopAsManager && answer.equals("No Role"))
+                    answer = "Manager";
             }
-            return "No Role";
+            return answer;
         }
 
         public String getUsername() {
