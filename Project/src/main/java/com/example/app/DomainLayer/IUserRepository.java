@@ -113,9 +113,11 @@ public interface IUserRepository {
 
     void setPaymentMethod(int userId, int shopId, PaymentMethod paymentMethod);
 
-    void pay(int userId, int shopId, double payment);
+    public int pay(int userId, double amount, String currency, String cardNumber, String expirationDateMonth, String expirationDateYear, String cardHolderName, String cvv, String id);
 
-    void refund(int userId, int shopId, double refund);
+    public void refund(int userId, int paymentId);
+
+    public void addBidToShoppingCart(int userId, int shopId, Map<Integer, Integer> items);
 
     // Password encoding
     PasswordEncoderUtil passwordEncoderUtil = new PasswordEncoderUtil(); // Use the password encoder utility

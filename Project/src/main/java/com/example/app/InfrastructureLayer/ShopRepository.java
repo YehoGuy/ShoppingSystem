@@ -400,14 +400,14 @@ public class ShopRepository implements IShopRepository {
     }
 
     @Override
-    public void shipPurchase(int purchaseId, int shopId, String country, String city, String street,
+    public boolean shipPurchase(String name, int shopId, String country, String city, String street,
             String postalCode) {
         try {
             Shop shop = shops.get(shopId);
             if (shop == null)
                 throw new IllegalArgumentException("Shop not found: " + shopId);
 
-            shop.getShippingMethod().processShipment(purchaseId, country, city, street, postalCode);
+            return shop.getShippingMethod().processShipping(name, street, city, country, postalCode) != -1;
 
         } catch (Exception e) {
             throw new RuntimeException("Error shipping purchase: " + e.getMessage(), e);

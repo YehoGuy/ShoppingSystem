@@ -3,6 +3,7 @@ package PresentationLayerTests;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.example.app.ApplicationLayer.Purchase.PurchaseService;
 import com.example.app.DomainLayer.Purchase.Address;
 import com.example.app.PresentationLayer.Controller.PurchaseController;
+import com.example.app.PresentationLayer.DTO.Purchase.PaymentDetailsDTO;
+
 
 /**
  * Comprehensive slice tests for PurchaseController.
@@ -51,64 +54,106 @@ class PurchaseControllerTests {
     @Nested
     @DisplayName("1. CHECKOUT")
     class CheckoutTests {
+        PaymentDetailsDTO paymentDetails;
+
+        @BeforeEach
+        void setup() {
+            paymentDetails = new PaymentDetailsDTO("USD", "1234567890123456", "12", "25", "John Doe", "123", "tok");
+        }
+
         @Test
         void success_returns201() throws Exception {
             // stub service
-            when(purchaseService.checkoutCart(eq("tok"), any(Address.class)))
+            when(purchaseService.checkoutCart(eq("tok"), any(Address.class), anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
                     .thenReturn(List.of(100, 101));
 
-            mvc.perform(post("/api/purchases/checkout")
-                    .param("authToken", "tok")
-                    .param("country", "US")
-                    .param("city", "NY")
-                    .param("street", "Broadway")
-                    .param("houseNumber", "1"))
-                    .andExpect(status().isCreated())
-                    .andExpect(content().json("[100,101]"));
+                        String paymentJson = "{\"currency\":\"" + paymentDetails.getCurrency() + 
+                                                                 "\",\"cardNumber\":\"" + paymentDetails.getCardNumber() + 
+                                                                 "\",\"expirationDateMonth\":\"" + paymentDetails.getExpirationDateMonth() + 
+                                                                 "\",\"expirationDateYear\":\"" + paymentDetails.getExpirationDateYear() + 
+                                                                 "\",\"cardHolderName\":\"" + paymentDetails.getCardHolderName() + 
+                                                                 "\",\"cvv\":\"" + paymentDetails.getCvv() + 
+                                                                  "\",\"id\":\"" + paymentDetails.getId() + "\"}";
+
+                        mvc.perform(post("/api/purchases/checkout")
+                                        .param("authToken", "tok")
+                                        .param("country", "US")
+                                        .param("city", "NY")
+                                        .param("street", "Broadway")
+                                        .param("houseNumber", "1")
+                                        .param("pd", paymentJson))
+                                        .andExpect(status().isCreated())
+                                        .andExpect(content().json("[100,101]"));
         }
 
         @Test
         void badRequest_returns400() throws Exception {
-            when(purchaseService.checkoutCart(anyString(), any()))
-                    .thenThrow(new IllegalArgumentException());
+                when(purchaseService.checkoutCart(anyString(), any(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+                                .thenThrow(new IllegalArgumentException());
 
-            mvc.perform(post("/api/purchases/checkout")
-                    .param("authToken", "tok")
-                    .param("country", "US")
-                    .param("city", "NY")
-                    .param("street", "Broadway")
-                    .param("houseNumber", "1"))
-                    .andExpect(status().isBadRequest());
+                String paymentJason = "{\"currency\":\"" + paymentDetails.getCurrency() + 
+								 "\",\"cardNumber\":\"" + paymentDetails.getCardNumber() + 
+								 "\",\"expirationDateMonth\":\"" + paymentDetails.getExpirationDateMonth() + 
+								 "\",\"expirationDateYear\":\"" + paymentDetails.getExpirationDateYear() + 
+								 "\",\"cardHolderName\":\"" + paymentDetails.getCardHolderName() + 
+								 "\",\"cvv\":\"" + paymentDetails.getCvv() + 
+								  "\",\"id\":\"" + paymentDetails.getId() + "\"}";
+				
+								mvc.perform(post("/api/purchases/checkout")
+                                .param("authToken", "tok")
+                                .param("country", "US")
+                                .param("city", "NY")
+                                .param("street", "Broadway")
+                                .param("houseNumber", "1")
+                                        .param("pd", paymentJason))
+                                .andExpect(status().isBadRequest());
         }
 
         @Test
         void notFound_returns404() throws Exception {
-            when(purchaseService.checkoutCart(anyString(), any()))
-                    .thenThrow(new NoSuchElementException());
+                when(purchaseService.checkoutCart(anyString(), any(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+                                .thenThrow(new NoSuchElementException());
 
-            mvc.perform(post("/api/purchases/checkout")
-                    .param("authToken", "tok")
-                    .param("country", "US")
-                    .param("city", "NY")
-                    .param("street", "Broadway")
-                    .param("houseNumber", "1"))
-                    .andExpect(status().isNotFound());
+				String paymentJason = "{\"currency\":\"" + paymentDetails.getCurrency() + 
+								 "\",\"cardNumber\":\"" + paymentDetails.getCardNumber() + 
+								 "\",\"expirationDateMonth\":\"" + paymentDetails.getExpirationDateMonth() + 
+								 "\",\"expirationDateYear\":\"" + paymentDetails.getExpirationDateYear() + 
+								 "\",\"cardHolderName\":\"" + paymentDetails.getCardHolderName() + 
+								 "\",\"cvv\":\"" + paymentDetails.getCvv() + 
+								  "\",\"id\":\"" + paymentDetails.getId() + "\"}";
+
+                mvc.perform(post("/api/purchases/checkout")
+                                .param("authToken", "tok")
+                                .param("country", "US")
+                                .param("city", "NY")
+                                .param("street", "Broadway")
+                                .param("houseNumber", "1")
+                                        .param("pd", paymentJason))
+                                .andExpect(status().isNotFound());
         }
 
         @Test
         void conflict_returns409() throws Exception {
-            when(purchaseService.checkoutCart(anyString(), any()))
-                    .thenThrow(new RuntimeException());
+                when(purchaseService.checkoutCart(anyString(), any(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+                                .thenThrow(new RuntimeException());
+				String paymentJason = "{\"currency\":\"" + paymentDetails.getCurrency() + 
+								 "\",\"cardNumber\":\"" + paymentDetails.getCardNumber() + 
+								 "\",\"expirationDateMonth\":\"" + paymentDetails.getExpirationDateMonth() + 
+								 "\",\"expirationDateYear\":\"" + paymentDetails.getExpirationDateYear() + 
+								 "\",\"cardHolderName\":\"" + paymentDetails.getCardHolderName() + 
+								 "\",\"cvv\":\"" + paymentDetails.getCvv() + 
+								  "\",\"id\":\"" + paymentDetails.getId() + "\"}";
 
-            mvc.perform(post("/api/purchases/checkout")
-                    .param("authToken", "tok")
-                    .param("country", "US")
-                    .param("city", "NY")
-                    .param("street", "Broadway")
-                    .param("houseNumber", "1"))
-                    .andExpect(status().isConflict());
+                mvc.perform(post("/api/purchases/checkout")
+                                .param("authToken", "tok")
+                                .param("country", "US")
+                                .param("city", "NY")
+                                .param("street", "Broadway")
+                                .param("houseNumber", "1")
+                                        .param("pd", paymentJason))
+                                .andExpect(status().isConflict());
         }
-    }
+}
 
     @Nested
     @DisplayName("2. CREATE BID")
@@ -204,14 +249,14 @@ class PurchaseControllerTests {
                     .param("bidAmount", "75"))
                     .andExpect(status().isConflict());
         }
-    }
-
-    @Nested
+    }    @Nested
     @DisplayName("4. FINALIZE BID")
     class FinalizeBidTests {
         @Test
         void success_returns200() throws Exception {
             when(purchaseService.finalizeBid(eq("tok"), eq(10))).thenReturn(999);
+
+            String paymentJson = "{\"currency\":\"USD\",\"cardNumber\":\"1234567890123456\",\"expirationDateMonth\":\"12\",\"expirationDateYear\":\"25\",\"cardHolderName\":\"John Doe\",\"cvv\":\"123\",\"id\":\"tok\"}";
 
             mvc.perform(post("/api/purchases/bids/10/finalize")
                     .param("authToken", "tok"))
@@ -224,6 +269,7 @@ class PurchaseControllerTests {
             when(purchaseService.finalizeBid(anyString(), anyInt()))
                     .thenThrow(new IllegalArgumentException());
 
+
             mvc.perform(post("/api/purchases/bids/10/finalize")
                     .param("authToken", "tok"))
                     .andExpect(status().isBadRequest());
@@ -234,6 +280,7 @@ class PurchaseControllerTests {
             when(purchaseService.finalizeBid(anyString(), anyInt()))
                     .thenThrow(new NoSuchElementException());
 
+
             mvc.perform(post("/api/purchases/bids/10/finalize")
                     .param("authToken", "tok"))
                     .andExpect(status().isNotFound());
@@ -243,6 +290,7 @@ class PurchaseControllerTests {
         void conflict_returns409() throws Exception {
             when(purchaseService.finalizeBid(anyString(), anyInt()))
                     .thenThrow(new RuntimeException());
+
 
             mvc.perform(post("/api/purchases/bids/10/finalize")
                     .param("authToken", "tok"))

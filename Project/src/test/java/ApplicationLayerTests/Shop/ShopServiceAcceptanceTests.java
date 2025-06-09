@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -864,16 +865,16 @@ class ShopServiceAcceptanceTests {
     void testShipPurchase_Success() throws Exception{
         String tok = "tk";
         when(authTokenService.ValidateToken(tok)).thenReturn(7);
-        doNothing().when(shopRepository).shipPurchase(1,2,"C","City","St","PC");
-        shopService.shipPurchase(tok,1,2,"C","City","St","PC");
-        verify(shopRepository).shipPurchase(1,2,"C","City","St","PC");
+        when(shopRepository.shipPurchase(any(), anyInt(), any(), any(), any(), any())).thenReturn(true);
+        shopService.shipPurchase(tok, 3, 4, "C", "C", "C", "C");
+        verify(shopRepository).shipPurchase(anyString(), anyInt(), anyString(), anyString(), anyString(), anyString());
     }
 
     @Test
     void testShipPurchase_Error() throws Exception{
         String tok = "tk";
         when(authTokenService.ValidateToken(tok)).thenReturn(7);
-        doThrow(new RuntimeException("fail ship")).when(shopRepository).shipPurchase(anyInt(), anyInt(), any(), any(), any(), any());
+        doThrow(new RuntimeException("fail ship")).when(shopRepository).shipPurchase(anyString(), anyInt(), anyString(), anyString(), anyString(), anyString());
         RuntimeException ex = assertThrows(RuntimeException.class,
             () -> shopService.shipPurchase(tok,3,4,"C","C","C","C"));
         assertTrue(ex.getMessage().contains("Error shipping purchase"));
@@ -1568,7 +1569,7 @@ class ShopServiceAcceptanceTests {
         String tok = "t";
         when(authTokenService.ValidateToken(tok)).thenReturn(1);
         doThrow(new OurRuntime("ship fail"))
-            .when(shopRepository).shipPurchase(anyInt(), anyInt(), any(), any(), any(), any());
+            .when(shopRepository).shipPurchase(anyString(), anyInt(), anyString(), anyString(), anyString(), anyString());
 
         OurRuntime ex = assertThrows(OurRuntime.class,
             () -> shopService.shipPurchase(tok, 1, 2, "C", "C", "C", "C"));

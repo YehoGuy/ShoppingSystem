@@ -1585,6 +1585,24 @@ public class UserService {
         }
     }
 
+    public boolean addBidToUserShoppingCart(int userId, int shopId, Map<Integer, Integer> items) {
+        try {
+            LoggerService.logMethodExecution("addToUserShoppingCart", userId, items);
+            userRepository.addBidToShoppingCart(userId, shopId, items); // Add the items to the user's shopping cart
+            LoggerService.logMethodExecutionEndVoid("addToUserShoppingCart");
+            return true; // Items added successfully
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("addToUserShoppingCart", e);
+            throw new OurRuntime("addToUserShoppingCart: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("addToUserShoppingCart", e);
+            throw new OurArg("addToUserShoppingCart: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("addToUserShoppingCart", e, userId, items);
+            throw new OurRuntime("addToUserShoppingCart: " + e.getMessage(), e);
+        }
+    }
+
     /**
      * Pays for user's order
      * 
@@ -1596,16 +1614,16 @@ public class UserService {
      * 
      *                * @throws OurRuntime, Exception
      */
-    public boolean pay(String token, int shopId, double payment) {
+    public int pay(String token, int shopId, double amount, String currency, String cardNumber, String expirationDateMonth, String expirationDateYear, String cardHolderName, String cvv, String id) {
         try {
-            LoggerService.logMethodExecution("pay", token, shopId, payment);
+            LoggerService.logMethodExecution("pay", token, shopId, amount, currency, cardNumber, expirationDateMonth, expirationDateYear, cardHolderName, cvv, id);
             int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             if (isSuspended(userId)) {
                 throw new OurRuntime("the user is suspended");
             }
-            userRepository.pay(userId, shopId, payment); // Set the payment method for the user
+            int pid = userRepository.pay(userId, amount, currency, cardNumber, expirationDateMonth, expirationDateYear, cardHolderName, cvv, id); // Process the payment
             LoggerService.logMethodExecutionEnd("pay", true);
-            return true;
+            return pid;
         } catch (OurRuntime e) {
             LoggerService.logDebug("pay", e);
             throw new OurRuntime("pay: " + e.getMessage(), e); // Rethrow the custom exception
@@ -1613,17 +1631,17 @@ public class UserService {
             LoggerService.logDebug("pay", e);
             throw new OurArg("pay: " + e.getMessage(), e); // Rethrow the custom exception
         } catch (Exception e) {
-            LoggerService.logError("pay", e, token, shopId, payment);
+            LoggerService.logError("pay", e, token, shopId, amount, currency, cardNumber, expirationDateMonth, expirationDateYear, cardHolderName, cvv, id);
             throw new OurRuntime("pay: " + e.getMessage(), e);
         }
     }
 
     // NO API ENDPOINT!
-    public boolean refundPaymentAuto(String token, int shopId, double payment) {
+    public boolean refundPaymentAuto(String token, int paymnetID) {
         try {
-            LoggerService.logMethodExecution("refundPayment", token, shopId, payment);
+            LoggerService.logMethodExecution("refundPayment", token, paymnetID);
             int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
-            userRepository.refund(userId, shopId, payment); // Set the payment method for the user
+            userRepository.refund(userId, paymnetID); // Set the payment method for the user
             LoggerService.logMethodExecutionEnd("refundPayment", true);
             return true;
         } catch (OurRuntime e) {
@@ -1633,22 +1651,22 @@ public class UserService {
             LoggerService.logDebug("refundPayment", e);
             throw new OurArg("refundPayment: " + e.getMessage(), e); // Rethrow the custom exception
         } catch (Exception e) {
-            LoggerService.logError("refundPayment", e, token, shopId, payment);
+            LoggerService.logError("refundPayment", e, token, paymnetID);
             throw new OurRuntime("refundPayment: " + e.getMessage(), e);
         }
 
     }
 
-    public boolean refundPaymentByStoreEmployee(String token, int userId, int shopId, double payment) {
+    public boolean refundPaymentByStoreEmployee(String token, int userId, int shopId, int paymentId) {
         try {
-            LoggerService.logMethodExecution("refundPaymentByStoreEmployee", token, shopId, payment);
+            LoggerService.logMethodExecution("refundPaymentByStoreEmployee", token, shopId, paymentId);
             int initiatingUserId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             if (userRepository.getRole(initiatingUserId, shopId) == null) {
                 LoggerService.logDebug("refundPaymentByStoreEmployee",
                         new OurRuntime("Member ID " + initiatingUserId + " has no role for shop ID " + shopId));
                 throw new OurRuntime("Member ID " + initiatingUserId + " has no role for shop ID " + shopId);
             }
-            userRepository.refund(userId, shopId, payment); // Set the payment method for the user
+            userRepository.refund(userId, paymentId); // Set the payment method for the user
             LoggerService.logMethodExecutionEnd("refundPayment", true);
             return true;
         } catch (OurRuntime e) {
@@ -1658,7 +1676,7 @@ public class UserService {
             LoggerService.logDebug("refundPayment", e);
             throw new OurArg("refundPayment: " + e.getMessage(), e); // Rethrow the custom exception
         } catch (Exception e) {
-            LoggerService.logError("refundPayment", e, token, shopId, payment);
+            LoggerService.logError("refundPayment", e, token, shopId, paymentId);
             throw new OurRuntime("refundPayment: " + e.getMessage(), e);
         }
 
