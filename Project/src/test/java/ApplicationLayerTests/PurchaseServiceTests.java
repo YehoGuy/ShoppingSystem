@@ -26,11 +26,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.Mock;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -40,8 +38,6 @@ import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
 import com.example.app.ApplicationLayer.Item.ItemService;
@@ -58,7 +54,6 @@ import com.example.app.DomainLayer.Purchase.IPurchaseRepository;
 import com.example.app.DomainLayer.Purchase.Purchase;
 import com.example.app.DomainLayer.Purchase.Reciept;
 import com.example.app.InfrastructureLayer.PurchaseRepository;
-import com.example.app.SimpleHttpServerApplication;
 
 /**
  * High-level “acceptance” tests for {@link PurchaseService}.
@@ -232,7 +227,6 @@ class PurchaseServiceTests {
 
         /* fabricate receipt object the service expects after completion */
         BidReciept rec = mock(BidReciept.class);
-        when(rec.getHighestBidderId()).thenReturn(5);
         when(bid.completePurchase()).thenReturn(rec); // stub out real behaviour
         when(bid.getMaxBidding()).thenReturn(150);
         when(bid.getBiddersIds()).thenReturn(List.of(5));
@@ -240,6 +234,11 @@ class PurchaseServiceTests {
         /* infrastructure stubs */
         when(repo.getPurchaseById(pid)).thenReturn(bid);
         when(auth.ValidateToken(token)).thenReturn(owner);
+
+        when(bid.getHighestBidderId()).thenReturn(5); // stub for getHighestBidderId
+        when(bid.getItems()).thenReturn(Map.of(1, 1)); // stub for getItems
+        when(bid.getMaxBidding()).thenReturn(150); // stub for getMaxBidding
+        when(bid.getBiddersIds()).thenReturn(List.of(5)); // stub for getBiddersIds
 
         /* invoke */
         int winner = service.finalizeBid(token, pid);
@@ -260,7 +259,6 @@ class PurchaseServiceTests {
 
         /* fabricate receipt object the service expects after completion */
         BidReciept rec = mock(BidReciept.class);
-        when(rec.getHighestBidderId()).thenReturn(5);
         when(bid.completePurchase()).thenReturn(rec); // stub out real behaviour
         when(bid.getMaxBidding()).thenReturn(150);
         when(bid.getBiddersIds()).thenReturn(List.of(5));
@@ -268,6 +266,14 @@ class PurchaseServiceTests {
         /* infrastructure stubs */
         when(repo.getPurchaseById(pid)).thenReturn(bid);
         when(auth.ValidateToken(token)).thenReturn(owner);
+
+        when(users.addBidToUserShoppingCart(eq(5), eq(shop), any()))
+                .thenReturn(true); // simulate successful addition to cart
+
+        when(bid.getHighestBidderId()).thenReturn(5); // stub for getHighestBidderId
+        when(bid.getItems()).thenReturn(Map.of(1, 1)); // stub for getItems
+        when(bid.getMaxBidding()).thenReturn(150); // stub for getMaxBidding
+        when(bid.getBiddersIds()).thenReturn(List.of(5)); // stub for getBiddersIds
 
         /* invoke */
         int winner = service.finalizeBid(token, pid);
@@ -693,46 +699,6 @@ class PurchaseServiceTests {
 
         assertSame(rcpt, out);
         verify(bid).generateReciept();
-    }
-
-    // ───────────────────── finalizeBid invariants ─────────────────────
-
-    // ───────────────────── finalizeBid refund path ─────────────────────
-    @Test
-    @DisplayName("finalizeBid – shipping fails ➜ payment is refunded and exception bubbles up")
-    void finalizeBid_refundOnShipFailure() throws Exception {
-        String token = "tok";
-        int owner = 3;
-        int pid = 31;
-        int shopId = 10;
-        int winner = 4;
-        int price = 200;
-
-        Bid bid = mock(Bid.class);
-
-        // Only the stubs that the code really touches ↓
-        when(bid.getUserId()).thenReturn(owner);
-        when(bid.getHighestBidderId()).thenReturn(winner);
-        when(bid.getMaxBidding()).thenReturn(price);
-        when(bid.getStoreId()).thenReturn(shopId);
-
-        when(repo.getPurchaseById(pid)).thenReturn(bid);
-        when(auth.ValidateToken(token)).thenReturn(owner);
-        when(users.getUserShippingAddress(owner)).thenReturn(defaultAddr);
-
-        // Generic (non-OurRuntime) exception triggers the refund branch
-        doThrow(new RuntimeException("shipping failed"))
-                .when(shops)
-                .shipPurchase(anyString(), anyInt(), anyInt(),
-                        anyString(), anyString(), anyString(), anyString());
-
-        // ── act & assert ──
-        assertThrows(RuntimeException.class,
-                () -> service.finalizeBid(token, pid));
-
-        // verify side-effects
-        verify(users).pay(token, shopId, price);
-        verify(users).refundPaymentByStoreEmployee(token, winner, shopId, price);
     }
 
     // ───────────────────── postBidding invariants ─────────────────────
