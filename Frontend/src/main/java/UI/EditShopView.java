@@ -230,13 +230,33 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             return;
         }
 
+        // ➊ Check once whether current user can change permissions
+        String changePermUrl = PERMISSIONS_URL +
+            "?token=" + getToken() +
+            "&userId=" + getUserId() +
+            "&shopId=" + shop.getShopId() +
+            "&permission=" + PermissionsEnum.manageOwners;  // or replace with the correct enum for “change permissions”
+        boolean canChangePermissions = restTemplate
+            .getForEntity(changePermUrl, Boolean.class)
+            .getBody();
+
+        // ➋ Check once whether current user can remove managers
+        String removePermUrl = PERMISSIONS_URL +
+            "?token=" + getToken() +
+            "&userId=" + getUserId() +
+            "&shopId=" + shop.getShopId() +
+            "&permission=" + PermissionsEnum.manageManagers;  // or your “remove” enum
+        boolean canRemoveMembers = restTemplate
+            .getForEntity(removePermUrl, Boolean.class)
+            .getBody();
+
         List<MemberDTO> members = getShopWorkers(shop.getShopId());
         List<UserPermissionsDTO> userPermissionsList = new ArrayList<>();
         for (MemberDTO member : members) {
             PermissionsEnum[] permissions = roles.get(member.getMemberId());
             if (permissions != null) {
                 userPermissionsList.add(
-                        new UserPermissionsDTO(member.getMemberId(), member.getUsername(), permissions));
+                    new UserPermissionsDTO(member.getMemberId(), member.getUsername(), permissions));
             }
         }
 
@@ -246,33 +266,28 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         }
 
         Grid<UserPermissionsDTO> rolesGrid = new Grid<>(UserPermissionsDTO.class, false);
-        rolesGrid.addColumn(UserPermissionsDTO::getUsername).setHeader("Username").setFlexGrow(1);
-        rolesGrid.addColumn(UserPermissionsDTO::getRoleName).setHeader("Role").setFlexGrow(1);
-        rolesGrid.addColumn(UserPermissionsDTO::showPermissions).setHeader("Permissions").setFlexGrow(2);
+        rolesGrid.addColumn(UserPermissionsDTO::getUsername)
+                .setHeader("Username").setFlexGrow(1);
+        rolesGrid.addColumn(UserPermissionsDTO::getRoleName)
+                .setHeader("Role").setFlexGrow(1);
+        rolesGrid.addColumn(UserPermissionsDTO::showPermissions)
+                .setHeader("Permissions").setFlexGrow(2);
 
+        // ── Change Permissions column ──
         rolesGrid.addComponentColumn(dto -> {
-            Button changeBtn = new Button("Change Permissions");
-
-            changeBtn.addClickListener(e -> {
-                changePermissions(dto);
-            });
-            if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
-                changeBtn.setVisible(false);
-            }
-
+            Button changeBtn = new Button("Change Permissions", e -> changePermissions(dto));
+            boolean isSuspended = Boolean.TRUE.equals(
+                VaadinSession.getCurrent().getAttribute("isSuspended"));
+            changeBtn.setVisible(canChangePermissions && !isSuspended);
             return changeBtn;
         }).setHeader("Change");
 
+        // ── Remove column ──
         rolesGrid.addComponentColumn(dto -> {
-            Button removeBtn = new Button("Remove");
-
-            removeBtn.addClickListener(e -> {
-                removeMemberFromShop(dto);
-            });
-            if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
-                removeBtn.setVisible(false);
-            }
-
+            Button removeBtn = new Button("Remove", e -> removeMemberFromShop(dto));
+            boolean isSuspended = Boolean.TRUE.equals(
+                VaadinSession.getCurrent().getAttribute("isSuspended"));
+            removeBtn.setVisible(canRemoveMembers && !isSuspended);
             return removeBtn;
         }).setHeader("Remove");
 
@@ -285,11 +300,17 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             usernameField.setItems(getUserNames(notWorkingMembers));
             usernameField.setPlaceholder("Select a user");
             usernameField.setClearButtonVisible(true);
-
+        
+            // ◾ Only show permissions except manageOwners
+            List<PermissionsEnum> perms = Arrays.stream(PermissionsEnum.values())
+                .filter(p -> p != PermissionsEnum.closeShop // Exclude closeShop
+                        && p != PermissionsEnum.openClosedShop) // Exclude openClosedShop
+                .collect(Collectors.toList());
+        
             CheckboxGroup<PermissionsEnum> checkboxGroup = new CheckboxGroup<>();
             checkboxGroup.setLabel("Select Permissions");
-            checkboxGroup.setItems(PermissionsEnum.values());
-
+            checkboxGroup.setItems(perms);
+        
             Button confirmButton = new Button("Confirm", evt -> {
                 String username = usernameField.getValue();
                 if (username == null || username.isEmpty()) {
@@ -333,6 +354,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             String url = USERS_URL + "/shops/" + shop.getShopId() +
                     "/managers/" + dto.getMemberId() +
                     "?token=" + getToken();
+            
             ResponseEntity<Void> response = restTemplate.exchange(url, HttpMethod.DELETE, null, Void.class);
             if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
                 Notification.show(dto.getUsername() + " was removed from the shop.");
@@ -355,33 +377,75 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
 
     private void changePermissions(UserPermissionsDTO dto) {
         Dialog dialog = new Dialog();
+        // Build a checkbox group without 'manageOwners'
+        List<PermissionsEnum> perms = Arrays.stream(PermissionsEnum.values())
+            .filter(p -> p != PermissionsEnum.openClosedShop // Exclude manageOwners
+                    && p != PermissionsEnum.closeShop) // Exclude closeShop
+            .collect(Collectors.toList());
         CheckboxGroup<PermissionsEnum> checkboxGroup = new CheckboxGroup<>();
         checkboxGroup.setLabel("Select Permissions");
-        checkboxGroup.setItems(PermissionsEnum.values());
+        checkboxGroup.setItems(perms);
+    
+        // Pre-select existing ones (minus manageOwners)
+        Set<PermissionsEnum> current = Stream.of(dto.getPermissions())
+            .filter(perms::contains)
+            .collect(Collectors.toSet());
+        checkboxGroup.setValue(current);
+    
         Button confirmButton = new Button("Confirm", evt -> {
-            PermissionsEnum[] selectedPermissions = checkboxGroup.getValue()
-                    .toArray(new PermissionsEnum[0]);
-            if (selectedPermissions.length == 0) {
+            Set<PermissionsEnum> selected = checkboxGroup.getValue();
+            if (selected.isEmpty()) {
                 Notification.show("Please select at least one permission.");
                 return;
             }
+    
             String url = USERS_URL + "/shops/" + shop.getShopId() +
-                    "/permissions/" + dto.getMemberId() +
-                    "?token=" + getToken();
-            ResponseEntity<Void> response = restTemplate.postForEntity(url, selectedPermissions, Void.class);
-            if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
-                Notification.show(dto.getUsername() + "' permissions were changed.");
-            } else {
-                Notification.show("Failed to change permissions");
+                         "/permissions/" + dto.getMemberId() +
+                         "?token=" + getToken();
+    
+            // Build JSON headers
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+    
+            // Wrap your enum array
+            PermissionsEnum[] payload = selected.toArray(new PermissionsEnum[0]);
+            HttpEntity<PermissionsEnum[]> request = new HttpEntity<>(payload, headers);
+    
+            try {
+                // Use POST to avoid the 405
+                ResponseEntity<Void> response = restTemplate.exchange(
+                    url, HttpMethod.POST, request, Void.class);
+    
+                if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
+                    Notification.show(dto.getUsername() + "'s permissions were changed.");
+                    DisplayRoles();   // refresh the grid
+                } else {
+                    Notification.show("Failed to change permissions: " + response.getStatusCode());
+                }
+            } catch (HttpClientErrorException e) {
+                String body = e.getResponseBodyAsString();
+                if (e.getStatusCode() == HttpStatus.CONFLICT) {
+                    Notification.show("Conflict updating permissions: " + body);
+                } else if (e.getStatusCode() == HttpStatus.FORBIDDEN) {
+                    Notification.show("You don’t have permission to change roles.");
+                } else {
+                    Notification.show("Error changing permissions: "
+                                      + e.getStatusCode()
+                                      + " — " + body);
+                }
+            } finally {
+                dialog.close();
             }
-            dialog.close();
         });
-        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
-            confirmButton.setVisible(false);
-        }
+    
+        boolean isSuspended = Boolean.TRUE.equals(
+            VaadinSession.getCurrent().getAttribute("isSuspended"));
+        confirmButton.setVisible(!isSuspended);
+    
         dialog.add(new VerticalLayout(checkboxGroup, confirmButton));
         dialog.open();
     }
+    
 
     private int getSelectedMemberId(String username, List<MemberDTO> notWorkingMembers) {
         return notWorkingMembers.stream()
@@ -1264,15 +1328,16 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             if (permissions == null || permissions.length == 0) {
                 return "No Role";
             }
+            String answer = "No Role";
             for (PermissionsEnum permission : permissions) {
                 if (permission == PermissionsEnum.closeShop)
-                    return "Founder";
-                if (permission == PermissionsEnum.leaveShopAsOwner)
-                    return "Owner";
-                if (permission == PermissionsEnum.leaveShopAsManager)
-                    return "Manager";
+                    answer = "Founder";
+                if (permission == PermissionsEnum.leaveShopAsOwner && (answer.equals("No Role")|| answer.equals("Manager")))
+                    answer = "Owner";
+                if (permission == PermissionsEnum.leaveShopAsManager && answer.equals("No Role"))
+                    answer = "Manager";
             }
-            return "No Role";
+            return answer;
         }
 
         public String getUsername() {
