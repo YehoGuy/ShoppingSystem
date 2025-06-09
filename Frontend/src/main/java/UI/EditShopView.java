@@ -314,7 +314,10 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
     
         // Exclude manageOwners from new assignments
         List<PermissionsEnum> availablePerms = Arrays.stream(PermissionsEnum.values())
-            .filter(p -> p != PermissionsEnum.manageOwners)
+            .filter(p -> p != PermissionsEnum.manageOwners && 
+                         p != PermissionsEnum.suspension &&
+                         p != PermissionsEnum.openClosedShop && // Exclude manageOwners
+                         p != PermissionsEnum.closeShop) // Exclude closeShop
             .collect(Collectors.toList());
     
         CheckboxGroup<PermissionsEnum> checkboxGroup = new CheckboxGroup<>();
@@ -381,7 +384,8 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         // Build a checkbox group without 'manageOwners'
         List<PermissionsEnum> perms = Arrays.stream(PermissionsEnum.values())
             .filter(p -> p != PermissionsEnum.openClosedShop // Exclude manageOwners
-                    && p != PermissionsEnum.closeShop) // Exclude closeShop
+                    && p != PermissionsEnum.closeShop
+                    && p != PermissionsEnum.suspension) // Exclude closeShop
             .collect(Collectors.toList());
         CheckboxGroup<PermissionsEnum> checkboxGroup = new CheckboxGroup<>();
         checkboxGroup.setLabel("Select Permissions");
@@ -1330,7 +1334,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             }
             String answer = "No Role";
             for (PermissionsEnum permission : permissions) {
-                if (permission == PermissionsEnum.closeShop)
+                if (permission == PermissionsEnum.manageOwners || permission == PermissionsEnum.closeShop)
                     answer = "Founder";
                 if (permission == PermissionsEnum.leaveShopAsOwner && (answer.equals("No Role")|| answer.equals("Manager")))
                     answer = "Owner";
