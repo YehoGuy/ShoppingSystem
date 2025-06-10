@@ -458,5 +458,47 @@ public class PurchaseController {
         }
     }
 
+    @GetMapping("/auctions")
+    public ResponseEntity<List<BidRecieptDTO>> listAuctions(
+            @RequestParam String authToken) {
+        try {
+            List<BidReciept> domain = purchaseService.getAllBids(authToken);
+            List<BidRecieptDTO> dtos = domain.stream()
+                .map(BidRecieptDTO::fromDomain)
+                .toList();
+            return ResponseEntity.ok(dtos);
+        } catch (IllegalArgumentException | NoSuchElementException ex) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception ex) {
+            return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .build();
+        }
+    }
+
+    @GetMapping("/auctions/{auctionId}")
+    public ResponseEntity<BidRecieptDTO> getAuctionDetails(
+            @PathVariable @Min(1) int auctionId,
+            @RequestParam String authToken) {
+
+        try {
+            BidReciept rec = purchaseService.getBid(authToken, auctionId);
+            return ResponseEntity.ok(BidRecieptDTO.fromDomain(rec)); // 200
+
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(null); // 400
+
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); // 404
+
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(null); // 409
+
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(null); // 500
+        }
+    }
+
 
 }

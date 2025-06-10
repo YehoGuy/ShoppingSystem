@@ -52,6 +52,7 @@ public class AppLayoutBasic extends AppLayout implements RouterLayout {
                 new SideNavItem("Search Item", "/items", VaadinIcon.SEARCH.create()),
                 new SideNavItem("Search Shop", "/shops", VaadinIcon.SHOP.create()),
                 new SideNavItem("Bids", "/bids", VaadinIcon.MONEY.create()),
+                new SideNavItem("Auctions", "/auctions", VaadinIcon.GAVEL.create()),
                 new SideNavItem("My Shops", "/myshops", VaadinIcon.LIST_UL.create()),
                 new SideNavItem("My Messages", "/messages", VaadinIcon.ENVELOPE.create()));
 
