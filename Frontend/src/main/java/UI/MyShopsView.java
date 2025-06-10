@@ -10,10 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
-import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Paragraph;
@@ -73,9 +71,12 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
         shopsContainer = new VerticalLayout();
         shopsContainer.setSizeFull();
         shopsContainer.getStyle()
-                .set("overflow", "auto")
-                .set("padding", "10px")
-                .set("gap", "10px");
+            .set("overflow", "auto")
+            .set("padding", "30px")
+            .set("gap", "0px")
+            .set("background", "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)")
+            .set("min-height", "100vh");
+            
         add(shopsContainer);
 
     }
@@ -172,17 +173,164 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
             HorizontalLayout row = new HorizontalLayout();
             row.setWidthFull();
 
-            Span name = new Span("🏷️ " + s.getName());
-            name.getStyle()
+            // a container for the shop name with icon
+            com.vaadin.flow.component.html.Div nameContainer = new com.vaadin.flow.component.html.Div();
+            nameContainer.getStyle()
+                    .set("display", "flex")
+                    .set("align-items", "center")
+                    .set("gap", "12px")
                     .set("cursor", "pointer")
+                    .set("padding", "16px 20px")
+                    .set("border-radius", "12px")
+                    .set("background", "linear-gradient(135deg, #667eea 0%, #764ba2 100%)")
+                    .set("color", "white")
+                    .set("box-shadow", "0 4px 15px rgba(102, 126, 234, 0.3)")
+                    .set("transition", "all 0.3s ease")
+                    .set("min-width", "300px");
+
+            // Shop icon
+            Span icon = new Span("🏪");
+            icon.getStyle()
+                    .set("font-size", "28px")
+                    .set("filter", "drop-shadow(0 2px 4px rgba(0,0,0,0.3))");
+
+            // Shop name text
+            Span nameText = new Span(s.getName());
+            nameText.getStyle()
+                    .set("font-size", "22px")
+                    .set("font-weight", "700")
+                    .set("text-shadow", "0 1px 3px rgba(0,0,0,0.3)")
+                    .set("letter-spacing", "0.5px");
+
+            // Shop ID badge
+            Span idBadge = new Span("ID: " + s.getShopId());
+            idBadge.getStyle()
+                    .set("background-color", "rgba(255,255,255,0.2)")
+                    .set("padding", "4px 8px")
+                    .set("border-radius", "20px")
+                    .set("font-size", "12px")
+                    .set("font-weight", "500")
+                    .set("margin-left", "auto");
+
+            nameContainer.add(icon, nameText, idBadge);
+
+            nameContainer.addClickListener(evt -> {
+                nameContainer.getStyle()
+                        .set("transform", "translateY(-2px)")
+                        .set("box-shadow", "0 6px 20px rgba(102, 126, 234, 0.4)");
+                UI.getCurrent().navigate("shop/" + s.getShopId());
+            });
+
+            // Add hover effects
+            nameContainer.getElement().addEventListener("mouseenter", e -> {
+                nameContainer.getStyle()
+                        .set("transform", "translateY(-2px)")
+                        .set("box-shadow", "0 6px 20px rgba(102, 126, 234, 0.4)");
+            });
+
+            nameContainer.getElement().addEventListener("mouseleave", e -> {
+                nameContainer.getStyle()
+                        .set("transform", "translateY(0)")
+                        .set("box-shadow", "0 4px 15px rgba(102, 126, 234, 0.3)");
+            });
+
+            Button view = new Button("✏️ Edit Shop", e -> UI.getCurrent().navigate("edit-shop/" + s.getShopId()));
+            view.getStyle()
+                    .set("background", "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)")
+                    .set("color", "white")
+                    .set("border", "none")
+                    .set("border-radius", "12px")
+                    .set("padding", "12px 20px")
                     .set("font-weight", "600")
-                    .set("font-size", "18px");
-            name.addClickListener(evt -> UI.getCurrent().navigate("shop/" + s.getShopId()));
+                    .set("font-size", "14px")
+                    .set("cursor", "pointer")
+                    .set("box-shadow", "0 4px 15px rgba(240, 147, 251, 0.4)")
+                    .set("transition", "all 0.3s ease")
+                    .set("text-transform", "uppercase")
+                    .set("letter-spacing", "0.5px");
 
-            Button view = new Button("Edit-Shop", e -> UI.getCurrent().navigate("edit-shop/" + s.getShopId()));
+            Button historyBtn = new Button("📊 Purchase History", e -> UI.getCurrent().navigate("history/" + s.getShopId()));
+            historyBtn.getStyle()
+                    .set("background", "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)")
+                    .set("color", "white")
+                    .set("border", "none")
+                    .set("border-radius", "12px")
+                    .set("padding", "12px 20px")
+                    .set("font-weight", "600")
+                    .set("font-size", "14px")
+                    .set("cursor", "pointer")
+                    .set("box-shadow", "0 4px 15px rgba(79, 172, 254, 0.4)")
+                    .set("transition", "all 0.3s ease")
+                    .set("text-transform", "uppercase")
+                    .set("letter-spacing", "0.5px");
 
-            row.add(name, view);
-            shopsContainer.add(row);
+            // Add hover effects for buttons
+            view.getElement().addEventListener("mouseenter", e -> {
+                view.getStyle().set("transform", "translateY(-2px)")
+                        .set("box-shadow", "0 6px 20px rgba(240, 147, 251, 0.6)");
+            });
+            view.getElement().addEventListener("mouseleave", e -> {
+                view.getStyle().set("transform", "translateY(0)")
+                        .set("box-shadow", "0 4px 15px rgba(240, 147, 251, 0.4)");
+            });
+
+            historyBtn.getElement().addEventListener("mouseenter", e -> {
+                historyBtn.getStyle().set("transform", "translateY(-2px)")
+                        .set("box-shadow", "0 6px 20px rgba(79, 172, 254, 0.6)");
+            });
+            historyBtn.getElement().addEventListener("mouseleave", e -> {
+                historyBtn.getStyle().set("transform", "translateY(0)")
+                        .set("box-shadow", "0 4px 15px rgba(79, 172, 254, 0.4)");
+            });
+
+            // Create a premium card-like container for each shop
+            com.vaadin.flow.component.html.Div shopCard = new com.vaadin.flow.component.html.Div();
+            shopCard.getStyle()
+                    .set("background", "linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)")
+                    .set("border-radius", "20px")
+                    .set("box-shadow", "0 8px 32px rgba(0, 0, 0, 0.12)")
+                    .set("padding", "24px")
+                    .set("margin-bottom", "24px")
+                    .set("border", "1px solid rgba(255, 255, 255, 0.8)")
+                    .set("backdrop-filter", "blur(10px)")
+                    .set("transition", "all 0.4s ease")
+                    .set("position", "relative")
+                    .set("overflow", "hidden");
+
+            // Add decorative gradient overlay
+            com.vaadin.flow.component.html.Div overlay = new com.vaadin.flow.component.html.Div();
+            overlay.getStyle()
+                    .set("position", "absolute")
+                    .set("top", "0")
+                    .set("left", "0")
+                    .set("right", "0")
+                    .set("height", "4px")
+                    .set("background", "linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%)");
+
+            VerticalLayout cardContent = new VerticalLayout();
+            cardContent.setSpacing(true);
+            cardContent.setPadding(false);
+
+            HorizontalLayout buttonGroup = new HorizontalLayout(view, historyBtn);
+            buttonGroup.setSpacing(true);
+            buttonGroup.setJustifyContentMode(JustifyContentMode.END);
+
+            cardContent.add(nameContainer, buttonGroup);
+            shopCard.add(overlay, cardContent);
+
+            // Add hover effect for the entire card
+            shopCard.getElement().addEventListener("mouseenter", e -> {
+                shopCard.getStyle()
+                        .set("transform", "translateY(-4px)")
+                        .set("box-shadow", "0 12px 40px rgba(0, 0, 0, 0.15)");
+            });
+            shopCard.getElement().addEventListener("mouseleave", e -> {
+                shopCard.getStyle()
+                        .set("transform", "translateY(0)")
+                        .set("box-shadow", "0 8px 32px rgba(0, 0, 0, 0.12)");
+            });
+
+            shopsContainer.add(shopCard);
         }
     }
 
