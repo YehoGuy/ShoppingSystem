@@ -195,15 +195,61 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
                 showMoreButton.setText(currentlyVisible ? "Show Reviews" : "Hide Reviews");
             });
 
+            VerticalLayout addReview = addReviewLayout(item);
+
             itemCard.add(
                     name,
                     description,
                     category,
                     averageRating,
                     reviewsLayout,
-                    showMoreButton);
+                    showMoreButton,
+                    addReview);
             itemsContainer.add(itemCard);
         }
+    }
+
+    private VerticalLayout addReviewLayout(ItemDTO item) {
+        VerticalLayout addReviewLayout = new VerticalLayout();
+        addReviewLayout.setSizeFull();
+        addReviewLayout.getStyle().set("margin-top", "10px");
+
+        NumberField ratingField = new NumberField("Rating (1-5)");
+        ratingField.setWidth("150px");
+        ratingField.setHeight(null);
+
+        ratingField.setMin(1);
+        ratingField.setMax(5);
+
+        TextField reviewTextField = new TextField("Review");
+        reviewTextField.setSizeFull();
+
+        Button submitButton = new Button("Submit Review");
+        submitButton.addClickListener(event -> {
+            if (ratingField.getValue() == null || reviewTextField.getValue().isEmpty()) {
+                Notification.show("Please fill in all fields.");
+                return;
+            }
+            ItemReviewDTO review = new ItemReviewDTO(ratingField.getValue().intValue(),
+                    reviewTextField.getValue());
+
+            String url = URL + "/" + item.getId() + "/reviews?rating=" + review.getRating() + "&reviewText="
+                    + review.getReviewText() + "&token=" + VaadinSession.getCurrent().getAttribute("authToken");
+            ResponseEntity<Void> response = restTemplate.postForEntity(url, review, Void.class);
+
+            if (response.getStatusCode() == HttpStatus.ACCEPTED) {
+                Notification.show("Review submitted successfully!");
+                getItems(); // Refresh items to show the new review
+                displayItems(filteredItems); // Refresh displayed items
+            } else {
+                Notification.show("Failed to submit review.");
+            }
+        });
+        addReviewLayout.getStyle().set("border", "1px solid red").set("background-color", "#ffe");
+        ratingField.getElement().getStyle().set("background-color", "#eef");
+
+        addReviewLayout.add(ratingField, reviewTextField, submitButton);
+        return addReviewLayout;
     }
 
     private void handleSuspence() {
