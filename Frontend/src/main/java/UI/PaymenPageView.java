@@ -14,6 +14,8 @@ import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.PasswordField;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.server.VaadinSession;
@@ -22,12 +24,19 @@ import DTOs.PaymentMethodDTO;
 
 public class PaymenPageView extends VerticalLayout implements BeforeEnterObserver {
 
-    private final PaymentMethodDTO paymentMethod;
+    private PaymentMethodDTO paymentMethod;
 
     private double totalAmount = 0.0;
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${url.api}")
+    private String currency;
+    private String cardNumber;
+    private String expirationDateMonth;
+    private String expirationDateYear;
+    private String cardHolderName;
+    private String cvv;
+    private String id;
+
     private String BASE_URL;
 
     private String country;
@@ -56,8 +65,7 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
 
     public PaymenPageView(double totalAmount, String country, String city, String street, String houseNumber,
             String zipCode) {
-
-        paymentMethod = getUserPaymentMethod();
+        this.BASE_URL = "http://localhost:8080/api/";
 
         this.totalAmount = totalAmount;
         this.country = country;
@@ -69,19 +77,6 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         setUpLayout();
     }
 
-    private PaymentMethodDTO getUserPaymentMethod() {
-        String token = getToken();
-        String url = BASE_URL + "/payment-method?authToken=" + token;
-
-        ResponseEntity<PaymentMethodDTO> response = restTemplate.getForEntity(url, PaymentMethodDTO.class);
-        if (response.getStatusCode().is2xxSuccessful()) {
-            PaymentMethodDTO paymentMethod = response.getBody();
-            if (paymentMethod != null) {
-                return paymentMethod; // Return the first payment method
-            }
-        }
-        return null; // Handle case where no payment methods are available
-    }
 
     private void setUpLayout() {
         setSizeFull();
@@ -90,14 +85,26 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         add(new H1("Payment Page"));
         add(new H3("Order Summary:"));
         add(new H3("Total Amount: $" + totalAmount));
-        add(new H3("Shipping Address:"));
-        add(new H3("Country: " + this.country));
-        add(new H3("City: " + this.city));
-        add(new H3("Street: " + this.street));
-        add(new H3("House Number: " + this.houseNumber));
-        add(new H3("Zip Code: " + this.zipCode));
+ 
 
-        add(new H3("Please select a payment method:"));
+        add(new H3("Please enter a payment details below:"));
+        TextField currencyField = new TextField("Currency");
+        TextField cardNumberField = new TextField("Card Number");
+        TextField expirationMonthField = new TextField("Expiration Month (MM)");
+        TextField expirationYearField = new TextField("Expiration Year (YYYY)");
+        TextField cardHolderNameField = new TextField("Card Holder Name");
+        PasswordField cvvField = new PasswordField("CVV");
+        TextField idField = new TextField("ID");
+
+        add(currencyField, cardNumberField, expirationMonthField, expirationYearField, cardHolderNameField, cvvField, idField);
+
+        currencyField.addValueChangeListener(e -> currency = e.getValue());
+        cardNumberField.addValueChangeListener(e -> cardNumber = e.getValue());
+        expirationMonthField.addValueChangeListener(e -> expirationDateMonth = e.getValue());
+        expirationYearField.addValueChangeListener(e -> expirationDateYear = e.getValue());
+        cardHolderNameField.addValueChangeListener(e -> cardHolderName = e.getValue());
+        cvvField.addValueChangeListener(e -> cvv = e.getValue());
+        idField.addValueChangeListener(e -> id = e.getValue());
 
         VerticalLayout buttonLayout = new VerticalLayout();
         buttonLayout.setSpacing(true);
@@ -107,10 +114,11 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         buttonLayout.getStyle().set("padding", "10px");
         buttonLayout.getStyle().set("background-color", "#f9f9f9");
 
-        Button methodButton = new Button(paymentMethod.getMethodDetails(), event -> processPayment(paymentMethod));
+        Button methodButton = new Button("pay", event -> processPayment());
         if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
             methodButton.setVisible(false);
         }
+        add(methodButton);
         methodButton.setWidthFull();
         buttonLayout.add(methodButton);
 
@@ -122,15 +130,20 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         add(scroller);
     }
 
-    private void processPayment(PaymentMethodDTO method) {
+    private void processPayment() {
         try {
+            this.paymentMethod = new PaymentMethodDTO(currency, cardNumber, expirationDateMonth,
+                    expirationDateYear, cardHolderName, cvv, id);
+
             String token = getToken();
-            String url = BASE_URL + "/checkout" +
+            String url = BASE_URL + "purchases/checkout" +
                     "?authToken=" + token +
                     "&country=" + country +
                     "&city=" + city +
                     "&street=" + street +
-                    "&houseNumber=" + houseNumber;
+                    "&houseNumber=" + houseNumber
+                    + "&zipCode=" + zipCode +
+                    "&currency=" + paymentMethod.toString();
 
             ResponseEntity<String> response = restTemplate.postForEntity(url, null, String.class);
 

@@ -9,6 +9,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
@@ -44,6 +45,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
 
     @Value("${url.api}/shops")
     private String SHOP_API_URL;
+    
 
     @Value("${url.api}/purchases/shops")
     private String PURCHASE_HISTORY_URL;

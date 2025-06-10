@@ -84,7 +84,16 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         return null; // Return null if userId is not available
     }
 
-    public ShoppingCartView() {
+    public ShoppingCartView(@ Value("${url.api}") String URLShop,
+            @Value("${url.api}") String URLUser, @Value("${url.api}") String URLPurchases,
+            @Value("${url.api}") String URLItem) {
+        this.URLShop = URLShop + "/shops";
+        this.URLUser = URLUser + "/users";
+        this.URLPurchases = URLPurchases + "/purchases";
+        this.URLItem = URLItem + "/items";
+
+
+        
         setSizeFull();
         setSpacing(true);
         setPadding(true);
