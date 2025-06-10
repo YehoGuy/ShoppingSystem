@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.example.app.DomainLayer.Purchase.Address;
+import com.example.app.DomainLayer.Purchase.Bid;
+import com.example.app.DomainLayer.Purchase.BidReciept;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
 
@@ -23,6 +25,7 @@ public class Member extends User {
     private final List<Integer> orderHistory;// List of order IDs
     private final List<Role> pending_roles; // List of pending roles not yet confirmed/declined by the user
     private final List<Notification> notifications; // List of notifications for the user
+    private final List<BidReciept> auctionsWins; // List of auctions won by the user
 
     private boolean isConnected; // Connection status of the user, used for notification purposes
 
@@ -44,6 +47,7 @@ public class Member extends User {
         this.roles = new CopyOnWriteArrayList<>(); // Initialize roles
         this.pending_roles = new CopyOnWriteArrayList<>(); // Initialize pending roles
         this.notifications = new CopyOnWriteArrayList<>(); // Initialize notifications
+        this.auctionsWins = new CopyOnWriteArrayList<>(); // Initialize auctions won
         this.isConnected = false; // Initialize connection status
     }
 
@@ -60,6 +64,7 @@ public class Member extends User {
         this.pending_roles = new CopyOnWriteArrayList<>(); // Initialize pending roles
         this.address = address;
         this.notifications = new CopyOnWriteArrayList<>(); // Initialize notifications
+        this.auctionsWins = new CopyOnWriteArrayList<>(); // Initialize auctions won
         this.isConnected = false; // Initialize connection status
     }
 
@@ -273,6 +278,18 @@ public class Member extends User {
             // return what was there
             return snapshot;
         }
+    }
+
+    public List<BidReciept> getAuctionsWins() {
+        synchronized (notificationsLock) {
+            return auctionsWins;
+        } // Return a copy of the auctions won
+    }
+
+    public void addAuctionWin(BidReciept bid) {
+        synchronized (notificationsLock) {
+            auctionsWins.add(bid);
+        } // Add a bid to the list of auctions won
     }
 
     public void setConnected(boolean isConnected) {

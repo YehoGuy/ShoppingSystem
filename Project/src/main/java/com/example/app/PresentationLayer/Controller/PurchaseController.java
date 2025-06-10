@@ -420,12 +420,19 @@ public class PurchaseController {
         try {
             purchaseService.postBiddingAuction(authToken, auctionId, bidAmount);
             return ResponseEntity.accepted().build();
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().build();
+        } catch (IllegalArgumentException | ConstraintViolationException ex) {
+            System.out.println("Invalid parameters (400): " + ex.getMessage());
+            return ResponseEntity.badRequest().body(null); // 400
+        } catch (NoSuchElementException ex) {
+            System.out.println("Invalid parameters (404): " + ex.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); // 404
         } catch (RuntimeException ex) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            System.out.println("Invalid parameters (409): " + ex.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(null); // 409
         } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            System.out.println("Invalid parameters (500): " + ex.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(null); // 500
         }
     }
 
@@ -501,5 +508,22 @@ public class PurchaseController {
         }
     }
 
+    @GetMapping("/auctions/won")
+    public ResponseEntity<List<BidRecieptDTO>> getUserWonAuctions(
+            @RequestParam String authToken) {
+        try {
+            List<BidReciept> won = purchaseService.getAuctionsWinList(authToken);
+            // map domain‐model receipts → DTOs
+            List<BidRecieptDTO> dtos = won.stream()
+                .map(BidRecieptDTO::fromDomain)  
+                .toList();
+            return ResponseEntity.ok(dtos);
+        } catch (IllegalArgumentException ex) {
+            // token invalid
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 
 }

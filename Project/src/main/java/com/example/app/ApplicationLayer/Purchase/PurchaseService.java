@@ -3,7 +3,6 @@ package com.example.app.ApplicationLayer.Purchase;
 import java.sql.Date;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +14,7 @@ import org.springframework.stereotype.Service;
 import com.example.app.ApplicationLayer.AuthTokenService;
 import com.example.app.ApplicationLayer.Item.ItemService;
 import com.example.app.ApplicationLayer.LoggerService;
+import com.example.app.ApplicationLayer.NotificationService;
 import com.example.app.ApplicationLayer.Message.MessageService;
 import com.example.app.ApplicationLayer.OurArg;
 import com.example.app.ApplicationLayer.OurRuntime;
@@ -37,6 +37,7 @@ public class PurchaseService {
     private ItemService itemService;
     private ShopService shopService;
     private MessageService messageService;
+    private NotificationService notificationService; 
     // private NotificationService notificationService; 
     private TaskScheduler taskscheduler;
 
@@ -46,13 +47,15 @@ public class PurchaseService {
             ShopService shopService,
             ItemService itemService,
             MessageService messageService,
+            NotificationService notificationService,
             TaskScheduler taskscheduler) {
-        this.messageService = messageService;
         this.purchaseRepository = purchaseRepository;
         this.authTokenService = authTokenService;
         this.userService = userService;
         this.shopService = shopService;
         this.itemService = itemService;
+        this.messageService = messageService;
+        this.notificationService = notificationService;
         this.taskscheduler = taskscheduler;
     }
 
@@ -380,7 +383,7 @@ public class PurchaseService {
             shopService.purchaseItems(items, storeId, authToken);
             int auctionId = purchaseRepository.addBid(userId, storeId, items, initialPrice, LocalDateTime.now(), auctionEndTime);
             taskscheduler.schedule(
-                () -> finalizeAuctionInternal(auctionId, authToken),
+                () -> finalizeBid(authToken, auctionId),
                 Date.from(auctionEndTime.atZone(ZoneId.systemDefault()).toInstant())
             );
             LoggerService.logMethodExecutionEnd("startAuction", auctionId);
@@ -402,7 +405,7 @@ public class PurchaseService {
     public void postBiddingAuction(String authToken, int auctionId, int bidAmount) {
         LoggerService.logMethodExecution("postBiddingAuction", authToken, auctionId);
         try {
-            int userId =authTokenService.ValidateToken(authToken);
+            int userId = authTokenService.ValidateToken(authToken);
             Purchase purchase = purchaseRepository.getPurchaseById(auctionId);
             if (!(purchase instanceof Bid)) {
                 throw new OurRuntime("Purchase " + auctionId + " is not a bid");
@@ -437,18 +440,30 @@ public class PurchaseService {
 
         // notify everyone
         for (int pid : bid.getBiddersIds()) {
-            messageService.sendMessageToUser(
-                authToken,
+            notificationService.sendToUser(
                 pid,
-                "Auction " + auctionId + " ended." +
-                (pid == winner ? " You won with a bid of " + winner + "." : " You lost. The winning bid was " + finalP + "."),
-                -1
+                "Auction ended",
+                (pid == winner ? " You won with a bid of " + winner + "." : " You lost. The winning bid was " + finalP + ".")
             );
         }
     }
-
-        
-
-    
+ 
+    /**
+     * Retrieves all auctions won by the user - use in userService.
+     * 
+     * @param authToken The authentication token of the user.
+     * @return A list of Bid objects representing the auctions won by the user.
+     */
+    public List<BidReciept> getAuctionsWinList(String authToken) {
+        int userId = -1;
+        try {
+            userId = authTokenService.ValidateToken(authToken);
+        } catch (Exception e) {
+            LoggerService.logError("getAuctionsWinList", e, authToken);
+            throw new OurRuntime("getAuctionsWinList: " + e.getMessage(), e);
+        }
+        LoggerService.logMethodExecution("getWonAuctions", authToken, userId);
+        return userService.getAuctionsWinList(userId);
+    }
 
 }

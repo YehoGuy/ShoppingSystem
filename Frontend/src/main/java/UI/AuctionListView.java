@@ -20,6 +20,8 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.Notification.Position;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
@@ -69,11 +71,24 @@ public class AuctionListView extends VerticalLayout {
 
         // add a button to add offer to auction
         auctionGrid.addColumn(new ComponentRenderer<>(dto -> {
-            Button addOffer = new Button("Add Offer");
-            addOffer.addClickListener(evt -> UI.getCurrent().navigate("auction/" + dto.getPurchaseId()));
-            return addOffer;
-
-        })).setHeader("Auctions").setAutoWidth(true);
+        Button addOffer = new Button("Add Offer");
+        addOffer.addClickListener(evt -> {
+            Integer me = getUserId();
+            if (me != null && me.equals(dto.getUserId())) {
+                Notification.show(
+                "You cannot place a bid on your own auction",
+                3000,
+                Position.MIDDLE
+                );
+            } else {
+                UI.getCurrent().navigate("auction/" + dto.getPurchaseId());
+            }
+        });
+        return addOffer;
+        }))
+        .setHeader("Actions")
+        .setAutoWidth(true);
+        
         // ─── Time left column ───────────────────────────────────────────────
         auctionGrid.addColumn(new ComponentRenderer<>(dto -> {
             Span timer = new Span();

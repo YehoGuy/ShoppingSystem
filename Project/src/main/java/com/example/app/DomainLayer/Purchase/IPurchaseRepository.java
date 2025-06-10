@@ -99,6 +99,4 @@ public interface IPurchaseRepository {
      */
     List<BidReciept> getShopBids(int shopId);
 
-
-
 }

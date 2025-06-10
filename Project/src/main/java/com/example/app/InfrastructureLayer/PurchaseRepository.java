@@ -205,6 +205,4 @@ public class PurchaseRepository implements IPurchaseRepository {
                 .map(purchase -> ((Bid) purchase).generateReciept())
                 .toList();
     }
-    
-
 }

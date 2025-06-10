@@ -17,6 +17,8 @@ import com.example.app.DomainLayer.IUserRepository;
 import com.example.app.DomainLayer.Member;
 import com.example.app.DomainLayer.Notification;
 import com.example.app.DomainLayer.Purchase.Address;
+import com.example.app.DomainLayer.Purchase.Bid;
+import com.example.app.DomainLayer.Purchase.BidReciept;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
 import com.example.app.DomainLayer.User;
@@ -2076,6 +2078,24 @@ public class UserService {
         } catch (Exception e) {
             LoggerService.logError("hasRoleInShop", e, userId, shopId);
             throw new OurRuntime("hasRoleInShop: " + e.getMessage(), e);
+        }
+    }
+
+    public List<BidReciept> getAuctionsWinList(int userId) {
+        try {
+            LoggerService.logMethodExecution("getAuctionsWinList", userId);
+            List<BidReciept> auctionsWinList = userRepository.getAuctionsWinList(userId);
+            LoggerService.logMethodExecutionEnd("getAuctionsWinList", auctionsWinList);
+            return auctionsWinList;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getAuctionsWinList", e);
+            throw new OurRuntime("getAuctionsWinList: " + e.getMessage(), e);
+        } catch (OurArg e) {
+            LoggerService.logDebug("getAuctionsWinList", e);
+            throw new OurArg("getAuctionsWinList: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("getAuctionsWinList", e, userId);
+            throw new OurRuntime("getAuctionsWinList: " + e.getMessage(), e);
         }
     }
 }

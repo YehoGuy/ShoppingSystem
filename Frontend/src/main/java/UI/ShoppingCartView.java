@@ -19,10 +19,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Div;
@@ -33,11 +31,13 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 
+import DTOs.BidRecieptDTO;
 import DTOs.CartEntryDTO;
 import DTOs.ItemDTO;
 import DTOs.ShopDTO;
@@ -228,6 +228,51 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         H2 total = new H2("Total: " + cart.getTotalPrice() + "₪");
         totalContainer.add(total, buyButton);
         add(buyButtonContainer, totalContainer);
+
+        // Your Won Auctions section
+        H2 wonHeader = new H2("Your Won Auctions");
+        add(wonHeader);
+
+        // Fetch the list of won auctions for this user
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        HttpHeaders wonHeaders = new HttpHeaders();
+        wonHeaders.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Void> wonEntity = new HttpEntity<>(wonHeaders);
+        ResponseEntity<List<BidRecieptDTO>> wonResp = restTemplate.exchange(
+            URLPurchases + "/auctions/won?authToken={token}",
+            HttpMethod.GET,
+            wonEntity,
+            new ParameterizedTypeReference<List<BidRecieptDTO>>() {},
+            token
+        );
+        List<BidRecieptDTO> wonList = wonResp.getBody();
+
+        // Build and display the grid
+        Grid<BidRecieptDTO> wonGrid = new Grid<>(BidRecieptDTO.class, false);
+        wonGrid.addColumn(BidRecieptDTO::getPurchaseId)
+            .setHeader("Auction ID")
+            .setAutoWidth(true);
+        wonGrid.addColumn(BidRecieptDTO::getHighestBid)
+            .setHeader("Winning Bid")
+            .setAutoWidth(true);
+        wonGrid.addColumn(new ComponentRenderer<>(dto -> {
+            Button pay = new Button("Pay");
+            pay.addClickListener(e ->
+                UI.getCurrent().navigate(
+                "payment?auctionId=" + dto.getPurchaseId()
+                + "&price="     + dto.getHighestBid()
+                )
+            );
+            return pay;
+        }))
+        .setHeader("Action")
+        .setAutoWidth(true);
+
+        if (wonList != null) {
+            wonGrid.setItems(wonList);
+        }
+        add(wonGrid);
+
     }
 
     private void getData() {
