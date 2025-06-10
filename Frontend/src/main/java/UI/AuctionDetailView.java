@@ -46,7 +46,7 @@ public class AuctionDetailView extends VerticalLayout implements BeforeEnterObse
     private String AUCTION_API_URL;
 
     // Read‐only fields for auction details
-    private final TextField purchaseIdField = new TextField("Bid ID");
+    private final TextField purchaseIdField = new TextField("Auction ID");
     private final TextField storeIdField = new TextField("Store ID");
     private final TextField userIdField = new TextField("Owner ID");
     private final TextField highestBidderField = new TextField("highest Bidder ID");
@@ -56,9 +56,7 @@ public class AuctionDetailView extends VerticalLayout implements BeforeEnterObse
     // Controls for placing a new offer if the bid is open
     private final IntegerField newBidAmount = new IntegerField("Your Bid Amount");
     private final com.vaadin.flow.component.button.Button placeBidButton = new com.vaadin.flow.component.button.Button(
-            "Place Auction");
-    // private final com.vaadin.flow.component.button.Button finalizeBidButton = new com.vaadin.flow.component.button.Button(
-    //         "Finalize Bid");
+            "Place Auction-Bid");
 
     @PostConstruct
     private void init() {
@@ -149,7 +147,7 @@ public class AuctionDetailView extends VerticalLayout implements BeforeEnterObse
         }
 
         // 1) Header
-        H2 header = new H2("Auction Details — ID: " + auctionId);
+        H2 header = new H2("Auction Details");
         add(header);
 
         // 2) Populate read‐only fields
@@ -207,17 +205,10 @@ public class AuctionDetailView extends VerticalLayout implements BeforeEnterObse
             return;
         }
 
-        Integer amount = Optional.ofNullable(newBidAmount.getValue()).orElse(0);
-        if (amount < 1) {
-            Notification.show("Please enter a valid bid amount (≥ 1).",
-                    3000, Notification.Position.MIDDLE);
-            return;
-        }
-
         String postUrl = AUCTION_API_URL
                 + "/" + auctionId
                 + "/offers?authToken=" + token
-                + "&auctionAmount=" + amount;
+                + "&bidAmount=" + newBidAmount.getValue();
 
         try {
             HttpHeaders headers = new HttpHeaders();

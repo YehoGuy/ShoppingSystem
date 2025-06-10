@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -417,7 +418,7 @@ public class PurchaseController {
             @RequestParam @Min(1) int bidAmount
     ) {
         try {
-            purchaseService.postBiddingAcution(authToken, auctionId, bidAmount);
+            purchaseService.postBiddingAuction(authToken, auctionId, bidAmount);
             return ResponseEntity.accepted().build();
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().build();

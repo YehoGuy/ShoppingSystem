@@ -399,8 +399,8 @@ public class PurchaseService {
     }
 
 
-    public void postBiddingAcution(String authToken, int auctionId, int amount) {
-        LoggerService.logMethodExecution("postBiddingAuction", authToken, auctionId, amount);
+    public void postBiddingAuction(String authToken, int auctionId, int bidAmount) {
+        LoggerService.logMethodExecution("postBiddingAuction", authToken, auctionId);
         try {
             int userId =authTokenService.ValidateToken(authToken);
             Purchase purchase = purchaseRepository.getPurchaseById(auctionId);
@@ -411,9 +411,9 @@ public class PurchaseService {
                 throw new OurRuntime(
                         "User " + userId + " is the owner of the bid " + auctionId + " and cannot bid on it");
             }
-            ((Bid) purchase).addBidding(userId, amount);
+            ((Bid) purchase).addBidding(userId,bidAmount);
             
-            postBidding(authToken, auctionId, amount);
+            postBidding(authToken, auctionId, bidAmount); ///?
             LoggerService.logMethodExecutionEndVoid("postBiddingAuction");
         } catch (OurArg e) {
             LoggerService.logDebug("postBiddingAuction", e);
@@ -422,7 +422,7 @@ public class PurchaseService {
             LoggerService.logDebug("postBiddingAuction", e);
             throw new OurRuntime("postBiddingAuction: " + e.getMessage(), e);
         } catch (Exception e) {
-            LoggerService.logError("postBiddingAuction", e, authToken, auctionId, amount);
+            LoggerService.logError("postBiddingAuction", e, authToken, auctionId, 1);
             throw new OurRuntime("postBiddingAuction: " + e.getMessage(), e);
         }
     }

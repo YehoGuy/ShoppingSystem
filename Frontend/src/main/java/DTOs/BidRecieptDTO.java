@@ -20,6 +20,7 @@ public class BidRecieptDTO {
     private boolean completed;
     private LocalDateTime timeOfCompletion;
     private double price;
+    private LocalDateTime endTime; // End time of the auction, if applicable
 
     // ─── bid-specific fields ──────────────────────────────────────────────────
     private int thisBidderId;
@@ -31,6 +32,32 @@ public class BidRecieptDTO {
     public BidRecieptDTO() { }
 
     // All-args constructor (optional)
+    // public BidRecieptDTO(int purchaseId,
+    //                      int userId,
+    //                      int storeId,
+    //                      AddressDTO shippingAddress,
+    //                      Map<Integer, Integer> items,
+    //                      boolean completed,
+    //                      LocalDateTime timeOfCompletion,
+    //                      double price,
+    //                      int thisBidderId,
+    //                      int initialPrice,
+    //                      int highestBid,
+    //                      int highestBidderId) {
+    //     this.purchaseId = purchaseId;
+    //     this.userId = userId;
+    //     this.storeId = storeId;
+    //     this.shippingAddress = shippingAddress;
+    //     this.items = items;
+    //     this.completed = completed;
+    //     this.timeOfCompletion = timeOfCompletion;
+    //     this.price = price;
+    //     this.thisBidderId = thisBidderId;
+    //     this.initialPrice = initialPrice;
+    //     this.highestBid = highestBid;
+    //     this.highestBidderId = highestBidderId;
+    // }
+
     public BidRecieptDTO(int purchaseId,
                          int userId,
                          int storeId,
@@ -42,7 +69,8 @@ public class BidRecieptDTO {
                          int thisBidderId,
                          int initialPrice,
                          int highestBid,
-                         int highestBidderId) {
+                         int highestBidderId,
+                         LocalDateTime endTime) {
         this.purchaseId = purchaseId;
         this.userId = userId;
         this.storeId = storeId;
@@ -55,6 +83,7 @@ public class BidRecieptDTO {
         this.initialPrice = initialPrice;
         this.highestBid = highestBid;
         this.highestBidderId = highestBidderId;
+        this.endTime = endTime;
     }
 
     // ─── Getters & Setters ──────────────────────────────────────────────────
@@ -141,5 +170,13 @@ public class BidRecieptDTO {
     }
     public void setHighestBidderId(int highestBidderId) {
         this.highestBidderId = highestBidderId;
+    }
+
+    public LocalDateTime getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(LocalDateTime endTime) {
+        this.endTime = endTime;
     }
 }

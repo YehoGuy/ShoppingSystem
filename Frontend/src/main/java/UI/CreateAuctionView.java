@@ -24,6 +24,7 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.NotFoundException;
@@ -129,6 +130,7 @@ public class CreateAuctionView extends VerticalLayout implements BeforeEnterObse
     }
 
     private void buildPage() {
+        double price = 0.0; // default price if not found
         removeAll(); // clear any existing components
         qtyFields.clear(); // clear leftover references
 
@@ -162,21 +164,19 @@ public class CreateAuctionView extends VerticalLayout implements BeforeEnterObse
             com.vaadin.flow.component.html.Span nameSpan = new com.vaadin.flow.component.html.Span(
                     "🍽️ " + item.getName());
             // Item price (lookup in the prices map; default to 0.0)
-            double p = (prices == null)
+            price = (prices == null)
                     ? 0.0
                     : prices.getOrDefault(item, 0.0);
             com.vaadin.flow.component.html.Span priceSpan = new com.vaadin.flow.component.html.Span(
-                    "💲 " + String.format("%.2f", p));
+                    "💲 " + String.format("%.2f", price));
 
-            // Quantity field (NumberField), so it’s obviously clickable
-            NumberField qtyField = new NumberField();
-            qtyField.setPlaceholder("0"); // shows “0” in gray when empty
-            qtyField.setMin(0);
+            // Quantity field (NumberField), initially set to 1 and read-only
+            NumberField qtyField = new NumberField("Quantity");
+            qtyField.setMin(1);
             qtyField.setStep(1);
-            qtyField.setWidth("80px"); // fixed width so it’s visible
-            qtyField.setValue(0.0); // default 0
-
-            // Store for later when the user clicks “Create Auction”
+            qtyField.setValue(1.0);          // default 1
+            qtyField.setReadOnly(true);      // cannot change
+            
             qtyFields.put(item, qtyField);
 
             // Assemble the row
@@ -186,10 +186,10 @@ public class CreateAuctionView extends VerticalLayout implements BeforeEnterObse
 
         // 4. “Initial Price” field below the item rows
         initialPriceField.setPlaceholder("Your Price");
-        initialPriceField.setMin(1);
+        initialPriceField.setMin(price); // minimum price is the item price
         initialPriceField.setStep(1);
         initialPriceField.setWidth("100px");
-        initialPriceField.setValue(1.0);
+        initialPriceField.setValue(price);
         add(initialPriceField);
 
         // 5. DateTimePicker for auction end time
