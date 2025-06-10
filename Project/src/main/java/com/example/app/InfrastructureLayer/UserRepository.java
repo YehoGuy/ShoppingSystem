@@ -523,7 +523,8 @@ public class UserRepository implements IUserRepository {
         user.setPaymentMethod(paymentMethod);
     }
 
-    public void pay(int userId, int shopId, double payment) {
+    @Override
+    public int pay(int userId, double amount, String currency, String cardNumber, String expirationDateMonth, String expirationDateYear, String cardHolderName, String cvv, String id) {
         User user = userMapping.get(userId);
         if (user == null) {
             throw new OurRuntime("User with ID " + userId + " doesn't exist.");
@@ -533,14 +534,18 @@ public class UserRepository implements IUserRepository {
             throw new OurRuntime("Payment method not set for user with ID " + userId);
         }
         try {
-            paymentMethod.processPayment(payment, shopId); // Assuming PaymentMethod has a method to process payment
+            int pid = paymentMethod.processPayment(amount, currency, cardNumber, expirationDateMonth, expirationDateYear, cardHolderName, cvv, id);
+            if (pid < 0) {
+                throw new OurRuntime("Payment processing failed.");
+            }
+            return pid; // Return the payment ID if successful
         } catch (Exception e) {
             throw new OurRuntime("Payment failed: " + e.getMessage());
         }
     }
 
     @Override
-    public void refund(int userId, int shopId, double refund) {
+    public void refund(int userId, int paymentId) {
         User user = userMapping.get(userId);
         if (user == null) {
             throw new OurRuntime("User with ID " + userId + " doesn't exist.");
@@ -550,10 +555,22 @@ public class UserRepository implements IUserRepository {
             throw new OurRuntime("Payment method not set for user with ID " + userId);
         }
         try {
-            paymentMethod.refundPayment(refund, shopId); // Assuming PaymentMethod has a method to process refund
+            boolean worked = paymentMethod.cancelPayment(paymentId); // Assuming PaymentMethod has a method to process refund
+            if (!worked) {
+                throw new OurRuntime("Refund processing failed.");
+            }
         } catch (Exception e) {
             throw new OurRuntime("Refund failed: " + e.getMessage());
         }
+    }
+
+    public void addBidToShoppingCart(int userId, int shopId, Map<Integer, Integer> items) {
+        if (!userMapping.containsKey(userId)) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        User user = userMapping.get(userId);
+        ShoppingCart shoppingCart = user.getShoppingCart();
+        shoppingCart.addBid(shopId, items); // Assuming ShoppingCart has a method to add a bid
     }
 
     @Override

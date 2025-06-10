@@ -13,6 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.JsModule;
@@ -32,17 +33,17 @@ import com.vaadin.flow.router.OptionalParameter;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 
-import DTOs.BidRecieptDTO;                  // for Map.Entry
-import DTOs.ItemDTO;                 // if you use List elsewhere
+import DTOs.BidRecieptDTO; // for Map.Entry
+import DTOs.ItemDTO; // if you use List elsewhere
 import DTOs.ShopDTO;
 import DTOs.ShopReviewDTO;
 
 @Route(value = "shop", layout = AppLayoutBasic.class)
-@JsModule("./js/notification-client.js")
+
 public class ShopView extends VerticalLayout implements HasUrlParameter<String>, BeforeEnterObserver {
 
     @Value("${url.api}/shops")
-    private String SHOP_API_URL;    
+    private String SHOP_API_URL;
 
     @Value("${url.api}/purchases/shops")
     private String PURCHASE_HISTORY_URL;
@@ -53,16 +54,20 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
+        getUserId(); // Ensure userId is set in session
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("login");
         }
-        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m -> m.connectNotifications($0))",
-                getUserId());
+
         handleSuspence();
     }
 
-    private String getUserId() {
-        return VaadinSession.getCurrent().getAttribute("userId").toString();
+    public Integer getUserId() {
+        if (VaadinSession.getCurrent().getAttribute("userId") != null) {
+            return Integer.parseInt(VaadinSession.getCurrent().getAttribute("userId").toString());
+        }
+        UI.getCurrent().navigate(""); // Redirect to login if userId is not set
+        return null; // Return null if userId is not available
     }
 
     @Override
@@ -81,10 +86,10 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
                 prices = ShopDTO.itemPricesToMapConverter(shop.getItems(), shop.getItemPrices());
                 buildPage();
             } else {
-                Notification.show("⚠️ Failed to load shop: " + resp.getStatusCode());
+                Notification.show("⚠️ Failed to load shop");
             }
         } catch (Exception e) {
-            Notification.show("❗ Error loading shop: " + e.getMessage());
+            Notification.show("❗ Error loading shop");
         }
     }
 
@@ -101,16 +106,15 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
             // 2. Build the full URL including the required query param "authToken"
             //
             // EXACTLY matches the backend mapping:
-            //    @GetMapping("/shops/{shopId}/bids")
-            //    public ResponseEntity<List<BidRecieptDTO>> getBidsForShop(
-            //            @PathVariable int shopId,
-            //            @RequestParam String authToken)
+            // @GetMapping("/shops/{shopId}/bids")
+            // public ResponseEntity<List<BidRecieptDTO>> getBidsForShop(
+            // @PathVariable int shopId,
+            // @RequestParam String authToken)
             //
             // Therefore we must call:
-            //    GET /api/purchases/shops/{shopId}/bids?authToken=<token>
+            // GET /api/purchases/shops/{shopId}/bids?authToken=<token>
             //
             String url = PURCHASE_HISTORY_URL + "/" + shop.getShopId() + "/bids?authToken=" + authToken;
-
 
             // 3. Prepare headers (JSON)
             HttpHeaders headers = new HttpHeaders();
@@ -122,19 +126,19 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
                     url,
                     HttpMethod.GET,
                     entity,
-                    new ParameterizedTypeReference<>() {}
-            );
+                    new ParameterizedTypeReference<>() {
+                    });
 
             // 5. If 200 OK, bind the response body (List<BidRecieptDTO>) to the grid
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 shopBidsGrid.setItems(response.getBody());
             } else {
                 // If we get a 4xx or 5xx, show an error header
-                add(new H2("Failed to load shop’s bids: " + response.getStatusCode()));
+                add(new H2("Failed to load shop’s bids"));
             }
         } catch (Exception ex) {
             ex.printStackTrace();
-            add(new H2("Error fetching shop’s bids: " + ex.getMessage()));
+            add(new H2("Error fetching shop’s bids"));
         }
     }
 
@@ -243,12 +247,25 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         add(bidsHeader);
         Grid<BidRecieptDTO> shopBidsGrid = new Grid<>(BidRecieptDTO.class, false);
         shopBidsGrid.addColumn(BidRecieptDTO::getPurchaseId)
-                    .setHeader("Bid ID")
-                    .setAutoWidth(true);
+                .setHeader("Bid ID")
+                .setAutoWidth(true);
         shopBidsGrid.addColumn(dto -> dto.getInitialPrice())
-                    .setHeader("Initial Price")
-                    .setAutoWidth(true);
-        fetchStoreBids(shopBidsGrid);
+                .setHeader("Initial Price")
+                .setAutoWidth(true);
+        shopBidsGrid.addColumn(dto -> dto.getHighestBid())
+                .setHeader("Highest Bid")
+                .setAutoWidth(true);
+        shopBidsGrid.addColumn(dto -> dto.isCompleted() ? "Yes" : "No")
+                .setHeader("Completed");
+
+        // When the user clicks a bid row, navigate to /bid/{purchaseId}
+        shopBidsGrid.asSingleSelect().addValueChangeListener(event -> {
+            BidRecieptDTO selected = event.getValue();
+            if (selected != null) {
+                UI.getCurrent().navigate("bid/" + selected.getPurchaseId());
+            }
+        });
+
         add(shopBidsGrid);
 
         // Reviews section
@@ -263,7 +280,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
                             + rev.getReviewText() + " (" + rev.getRating() + ")"));
         }
     }
-    
+
     private void handleSuspence() {
         Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
         if (userId == null) {
@@ -273,15 +290,14 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/"+userId+"/suspension?token=" +token;
+        String url = "http://localhost:8080/api/users" + "/" + userId + "/suspension?token=" + token;
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
         } else {
-            throw new RuntimeException(
-                "Failed to check admin status: HTTP " + response.getStatusCode().value()
-            );
+            Notification.show(
+                    "Failed to check admin status");
         }
     }
 }

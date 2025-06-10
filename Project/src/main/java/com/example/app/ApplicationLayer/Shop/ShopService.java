@@ -23,6 +23,8 @@ import com.example.app.DomainLayer.Shop.Operator;
 import com.example.app.DomainLayer.Shop.PurchasePolicy;
 import com.example.app.DomainLayer.Shop.Shop;
 import com.example.app.DomainLayer.Shop.Discount.Discount;
+import com.example.app.DomainLayer.User;
+import com.example.app.DomainLayer.Member;
 import com.example.app.DomainLayer.Shop.Discount.Policy;
 import com.example.app.DomainLayer.Shop.Discount.PolicyComposite;
 import com.example.app.DomainLayer.Shop.Discount.PolicyLeaf;
@@ -35,17 +37,17 @@ import com.example.app.PresentationLayer.DTO.Shop.PoliciesDTO;
 public class ShopService {
     private final IShopRepository shopRepository;
     private final AuthTokenService authTokenService;
-    private final UserService      userService;
-    private final ItemService      itemService;
+    private final UserService userService;
+    private final ItemService itemService;
 
     public ShopService(IShopRepository shopRepository,
-                       AuthTokenService authTokenService,
-                       UserService      userService,
-                       ItemService      itemService) {
-        this.shopRepository  = shopRepository;
+            AuthTokenService authTokenService,
+            UserService userService,
+            ItemService itemService) {
+        this.shopRepository = shopRepository;
         this.authTokenService = authTokenService;
-        this.userService      = userService;
-        this.itemService      = itemService;
+        this.userService = userService;
+        this.itemService = itemService;
     }
 
     public Shop createShop(String name, PurchasePolicy purchasePolicy, ShippingMethod shippingMethod, String token) {
@@ -322,7 +324,8 @@ public class ShopService {
         }
     }
 
-    public void addItemToShop(int shopId, String name, String description, int quantity, ItemCategory category, int price, String token) {
+    public void addItemToShop(int shopId, String name, String description, int quantity, ItemCategory category,
+            int price, String token) {
         try {
             LoggerService.logMethodExecution("addItemToShop", shopId, quantity, price);
             Integer userId = authTokenService.ValidateToken(token);
@@ -444,13 +447,15 @@ public class ShopService {
         try {
             LoggerService.logMethodExecution("closeShop", shopId);
             Integer userId = authTokenService.ValidateToken(token);
-            if ((!userService.isAdmin(userId))&&(!userService.hasPermission(userId, PermissionsEnum.closeShop, shopId))) {
+            if ((!userService.isAdmin(userId))
+                    && (!userService.hasPermission(userId, PermissionsEnum.closeShop, shopId))) {
                 OurRuntime e = new OurRuntime("User does not have permission to close shop " + shopId);
                 LoggerService.logDebug("closeShop", e);
                 throw e;
             }
             shopRepository.closeShop(shopId);
             userService.closeShopNotification(shopId);
+            userService.removeOwnerFromStore(token, userId, shopId);
             LoggerService.logMethodExecutionEndVoid("closeShop");
         } catch (OurArg e) {
             LoggerService.logDebug("closeShop", e);
@@ -751,8 +756,20 @@ public class ShopService {
             String postalCode) {
         try {
             LoggerService.logMethodExecution("shipPurchase", purchaseId, country, city, street, postalCode);
-            authTokenService.ValidateToken(token);
-            shopRepository.shipPurchase(purchaseId, shopId, country, city, street, postalCode);
+            Integer userId = authTokenService.ValidateToken(token);
+            User user = userService.getUserById(userId);
+            String userName;
+            if (user instanceof Member) {
+                userName = ((Member)user).getUsername();
+            } else {
+                userName = "guest";
+            }
+            boolean b = shopRepository.shipPurchase(userName, shopId, country, city, street, postalCode);
+            if (!b) {
+                OurRuntime e = new OurRuntime("Failed to ship purchase " + purchaseId + " from shop " + shopId);
+                LoggerService.logDebug("shipPurchase", e);
+                throw e;
+            }
             LoggerService.logMethodExecutionEndVoid("shipPurchase");
         } catch (OurArg e) {
             LoggerService.logDebug("shipPurchase", e);
@@ -870,34 +887,34 @@ public class ShopService {
     }
 
     /**
-     Map a single LeafPolicyDTO to a Policy using a TriPredicate.
+     * Map a single LeafPolicyDTO to a Policy using a TriPredicate.
      */
     private Policy mapLeafPolicy(LeafPolicyDTO leaf, int shopId) {
         // item-level
         if (leaf.getThreshold() != null && leaf.getItemId() != null) {
             int threshold = leaf.getThreshold();
-            int itemId    = leaf.getItemId();
-            TriPredicate<Map<Integer,Integer>,Map<Integer,Double>,Map<Integer,ItemCategory>> p =
-                (items, prices, cats) -> items.getOrDefault(itemId, 0) >= threshold;
+            int itemId = leaf.getItemId();
+            TriPredicate<Map<Integer, Integer>, Map<Integer, Double>, Map<Integer, ItemCategory>> p = (items, prices,
+                    cats) -> items.getOrDefault(itemId, 0) >= threshold;
             return new PolicyLeaf(threshold, itemId, null, 0.0, p);
         }
         // category-level
         if (leaf.getThreshold() != null && leaf.getItemCategory() != null) {
-            int threshold    = leaf.getThreshold();
+            int threshold = leaf.getThreshold();
             ItemCategory cat = leaf.getItemCategory();
-            TriPredicate<Map<Integer,Integer>,Map<Integer,Double>,Map<Integer,ItemCategory>> p =
-                (items, prices, cats) -> items.entrySet().stream()
-                        .filter(e -> cats.get(e.getKey()) == cat)
-                        .mapToInt(Map.Entry::getValue)
-                        .sum() >= threshold;
+            TriPredicate<Map<Integer, Integer>, Map<Integer, Double>, Map<Integer, ItemCategory>> p = (items, prices,
+                    cats) -> items.entrySet().stream()
+                            .filter(e -> cats.get(e.getKey()) == cat)
+                            .mapToInt(Map.Entry::getValue)
+                            .sum() >= threshold;
             return new PolicyLeaf(threshold, null, cat, 0.0, p);
         }
         // basket-value
         double minValue = leaf.getBasketValue();
-        TriPredicate<Map<Integer,Integer>,Map<Integer,Double>,Map<Integer,ItemCategory>> p =
-            (items, prices, cats) -> items.entrySet().stream()
-                    .mapToDouble(e -> prices.get(e.getKey()) * e.getValue())
-                    .sum() >= minValue;
+        TriPredicate<Map<Integer, Integer>, Map<Integer, Double>, Map<Integer, ItemCategory>> p = (items, prices,
+                cats) -> items.entrySet().stream()
+                        .mapToDouble(e -> prices.get(e.getKey()) * e.getValue())
+                        .sum() >= minValue;
         return new PolicyLeaf(null, null, null, minValue, p);
     }
 
@@ -926,13 +943,13 @@ public class ShopService {
             if (!userService.hasPermission(userId, PermissionsEnum.viewPolicy, shopId)) {
                 throw new OurRuntime("No permission to view policies for shop " + shopId);
             }
-            //println("getPolicies called for shop " + shopId);
+            // println("getPolicies called for shop " + shopId);
             for (Policy p : shopRepository.getPolicies(shopId)) {
                 if (p == null) {
                     System.out.println("sdlkcsl;dkcsdkcsdds;k");
                 } else {
-                    System.out.println("Policy4672829: " + p );
-                    
+                    System.out.println("Policy4672829: " + p);
+
                 }
             }
             return shopRepository.getPolicies(shopId);

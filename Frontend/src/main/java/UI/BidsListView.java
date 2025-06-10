@@ -16,9 +16,12 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.Text;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
@@ -38,6 +41,7 @@ public class BidsListView extends VerticalLayout {
     private final Grid<BidRecieptDTO> bidGrid = new Grid<>(BidRecieptDTO.class, false);
 
     public BidsListView() {
+        getUserId(); // Ensure userId is set in session
         setPadding(true);
         setSpacing(true);
 
@@ -46,23 +50,24 @@ public class BidsListView extends VerticalLayout {
 
         // Configure the columns you want to show
         bidGrid.addColumn(BidRecieptDTO::getPurchaseId)
-               .setHeader("Bid ID")
-               .setAutoWidth(true);
+                .setHeader("Bid ID")
+                .setAutoWidth(true);
         bidGrid.addColumn(BidRecieptDTO::getStoreId)
-               .setHeader("Store ID")
-               .setAutoWidth(true);
+                .setHeader("Store ID")
+                .setAutoWidth(true);
         bidGrid.addColumn(dto -> dto.getPrice())
-               .setHeader("Current Price")
-               .setAutoWidth(true);
+                .setHeader("Current Price")
+                .setAutoWidth(true);
         bidGrid.addColumn(dto -> dto.getHighestBid())
-               .setHeader("Highest Bid")
-               .setAutoWidth(true);
+                .setHeader("Highest Bid")
+                .setAutoWidth(true);
         bidGrid.addColumn(dto -> dto.isCompleted() ? "Yes" : "No")
-               .setHeader("Completed");
+                .setHeader("Completed");
 
         add(bidGrid);
 
-        // Add a listener so that when a row is clicked, we navigate to /bid/{purchaseId}
+        // Add a listener so that when a row is clicked, we navigate to
+        // /bid/{purchaseId}
         bidGrid.asSingleSelect().addValueChangeListener(event -> {
             BidRecieptDTO selected = event.getValue();
             if (selected != null) {
@@ -71,6 +76,14 @@ public class BidsListView extends VerticalLayout {
             }
         });
 
+    }
+
+    public Integer getUserId() {
+        if (VaadinSession.getCurrent().getAttribute("userId") != null) {
+            return Integer.parseInt(VaadinSession.getCurrent().getAttribute("userId").toString());
+        }
+        UI.getCurrent().navigate(""); // Redirect to login if userId is not set
+        return null; // Return null if userId is not available
     }
 
     @PostConstruct
@@ -96,17 +109,17 @@ public class BidsListView extends VerticalLayout {
                     urlWithToken,
                     HttpMethod.GET,
                     entity,
-                    new ParameterizedTypeReference<>() {}
-            );
+                    new ParameterizedTypeReference<>() {
+                    });
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 bidGrid.setItems(response.getBody());
             } else {
-                add(new Text("Failed to load bids: " + response.getStatusCode()));
+                add(new Text("Failed to load bids"));
             }
         } catch (Exception ex) {
             ex.printStackTrace();
-            add(new Text("Error fetching bids: " + ex.getMessage()));
+            add(new Text("Error fetching bids"));
         }
     }
 }

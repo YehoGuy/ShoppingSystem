@@ -58,7 +58,9 @@ public class Role {
                     PermissionsEnum.getStaffInfo,
                     PermissionsEnum.handleMessages,
                     PermissionsEnum.getHistory,
-                    PermissionsEnum.closeShop // assuming this differentiates a founder
+                    PermissionsEnum.closeShop,
+                    PermissionsEnum.openClosedShop,
+                    PermissionsEnum.suspension
             };
         }
     }
@@ -66,14 +68,15 @@ public class Role {
     public void setOwnersPermissions() {
         synchronized (lock) {
             this.permissions = new PermissionsEnum[]{
-                    PermissionsEnum.manageItems,
-                    PermissionsEnum.setPolicy,
-                    PermissionsEnum.manageOwners,
-                    PermissionsEnum.leaveShopAsOwner,
-                    PermissionsEnum.manageManagers,
-                    PermissionsEnum.getStaffInfo,
-                    PermissionsEnum.handleMessages,
-                    PermissionsEnum.getHistory
+                PermissionsEnum.manageItems,
+                PermissionsEnum.setPolicy,
+                PermissionsEnum.manageOwners,
+                PermissionsEnum.leaveShopAsOwner,
+                PermissionsEnum.manageManagers,
+                PermissionsEnum.getStaffInfo,
+                PermissionsEnum.handleMessages,
+                PermissionsEnum.getHistory,
+                PermissionsEnum.suspension
             };
         }
     }

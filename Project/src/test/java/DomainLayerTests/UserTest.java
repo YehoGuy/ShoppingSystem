@@ -11,6 +11,7 @@ import com.example.app.DomainLayer.Purchase.Address;
 import java.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 // A simple concrete subclass of User for testing purposes
 class TestUser extends User {
@@ -80,17 +81,10 @@ public class UserTest {
         sc.addItem(5, 50, 2);
         u.setShoppingCart(sc);
         assertSame(sc, u.getShoppingCart());
-
         // stub PaymentMethod implementation
-        PaymentMethod pm = new PaymentMethod() {
-            @Override public void processPayment(double amount, int shopId) {}
-            @Override public String getDetails() { return "stub"; }
-            @Override public void refundPayment(double amount, int shopId) {}
-            @Override public void processRefund(double refund, int shopId) {}
-        };
+        PaymentMethod pm = mock(PaymentMethod.class);
         u.setPaymentMethod(pm);
         assertSame(pm, u.getPaymentMethod());
-        assertEquals("stub", u.getPaymentMethod().getDetails());
 
         Address addr = new Address()
             .withCountry("C").withCity("Ci").withStreet("St")

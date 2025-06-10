@@ -4,10 +4,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -16,12 +18,11 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import org.springframework.beans.factory.annotation.Value;
 
-
 import DTOs.MemberDTO;
 import DTOs.rolesDTO;
 
 @Route(value = "profile", layout = AppLayoutBasic.class)
-@JsModule("./js/notification-client.js")
+
 public class PersonProfileView extends VerticalLayout implements BeforeEnterObserver {
 
     @Value("${url.api}/users")
@@ -47,14 +48,13 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
+        getUserId(); // Ensure userId is set in session
         // 1) Auth
         token = (String) VaadinSession.getCurrent().getAttribute("authToken");
         if (token == null) {
             event.forwardTo("login");
             return;
         }
-        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m => m.connectNotifications($0))",
-                getUserId());
 
         handleSuspence();
 
@@ -73,8 +73,12 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
         loadRoles();
     }
 
-    private String getUserId() {
-        return VaadinSession.getCurrent().getAttribute("userId").toString();
+    public Integer getUserId() {
+        if (VaadinSession.getCurrent().getAttribute("userId") != null) {
+            return Integer.parseInt(VaadinSession.getCurrent().getAttribute("userId").toString());
+        }
+        UI.getCurrent().navigate(""); // Redirect to login if userId is not set
+        return null; // Return null if userId is not available
     }
 
     private void buildLayout() {
@@ -121,10 +125,10 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
                         new Span("Email: " + memberDTO.getEmail()),
                         new Span("Phone: " + memberDTO.getPhoneNumber()));
             } else {
-                detailsLayout.add(new Span("Cannot load profile: " + resp.getStatusCode()));
+                detailsLayout.add(new Span("Cannot load profile"));
             }
         } catch (Exception ex) {
-            detailsLayout.add(new Span("Error: " + ex.getMessage()));
+            detailsLayout.add(new Span("Error"));
         }
     }
 
@@ -142,7 +146,7 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
                 notificationsLayout.add(new Span("No notifications"));
             }
         } catch (Exception ex) {
-            notificationsLayout.add(new Span("Error: " + ex.getMessage()));
+            notificationsLayout.add(new Span("Error"));
         }
     }
 
@@ -157,8 +161,8 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
                     if (r.getUserName().equalsIgnoreCase( /* your MemberDTO.getUsername() */ "")) {
                         HorizontalLayout row = new HorizontalLayout();
                         DTOs.ShopDTO shop = rest.getForObject(
-                            SHOPS_URL + "/" + r.getShopId() + "?authToken=" + token,
-                            DTOs.ShopDTO.class);
+                                SHOPS_URL + "/" + r.getShopId() + "?authToken=" + token,
+                                DTOs.ShopDTO.class);
 
                         String shopName = shop.getName();
                         row.add(
@@ -171,12 +175,13 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
                     rolesLayout.add(new Span("No roles for this user"));
                 }
             } else {
-                rolesLayout.add(new Span("Cannot load roles: " + resp.getStatusCode()));
+                rolesLayout.add(new Span("Cannot load roles"));
             }
         } catch (Exception ex) {
-            rolesLayout.add(new Span("Error: " + ex.getMessage()));
+            rolesLayout.add(new Span("Error"));
         }
     }
+
     private void handleSuspence() {
         Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
         if (userId == null) {
@@ -186,15 +191,14 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/"+userId+"/suspension?token=" +token;
+        String url = "http://localhost:8080/api/users" + "/" + userId + "/suspension?token=" + token;
         ResponseEntity<Boolean> response = rest.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
         } else {
-            throw new RuntimeException(
-                "Failed to check admin status: HTTP " + response.getStatusCode().value()
-            );
+            Notification.show(
+                    "Failed to check admin status");
         }
     }
 }

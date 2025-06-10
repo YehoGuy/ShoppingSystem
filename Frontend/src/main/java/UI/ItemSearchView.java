@@ -10,6 +10,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 
+import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -29,35 +30,38 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 import org.springframework.beans.factory.annotation.Value;
 import jakarta.annotation.PostConstruct;
 
-
 import DTOs.ItemDTO;
 import DTOs.ItemReviewDTO;
 import Domain.ItemCategory;
 
 @Route(value = "items", layout = AppLayoutBasic.class)
-@JsModule("./js/notification-client.js")
+
 public class ItemSearchView extends VerticalLayout implements BeforeEnterObserver {
     private List<ItemDTO> allItems = new ArrayList<>();
     private List<ItemDTO> filteredItems = new ArrayList<>();
     private VerticalLayout itemsContainer; // <--- FIELD REFERENCE
 
     private final RestTemplate restTemplate = new RestTemplate();
-    
+
     @Value("${url.api}/items")
     private String URL;
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
+        getUserId(); // Ensure userId is set in session
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("");
         }
-        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m => m.connectNotifications($0))",
-                getUserId());
+
         handleSuspence();
     }
 
-    private String getUserId() {
-        return VaadinSession.getCurrent().getAttribute("userId").toString();
+    public Integer getUserId() {
+        if (VaadinSession.getCurrent().getAttribute("userId") != null) {
+            return Integer.parseInt(VaadinSession.getCurrent().getAttribute("userId").toString());
+        }
+        UI.getCurrent().navigate(""); // Redirect to login if userId is not set
+        return null; // Return null if userId is not available
     }
 
     public ItemSearchView() {
@@ -124,7 +128,7 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
                 filteredItems.add(item1);
             }
         } else {
-            Notification.show("Failed to fetch items: " + response.getStatusCode());
+            Notification.show("Failed to fetch items");
         }
 
     }
@@ -211,15 +215,14 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/"+userId+"/suspension?token=" +token;
+        String url = "http://localhost:8080/api/users" + "/" + userId + "/suspension?token=" + token;
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
         } else {
-            throw new RuntimeException(
-                "Failed to check admin status: HTTP " + response.getStatusCode().value()
-            );
+            Notification.show(
+                    "Failed to check admin status");
         }
     }
 }

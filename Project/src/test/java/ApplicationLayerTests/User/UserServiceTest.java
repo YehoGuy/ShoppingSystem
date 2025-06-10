@@ -10,8 +10,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.ju
-kito.ArgumentMatchers.any;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -67,7 +71,11 @@ import com.example.app.DomainLayer.Roles.Role;
 import com.example.app.InfrastructureLayer.AuthTokenRepository;
 import com.example.app.InfrastructureLayer.UserRepository;
 
-import org.mockitstrictness = Strictness.LENIENT)
+import org.mockito.quality.Strictness;
+
+import com.example.app.InfrastructureLayer.WSEPPay;
+
+@MockitoSettings(strictness = Strictness.LENIENT)
 @ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
 
@@ -212,12 +220,16 @@ public class UserServiceTest {
 
     @Test
     void testPay() throws Exception {
+        // Mock the PaymentMethod for testing
+        PaymentMethod paymentMethod = Mockito.mock(PaymentMethod.class);
         userService.addMember("john", "snow", "aaa@gmail.com", "123457890", "address");
         String token = userService.loginAsMember("john", "snow", "");
-        PaymentMethod paymentMethod = Mockito.mock(PaymentMethod.class);
         userService.setPaymentMethod(token, paymentMethod, 1);
+        when(paymentMethod.processPayment(anyDouble(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(10005); // Simulate successful payment processing
         // Verify that the payment was processed correctly
-        assertTrue(userService.pay(token, 1, 100.0));
+        int id = (userService.pay(token, 1, 100.0, "cardNumber", "expiryDate", "cvv", "holderName", "holderID", "address", "zipCode"));
+        assertTrue(id >= 10000 && id <= 100000);
     }
 
     @Test
@@ -986,9 +998,9 @@ public class UserServiceTest {
 
         UserService svc = new UserService(mockRepo, mockAuth, notificationService);
         notificationService.setService(svc);
-        boolean ok = svc.refundPaymentByStoreEmployee(token, uid, shopId, 12.5);
+        boolean ok = svc.refundPaymentByStoreEmployee(token, uid, shopId, 12);
         assertTrue(ok);
-        verify(mockRepo).refund(uid, shopId, 12.5);
+        verify(mockRepo).refund(uid, 12);
     }
 
     @Test
@@ -1002,7 +1014,7 @@ public class UserServiceTest {
         UserService svc = new UserService(mockRepo, mockAuth, notificationService);
         notificationService.setService(svc);
         OurRuntime ex = assertThrows(OurRuntime.class,
-                () -> svc.refundPaymentByStoreEmployee(token, 2, 9, 5.0));
+                () -> svc.refundPaymentByStoreEmployee(token, 2, 9, 5));
         assertTrue(ex.getMessage().contains("has no role"));
     }
 
@@ -1057,9 +1069,9 @@ public class UserServiceTest {
 
         UserService svc = new UserService(mockRepo, mockAuth, notificationService);
         notificationService.setService(svc);
-        boolean ok = svc.refundPaymentAuto(token, shopId, 11.1);
+        boolean ok = svc.refundPaymentAuto(token, 1);
         assertTrue(ok);
-        verify(mockRepo).refund(userId, shopId, 11.1);
+        verify(mockRepo).refund(userId, 1);
     }
 
     // --- addBasket ---
@@ -1363,7 +1375,7 @@ public class UserServiceTest {
         int id = userRepository.isUsernameAndPasswordValid("max", "pwd");
         String token = userService.loginAsMember("max", "pwd", "");
         userService.setSuspended(id, LocalDateTime.now().plusDays(1));
-        OurRuntime ex = assertThrows(OurRuntime.class, () -> userService.pay(token, 1, 50.0));
+        OurRuntime ex = assertThrows(OurRuntime.class, () -> userService.pay(token, 1, 50.0, "cardNumber", "expiryDate", "cvv", "holderName", "holderID", "address", "zipCode"));
         assertTrue(ex.getMessage().contains("the user is suspended"));
     }
 
@@ -1717,12 +1729,12 @@ public class UserServiceTest {
 
         when(auth.ValidateToken(token)).thenReturn(8);
         doThrow(new RuntimeException("db"))
-                .when(repo).refund(8, 9, 10.0);
+                .when(repo).refund(8, 9);
 
         UserService svc = new UserService(repo, auth, notificationService);
         notificationService.setService(svc);
         OurRuntime ex = assertThrows(OurRuntime.class,
-                () -> svc.refundPaymentAuto(token, 9, 10.0));
+                () -> svc.refundPaymentAuto(token, 9));
         assertTrue(ex.getMessage().contains("refundPayment"));
     }
 
@@ -1898,7 +1910,7 @@ public class UserServiceTest {
         UserService svc = new UserService(repo, auth, notificationService);
         notificationService.setService(svc);
         OurRuntime ex = assertThrows(OurRuntime.class,
-                () -> svc.pay(token, 100, 50.0));
+                () -> svc.pay(token, 100, 50.0, "cardNumber", "expiryDate", "cvv", "holderName", "holderID", "address", "zipCode"));
         assertTrue(ex.getMessage().contains("the user is suspended"));
     }
 
@@ -1910,12 +1922,12 @@ public class UserServiceTest {
 
         when(auth.ValidateToken(token)).thenReturn(2);
         when(repo.isSuspended(2)).thenReturn(false);
-        doThrow(new RuntimeException("DB fail")).when(repo).pay(2, 200, 75.0);
+        doThrow(new RuntimeException("DB fail")).when(repo).pay(2, 75.0, "cardNumber", "expiryDate", "cvv", "holderName", "holderID", "address", "zipCode");
 
         UserService svc = new UserService(repo, auth, notificationService);
         notificationService.setService(svc);
         OurRuntime ex = assertThrows(OurRuntime.class,
-                () -> svc.pay(token, 200, 75.0));
+                () -> svc.pay(token, 200, 75.0, "cardNumber", "expiryDate", "cvv", "holderName", "holderID", "address", "zipCode"));
         assertTrue(ex.getMessage().contains("pay: DB fail"));
     }
 
@@ -2549,14 +2561,15 @@ public class UserServiceTest {
         UserRepository repo = mock(UserRepository.class);
         AuthTokenService auth = mock(AuthTokenService.class);
         when(auth.ValidateToken(token)).thenReturn(12);
-        when(repo.getRole(12, 5)).thenReturn(new Role(12, 5, null));
+        when(repo.isSuspended(12)).thenReturn(false);
+        when(repo.getRole(12, 15)).thenReturn(new Role(12, 15, null));
         doThrow(new RuntimeException("refundfail"))
-                .when(repo).refund(99, 5, 15.0);
+                .when(repo).refund(99, 15);
 
         UserService svc = new UserService(repo, auth, notificationService);
         notificationService.setService(svc);
         OurRuntime ex = assertThrows(OurRuntime.class,
-                () -> svc.refundPaymentByStoreEmployee(token, 99, 5, 15.0));
+                () -> svc.refundPaymentByStoreEmployee(token, 99, 15, 15));
         assertTrue(ex.getMessage().contains("refundPayment: refundfail"));
     }
 
@@ -3015,7 +3028,7 @@ public class UserServiceTest {
         notificationService.setService(svc);
 
         OurArg ex = assertThrows(OurArg.class,
-                () -> svc.pay("bad", 1, 10.0));
+                () -> svc.pay("bad", 1, 10.0, "", "", "", "", "", "", ""));
         assertTrue(ex.getMessage().contains("pay"));
     }
 
@@ -3029,7 +3042,7 @@ public class UserServiceTest {
         notificationService.setService(svc);
 
         OurArg ex = assertThrows(OurArg.class,
-                () -> svc.refundPaymentAuto("bad", 1, 5.0));
+                () -> svc.refundPaymentAuto("bad", 1));
         assertTrue(ex.getMessage().contains("refundPayment"));
     }
 
@@ -3043,7 +3056,7 @@ public class UserServiceTest {
         notificationService.setService(svc);
 
         OurArg ex = assertThrows(OurArg.class,
-                () -> svc.refundPaymentByStoreEmployee("bad", 2, 3, 4.0));
+                () -> svc.refundPaymentByStoreEmployee("bad", 2, 3, 4));
         assertTrue(ex.getMessage().contains("refundPayment"));
     }
 
@@ -3828,12 +3841,15 @@ public class UserServiceTest {
     void testSetPaymentAndPay() throws Exception {
         userService.addMember("alice", "pwd", "a@a.com", "0123456789", "addr");
         String token = userService.loginAsMember("alice", "pwd", "");
-        PaymentMethod pm = Mockito.mock(PaymentMethod.class);
+        PaymentMethod pm = mock(PaymentMethod.class);
+        when(pm.processPayment(anyDouble(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(10005);
 
         userService.setPaymentMethod(token, pm, 1);
         assertEquals(pm, userService.getUserPaymentMethod(userRepository.isUsernameAndPasswordValid("alice", "pwd")));
 
-        assertTrue(userService.pay(token, 1, 100.0));
+        int id = userService.pay(token, 1, 100.0, "John Doe", "1234567890123456", "12/25", "123", "123 Main St", "City", "12345");
+        assertTrue(id >= 10000 && id <= 100000, "failed id:" + id); // Assuming payment IDs are in this range
     }
 
     @Test

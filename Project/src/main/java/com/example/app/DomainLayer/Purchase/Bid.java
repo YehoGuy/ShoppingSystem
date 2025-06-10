@@ -35,8 +35,6 @@ public class Bid extends Purchase{
     public synchronized void addBidding(int userId, int bidAmount) {
         if(bidAmount > highestBid.get()) {
             if(!isCompleted){
-                isCompleted = true;
-                timeOfCompletion = LocalDateTime.now();
                 highestBid.set(bidAmount);
                 highestBidderId.set(userId);
                 biddersIds.put(userId, Boolean.TRUE);   // ← ALWAYS non-null, thread-safe marker

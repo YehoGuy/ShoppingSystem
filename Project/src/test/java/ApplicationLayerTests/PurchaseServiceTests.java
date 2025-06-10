@@ -38,14 +38,12 @@ import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
-import com.example.app.ApplicationLayer.OurArg;
-import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Item.ItemService;
 import com.example.app.ApplicationLayer.Message.MessageService;
+import com.example.app.ApplicationLayer.OurArg;
+import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Purchase.PurchaseService;
 import com.example.app.ApplicationLayer.Shop.ShopService;
 import com.example.app.ApplicationLayer.User.UserService;
@@ -56,17 +54,15 @@ import com.example.app.DomainLayer.Purchase.IPurchaseRepository;
 import com.example.app.DomainLayer.Purchase.Purchase;
 import com.example.app.DomainLayer.Purchase.Reciept;
 import com.example.app.InfrastructureLayer.PurchaseRepository;
-import com.example.app.SimpleHttpServerApplication;
 
 /**
  * High-level “acceptance” tests for {@link PurchaseService}.
  * Each test uses full mocking to validate observable behaviour across the
  * service’s public API, including happy-paths and rollback paths.
  */
-@ExtendWith({ SpringExtension.class, MockitoExtension.class })
-@SpringBootTest(classes = SimpleHttpServerApplication.class)
+@ExtendWith(MockitoExtension.class)
 @AutoConfigureMockMvc(addFilters = false)
-class PurchaseServiceAcceptanceTests {
+class PurchaseServiceTests {
 
     /* ─────────── mocks & SUT ─────────── */
     @Mock
@@ -84,6 +80,9 @@ class PurchaseServiceAcceptanceTests {
     PurchaseService service;
 
     Address addr = new Address().withCountry("IL").withCity("TLV")
+            .withStreet("Rothschild").withZipCode("6800000");
+    Address defaultAddr = new Address()
+            .withCountry("IL").withCity("TLV")
             .withStreet("Rothschild").withZipCode("6800000");
 
     @BeforeEach
@@ -115,12 +114,12 @@ class PurchaseServiceAcceptanceTests {
         when(repo.addPurchase(eq(uid), eq(shopA), eq(cartShopA), eq(100.0), any())).thenReturn(1);
         when(repo.addPurchase(eq(uid), eq(shopB), eq(cartShopB), eq(50.0), any())).thenReturn(2);
 
-        List<Integer> ids = service.checkoutCart(token, addr);
+        List<Integer> ids = service.checkoutCart(token, addr, "1234567890123456", "12/25", "123", "John Doe", "123456789", "john@example.com", "1234567890");
 
         assertEquals(Set.of(1, 2), new HashSet<>(ids));
         verify(users).clearUserShoppingCart(uid);
-        verify(users).pay(token, shopA, 100.0);
-        verify(users).pay(token, shopB, 50.0);
+        verify(users).pay(token, shopA, 100.0, "1234567890123456", "12/25", "123", "John Doe", "123456789", "john@example.com", "1234567890");
+        verify(users).pay(token, shopB, 50.0, "1234567890123456", "12/25", "123", "John Doe", "123456789", "john@example.com", "1234567890");
         verify(shops).shipPurchase(token, 1, shopA, "IL", "TLV", "Rothschild", "6800000");
         verify(shops).shipPurchase(token, 2, shopB, "IL", "TLV", "Rothschild", "6800000");
     }
@@ -138,10 +137,10 @@ class PurchaseServiceAcceptanceTests {
         when(users.getUserShoppingCartItems(uid)).thenReturn(new HashMap<>(cart));
         when(shops.purchaseItems(cartShop, shop, token)).thenReturn(30.0);
         when(repo.addPurchase(anyInt(), anyInt(), any(), anyDouble(), any())).thenReturn(9);
-        doThrow(new RuntimeException("payFail")).when(users).pay(token, shop, 30.0);
+        doThrow(new RuntimeException("payFail")).when(users).pay(eq(token), eq(shop), eq(30.0), any(), any(), any(), any(), any(), any(), any());
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> service.checkoutCart(token, addr));
+                () -> service.checkoutCart(token, addr, "1234567890123456", "12/25", "123", "John Doe", "123456789", "john@example.com", "1234567890"));
 
         verify(shops).rollBackPurchase(cartShop, shop);
         verify(users).restoreUserShoppingCart(eq(uid), any());
@@ -208,6 +207,84 @@ class PurchaseServiceAcceptanceTests {
         verify(bid, never()).addBidding(anyInt(), anyInt());
     }
 
+    /*
+     * ══════════════════════════════════════════════════════════════
+     * finalizeBid tests
+     * ══════════════════════════════════════════════════════════════
+     */
+
+    /**
+     * happy path: owner finalises bid, payment & shipping succeed, bidders notified
+     */
+    @Test
+    @DisplayName("finalizeBid_whenOwnerInvokesAndPaymentSucceeds_shouldInvokePay_thenShip_thenNotifyBidders_andReturnHighestBidderId")
+    void finalizeBid_happyPath() throws Exception {
+        String token = "tok";
+        int owner = 1, shop = 8, pid = 22;
+
+        // Spy on an *un-completed* bid
+        Bid bid = spy(new Bid(pid, owner, shop, Map.of(1, 1), 100));
+
+        /* fabricate receipt object the service expects after completion */
+        BidReciept rec = mock(BidReciept.class);
+        when(bid.completePurchase()).thenReturn(rec); // stub out real behaviour
+        when(bid.getMaxBidding()).thenReturn(150);
+        when(bid.getBiddersIds()).thenReturn(List.of(5));
+
+        /* infrastructure stubs */
+        when(repo.getPurchaseById(pid)).thenReturn(bid);
+        when(auth.ValidateToken(token)).thenReturn(owner);
+
+        when(bid.getHighestBidderId()).thenReturn(5); // stub for getHighestBidderId
+        when(bid.getItems()).thenReturn(Map.of(1, 1)); // stub for getItems
+        when(bid.getMaxBidding()).thenReturn(150); // stub for getMaxBidding
+        when(bid.getBiddersIds()).thenReturn(List.of(5)); // stub for getBiddersIds
+
+        /* invoke */
+        int winner = service.finalizeBid(token, pid);
+
+        /* verify */
+        assertEquals(5, winner);
+        verify(msg).sendMessageToUser(eq(token), eq(5), contains("Congratulations"), eq(0));
+    }
+
+    @Test
+    @DisplayName("finalizeBid_checkAddedToCart_whenBidIsCompleted_shouldAddToCart")
+    void finalizeBid_checkAddedToCart() throws Exception {
+        String token = "tok";
+        int owner = 1, shop = 8, pid = 22;
+
+        // Spy on an *un-completed* bid
+        Bid bid = spy(new Bid(pid, owner, shop, Map.of(1, 1), 100));
+
+        /* fabricate receipt object the service expects after completion */
+        BidReciept rec = mock(BidReciept.class);
+        when(bid.completePurchase()).thenReturn(rec); // stub out real behaviour
+        when(bid.getMaxBidding()).thenReturn(150);
+        when(bid.getBiddersIds()).thenReturn(List.of(5));
+
+        /* infrastructure stubs */
+        when(repo.getPurchaseById(pid)).thenReturn(bid);
+        when(auth.ValidateToken(token)).thenReturn(owner);
+
+        when(users.addBidToUserShoppingCart(eq(5), eq(shop), any()))
+                .thenReturn(true); // simulate successful addition to cart
+
+        when(bid.getHighestBidderId()).thenReturn(5); // stub for getHighestBidderId
+        when(bid.getItems()).thenReturn(Map.of(1, 1)); // stub for getItems
+        when(bid.getMaxBidding()).thenReturn(150); // stub for getMaxBidding
+        when(bid.getBiddersIds()).thenReturn(List.of(5)); // stub for getBiddersIds
+
+        /* invoke */
+        int winner = service.finalizeBid(token, pid);
+
+        /* verify */
+        assertEquals(5, winner);
+        verify(users).addBidToUserShoppingCart(eq(5), eq(shop), eq(Map.of(1, 1)));
+        verify(users).addBidToUserShoppingCart(eq(5), eq(shop), any());
+        verify(msg).sendMessageToUser(eq(token), eq(5), contains("Congratulations"), eq(0));
+    }
+
     
 
     /*
@@ -247,7 +324,7 @@ class PurchaseServiceAcceptanceTests {
     class Concurrency {
 
         @Autowired
-        PurchaseRepository purchaseRepo;
+        PurchaseRepository purchaseRepo = PurchaseRepository.getInstance();
 
         private static final int THREADS = 16;
         private ExecutorService pool;
@@ -438,7 +515,7 @@ class PurchaseServiceAcceptanceTests {
         String token = "bad";
         when(auth.ValidateToken(token)).thenThrow(new OurArg("invalid token"));
 
-        OurArg ex = assertThrows(OurArg.class, () -> service.checkoutCart(token, addr));
+        OurArg ex = assertThrows(OurArg.class, () -> service.checkoutCart(token, addr, "1234567890123456", "12/25", "123", "John Doe", "123456789", "john@example.com", "1234567890"));
         assertTrue(ex.getMessage().contains("checkoutCart:"));
     }
 
@@ -455,9 +532,9 @@ class PurchaseServiceAcceptanceTests {
         when(shops.purchaseItems(cartShop, shop, token))
                 .thenThrow(new OurRuntime("purchase error"));
 
-        OurRuntime ex = assertThrows(OurRuntime.class, () -> service.checkoutCart(token, addr));
+        OurRuntime ex = assertThrows(OurRuntime.class, () -> service.checkoutCart(token, addr, "1234567890123456", "12/25", "123", "John Doe", "123456789", "john@example.com", "1234567890"));
         assertTrue(ex.getMessage().contains("checkoutCart:"));
-        verify(users, never()).pay(any(), anyInt(), anyDouble());
+        verify(users, never()).pay(any(), anyInt(), anyDouble(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -467,18 +544,17 @@ class PurchaseServiceAcceptanceTests {
         int uid = 4, shop = 6;
         Map<Integer, Integer> cartShop = Map.of(2, 2);
         Map<Integer, HashMap<Integer, Integer>> cart = Map.of(shop, new HashMap<>(cartShop));
-
         when(auth.ValidateToken(token)).thenReturn(uid);
         when(users.getUserShoppingCartItems(uid)).thenReturn(new HashMap<>(cart));
         when(shops.purchaseItems(cartShop, shop, token)).thenReturn(44.0);
         when(repo.addPurchase(uid, shop, cartShop, 44.0, addr))
                 .thenThrow(new RuntimeException("db fail"));
 
-        OurRuntime ex = assertThrows(OurRuntime.class, () -> service.checkoutCart(token, addr));
+        OurRuntime ex = assertThrows(OurRuntime.class, () -> service.checkoutCart(token, addr, "1234567890123456", "12/25", "123", "John Doe", "123456789", "john@example.com", "1234567890"));
         assertTrue(ex.getMessage().contains("checkoutCart:"));
         verify(shops).rollBackPurchase(cartShop, shop);
         verify(users).restoreUserShoppingCart(eq(uid), any());
-        verify(users).refundPaymentAuto(token, shop, 44.0);
+        verify(users, never()).refundPaymentAuto(token, shop);
     }
 
     // ─────────── createBid exception branches ───────────
@@ -593,7 +669,7 @@ class PurchaseServiceAcceptanceTests {
     // ------------ getAllBids() ----------------
     @Test
     @DisplayName("getAllBids_whenRepositoryReturnsBids_shouldReturnThem")
-    void getAllBids_happyPath() throws Exception{
+    void getAllBids_happyPath() throws Exception {
         String token = "tok";
         int uid = 9;
         List<BidReciept> bids = List.of(mock(BidReciept.class));
@@ -604,4 +680,37 @@ class PurchaseServiceAcceptanceTests {
         verify(repo).getAllBids();
     }
 
+    // ───────────────────── getBid invariants ─────────────────────
+
+    @Test
+    @DisplayName("getBid_whenBidExists_shouldReturnItsReceipt_andCallGenerateReceipt")
+    void getBid_happyPath() throws Exception {
+        String token = "tok";
+        int uid = 7, pid = 18, shopId = 4;
+
+        Bid bid = spy(new Bid(pid, uid, shopId, Map.of(1, 1), 50));
+        BidReciept rcpt = mock(BidReciept.class);
+
+        when(bid.generateReciept()).thenReturn(rcpt);
+        when(repo.getPurchaseById(pid)).thenReturn(bid);
+        when(auth.ValidateToken(token)).thenReturn(uid);
+
+        BidReciept out = service.getBid(token, pid);
+
+        assertSame(rcpt, out);
+        verify(bid).generateReciept();
+    }
+
+    // ───────────────────── postBidding invariants ─────────────────────
+
+    @Test
+    @DisplayName("postBidding_whenValidateTokenThrowsOurArg_shouldPropagateOurArg")
+    void postBidding_validateTokenThrows() throws Exception {
+        String token = "tok";
+        int pid = 40;
+
+        when(auth.ValidateToken(token)).thenThrow(new OurArg("bad token"));
+
+        assertThrows(OurArg.class, () -> service.postBidding(token, pid, 99));
+    }
 }
