@@ -448,22 +448,4 @@ public class PurchaseService {
         }
     }
  
-    /**
-     * Retrieves all auctions won by the user - use in userService.
-     * 
-     * @param authToken The authentication token of the user.
-     * @return A list of Bid objects representing the auctions won by the user.
-     */
-    public List<BidReciept> getAuctionsWinList(String authToken) {
-        int userId = -1;
-        try {
-            userId = authTokenService.ValidateToken(authToken);
-        } catch (Exception e) {
-            LoggerService.logError("getAuctionsWinList", e, authToken);
-            throw new OurRuntime("getAuctionsWinList: " + e.getMessage(), e);
-        }
-        LoggerService.logMethodExecution("getWonAuctions", authToken, userId);
-        return userService.getAuctionsWinList(userId);
-    }
-
 }

@@ -34,6 +34,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
+import com.vaadin.flow.router.QueryParameters;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 
@@ -72,6 +73,8 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         }
 
         handleSuspence();
+        
+        addWonAuctionsSection();
     }
 
     public Integer getUserId() {
@@ -89,6 +92,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         setAlignItems(Alignment.CENTER);
 
         getData();
+        
 
         if (cart.getShopItems() == null || cart.getShopItems().isEmpty()) {
             H2 empty = new H2("Your shopping cart is empty 😕");
@@ -456,4 +460,47 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                     "Failed to check admin status");
         }
     }
+
+    private void addWonAuctionsSection() {
+    H2 header = new H2("Auctions You Won");
+    add(header);
+
+    String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+    // fetch domain receipts
+    ResponseEntity<List<BidRecieptDTO>> resp = restTemplate.exchange(
+        URLUser + "/auctions/won?authToken={token}",
+        HttpMethod.GET,
+        new HttpEntity<>(new HttpHeaders()),
+        new ParameterizedTypeReference<>() {},
+        token
+    );
+    List<BidRecieptDTO> won = resp.getBody();
+
+    if (won == null || won.isEmpty()) {
+        H3 empty = new H3("You haven't won any auctions yet.");
+        empty.getStyle().set("color", "var(--lumo-secondary-text-color)");
+        add(empty);
+        return;
+    }
+
+    Grid<BidRecieptDTO> grid = new Grid<>(BidRecieptDTO.class, false);
+    grid.addColumn(BidRecieptDTO::getPurchaseId).setHeader("Auction ID").setAutoWidth(true);
+    grid.addColumn(BidRecieptDTO::getHighestBid).setHeader("Your Winning Bid").setAutoWidth(true);
+    grid.addColumn(dto -> {
+        Button payNow = new Button("Pay Now");
+        payNow.addClickListener(e -> {
+            // navigate to the PaymentPageView, passing auctionId & price as query params
+            UI.getCurrent().navigate("payment",
+              QueryParameters.simple(Map.of(
+                "auctionId", String.valueOf(dto.getPurchaseId()),
+                "price",     String.valueOf(dto.getHighestBid())
+              ))
+            );
+        });
+        return payNow;
+    }).setHeader("Action").setAutoWidth(true);
+
+    grid.setItems(won);
+    add(grid);
+}
 }

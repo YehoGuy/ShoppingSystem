@@ -508,22 +508,6 @@ public class PurchaseController {
         }
     }
 
-    @GetMapping("/auctions/won")
-    public ResponseEntity<List<BidRecieptDTO>> getUserWonAuctions(
-            @RequestParam String authToken) {
-        try {
-            List<BidReciept> won = purchaseService.getAuctionsWinList(authToken);
-            // map domain‐model receipts → DTOs
-            List<BidRecieptDTO> dtos = won.stream()
-                .map(BidRecieptDTO::fromDomain)  
-                .toList();
-            return ResponseEntity.ok(dtos);
-        } catch (IllegalArgumentException ex) {
-            // token invalid
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
+    
 
 }
