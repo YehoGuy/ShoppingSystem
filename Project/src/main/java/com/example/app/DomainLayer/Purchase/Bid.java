@@ -126,5 +126,4 @@ public class Bid extends Purchase{
     public LocalDateTime getAuctionEndTime() {
         return auctionEndTime;
     }
-
 }

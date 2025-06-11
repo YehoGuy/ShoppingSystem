@@ -1802,8 +1802,9 @@ public class UserService {
         if (isFromShop) {
             try {
                 LoggerService.logMethodExecution("messageUserNotification", memberId);
-                this.notificationService.sendToUser(memberId, "Message Received",
-                        "You have received a new message from the shop (id=" + shopId + ").");
+                //TODO: send notification to user with shopId 
+                // this.notificationService.sendToUser(memberId, "Message Received",
+                //         "You have received a new message from the shop (id=" + shopId + ").");
                 LoggerService.logMethodExecutionEndVoid("messageUserNotification");
             } catch (OurRuntime e) {
                 LoggerService.logDebug("messageUserNotification", e);
@@ -1819,7 +1820,7 @@ public class UserService {
             try {
                 LoggerService.logMethodExecution("messageUserNotification", memberId);
                 this.notificationService.sendToUser(memberId, "Message Received",
-                        "You have received a new message from the user (id=" + memberId + ").");
+                        "You have received a new message from the user (name=" + userRepository.getMemberById(memberId).getUsername() + ").");
                 LoggerService.logMethodExecutionEndVoid("messageUserNotification");
             } catch (OurRuntime e) {
                 LoggerService.logDebug("messageUserNotification", e);

@@ -47,9 +47,8 @@ public class AuctionDetailView extends VerticalLayout implements BeforeEnterObse
 
     // Read‐only fields for auction details
     private final TextField purchaseIdField = new TextField("Auction ID");
-    private final TextField storeIdField = new TextField("Store ID");
-    private final TextField userIdField = new TextField("Owner ID");
-    private final TextField highestBidderField = new TextField("highest Bidder ID");
+    private final TextField storeIdField = new TextField("Store Name");
+    private final TextField userIdField = new TextField("Owner Name");
     private final TextField highestBidField = new TextField("Highest Bid");
     private final TextField completedField = new TextField("Completed");
 
@@ -152,16 +151,15 @@ public class AuctionDetailView extends VerticalLayout implements BeforeEnterObse
 
         // 2) Populate read‐only fields
         purchaseIdField.setReadOnly(true);
+        //TODO: change purchaseId to a more meaningful name
         purchaseIdField.setValue(String.valueOf(bid.getPurchaseId()));
 
         storeIdField.setReadOnly(true);
+        //TODO: get store name from storeId
         storeIdField.setValue(String.valueOf(bid.getStoreId()));
 
         userIdField.setReadOnly(true);
         userIdField.setValue(String.valueOf(bid.getThisBidderId()));
-
-        highestBidderField.setReadOnly(true);
-        highestBidderField.setValue(String.valueOf(bid.getHighestBidderId()));
 
         highestBidField.setReadOnly(true);
         highestBidField.setValue(String.valueOf(bid.getHighestBid()));
@@ -175,7 +173,6 @@ public class AuctionDetailView extends VerticalLayout implements BeforeEnterObse
                 purchaseIdField,
                 storeIdField,
                 userIdField,
-                highestBidderField,
                 highestBidField,
                 completedField);
         add(form);
@@ -184,7 +181,6 @@ public class AuctionDetailView extends VerticalLayout implements BeforeEnterObse
         if (bid.isCompleted()) {
             newBidAmount.setReadOnly(true);
             placeBidButton.setEnabled(false);
-            // finalizeBidButton.setEnabled(false);
             add(new H2("This auction is closed."));
             return;
         }

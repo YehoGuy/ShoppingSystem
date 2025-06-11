@@ -53,9 +53,11 @@ public class AuctionListView extends VerticalLayout {
 
         // Configure the columns you want to show
         auctionGrid.addColumn((BidRecieptDTO dto) -> dto.getPurchaseId())
+        //TODO: replace with auction ID if available
                 .setHeader("Auction ID")
                 .setAutoWidth(true);
         auctionGrid.addColumn((BidRecieptDTO dto) -> dto.getStoreId())
+        //TODO: replace with store name if available
                 .setHeader("Store ID")
                 .setAutoWidth(true);
         auctionGrid.addColumn(dto -> dto.getPrice())
@@ -86,7 +88,7 @@ public class AuctionListView extends VerticalLayout {
         });
         return addOffer;
         }))
-        .setHeader("Actions")
+        .setHeader("Auctions")
         .setAutoWidth(true);
         
         // ─── Time left column ───────────────────────────────────────────────
