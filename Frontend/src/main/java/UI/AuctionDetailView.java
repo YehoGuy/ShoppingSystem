@@ -144,7 +144,6 @@ public class AuctionDetailView extends VerticalLayout implements BeforeEnterObse
             add(new H2("Auction not found or could not be loaded."));
             return;
         }
-
         // 1) Header
         H2 header = new H2("Auction Details");
         add(header);
