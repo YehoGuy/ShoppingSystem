@@ -1318,7 +1318,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         if (token == null) {
             return;
         }
-        String url = USERS_URL + "/" + userId + "/suspension?token=" + token;
+        String url = USERS_URL + "/" + userId + "/isSuspended?token=" + token;
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {

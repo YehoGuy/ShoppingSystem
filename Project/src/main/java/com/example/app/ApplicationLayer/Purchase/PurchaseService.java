@@ -383,7 +383,7 @@ public class PurchaseService {
             shopService.purchaseItems(items, storeId, authToken);
             int auctionId = purchaseRepository.addBid(userId, storeId, items, initialPrice, LocalDateTime.now(), auctionEndTime);
             taskscheduler.schedule(
-                () -> finalizeAuction(auctionId, authToken),
+                () -> finalizeAuction(auctionId),
                 Date.from(auctionEndTime.atZone(ZoneId.systemDefault()).toInstant())
             );
             LoggerService.logMethodExecutionEnd("startAuction", auctionId);
@@ -430,28 +430,18 @@ public class PurchaseService {
         }
     }
 
-    private void finalizeAuction(int auctionId, String authToken) {
-        int initiatingUserId = -1;
+    private void finalizeAuction(int auctionId) {
         int winnerId = -1;
         int finalPrice = -1;
         int shopId = -1;
         try {
-            LoggerService.logMethodExecution("finalizeAuction", authToken, auctionId);
+            LoggerService.logMethodExecution("finalizeAuction", auctionId);
             Purchase purchase = purchaseRepository.getPurchaseById(auctionId);
             if (!(purchase instanceof Bid)) {
                 throw new OurRuntime("Purchase " + auctionId + " is not a bid");
             }
             Bid bid = (Bid) purchase;
             bid.completePurchase();
-            try {
-                initiatingUserId = authTokenService.ValidateToken(authToken);
-            } catch (Exception e) {
-                LoggerService.logError("finalizeAuction", e, authToken, auctionId);
-                throw new OurRuntime("finalizeAuction: " + e.getMessage(), e);
-            }
-            if (initiatingUserId != bid.getUserId()) {
-                throw new OurRuntime("User " + initiatingUserId + " is not the owner of the bid");
-            }
             winnerId = bid.getHighestBidderId();
             finalPrice = bid.getMaxBidding();
             shopId = bid.getStoreId();
@@ -473,14 +463,6 @@ public class PurchaseService {
             }
 
             userService.addAuctionWinBidToUserShoppingCart(winnerId, bid);
-
-            // save message to user that are not logged in
-            for (int pid : bid.getBiddersIds()) {
-                String msg = (pid != winnerId)
-                    ? "Auction " + auctionId + " has ended. You didn't win.\n"
-                    : "Congratulations! You have won the auction!\n" ;
-                messageService.sendMessageToUser(authToken, pid, msg, -1);
-            }
         } catch (OurArg e) {
             LoggerService.logDebug("finalizeAuction", e);
             throw new OurArg("finalizeAuction: " + e.getMessage(), e);

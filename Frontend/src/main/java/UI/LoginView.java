@@ -173,7 +173,7 @@ public class LoginView extends VerticalLayout {
         if (token == null) {
             return;
         }
-        String url = BASE_URL + "/" + userId + "/suspension?token=" + token;
+        String url = BASE_URL + "/" + userId + "/isSuspended?token=" + token;
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {

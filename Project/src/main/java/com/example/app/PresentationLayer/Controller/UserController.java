@@ -655,7 +655,7 @@ public class UserController {
     }
 
     /* Check whether the user is currently suspended. */
-    @GetMapping("/{userId}/suspension")
+    @GetMapping("/{userId}/isSuspended")
     public ResponseEntity<?> isSuspended(
             @PathVariable @Min(1) int userId,
             @RequestParam String token) {

@@ -52,16 +52,9 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${url.api}/shops")
     private String URLShop;
-
-    @Value("${url.api}/users")
     private String URLUser;
-
-    @Value("${url.api}/purchases")
     private String URLPurchases;
-
-    @Value("${url.api}/items")
     private String URLItem;
 
     @Override
@@ -84,7 +77,11 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         return null; // Return null if userId is not available
     }
 
-    public ShoppingCartView() {
+    public ShoppingCartView(@Value("${url.api}") String baseUrl) {
+        this.URLShop = baseUrl + "/shops";
+        this.URLUser = baseUrl + "/users";
+        this.URLPurchases = baseUrl + "/purchases";
+        this.URLItem = baseUrl + "/items";
         setSizeFull();
         setSpacing(true);
         setPadding(true);
@@ -206,13 +203,13 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 }
 
                 removeCompletlyButton.addClickListener(event -> {
-                    handleCartAction(shopID, renderer.name(), "remove");
+                    handleCartAuction(shopID, renderer.name(), "remove");
                 });
                 addButton.addClickListener(event -> {
-                    handleCartAction(shopID, renderer.name(), "plus");
+                    handleCartAuction(shopID, renderer.name(), "plus");
                 });
                 removeButton.addClickListener(event -> {
-                    handleCartAction(shopID, renderer.name(), "minus");
+                    handleCartAuction(shopID, renderer.name(), "minus");
                 });
                 HorizontalLayout buttonLayout = new HorizontalLayout(addButton, removeButton, removeCompletlyButton);
                 buttonLayout.setAlignItems(Alignment.CENTER);
@@ -242,7 +239,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         wonHeaders.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Void> wonEntity = new HttpEntity<>(wonHeaders);
         ResponseEntity<List<BidRecieptDTO>> wonResp = restTemplate.exchange(
-            URLPurchases + "/auctions/won?authToken={token}",
+            URLUser + "/auctions/won?authToken=" + token,
             HttpMethod.GET,
             wonEntity,
             new ParameterizedTypeReference<List<BidRecieptDTO>>() {},
@@ -323,9 +320,8 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Void> entity = new HttpEntity<>(headers);
-
             ResponseEntity<List<ItemDTO>> response = restTemplate.exchange(
-                    URLItem + "/all?authToken={authToken}",
+                    URLItem + "/all?token=" + token,
                     HttpMethod.GET,
                     entity,
                     new ParameterizedTypeReference<>() {
@@ -354,7 +350,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         for (Integer id : shopIds) {
             try {
                 ResponseEntity<ShopDTO> resp = restTemplate.exchange(
-                        URLShop + "/" + id + "?authToken={authToken}",
+                        URLShop + "/" + id + "?token=" + token,
                         HttpMethod.GET,
                         entity,
                         ShopDTO.class,
@@ -382,7 +378,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             HttpEntity<Void> entity = new HttpEntity<>(headers);
 
             ResponseEntity<HashMap<Integer, HashMap<Integer, Integer>>> resp = restTemplate.exchange(
-                    URLUser + "/shoppingCart?authToken={authToken}",
+                    URLUser + "/shoppingCart?token=" + token,
                     HttpMethod.GET,
                     entity,
                     new ParameterizedTypeReference<>() {
@@ -414,7 +410,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 .orElse("Unknown Shop");
     }
 
-    private void handleCartAction(int shopID, String itemName, String action) {
+    private void handleCartAuction(int shopID, String itemName, String action) {
         try {
             String token = VaadinSession.getCurrent().getAttribute("authToken").toString();
             HttpHeaders headers = new HttpHeaders();
@@ -431,7 +427,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 return;
 
             restTemplate.postForEntity(
-                    URLUser + "/shoppingCart/" + shopID + "/" + itemID + "/" + action + "?authToken={authToken}",
+                    URLUser + "/shoppingCart/" + shopID + "/" + itemID + "/" + action + "?token=" + token,
                     entity,
                     String.class,
                     token);
@@ -451,7 +447,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/" + userId + "/suspension?token=" + token;
+        String url = URLUser + "/" + userId + "/isSuspended?token=" + token;
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
@@ -467,7 +463,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
         List<BidRecieptDTO> won = restTemplate.exchange(
-            URLUser + "/auctions/won?authToken={token}",
+            URLUser + "/auctions/won?authToken=" + token,
             HttpMethod.GET,
             new HttpEntity<>(new HttpHeaders()),
             new ParameterizedTypeReference<List<BidRecieptDTO>>() {},
