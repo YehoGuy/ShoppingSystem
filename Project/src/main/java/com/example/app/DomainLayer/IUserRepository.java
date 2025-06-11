@@ -156,4 +156,6 @@ public interface IUserRepository {
 
     List<BidReciept> getAuctionsWinList(int userId);
 
+    void addAuctionWinBidToShoppingCart(int winnerId, Bid bid);
+
 }

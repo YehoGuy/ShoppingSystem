@@ -241,8 +241,8 @@ public class CreateAuctionView extends VerticalLayout implements BeforeEnterObse
 
         // 3a) get and validate end-time
         LocalDateTime endTime = endTimePicker.getValue();
-        if (endTime == null || endTime.isBefore(LocalDateTime.now().plusMinutes(1))) {
-            Notification.show("Please choose an auction end time at least 1 minute from now.",
+        if (endTime == null || endTime.isBefore(LocalDateTime.now().plusSeconds(30))) {
+            Notification.show("Please choose an auction end time at least 30 seconds from now.",
                             3000, Notification.Position.MIDDLE);
             return;
         }

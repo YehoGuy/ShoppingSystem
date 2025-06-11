@@ -2098,4 +2098,21 @@ public class UserService {
             throw new OurRuntime("getAuctionsWinList: " + e.getMessage(), e);
         }
     }
+
+    public void addAuctionWinBidToUserShoppingCart(int winnerId, Bid bid) {
+        try {
+            LoggerService.logMethodExecution("addAuctionWinBidToUserShoppingCart", winnerId, bid);
+            userRepository.addAuctionWinBidToShoppingCart(winnerId, bid); // Add the auction win bid to the user's shopping cart
+            LoggerService.logMethodExecutionEndVoid("addAuctionWinBidToUserShoppingCart");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("addAuctionWinBidToUserShoppingCart", e);
+            throw new OurRuntime("addAuctionWinBidToUserShoppingCart: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("addAuctionWinBidToUserShoppingCart", e);
+            throw new OurArg("addAuctionWinBidToUserShoppingCart: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("addAuctionWinBidToUserShoppingCart", e, winnerId, bid);
+            throw new OurRuntime("addAuctionWinBidToUserShoppingCart: " + e.getMessage(), e);
+        }
+    }
 }

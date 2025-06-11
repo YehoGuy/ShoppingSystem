@@ -754,4 +754,14 @@ public class UserRepository implements IUserRepository {
         return user.getAuctionsWins(); // Assuming Member has a method to get won bids
     }
 
+    @Override
+    public void addAuctionWinBidToShoppingCart(int winnerId, Bid bid){
+        Member user = (Member) userMapping.get(winnerId);
+        BidReciept bidReciept = bid.generateReciept();
+        if (user == null) {
+            throw new OurRuntime("User " + user.getUsername() + " doesn't exist.");
+        }
+        user.addAuctionWin(bidReciept); // Assuming Member has a method to add an auction win to the shopping cart
+    }
+
 }

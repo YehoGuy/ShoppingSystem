@@ -383,7 +383,7 @@ public class PurchaseService {
             shopService.purchaseItems(items, storeId, authToken);
             int auctionId = purchaseRepository.addBid(userId, storeId, items, initialPrice, LocalDateTime.now(), auctionEndTime);
             taskscheduler.schedule(
-                () -> finalizeBid(authToken, auctionId),
+                () -> finalizeAuction(auctionId, authToken),
                 Date.from(auctionEndTime.atZone(ZoneId.systemDefault()).toInstant())
             );
             LoggerService.logMethodExecutionEnd("startAuction", auctionId);
@@ -430,22 +430,65 @@ public class PurchaseService {
         }
     }
 
-    private void finalizeAuctionInternal(int auctionId, String authToken) {
-        Bid bid = (Bid) purchaseRepository.getPurchaseById(auctionId);
-        BidReciept receipt = bid.completePurchase();
-        purchaseRepository.deletePurchase(auctionId);
+    private void finalizeAuction(int auctionId, String authToken) {
+        int initiatingUserId = -1;
+        int winnerId = -1;
+        int finalPrice = -1;
+        int shopId = -1;
+        try {
+            LoggerService.logMethodExecution("finalizeAuction", authToken, auctionId);
+            Purchase purchase = purchaseRepository.getPurchaseById(auctionId);
+            if (!(purchase instanceof Bid)) {
+                throw new OurRuntime("Purchase " + auctionId + " is not a bid");
+            }
+            Bid bid = (Bid) purchase;
+            bid.completePurchase();
+            try {
+                initiatingUserId = authTokenService.ValidateToken(authToken);
+            } catch (Exception e) {
+                LoggerService.logError("finalizeAuction", e, authToken, auctionId);
+                throw new OurRuntime("finalizeAuction: " + e.getMessage(), e);
+            }
+            if (initiatingUserId != bid.getUserId()) {
+                throw new OurRuntime("User " + initiatingUserId + " is not the owner of the bid");
+            }
+            winnerId = bid.getHighestBidderId();
+            finalPrice = bid.getMaxBidding();
+            shopId = bid.getStoreId();
+            if (winnerId == -1) {
+                throw new OurRuntime("No bids were placed on auction " + auctionId);
+            }
+            if (finalPrice == -1) {
+                throw new OurRuntime("No final price was set for auction " + auctionId);
+            }
+            if (shopId == -1) {
+                throw new OurRuntime("No shop was set for auction " + auctionId);
+            }
+            for (int pid : bid.getBiddersIds()) {
+                notificationService.sendToUser(
+                    pid,
+                    "Auction ended",
+                    (pid == winnerId ? " You won with a bid of " + finalPrice + "." : " You lost. The winning bid was " + finalPrice + ".")
+                );
+            }
 
-        int winner = receipt.getHighestBidderId();
-        int finalP = receipt.getHighestBid();
+            userService.addAuctionWinBidToUserShoppingCart(winnerId, bid);
 
-        // notify everyone
-        for (int pid : bid.getBiddersIds()) {
-            notificationService.sendToUser(
-                pid,
-                "Auction ended",
-                (pid == winner ? " You won with a bid of " + winner + "." : " You lost. The winning bid was " + finalP + ".")
-            );
-        }
+            // save message to user that are not logged in
+            for (int pid : bid.getBiddersIds()) {
+                String msg = (pid != winnerId)
+                    ? "Auction " + auctionId + " has ended. You didn't win.\n"
+                    : "Congratulations! You have won the auction!\n" ;
+                messageService.sendMessageToUser(authToken, pid, msg, -1);
+            }
+        } catch (OurArg e) {
+            LoggerService.logDebug("finalizeAuction", e);
+            throw new OurArg("finalizeAuction: " + e.getMessage(), e);
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("finalizeAuction", e);
+            throw new OurRuntime("finalizeAuction: " + e.getMessage(), e);
+        } 
     }
  
+   
 }

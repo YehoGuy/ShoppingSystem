@@ -31,7 +31,6 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.QueryParameters;
@@ -74,7 +73,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
         handleSuspence();
         
-        addWonAuctionsSection();
+        getWonAuctionsSection();
     }
 
     public Integer getUserId() {
@@ -259,16 +258,18 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         wonGrid.addColumn(BidRecieptDTO::getHighestBid)
             .setHeader("Winning Bid")
             .setAutoWidth(true);
-        wonGrid.addColumn(new ComponentRenderer<>(dto -> {
-            Button pay = new Button("Pay");
-            pay.addClickListener(e ->
-                UI.getCurrent().navigate(
-                "payment?auctionId=" + dto.getPurchaseId()
-                + "&price="     + dto.getHighestBid()
-                )
-            );
-            return pay;
-        }))
+        wonGrid.addComponentColumn(dto -> {
+            Button payNow = new Button("Pay Now");
+            payNow.addClickListener(e -> {
+                UI.getCurrent().navigate("payment",
+                    QueryParameters.simple(Map.of(
+                        "auctionId", String.valueOf(dto.getPurchaseId()),
+                        "price",     String.valueOf(dto.getHighestBid())
+                    ))
+                );
+            });
+            return payNow;
+        })
         .setHeader("Action")
         .setAutoWidth(true);
 
@@ -461,46 +462,50 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         }
     }
 
-    private void addWonAuctionsSection() {
-    H2 header = new H2("Auctions You Won");
-    add(header);
+    private void getWonAuctionsSection() {
+        add(new H2("Auctions You Won"));
 
-    String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-    // fetch domain receipts
-    ResponseEntity<List<BidRecieptDTO>> resp = restTemplate.exchange(
-        URLUser + "/auctions/won?authToken={token}",
-        HttpMethod.GET,
-        new HttpEntity<>(new HttpHeaders()),
-        new ParameterizedTypeReference<>() {},
-        token
-    );
-    List<BidRecieptDTO> won = resp.getBody();
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        List<BidRecieptDTO> won = restTemplate.exchange(
+            URLUser + "/auctions/won?authToken={token}",
+            HttpMethod.GET,
+            new HttpEntity<>(new HttpHeaders()),
+            new ParameterizedTypeReference<List<BidRecieptDTO>>() {},
+            token
+        ).getBody();
 
-    if (won == null || won.isEmpty()) {
-        H3 empty = new H3("You haven't won any auctions yet.");
-        empty.getStyle().set("color", "var(--lumo-secondary-text-color)");
-        add(empty);
-        return;
-    }
+        if (won == null || won.isEmpty()) {
+            H3 empty = new H3("You haven't won any auctions yet.");
+            empty.getStyle().set("color", "var(--lumo-secondary-text-color)");
+            add(empty);
+            return;
+        }
 
-    Grid<BidRecieptDTO> grid = new Grid<>(BidRecieptDTO.class, false);
-    grid.addColumn(BidRecieptDTO::getPurchaseId).setHeader("Auction ID").setAutoWidth(true);
-    grid.addColumn(BidRecieptDTO::getHighestBid).setHeader("Your Winning Bid").setAutoWidth(true);
-    grid.addColumn(dto -> {
-        Button payNow = new Button("Pay Now");
-        payNow.addClickListener(e -> {
-            // navigate to the PaymentPageView, passing auctionId & price as query params
-            UI.getCurrent().navigate("payment",
-              QueryParameters.simple(Map.of(
-                "auctionId", String.valueOf(dto.getPurchaseId()),
-                "price",     String.valueOf(dto.getHighestBid())
-              ))
+        Grid<BidRecieptDTO> grid = new Grid<>(BidRecieptDTO.class, false);
+        grid.addColumn(BidRecieptDTO::getPurchaseId)
+            .setHeader("Auction ID")
+            .setAutoWidth(true);
+        grid.addColumn(BidRecieptDTO::getHighestBid)
+            .setHeader("Your Winning Bid")
+            .setAutoWidth(true);
+
+        // <-- THIS is the important change:
+        grid.addComponentColumn(dto -> {
+            Button payNow = new Button("Pay Now");
+            payNow.addClickListener(e ->
+                UI.getCurrent().navigate("payment",
+                    QueryParameters.simple(Map.of(
+                        "auctionId", String.valueOf(dto.getPurchaseId()),
+                        "price",     String.valueOf(dto.getHighestBid())
+                    ))
+                )
             );
-        });
-        return payNow;
-    }).setHeader("Action").setAutoWidth(true);
+            return payNow;
+        })
+        .setHeader("Auction")
+        .setAutoWidth(true);
 
-    grid.setItems(won);
-    add(grid);
-}
+        grid.setItems(won);
+        add(grid);
+        }
 }
