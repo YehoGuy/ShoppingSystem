@@ -19,10 +19,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Div;
@@ -35,9 +33,11 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
+import com.vaadin.flow.router.QueryParameters;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 
+import DTOs.BidRecieptDTO;
 import DTOs.CartEntryDTO;
 import DTOs.ItemDTO;
 import DTOs.ShopDTO;
@@ -52,16 +52,9 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${url.api}/shops")
     private String URLShop;
-
-    @Value("${url.api}/users")
     private String URLUser;
-
-    @Value("${url.api}/purchases")
     private String URLPurchases;
-
-    @Value("${url.api}/items")
     private String URLItem;
 
     @Override
@@ -72,6 +65,8 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         }
 
         handleSuspence();
+        
+        getWonAuctionsSection();
     }
 
     public Integer getUserId() {
@@ -82,13 +77,18 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         return null; // Return null if userId is not available
     }
 
-    public ShoppingCartView() {
+    public ShoppingCartView(@Value("${url.api}") String baseUrl) {
+        this.URLShop = baseUrl + "/shops";
+        this.URLUser = baseUrl + "/users";
+        this.URLPurchases = baseUrl + "/purchases";
+        this.URLItem = baseUrl + "/items";
         setSizeFull();
         setSpacing(true);
         setPadding(true);
         setAlignItems(Alignment.CENTER);
 
         getData();
+        
 
         if (cart.getShopItems() == null || cart.getShopItems().isEmpty()) {
             H2 empty = new H2("Your shopping cart is empty 😕");
@@ -203,13 +203,13 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 }
 
                 removeCompletlyButton.addClickListener(event -> {
-                    handleCartAction(shopID, renderer.name(), "remove");
+                    handleCartAuction(shopID, renderer.name(), "remove");
                 });
                 addButton.addClickListener(event -> {
-                    handleCartAction(shopID, renderer.name(), "plus");
+                    handleCartAuction(shopID, renderer.name(), "plus");
                 });
                 removeButton.addClickListener(event -> {
-                    handleCartAction(shopID, renderer.name(), "minus");
+                    handleCartAuction(shopID, renderer.name(), "minus");
                 });
                 HorizontalLayout buttonLayout = new HorizontalLayout(addButton, removeButton, removeCompletlyButton);
                 buttonLayout.setAlignItems(Alignment.CENTER);
@@ -228,6 +228,53 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         H2 total = new H2("Total: " + cart.getTotalPrice() + "₪");
         totalContainer.add(total, buyButton);
         add(buyButtonContainer, totalContainer);
+
+        // Your Won Auctions section
+        H2 wonHeader = new H2("Your Won Auctions");
+        add(wonHeader);
+
+        // Fetch the list of won auctions for this user
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        HttpHeaders wonHeaders = new HttpHeaders();
+        wonHeaders.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Void> wonEntity = new HttpEntity<>(wonHeaders);
+        ResponseEntity<List<BidRecieptDTO>> wonResp = restTemplate.exchange(
+            URLUser + "/auctions/won?authToken=" + token,
+            HttpMethod.GET,
+            wonEntity,
+            new ParameterizedTypeReference<List<BidRecieptDTO>>() {},
+            token
+        );
+        List<BidRecieptDTO> wonList = wonResp.getBody();
+
+        // Build and display the grid
+        Grid<BidRecieptDTO> wonGrid = new Grid<>(BidRecieptDTO.class, false);
+        wonGrid.addColumn(BidRecieptDTO::getPurchaseId)
+            .setHeader("Auction ID")
+            .setAutoWidth(true);
+        wonGrid.addColumn(BidRecieptDTO::getHighestBid)
+            .setHeader("Winning Bid")
+            .setAutoWidth(true);
+        wonGrid.addComponentColumn(dto -> {
+            Button payNow = new Button("Pay Now");
+            payNow.addClickListener(e -> {
+                UI.getCurrent().navigate("payment",
+                    QueryParameters.simple(Map.of(
+                        "auctionId", String.valueOf(dto.getPurchaseId()),
+                        "price",     String.valueOf(dto.getHighestBid())
+                    ))
+                );
+            });
+            return payNow;
+        })
+        .setHeader("Action")
+        .setAutoWidth(true);
+
+        if (wonList != null) {
+            wonGrid.setItems(wonList);
+        }
+        add(wonGrid);
+
     }
 
     private void getData() {
@@ -273,9 +320,8 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Void> entity = new HttpEntity<>(headers);
-
             ResponseEntity<List<ItemDTO>> response = restTemplate.exchange(
-                    URLItem + "/all?authToken={authToken}",
+                    URLItem + "/all?token=" + token,
                     HttpMethod.GET,
                     entity,
                     new ParameterizedTypeReference<>() {
@@ -304,7 +350,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         for (Integer id : shopIds) {
             try {
                 ResponseEntity<ShopDTO> resp = restTemplate.exchange(
-                        URLShop + "/" + id + "?authToken={authToken}",
+                        URLShop + "/" + id + "?token=" + token,
                         HttpMethod.GET,
                         entity,
                         ShopDTO.class,
@@ -332,7 +378,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             HttpEntity<Void> entity = new HttpEntity<>(headers);
 
             ResponseEntity<HashMap<Integer, HashMap<Integer, Integer>>> resp = restTemplate.exchange(
-                    URLUser + "/shoppingCart?authToken={authToken}",
+                    URLUser + "/shoppingCart?token=" + token,
                     HttpMethod.GET,
                     entity,
                     new ParameterizedTypeReference<>() {
@@ -364,7 +410,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 .orElse("Unknown Shop");
     }
 
-    private void handleCartAction(int shopID, String itemName, String action) {
+    private void handleCartAuction(int shopID, String itemName, String action) {
         try {
             String token = VaadinSession.getCurrent().getAttribute("authToken").toString();
             HttpHeaders headers = new HttpHeaders();
@@ -381,7 +427,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 return;
 
             restTemplate.postForEntity(
-                    URLUser + "/shoppingCart/" + shopID + "/" + itemID + "/" + action + "?authToken={authToken}",
+                    URLUser + "/shoppingCart/" + shopID + "/" + itemID + "/" + action + "?token=" + token,
                     entity,
                     String.class,
                     token);
@@ -401,7 +447,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/" + userId + "/suspension?token=" + token;
+        String url = URLUser + "/" + userId + "/isSuspended?token=" + token;
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
@@ -411,4 +457,51 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                     "Failed to check admin status");
         }
     }
+
+    private void getWonAuctionsSection() {
+        add(new H2("Auctions You Won"));
+
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        List<BidRecieptDTO> won = restTemplate.exchange(
+            URLUser + "/auctions/won?authToken=" + token,
+            HttpMethod.GET,
+            new HttpEntity<>(new HttpHeaders()),
+            new ParameterizedTypeReference<List<BidRecieptDTO>>() {},
+            token
+        ).getBody();
+
+        if (won == null || won.isEmpty()) {
+            H3 empty = new H3("You haven't won any auctions yet.");
+            empty.getStyle().set("color", "var(--lumo-secondary-text-color)");
+            add(empty);
+            return;
+        }
+
+        Grid<BidRecieptDTO> grid = new Grid<>(BidRecieptDTO.class, false);
+        grid.addColumn(BidRecieptDTO::getPurchaseId)
+            .setHeader("Auction ID")
+            .setAutoWidth(true);
+        grid.addColumn(BidRecieptDTO::getHighestBid)
+            .setHeader("Your Winning Bid")
+            .setAutoWidth(true);
+
+        // <-- THIS is the important change:
+        grid.addComponentColumn(dto -> {
+            Button payNow = new Button("Pay Now");
+            payNow.addClickListener(e ->
+                UI.getCurrent().navigate("payment",
+                    QueryParameters.simple(Map.of(
+                        "auctionId", String.valueOf(dto.getPurchaseId()),
+                        "price",     String.valueOf(dto.getHighestBid())
+                    ))
+                )
+            );
+            return payNow;
+        })
+        .setHeader("Auction")
+        .setAutoWidth(true);
+
+        grid.setItems(won);
+        add(grid);
+        }
 }

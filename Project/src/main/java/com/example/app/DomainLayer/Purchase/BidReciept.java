@@ -10,13 +10,15 @@ public class BidReciept extends Reciept{
     private final int initialPrice;
     private final int highestBid; // initialPrice if no Bidder
     private final int highestBidderId; // -1 if no Bidder
+    private final LocalDateTime endTime; // End time of the auction, if applicable
 
-    public BidReciept(int purchaseId, int userId, int storeId, Map<Integer, Integer> items, Address shippingAddress,int price, int thisBidderId, int initialPrice, int highestBid, int highestBidderId, boolean isCompleted) {
+    public BidReciept(int purchaseId, int userId, int storeId, Map<Integer, Integer> items, Address shippingAddress,int price, int thisBidderId, int initialPrice, int highestBid, int highestBidderId, boolean isCompleted, LocalDateTime endTime) {
         super(purchaseId, userId, storeId, items, shippingAddress, price, isCompleted);
         this.thisBidderId = thisBidderId;
         this.initialPrice = initialPrice;
         this.highestBid = highestBid;
         this.highestBidderId = highestBidderId;
+        this.endTime = endTime;
     }
 
     public int getThisBidderId() {
@@ -32,6 +34,10 @@ public class BidReciept extends Reciept{
         return highestBidderId;
     }
 
+    public LocalDateTime getEndTime() {
+        return endTime;
+    }
+    
 
     @Override
     public String toString() {
@@ -50,6 +56,7 @@ public class BidReciept extends Reciept{
                 ", timeOfCompletion=" + timeOfCompletion +
                 ", price=" + price +
                 ", timestampOfRecieptGeneration=" + LocalDateTime.now().toString() +
+                ", endTime=" + endTime +
                 '}';
     }
 

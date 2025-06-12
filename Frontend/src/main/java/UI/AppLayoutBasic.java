@@ -14,10 +14,8 @@ import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.router.RouterLayout;
 import com.vaadin.flow.server.VaadinSession;
-import com.vaadin.flow.theme.Theme;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
-// tag::snippet[]
 @JsModule("./notification-client.js")
 public class AppLayoutBasic extends AppLayout implements RouterLayout {
 
@@ -33,7 +31,6 @@ public class AppLayoutBasic extends AppLayout implements RouterLayout {
         addToDrawer(scroller);
         addToNavbar(toggle);
     }
-    // end::snippet[]
 
     private Integer getUserId() {
         if (VaadinSession.getCurrent().getAttribute("userId") != null) {
@@ -52,6 +49,7 @@ public class AppLayoutBasic extends AppLayout implements RouterLayout {
                 new SideNavItem("Search Item", "/items", VaadinIcon.SEARCH.create()),
                 new SideNavItem("Search Shop", "/shops", VaadinIcon.SHOP.create()),
                 new SideNavItem("Bids", "/bids", VaadinIcon.MONEY.create()),
+                new SideNavItem("Auctions", "/auctions", VaadinIcon.GAVEL.create()),
                 new SideNavItem("My Shops", "/myshops", VaadinIcon.LIST_UL.create()),
                 new SideNavItem("My Messages", "/messages", VaadinIcon.ENVELOPE.create()));
 
@@ -71,6 +69,4 @@ public class AppLayoutBasic extends AppLayout implements RouterLayout {
         Notification.show(message, 5000, Notification.Position.TOP_CENTER);
     }
 
-    // tag::snippet[]
 }
-// end::snippet[]

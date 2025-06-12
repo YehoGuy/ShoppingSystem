@@ -1,6 +1,7 @@
 package DomainLayerTests;
 
 import java.lang.reflect.Field;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -65,6 +66,8 @@ class BidTests {
     )
     void addBidding_lowerOrEqualDoesNothing() {
         Bid bid = new Bid(1, 10, 20, Map.of(), 100);
+        bid.setAuctionStartTime(LocalDateTime.now().minusMinutes(1));
+        bid.setAuctionEndTime  (LocalDateTime.now().plusMinutes (1));
 
         bid.addBidding(11, 90);   // lower
         bid.addBidding(12, 100);  // equal
@@ -113,6 +116,8 @@ class BidTests {
     )
     void completePurchase_and_addBidding_concurrentInvocationsStayConsistent() {
         Bid bid = new Bid(1, 10, 20, Map.of(), 90);
+        bid.setAuctionStartTime(LocalDateTime.now().minusMinutes(1));
+        bid.setAuctionEndTime  (LocalDateTime.now().plusMinutes (1));
 
         ExecutorService pool = Executors.newFixedThreadPool(4);
         CompletableFuture.allOf(
@@ -137,6 +142,9 @@ class BidTests {
     void getBiddersIdsInvokedConcurrentlyWhileMultipleBidsArrive_shouldNeverThrowConcurrentModification_andShouldEventuallyReportExactlyOneBidder() throws Exception {
         int base = 100;
         Bid bid  = new Bid(1, 10, 20, Map.of(), base);
+
+        bid.setAuctionStartTime(LocalDateTime.now().minusMinutes(1));
+        bid.setAuctionEndTime  (LocalDateTime.now().plusMinutes (1));
 
         ExecutorService pool = Executors.newCachedThreadPool();
 

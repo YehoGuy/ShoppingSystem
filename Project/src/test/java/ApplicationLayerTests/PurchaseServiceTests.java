@@ -1,5 +1,6 @@
 package ApplicationLayerTests;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -40,6 +41,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
+import com.example.app.ApplicationLayer.NotificationService;
 import com.example.app.ApplicationLayer.Item.ItemService;
 import com.example.app.ApplicationLayer.Message.MessageService;
 import com.example.app.ApplicationLayer.OurArg;
@@ -47,6 +49,7 @@ import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Purchase.PurchaseService;
 import com.example.app.ApplicationLayer.Shop.ShopService;
 import com.example.app.ApplicationLayer.User.UserService;
+import com.example.app.DomainLayer.Notification;
 import com.example.app.DomainLayer.Purchase.Address;
 import com.example.app.DomainLayer.Purchase.Bid;
 import com.example.app.DomainLayer.Purchase.BidReciept;
@@ -77,6 +80,8 @@ class PurchaseServiceTests {
     ShopService shops;
     @Mock
     MessageService msg;
+    @Mock
+    NotificationService nots;
     PurchaseService service;
 
     Address addr = new Address().withCountry("IL").withCity("TLV")
@@ -87,7 +92,7 @@ class PurchaseServiceTests {
 
     @BeforeEach
     void setUp() {
-        service = new PurchaseService(repo, auth, users, shops, items, msg);
+        service = new PurchaseService(repo, auth, users, shops, items, msg, nots, null);
     }
     /*
      * ══════════════════════════════════════════════════════════════
@@ -181,6 +186,8 @@ class PurchaseServiceTests {
         String token = "a";
         int owner = 1, bidder = 2, pid = 10;
         Bid bid = spy(new Bid(pid, owner, 7, Map.of(1, 1), 50));
+        bid.setAuctionStartTime(LocalDateTime.now().minusMinutes(1));
+        bid.setAuctionEndTime  (LocalDateTime.now().plusMinutes (1));
 
         when(auth.ValidateToken(token)).thenReturn(bidder);
         when(repo.getPurchaseById(pid)).thenReturn(bid);

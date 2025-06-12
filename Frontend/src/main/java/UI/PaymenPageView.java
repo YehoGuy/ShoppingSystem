@@ -16,10 +16,12 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
+import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 
 import DTOs.PaymentMethodDTO;
 
+@Route("payment")
 public class PaymenPageView extends VerticalLayout implements BeforeEnterObserver {
 
     private final PaymentMethodDTO paymentMethod;
@@ -157,7 +159,7 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/" + userId + "/suspension?token=" + token;
+        String url = "http://localhost:8080/api/users" + "/" + userId + "/isSuspended?token=" + token;
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {

@@ -17,6 +17,7 @@ public class Reciept {
     protected final AtomicBoolean isCompleted;                 // purchase status   
     protected final LocalDateTime timeOfCompletion;     // time of purchase completion
     protected final double price; // total price of the purchase
+    protected final LocalDateTime endTime;
 
     // very important to make sure a reciept is concurrent עכשווית
     protected final LocalDateTime timestampOfRecieptGeneration; // time of receipt generation!!
@@ -41,6 +42,7 @@ public class Reciept {
         this.timeOfCompletion = null;
         this.timestampOfRecieptGeneration = LocalDateTime.now();
         this.price = price;
+        this.endTime = null; // end time is not applicable for non-auction purchases
     }
 
     
@@ -64,6 +66,30 @@ public class Reciept {
         this.timeOfCompletion = timeOfCompletion;
         this.timestampOfRecieptGeneration = LocalDateTime.now();
         this.price = price;
+        this.endTime = null; // end time is not applicable for non-auction purchases
+    }
+
+    /**
+     * Constructs a new {@code Reciept} with the specified user ID, store ID, and items.
+     * this constructor is meant for UNCOMPLETED purchases
+     *
+     * @param purchaseId the ID of the purchase.
+     * @param userId the ID of the user initiating the purchase.
+     * @param storeId the ID of the store where the purchase is made.
+     * @param items a map of item IDs to their quantities.
+     * @param shippingAddress the shipping address for the purchase.
+     */
+    public Reciept(int purchaseId, int userId, int storeId, Map<Integer, Integer> items, Address shippingAddress, LocalDateTime timeOfCompletion, double price, LocalDateTime endTime) {
+        this.purchaseId = purchaseId;
+        this.userId = userId;
+        this.storeId = storeId;
+        this.items = Map.copyOf(items);
+        this.shippingAddress = shippingAddress;
+        this.isCompleted = new AtomicBoolean(true);
+        this.timeOfCompletion = timeOfCompletion;
+        this.timestampOfRecieptGeneration = LocalDateTime.now();
+        this.price = price;
+        this.endTime = endTime; // end time is applicable for auction purchases
     }
 
     /**
@@ -155,6 +181,15 @@ public class Reciept {
     }
 
     /**
+     * Returns the end time of the auction, if applicable.
+     *
+     * @return the end time of the auction, or null if not applicable.
+     */
+    public LocalDateTime getEndTime() {
+        return endTime;
+    }
+
+    /**
      * Returns a string representation of the receipt.
      *
      * @return a string representation of the receipt.
@@ -170,6 +205,7 @@ public class Reciept {
                 ", isCompleted=" + isCompleted +
                 ", timeOfCompletion=" + timeOfCompletion +
                 ", timestampOfRecieptGeneration=" + timestampOfRecieptGeneration +
+                ", endTime=" + endTime +
                 '}';
     }
     

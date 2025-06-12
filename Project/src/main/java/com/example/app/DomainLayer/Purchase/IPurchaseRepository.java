@@ -1,5 +1,6 @@
 package com.example.app.DomainLayer.Purchase;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -27,6 +28,20 @@ public interface IPurchaseRepository {
      * @throws IllegalArgumentException if the purchase ID already exists.
      */
     int addBid(int userId, int storeId, Map<Integer, Integer> items, int initialPrice);
+
+    /**
+     * Adds a bid to the repository with auction start and end times.
+     *
+     * @param userId The ID of the user making the bid.
+     * @param storeId The ID of the store where the bid is made.
+     * @param items A map of item IDs to their quantities.
+     * @param initialPrice The initial price for the bid.
+     * @param auctionStart The start time of the auction.
+     * @param auctionEnd The end time of the auction.
+     * @return The ID of the newly created bid.
+     * @throws IllegalArgumentException if the purchase ID already exists.
+     */
+    int addBid(int userId, int storeId, Map<Integer, Integer> items, int initialPrice, LocalDateTime auctionStart, LocalDateTime auctionEnd);
 
     /**
      * Retrieves a purchase by its ID.
@@ -83,7 +98,5 @@ public interface IPurchaseRepository {
      * @return A list of Bid data objects (BidReciept) for the bids offered by the specified shop.
      */
     List<BidReciept> getShopBids(int shopId);
-
-
 
 }
