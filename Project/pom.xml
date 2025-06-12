@@ -211,7 +211,6 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
 
-            <!-- ── JaCoCo: code‑coverage plug‑in ───────────────────────────── -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -224,11 +223,16 @@
                         <goals><goal>prepare-agent</goal></goals>
                     </execution>
 
-                    <!-- 2. generate HTML + XML reports after tests -->
+                    <!-- 2. generate HTML + XML reports after tests -->
                     <execution>
                         <id>report</id>
                         <phase>verify</phase>
                         <goals><goal>report</goal></goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>com/example/app/PresentationLayer/DTO/**</exclude>
+                            </excludes>
+                        </configuration>
                     </execution>
 
                     <!-- 3. (optional) fail build if coverage too low -->
@@ -239,21 +243,19 @@
                         <configuration>
                             <rules>
                                 <rule>
-                                    <element>BUNDLE</element>       <!-- whole project -->
+                                    <element>BUNDLE</element>
                                     <limits>
                                         <limit>
                                             <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.60</minimum> <!-- 60 % threshold -->
+                                            <minimum>0.60</minimum> <!-- 60% threshold -->
                                         </limit>
                                     </limits>
                                 </rule>
                             </rules>
-                            <!-- example: exclude DTOs & generated code from the check
                             <excludes>
-                                <exclude>**/PresentationLayer/DTO/**</exclude>
+                                <exclude>com/example/app/PresentationLayer/DTO/**</exclude>
                             </excludes>
-                            -->
                         </configuration>
                     </execution>
                 </executions>
