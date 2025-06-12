@@ -1,7 +1,5 @@
 package UI;
 
-import java.util.Optional;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -11,6 +9,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H2;
@@ -24,6 +23,7 @@ import com.vaadin.flow.router.NotFoundException;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
+import com.vaadin.flow.component.button.Button;
 
 import DTOs.BidRecieptDTO;
 import jakarta.annotation.PostConstruct;
@@ -46,16 +46,15 @@ public class AuctionDetailView extends VerticalLayout implements BeforeEnterObse
     private String AUCTION_API_URL;
 
     // Read‐only fields for auction details
-    private final TextField purchaseIdField = new TextField("Auction ID");
-    private final TextField storeIdField = new TextField("Store Name");
-    private final TextField userIdField = new TextField("Owner Name");
+    private final TextField storeNameField = new TextField("Store Name");
+    private final TextField itemNameField = new TextField("Item Name");
+    private final TextField userNameField = new TextField("Owner Name");
     private final TextField highestBidField = new TextField("Highest Bid");
     private final TextField completedField = new TextField("Completed");
 
     // Controls for placing a new offer if the bid is open
     private final IntegerField newBidAmount = new IntegerField("Your Bid Amount");
-    private final com.vaadin.flow.component.button.Button placeBidButton = new com.vaadin.flow.component.button.Button(
-            "Place Auction-Bid");
+    private final Button placeBidButton = new Button("Place Auction-Bid");
 
     @PostConstruct
     private void init() {
@@ -149,16 +148,22 @@ public class AuctionDetailView extends VerticalLayout implements BeforeEnterObse
         add(header);
 
         // 2) Populate read‐only fields
-        purchaseIdField.setReadOnly(true);
-        //TODO: change purchaseId to a more meaningful name
-        purchaseIdField.setValue(String.valueOf(bid.getPurchaseId()));
+        storeNameField.setReadOnly(true);
+        int shopId = bid.getStoreId();
+        //Http request from ShopController to extract the store' name
+        String shopName = getShopName(shopId);
+        storeNameField.setValue(String.valueOf(shopName));
 
-        storeIdField.setReadOnly(true);
-        //TODO: get store name from storeId
-        storeIdField.setValue(String.valueOf(bid.getStoreId()));
+        itemNameField.setReadOnly(true);
+        //Http request from ShopController to extract the item' name
+        String itemName = getItemName(shopId, bid);
+        itemNameField.setValue(itemName);
 
-        userIdField.setReadOnly(true);
-        userIdField.setValue(String.valueOf(bid.getThisBidderId()));
+        userNameField.setReadOnly(true);
+        int userId = bid.getUserId();
+        //Http request from UserController to extract the user' name
+        String userName = getUserName(userId);
+        userNameField.setValue(String.valueOf(userName));
 
         System.out.println("Highest bid: " + bid.getHighestBidderId());
 
@@ -171,9 +176,9 @@ public class AuctionDetailView extends VerticalLayout implements BeforeEnterObse
         // 3) FormLayout for the six fields
         FormLayout form = new FormLayout();
         form.add(
-                purchaseIdField,
-                storeIdField,
-                userIdField,
+                storeNameField,
+                itemNameField,
+                userNameField,
                 highestBidField,
                 completedField);
         add(form);
@@ -234,5 +239,91 @@ public class AuctionDetailView extends VerticalLayout implements BeforeEnterObse
                     4000, Notification.Position.MIDDLE);
         }
     }
+
+
+    private String getShopName(int shopId) {
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            Notification.show("Not authenticated", 3000, Notification.Position.MIDDLE);
+            return "";
+        }
+
+        String url = apiBase + "/shops/" + shopId + "?token=" + token;
+        try {
+            ResponseEntity<JsonNode> resp = rest.exchange(
+                url,
+                HttpMethod.GET,
+                new HttpEntity<>(new HttpHeaders()),
+                JsonNode.class
+            );
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
+                return resp.getBody().path("name").asText("");
+            }
+        } catch (Exception e) {
+            Notification.show("Error loading shop", 3000, Notification.Position.MIDDLE);
+        }
+        return "";
+    }
+
+    private String getUserName(int userId) {
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            Notification.show("Not authenticated", 3000, Notification.Position.MIDDLE);
+            return "";
+        }
+
+        String url = apiBase + "/users/" + userId + "?token=" + token;
+        try {
+            ResponseEntity<JsonNode> resp = rest.exchange(
+                url,
+                HttpMethod.GET,
+                new HttpEntity<>(new HttpHeaders()),
+                JsonNode.class
+            );
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
+                return resp.getBody().path("username").asText("");
+            }
+        } catch (Exception e) {
+            Notification.show("Error loading user", 3000, Notification.Position.MIDDLE);
+        }
+        return "";
+    }
+
+    private String getItemName(int shopId, BidRecieptDTO bid) {
+        // grab your auth token
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null || token.isBlank()) {
+            Notification.show("Not authenticated", 3000, Notification.Position.MIDDLE);
+            return "";
+        }
+
+        // call your ShopController’s “list items” endpoint
+        String url = apiBase + "/shops/" + shopId + "/items?token=" + token;
+        try {
+            ResponseEntity<JsonNode> resp = rest.exchange(
+                url,
+                HttpMethod.GET,
+                new HttpEntity<>(new HttpHeaders()),
+                JsonNode.class
+            );
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
+                JsonNode itemsArray = resp.getBody();
+                // iterate over returned ItemDTOs
+                for (JsonNode itemNode : itemsArray) {
+                    int id = itemNode.path("id").asInt(-1);
+                    // if this auction’s map contained that itemId, return its name
+                    if (bid.getItems().containsKey(id)) {
+                        return itemNode.path("name").asText("");
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Notification.show("Error loading item", 3000, Notification.Position.MIDDLE);
+        }
+
+        // fallback if nothing was found
+        return "";
+    }
+
 
 }

@@ -13,6 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -40,6 +41,9 @@ public class AuctionListView extends VerticalLayout {
     @Value("${url.api}/purchases/auctions")
     private String BASE_URL;
 
+    @Value("${url.api}")
+    private String apiBase;
+
     private final RestTemplate restTemplate = new RestTemplate();
     private final Grid<BidRecieptDTO> auctionGrid = new Grid<>(BidRecieptDTO.class, false);
 
@@ -52,14 +56,18 @@ public class AuctionListView extends VerticalLayout {
         add(header);
 
         // Configure the columns you want to show
-        auctionGrid.addColumn((BidRecieptDTO dto) -> dto.getPurchaseId())
-        //TODO: replace with auction ID if available
-                .setHeader("Auction ID")
-                .setAutoWidth(true);
-        auctionGrid.addColumn((BidRecieptDTO dto) -> dto.getStoreId())
-        //TODO: replace with store name if available
-                .setHeader("Store ID")
-                .setAutoWidth(true);
+        auctionGrid.addColumn(dto -> getShopName(dto.getStoreId()))
+                   .setHeader("Store Name")
+                   .setAutoWidth(true);
+
+        auctionGrid.addColumn(dto -> getItemName(dto.getStoreId(), dto))
+                   .setHeader("Item Name")
+                   .setAutoWidth(true);
+
+        auctionGrid.addColumn(dto -> getUserName(dto.getUserId()))
+                   .setHeader("Owner Auction Name")
+                   .setAutoWidth(true);
+
         auctionGrid.addColumn(dto -> dto.getPrice())
                 .setHeader("Current Price")
                 .setAutoWidth(true);
@@ -83,7 +91,7 @@ public class AuctionListView extends VerticalLayout {
                 Position.MIDDLE
                 );
             } else {
-                UI.getCurrent().navigate("auction/" + dto.getPurchaseId());
+                UI.getCurrent().navigate("auctions");
             }
         });
         return addOffer;
@@ -163,5 +171,61 @@ public class AuctionListView extends VerticalLayout {
             ex.printStackTrace();
             add(new Text("Error fetching auctions"));
         }
+    }
+
+    private String getShopName(int shopId) {
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) return "";
+        String url = apiBase + "/shops/" + shopId + "?token=" + token;
+        try {
+            ResponseEntity<JsonNode> r = restTemplate.exchange(
+                url, HttpMethod.GET,
+                new HttpEntity<>(new HttpHeaders()),
+                JsonNode.class
+            );
+            if (r.getStatusCode().is2xxSuccessful() && r.getBody() != null) {
+                return r.getBody().path("name").asText("");
+            }
+        } catch (Exception e) { /* ignore or log */ }
+        return "";
+    }
+
+    private String getUserName(int userId) {
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) return "";
+        String url = apiBase + "/users/" + userId + "?token=" + token;
+        try {
+            ResponseEntity<JsonNode> r = restTemplate.exchange(
+                url, HttpMethod.GET,
+                new HttpEntity<>(new HttpHeaders()),
+                JsonNode.class
+            );
+            if (r.getStatusCode().is2xxSuccessful() && r.getBody() != null) {
+                return r.getBody().path("username").asText("");
+            }
+        } catch (Exception e) { /* ignore or log */ }
+        return "";
+    }
+
+    private String getItemName(int shopId, BidRecieptDTO bid) {
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) return "";
+        String url = apiBase + "/shops/" + shopId + "/items?token=" + token;
+        try {
+            ResponseEntity<JsonNode> r = restTemplate.exchange(
+                url, HttpMethod.GET,
+                new HttpEntity<>(new HttpHeaders()),
+                JsonNode.class
+            );
+            if (r.getStatusCode().is2xxSuccessful() && r.getBody() != null) {
+                for (JsonNode item : r.getBody()) {
+                    int id = item.path("id").asInt(-1);
+                    if (bid.getItems().containsKey(id)) {
+                        return item.path("name").asText("");
+                    }
+                }
+            }
+        } catch (Exception e) { /* ignore or log */ }
+        return "";
     }
 }
