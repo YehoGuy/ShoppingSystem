@@ -1,5 +1,6 @@
 package ApplicationLayerTests;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -185,6 +186,8 @@ class PurchaseServiceTests {
         String token = "a";
         int owner = 1, bidder = 2, pid = 10;
         Bid bid = spy(new Bid(pid, owner, 7, Map.of(1, 1), 50));
+        bid.setAuctionStartTime(LocalDateTime.now().minusMinutes(1));
+        bid.setAuctionEndTime  (LocalDateTime.now().plusMinutes (1));
 
         when(auth.ValidateToken(token)).thenReturn(bidder);
         when(repo.getPurchaseById(pid)).thenReturn(bid);

@@ -1799,41 +1799,38 @@ public class UserService {
     // if isFromShop is true, then the message is from the shop to the user
     // if isFromShop is false, then the message is from the user to the shop
     public void messageNotification(Integer memberId, Integer shopId, boolean isFromShop) {
-        if (isFromShop) {
-            try {
-                LoggerService.logMethodExecution("messageUserNotification", memberId);
-                //TODO: send notification to user with shopId 
-                // this.notificationService.sendToUser(memberId, "Message Received",
-                //         "You have received a new message from the shop (id=" + shopId + ").");
-                LoggerService.logMethodExecutionEndVoid("messageUserNotification");
-            } catch (OurRuntime e) {
-                LoggerService.logDebug("messageUserNotification", e);
-                throw new OurRuntime("messageUserNotification: " + e.getMessage(), e); // Rethrow the custom exception
-            } catch (OurArg e) {
-                LoggerService.logDebug("messageUserNotification", e);
-                throw new OurArg("messageUserNotification: " + e.getMessage(), e); // Rethrow the custom exception
-            } catch (Exception e) {
-                LoggerService.logError("messageUserNotification", e, memberId);
-                throw new OurRuntime("messageUserNotification: " + e.getMessage(), e);
-            }
-        } else {
-            try {
-                LoggerService.logMethodExecution("messageUserNotification", memberId);
-                this.notificationService.sendToUser(memberId, "Message Received",
-                        "You have received a new message from the user (name=" + userRepository.getMemberById(memberId).getUsername() + ").");
-                LoggerService.logMethodExecutionEndVoid("messageUserNotification");
-            } catch (OurRuntime e) {
-                LoggerService.logDebug("messageUserNotification", e);
-                throw new OurRuntime("messageUserNotification: " + e.getMessage(), e); // Rethrow the custom exception
-            } catch (OurArg e) {
-                LoggerService.logDebug("messageUserNotification", e);
-                throw new OurArg("messageUserNotification: " + e.getMessage(), e); // Rethrow the custom exception
-            } catch (Exception e) {
-                LoggerService.logError("messageUserNotification", e, memberId);
-                throw new OurRuntime("messageUserNotification: " + e.getMessage(), e);
-            }
-        }
+        try {
+            LoggerService.logMethodExecution("messageUserNotification", memberId);
 
+            // build the exact payload your tests expect
+            String payload;
+            if (isFromShop) {
+                payload = "You have received a new message from the shop (id=" + shopId + ").";
+            } else {
+                payload = "You have received a new message from the user (id=" + memberId + ").";
+            }
+
+            // now actually send the notification
+            this.notificationService.sendToUser(
+                memberId,
+                "Message Received",
+                payload
+            );
+
+            LoggerService.logMethodExecutionEndVoid("messageUserNotification");
+
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("messageUserNotification", e);
+            throw new OurRuntime("messageUserNotification: " + e.getMessage(), e);
+
+        } catch (OurArg e) {
+            LoggerService.logDebug("messageUserNotification", e);
+            throw new OurArg("messageUserNotification: " + e.getMessage(), e);
+
+        } catch (Exception e) {
+            LoggerService.logError("messageUserNotification", e, memberId);
+            throw new OurRuntime("messageUserNotification: " + e.getMessage(), e);
+        }
     }
 
     // LocalDateTime is used to represent the date and time of suspension

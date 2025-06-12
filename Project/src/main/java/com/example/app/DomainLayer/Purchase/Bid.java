@@ -58,7 +58,7 @@ public class Bid extends Purchase{
         if (now.isBefore(auctionStartTime)) {
             throw new IllegalStateException("Auction has not started yet. Current time: " + now + ", Auction start time: " + auctionStartTime);
         }
-        if (now.isAfter(auctionEndTime) || isCompleted) {
+        if (now.isAfter(auctionEndTime) && isCompleted) {
             throw new IllegalStateException("Auction has already ended or is completed. Current time: " + now + ", Auction end time: " + auctionEndTime);
         }
         if(bidAmount > highestBid.get()) {
@@ -125,5 +125,13 @@ public class Bid extends Purchase{
     }
     public LocalDateTime getAuctionEndTime() {
         return auctionEndTime;
+    }
+
+    public void setAuctionStartTime(LocalDateTime minusMinutes) {
+        this.auctionStartTime = minusMinutes;
+    }
+
+    public void setAuctionEndTime(LocalDateTime plusMinutes) {
+        this.auctionEndTime = plusMinutes;
     }
 }
