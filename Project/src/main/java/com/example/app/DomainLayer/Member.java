@@ -13,27 +13,67 @@ import com.example.app.DomainLayer.Purchase.BidReciept;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
 
-public class Member extends User {
-    final private int memberId;
-    private volatile String username; // Username of the user
-    private volatile String password; // Password of the user
-    private volatile String email; // Email address of the user
-    private volatile String phoneNumber; // Phone number of the user
-    private volatile LocalDateTime suspended; // Suspension status of the user
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Id;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.CollectionTable;
 
+@Entity
+@Table(name = "members")
+public class Member extends User {
+    @Id
+    @Column(name = "member_id")
+    final private int memberId;
+    
+    @Column(name = "username")
+    private volatile String username; // Username of the user
+    
+    @Column(name = "password")
+    private volatile String password; // Password of the user
+    
+    @Column(name = "email")
+    private volatile String email; // Email address of the user
+    
+    @Column(name = "phone_number")
+    private volatile String phoneNumber; // Phone number of the user
+    
+    @Column(name = "suspended_until")
+    private volatile LocalDateTime suspended; // Suspension status of the user
+    
+    @Column(name = "is_admin")
+    private volatile boolean isAdmin; // Admin status of the user
+
+    @ElementCollection
+    @CollectionTable(name = "member_roles", joinColumns = @JoinColumn(name = "member_id"))
     private final List<Role> roles; // List of roles associated with the user
+    
+    @ElementCollection
+    @CollectionTable(name = "member_order_history", joinColumns = @JoinColumn(name = "member_id"))
+    @Column(name = "order_id")
     private final List<Integer> orderHistory;// List of order IDs
+    
+    @ElementCollection
+    @CollectionTable(name = "member_pending_roles", joinColumns = @JoinColumn(name = "member_id"))
     private final List<Role> pending_roles; // List of pending roles not yet confirmed/declined by the user
+    
+    @ElementCollection
+    @CollectionTable(name = "member_notifications", joinColumns = @JoinColumn(name = "member_id"))
     private final List<Notification> notifications; // List of notifications for the user
+    
+    @ElementCollection
+    @CollectionTable(name = "member_auction_wins", joinColumns = @JoinColumn(name = "member_id"))
     private final List<BidReciept> auctionsWins; // List of auctions won by the user
 
+    @Column(name = "is_connected")
     private boolean isConnected; // Connection status of the user, used for notification purposes
 
     private final Object rolesLock = new Object();
     private final Object pendingRolesLock = new Object();
     private final Object orderHistoryLock = new Object();
-    private final Object notificationsLock = new Object();
-
+    private final Object notificationsLock = new Object();    
     public Member(int memberId, String username, String password, String email, String phoneNumber,
             String addressToRemove) {
         super(memberId); // Call the User class constructor
@@ -43,15 +83,14 @@ public class Member extends User {
         this.email = email; // Initialize email address
         this.phoneNumber = phoneNumber; // Initialize phone number
         this.suspended = LocalDateTime.now(); // Initialize suspension status (not suspended)
+        this.isAdmin = false; // Initialize admin status (not admin by default)
         this.orderHistory = new CopyOnWriteArrayList<>(); // Initialize order history
         this.roles = new CopyOnWriteArrayList<>(); // Initialize roles
         this.pending_roles = new CopyOnWriteArrayList<>(); // Initialize pending roles
         this.notifications = new CopyOnWriteArrayList<>(); // Initialize notifications
         this.auctionsWins = new CopyOnWriteArrayList<>(); // Initialize auctions won
         this.isConnected = false; // Initialize connection status
-    }
-
-    public Member(int memberId, String username, String password, String email, String phoneNumber, Address address) {
+    }    public Member(int memberId, String username, String password, String email, String phoneNumber, Address address) {
         super(memberId); // Call the User class constructor
         this.memberId = memberId; // Initialize member ID
         this.username = username; // Initialize username
@@ -59,6 +98,7 @@ public class Member extends User {
         this.email = email; // Initialize email address
         this.phoneNumber = phoneNumber; // Initialize phone number
         this.suspended = LocalDateTime.now(); // Initialize suspension status (not suspended)
+        this.isAdmin = false; // Initialize admin status (not admin by default)
         this.orderHistory = new CopyOnWriteArrayList<>(); // Initialize order history
         this.roles = new CopyOnWriteArrayList<>(); // Initialize roles
         this.pending_roles = new CopyOnWriteArrayList<>(); // Initialize pending roles
@@ -99,9 +139,16 @@ public class Member extends User {
     public void setSuspended(LocalDateTime suspended) {
         this.suspended = suspended; // Set the suspension status
     }
-    
-    public void setUnSuspended() {
+      public void setUnSuspended() {
         this.suspended = LocalDateTime.now(); // Set the suspension status to now (unsuspended)
+    }
+
+    public boolean isAdmin() {
+        return isAdmin; // Return the admin status
+    }
+
+    public synchronized void setAdmin(boolean isAdmin) {
+        this.isAdmin = isAdmin; // Set the admin status
     }
 
     public synchronized void setUsername(String username) {
