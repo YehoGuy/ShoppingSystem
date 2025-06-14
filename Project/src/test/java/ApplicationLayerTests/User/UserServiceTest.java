@@ -1,6 +1,15 @@
 package ApplicationLayerTests.User;
 
-it.jupiter.api.Assertions.assertArrayEquals;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -20,8 +29,16 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 
-import org.mockit
-kito.Mockito.doAnswer;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.support.AbstractMessageChannel;
+
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -30,32 +47,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import com.exampl
-
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;ncurrent.ThreadLocalRandom;
-import com.example.
-
-ter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org
-jectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.springfr
-ality.Strictness;
-
-@MockitoSettings(amework.messaging.simp.SimpMessagingTemplate;
-import org.springfre.app.ApplicationLayer.AuthTokenService;
+import com.example.app.ApplicationLayer.AuthTokenService;
 import com.example.app.ApplicationLayer.NotificationService;
 import com.example.app.ApplicationLayer.OurArg;
 import com.example.app.ApplicationLayer.OurRuntime;
@@ -63,6 +55,7 @@ import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
 import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.IUserRepository;
 import com.example.app.DomainLayer.Member;
+import com.example.app.DomainLayer.Notification;
 import com.example.app.DomainLayer.ShoppingCart;
 import com.example.app.DomainLayer.User;
 import com.example.app.DomainLayer.Purchase.Address;
@@ -527,15 +520,27 @@ public class UserServiceTest {
 
     @Test
     void testMessageNotificationFromUserSuccess() {
+        // 1) mock the repo and stub existence
         UserRepository mockRepo = mock(UserRepository.class);
-        UserService svc = new UserService(userRepository, authTokenService, notificationService);
+        when(mockRepo.getMemberById(44)).thenReturn(mock(Member.class));
+        //    (or, if your service does findById(...), stub that:
+        // when(mockRepo.findById(44)).thenReturn(Optional.of(new User(44, /*…*/)));
 
+        // 2) pass the mock into the service constructor
+        UserService svc = new UserService(mockRepo, authTokenService, notificationService);
+
+        // 3) wire up the notificationService to point back at svc
         notificationService.setService(svc);
 
+        // 4) call the “from user” path
         svc.messageNotification(44, 0, false);
-        verify(notificationService).sendToUser(44,
-                "Message Received",
-                "You have received a new message from the user (id=44).");
+
+        // 5) verify the notification was sent
+        verify(notificationService).sendToUser(
+            44,
+            "Message Received",
+            "You have received a new message from the user (id=44)."
+        );
     }
 
     @Test
