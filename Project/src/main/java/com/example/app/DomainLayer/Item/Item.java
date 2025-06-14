@@ -4,30 +4,17 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-
 /**
- * Represents an item that contains an id, name, description, category, and a
- * list of reviews.
+ * Represents an item that contains an id, name, description, category, and a list of reviews.
  */
-@Entity
-@Table(name = "items")
 public class Item {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private final int id;
     private final String name;
     private final String description;
     private final ItemCategory category;
 
     // List to hold reviews.
-    @ElementCollection
     private final List<ItemReview> reviews = new ArrayList<>();
 
     public Item(int id, String name, String description, Integer category) {
@@ -36,14 +23,6 @@ public class Item {
         this.description = description;
         // Convert the integer category to ItemCategory enum.
         this.category = ItemCategory.values()[category];
-    }
-
-    public Item() {
-        // Default constructor for JPA
-        this.id = 0; // This will be set by the database
-        this.name = "";
-        this.description = "";
-        this.category = ItemCategory.OTHER; // Default category
     }
 
     public int getId() {
@@ -114,12 +93,12 @@ public class Item {
     @Override
     public String toString() {
         return "Item{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", description='" + description + '\'' +
-                ", category=" + category +
-                ", averageRating=" + getAverageRating() +
-                ", reviews=" + reviews +
-                '}';
+               "id=" + id +
+               ", name='" + name + '\'' +
+               ", description='" + description + '\'' +
+               ", category=" + category +
+               ", averageRating=" + getAverageRating() +
+               ", reviews=" + reviews +
+               '}';
     }
 }
