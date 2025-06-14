@@ -16,7 +16,7 @@ public class AuthTokenTests {
     @BeforeEach
     public void setup() {
         expirationDate = new Date(System.currentTimeMillis()+1000*60*60); 
-        authToken = new AuthToken("token",expirationDate, 10); 
+        authToken = new AuthToken("token",expirationDate); 
         
     }
 
