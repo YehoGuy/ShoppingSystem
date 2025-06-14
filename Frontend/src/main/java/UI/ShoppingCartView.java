@@ -133,8 +133,6 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         }
         buyButton.addClickListener(event -> {
             try {
-                // PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(cart);
-                // this.add(purchaseCompletion);
                 
                   PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(cart);
 
@@ -188,13 +186,20 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             }
             buyBasketButton.getStyle().set("background-color", "blue").set("color", "white");
             buyBasketButton.addClickListener(event -> {
-                ShoppingCartDTO shopCart = new ShoppingCartDTO();
-                shopCart.setShopItems(Map.of(shopID, itemIDs));
-                shopCart.setShopItemPrices(Map.of(shopID, itemPricesMap));
-                shopCart.setShopItemQuantities(Map.of(shopID, itemQuantitiesMap));
-                PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(shopCart);
-                this.removeAll();
-                this.add(purchaseCompletion);
+    
+                PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(cart.getShoppingCartDTOofShop(shopID));
+
+                Dialog dialog = new Dialog();
+                dialog.setHeaderTitle("Purchase Summary");
+
+                // Add your component to the dialog
+                dialog.add(purchaseCompletion);
+
+                // Optional: add a close button in the footer
+                Button closeButton = new Button("Close", e -> dialog.close());
+                dialog.getFooter().add(closeButton);
+
+                dialog.open();  // Show the dialog
             });
             H3 shopHeader = new H3(shopName + " - total price: " + shopTotal + "₪");
             VerticalLayout shopHeaderContainer = new VerticalLayout(shopHeader, buyBasketButton);

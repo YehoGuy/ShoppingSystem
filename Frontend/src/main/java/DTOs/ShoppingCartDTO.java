@@ -2,10 +2,11 @@ package DTOs;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class ShoppingCartDTO {
 
-    // shopId -> Item Id
+    // shopId -> List<Item Id>
     private Map<Integer, List<Integer>> shopItems;
     // shopId -> Map<Item Id, Price>
     private Map<Integer, Map<Integer,Double>> shopItemPrices;
@@ -51,9 +52,16 @@ public class ShoppingCartDTO {
     }
 
     public Double getTotalPrice() {
-        return shopItemPrices.values().stream()
-                .mapToDouble(map -> map.values().stream().mapToDouble(Double::doubleValue).sum())
-                .sum();
+        double totalPrice = 0.0;
+        for (Map<Integer, Double> itemPrices : shopItemPrices.values()) {
+            for (Double price : itemPrices.values()) {
+                int quantity = shopItemQuantities.values().stream()
+                        .flatMap(map -> map.values().stream())
+                        .findFirst().orElse(1);
+                totalPrice += price *quantity;
+            }
+        }
+        return totalPrice;
     }
 
     public List<ItemDTO> getItems() {
@@ -63,4 +71,39 @@ public class ShoppingCartDTO {
     public void setItems(List<ItemDTO> items) {
         this.items = items;
     }
-}
+
+    public ShoppingCartDTO getShoppingCartDTOofShop(int shopId) {
+        Map<Integer, List<Integer>> filteredShopItems = shopItems.entrySet().stream()
+                .filter(entry -> entry.getKey().equals(shopId))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        Map<Integer, Map<Integer, Double>> filteredShopItemPrices = shopItemPrices.entrySet().stream()
+                .filter(entry -> entry.getKey().equals(shopId))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        Map<Integer, Map<Integer, Integer>> filteredShopItemQuantities = shopItemQuantities.entrySet().stream()
+                .filter(entry -> entry.getKey().equals(shopId))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        
+        List<ItemDTO> filteredItems = items.stream()
+                .filter(item -> filteredShopItems.containsKey(shopId) && 
+                                filteredShopItems.get(shopId).contains(item.getId()))
+                .collect(Collectors.toList());
+        
+        Double totalPrice = 0.0;
+        for (Map.Entry<Integer, Double> entry : filteredShopItemPrices.get(shopId).entrySet()) {
+            Integer itemId = entry.getKey();
+            Double price = entry.getValue();
+            Integer quantity = filteredShopItemQuantities.get(shopId).get(itemId);
+            totalPrice += price * quantity;
+        }
+            
+        ShoppingCartDTO cart = new ShoppingCartDTO(
+                filteredShopItems,
+                filteredShopItemPrices,
+                filteredShopItemQuantities,
+                totalPrice,
+                filteredItems
+        );
+        return cart;
+    }
+}                       

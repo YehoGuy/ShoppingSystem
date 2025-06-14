@@ -529,10 +529,9 @@ public class UserRepository implements IUserRepository {
         if (user == null) {
             throw new OurRuntime("User with ID " + userId + " doesn't exist.");
         }
-        PaymentMethod paymentMethod = user.getPaymentMethod();
-        if (paymentMethod == null) {
-            throw new OurRuntime("Payment method not set for user with ID " + userId);
-        }
+  
+        PaymentMethod paymentMethod = new WSEPPay();
+        
         try {
             int pid = paymentMethod.processPayment(amount, currency, cardNumber, expirationDateMonth, expirationDateYear, cardHolderName, cvv, id);
             if (pid < 0) {

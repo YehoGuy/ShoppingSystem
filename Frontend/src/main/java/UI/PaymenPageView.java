@@ -85,9 +85,9 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         add(new H1("Payment Page"));
         add(new H3("Order Summary:"));
         add(new H3("Total Amount: $" + totalAmount));
- 
 
-        add(new H3("Please enter a payment details below:"));
+        add(new H3("Please enter payment details below:"));
+
         TextField currencyField = new TextField("Currency");
         TextField cardNumberField = new TextField("Card Number");
         TextField expirationMonthField = new TextField("Expiration Month (MM)");
@@ -96,8 +96,10 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         PasswordField cvvField = new PasswordField("CVV");
         TextField idField = new TextField("ID");
 
-        add(currencyField, cardNumberField, expirationMonthField, expirationYearField, cardHolderNameField, cvvField, idField);
+        add(currencyField, cardNumberField, expirationMonthField, expirationYearField,
+            cardHolderNameField, cvvField, idField);
 
+        // Bind the fields to your variables
         currencyField.addValueChangeListener(e -> currency = e.getValue());
         cardNumberField.addValueChangeListener(e -> cardNumber = e.getValue());
         expirationMonthField.addValueChangeListener(e -> expirationDateMonth = e.getValue());
@@ -106,29 +108,27 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         cvvField.addValueChangeListener(e -> cvv = e.getValue());
         idField.addValueChangeListener(e -> id = e.getValue());
 
-        VerticalLayout buttonLayout = new VerticalLayout();
-        buttonLayout.setSpacing(true);
-        buttonLayout.setPadding(true);
-        buttonLayout.getStyle().setBorder("5px solid #ccc");
-        buttonLayout.getStyle().set("border-radius", "10px");
-        buttonLayout.getStyle().set("padding", "10px");
-        buttonLayout.getStyle().set("background-color", "#f9f9f9");
+        // Now, create the button outside any "hidden" layout:
+        Button payButton = new Button("Pay");
 
-        Button methodButton = new Button("pay", event -> processPayment());
-        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
-            methodButton.setVisible(false);
+        // Hook the button click to your processPayment() method
+        payButton.addClickListener(event -> processPayment());
+
+        // Check if the button should be disabled or enabled (instead of hiding it!)
+        Boolean isSuspended = (Boolean) VaadinSession.getCurrent().getAttribute("isSuspended");
+        if (Boolean.TRUE.equals(isSuspended)) {
+            payButton.setEnabled(false); // Better UX than hiding it
+            payButton.setText("Payment not available (account suspended)");
         }
-        add(methodButton);
-        methodButton.setWidthFull();
-        buttonLayout.add(methodButton);
 
-        Div scroller = new Div(buttonLayout);
-        scroller.getStyle().set("overflow-y", "auto");
-        scroller.setHeightFull();
-        scroller.setWidth("300px");
+        // Style the button a bit (optional)
+        payButton.setWidth("200px");
+        payButton.getStyle().set("margin-top", "20px");
 
-        add(scroller);
+        // Finally, add the button directly to your layout — not inside scroller
+        add(payButton);
     }
+
 
     private void processPayment() {
         try {
@@ -142,18 +142,16 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
                     "&city=" + city +
                     "&street=" + street +
                     "&houseNumber=" + houseNumber
-                    + "&zipCode=" + zipCode +
-                    "&currency=" + paymentMethod.toString();
-
-            ResponseEntity<String> response = restTemplate.postForEntity(url, null, String.class);
+                    + "&zipCode=" + zipCode;
+            ResponseEntity<String> response = restTemplate.postForEntity(url, paymentMethod, String.class);
 
             if (response.getStatusCode() == HttpStatus.CREATED) {
                 Notification.show("Payment successful");
             } else {
-                Notification.show("Payment failed:");
+                Notification.show("Payment failed: " );
             }
         } catch (Exception e) {
-            Notification.show("Payment error");
+            Notification.show("Payment error: " + e.getMessage());
         }
     }
 

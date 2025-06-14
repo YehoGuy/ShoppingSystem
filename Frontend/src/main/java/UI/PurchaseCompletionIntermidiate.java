@@ -143,7 +143,6 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
         Dialog paymentDialog = new Dialog(paymentPage);
         paymentDialog.setWidth("400px");
         paymentDialog.setHeight("300px");
-        paymentDialog.add(new Span("Please complete your payment in the dialog."));
         paymentDialog.open();
     }
 
