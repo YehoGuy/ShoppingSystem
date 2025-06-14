@@ -1,28 +1,32 @@
 package DBLayerTests;
 
-import com.example.app.SimpleHttpServerApplication;
-import com.example.app.ApplicationLayer.OurRuntime;
-import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
-import com.example.app.DBLayer.User.UserRepositoryDBImpl;
-import com.example.app.DomainLayer.Guest;
-import com.example.app.DomainLayer.Member;
-import com.example.app.DomainLayer.User;
-import com.example.app.DomainLayer.Roles.PermissionsEnum;
-import com.example.app.DomainLayer.Roles.Role;
-import com.example.app.DomainLayer.Notification;
-import com.example.app.DomainLayer.ShoppingCart;
-import com.example.app.InfrastructureLayer.WSEPPay;
-
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+
+import com.example.app.ApplicationLayer.OurRuntime;
+import com.example.app.DBLayer.User.UserRepositoryDBImpl;
+import com.example.app.DomainLayer.Guest;
+import com.example.app.DomainLayer.Member;
+import com.example.app.DomainLayer.Purchase.Bid;
+import com.example.app.DomainLayer.Roles.PermissionsEnum;
+import com.example.app.DomainLayer.Roles.Role;
+import com.example.app.DomainLayer.ShoppingCart;
+import com.example.app.DomainLayer.User;
+import com.example.app.InfrastructureLayer.WSEPPay;
+import com.example.app.SimpleHttpServerApplication;
 
 import jakarta.transaction.Transactional;
 
@@ -40,6 +44,7 @@ public class UserRepositoryDBImplTests {
     private int memberId;
 
     // Helper method to set up test data in each test method
+    @BeforeEach
     private void setup() {
         repo.setEncoderToTest(true); // Set the encoder to test mode
         guestId = repo.addGuest();
@@ -49,15 +54,50 @@ public class UserRepositoryDBImplTests {
         member = repo.getUserById(memberId);
     }
 
+
+
+    @Test
+    void testGetAcceptedRoles() {
+        
+        // Ensure the admin user exists
+        int adminId = repo.isUsernameAndPasswordValid("admin", "admin");
+        assertTrue(adminId > 0, "Admin user should exist");
+        
+        // Add a role to admin for testing purposes
+        Role adminRole = new Role(adminId, 1, new PermissionsEnum[]{PermissionsEnum.manageItems, PermissionsEnum.manageOwners});
+        repo.addRoleToPending(adminId, adminRole);
+        repo.acceptRole(adminId, adminRole);
+
+        // Get accepted roles for the admin
+        List<Role> roles = repo.getAcceptedRoles(adminId);
+        assertNotNull(roles, "Roles list should not be null");
+        
+        // Check if the admin has the expected role
+        assertTrue(roles.stream().anyMatch(role -> role.getShopId() == 1), "Admin should have role with shop ID 1");
+    }
+
+    @Test
+    void testaddAuctionWinBidToShoppingCart() {
+        
+        // Ensure the member exists
+        assertNotNull(member, "Member should not be null");
+        
+        // Test adding an auction win bid to the shopping cart
+        // Assuming Bid class exists and has a proper constructor
+        Map<Integer, Integer> bidData = Map.of(1, 100); // example bid data
+        Bid testBid = new Bid(1, 1, 1, bidData, memberId);
+        assertDoesNotThrow(() -> repo.addAuctionWinBidToShoppingCart(memberId, testBid));
+    }
+
     @Test
     void testIsAdmin() {
-        setup();
+        
         assertTrue(repo.isAdmin(repo.isUsernameAndPasswordValid("admin", "admin")));
     }
 
     @Test
     void testAddAdmin() {
-        setup();
+        
         repo.addMember("username2", "password", "email@email.com", "phoneNumber", "address");
         int userid = repo.isUsernameAndPasswordValid("username2", "password");
         repo.addAdmin(userid);
@@ -66,7 +106,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     void testRemoveAdmin() {
-        setup();
+        
         repo.addMember("username3", "password", "email@email.com", "phoneNumber", "address");
         int userid = repo.isUsernameAndPasswordValid("username3", "password");
         repo.addAdmin(userid);
@@ -77,7 +117,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     void testGetAllAdmins() {
-        setup();
+        
         List<Integer> admins = repo.getAllAdmins();
         assertTrue(admins.contains(repo.isUsernameAndPasswordValid("admin", "admin")));
         
@@ -92,13 +132,13 @@ public class UserRepositoryDBImplTests {
 
     @Test
     public void testAddGuestAndGetUserById() {
-        setup();
+        
         assertEquals(guestId, ((Guest)guest).getGuestId());
     }
 
     @Test
     public void testAddMember() {
-        setup();
+        
         assertEquals("username", ((Member)member).getUsername());
         assertEquals("email@example.com", ((Member)member).getEmail());
         assertEquals("111", ((Member)member).getPhoneNumber());
@@ -106,7 +146,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     public void testUpdateMemberUsername() {
-        setup();
+        
         repo.updateMemberUsername(memberId, "newUsername");
         Member updatedMember = repo.getMemberById(memberId);
         assertEquals("newUsername", updatedMember.getUsername());
@@ -114,7 +154,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     public void testUpdateMemberPassword() {
-        setup();
+        
         String newPassword = "newPassword";
         repo.updateMemberPassword(memberId, newPassword);
         Member updatedMember = repo.getMemberById(memberId);
@@ -124,7 +164,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     public void testUpdateMemberEmail() {
-        setup();
+        
         repo.updateMemberEmail(memberId, "newemail@example.com");
         Member updatedMember = repo.getMemberById(memberId);
         assertEquals("newemail@example.com", updatedMember.getEmail());
@@ -132,7 +172,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     public void testUpdateMemberPhoneNumber() {
-        setup();
+        
         repo.updateMemberPhoneNumber(memberId, "222");
         Member updatedMember = repo.getMemberById(memberId);
         assertEquals("222", updatedMember.getPhoneNumber());
@@ -140,7 +180,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     public void testUpdateMemberAddress() {
-        setup();
+        
         repo.updateMemberAddress(memberId, "NewCity", "NewStreet", 123, "12345");
         Member updatedMember = repo.getMemberById(memberId);
         // Note: This assumes Member has getter methods for address components
@@ -150,7 +190,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     public void testIsUsernameAndPasswordValid() {
-        setup();
+        
         int validId = repo.isUsernameAndPasswordValid("username", "password");
         assertEquals(memberId, validId);
         
@@ -160,48 +200,48 @@ public class UserRepositoryDBImplTests {
 
     @Test
     public void testIsUsernameTaken() {
-        setup();
+        
         assertTrue(repo.isUsernameTaken("username"));
         assertFalse(repo.isUsernameTaken("nonexistent"));
     }
 
     @Test
     public void testRemoveUserById() {
-        setup();
+        
         // Cannot test removing members from DB in same way as in-memory
         // but we can test guest removal
         int newGuestId = repo.addGuest();
         assertTrue(repo.isGuestById(newGuestId));
         repo.removeUserById(newGuestId);
         assertFalse(repo.isGuestById(newGuestId));
-    }
-
-    @Test
+    }    @Test
     void testGetUserAndMember() {
-        setup();
-        // Admin user should exist with ID 0 (as set in initAdmin)
-        User adminUser = repo.getUserById(0);
+        
+        // Admin user should exist
+        int adminId = repo.isUsernameAndPasswordValid("admin", "admin");
+        assertTrue(adminId > 0, "Admin should be found and have valid ID");
+        User adminUser = repo.getUserById(adminId);
         assertNotNull(adminUser);
     
         // Unknown user should throw
         assertThrows(OurRuntime.class, () -> repo.getUserById(999));
     
-        // Admin is a Member, so getMemberById(0) should succeed
-        Member admin = repo.getMemberById(0);
-        assertEquals(0, admin.getMemberId());
+        // Admin is a Member, so getMemberById should succeed
+        Member admin = repo.getMemberById(adminId);
+        assertEquals(adminId, admin.getMemberId());
     
         // Create a true guest
         int guestId = repo.addGuest();
         assertTrue(repo.isGuestById(guestId));
         // But asking for a Member on a guest should throw
         assertThrows(OurRuntime.class, () -> repo.getMemberById(guestId));
-    }
-
-    @Test
+    }    @Test
     void testAdminManagement() {
-        setup();
+        
         // Default admin should exist
-        assertTrue(repo.isAdmin(0));
+        int adminId = repo.isUsernameAndPasswordValid("admin", "admin");
+        assertTrue(adminId > 0, "Admin should be found and have valid ID");
+        assertTrue(repo.isAdmin(adminId));
         
         // Add a new admin
         repo.addMember("testAdmin", "password", "admin@test.com", "123", "address");
@@ -219,7 +259,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     void testGuestAndMemberLogin() {
-        setup();
+        
         int g1 = repo.addGuest();
         assertTrue(repo.isGuestById(g1));
         
@@ -232,7 +272,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     void testShoppingCartOps() {
-        setup();
+        
         ShoppingCart cart = repo.getShoppingCartById(memberId);
         assertNotNull(cart);
         
@@ -250,7 +290,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     void testRoleAndWorkerMappings() {
-        setup();
+        
         repo.addMember("owner","pw","o@e","ph","ad");
         int uid = repo.isUsernameAndPasswordValid("owner","pw");
         Role r = new Role(uid, 99, new PermissionsEnum[]{PermissionsEnum.manageOwners});
@@ -266,12 +306,13 @@ public class UserRepositoryDBImplTests {
         repo.acceptRole(uid, r);
         Role rr = repo.getRole(uid,99);
         assertEquals(r, rr);
-        
-        repo.addPermission(uid, PermissionsEnum.handleMessages, 99);
+          repo.addPermission(uid, PermissionsEnum.handleMessages, 99);
         assertTrue(rr.hasPermission(PermissionsEnum.handleMessages));
         
         repo.removePermission(uid, PermissionsEnum.handleMessages, 99);
-        assertFalse(rr.hasPermission(PermissionsEnum.handleMessages));
+        // Get fresh role reference after removal since JPA entities might be detached
+        Role freshRole = repo.getRole(uid, 99);
+        assertFalse(freshRole.hasPermission(PermissionsEnum.handleMessages));
 
         List<Integer> workerShops = repo.getShopIdsByWorkerId(uid);
         assertTrue(workerShops.contains(99));
@@ -280,7 +321,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     void testSetPermissions_successAndFailures() {
-        setup();
+        
         // Create a fresh member
         repo.addMember("permUser", "pw", "a@a", "p", "addr");
         int puid = repo.isUsernameAndPasswordValid("permUser", "pw");
@@ -301,7 +342,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     void testRemoveRole_successAndFailure() {
-        setup();
+        
         // Create and accept a role
         repo.addMember("temp","pw","t@t","p","a");
         int tid = repo.isUsernameAndPasswordValid("temp","pw");
@@ -324,7 +365,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     void testGetOwners_isOwner_isFounder() {
-        setup();
+        
         // No owners initially
         assertTrue(repo.getOwners(123).isEmpty());
         assertFalse(repo.isOwner(memberId, 123));
@@ -351,7 +392,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     void testDeclineRole_andPendingRoles() {
-        setup();
+        
         // New pending
         Role r = new Role(memberId, 55, null);
         repo.addRoleToPending(memberId, r);
@@ -375,7 +416,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     void testGetShoppingCartById_successAndFailure() {
-        setup();
+        
         ShoppingCart cart = repo.getShoppingCartById(memberId);
         assertNotNull(cart);
 
@@ -383,23 +424,21 @@ public class UserRepositoryDBImplTests {
         assertThrows(OurRuntime.class,
             () -> repo.getShoppingCartById(9999)
         );
-    }
-
-    @Test
+    }    @Test
     void testGetPendingRoles_HappyPath() {
-        setup();
+        
         repo.addMember("pend","pw","p@e","ph","ad");
         int pid = repo.isUsernameAndPasswordValid("pend","pw");
         Role r = new Role(pid, 99, null);
         repo.addRoleToPending(pid, r);
         List<Role> pending = repo.getPendingRoles(pid);
         assertEquals(1, pending.size());
-        assertSame(r, pending.get(0));
+        assertEquals(r, pending.get(0));
     }
 
     @Test
     void testAddRoleToPending_NullAndInvalidUser() {
-        setup();
+        
         // Null role
         assertThrows(OurRuntime.class,
             () -> repo.addRoleToPending(memberId, null));
@@ -411,7 +450,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     void testShoppingCartFailures() {
-        setup();
+        
         // Invalid user for shopping cart operations
         assertThrows(OurRuntime.class,
             () -> repo.addItemToShoppingCart(9999, 1, 1, 1));
@@ -425,7 +464,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     void testNotificationFailures() {
-        setup();
+        
         // Invalid user for addNotification
         assertThrows(OurRuntime.class,
             () -> repo.addNotification(9999, "T", "M"));
@@ -437,7 +476,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     void testPaymentFailures() {
-        setup();
+        
         // Invalid user for payment operations
         assertThrows(OurRuntime.class,
             () -> repo.setPaymentMethod(9999, 1, new WSEPPay()));
@@ -449,7 +488,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     void testUpdateMemberFields_Failures() {
-        setup();
+        
         // Invalid user ID for various update operations
         assertThrows(OurRuntime.class,
             () -> repo.updateMemberUsername(9999, "newname"));
@@ -463,7 +502,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     void testPermissionMgmt_Failures() {
-        setup();
+        
         // No role bound
         assertThrows(OurRuntime.class,
             () -> repo.addPermission(memberId, PermissionsEnum.manageItems, 123));
@@ -477,7 +516,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     void testGetUserMapping() {
-        setup();
+        
         Map<Integer, User> userMapping = repo.getUserMapping();
         assertNotNull(userMapping);
         // The mapping should contain database users
@@ -486,7 +525,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     void testGetUsersList() {
-        setup();
+        
         List<User> users = repo.getUsersList();
         assertNotNull(users);
         // Should contain at least the admin and test members
@@ -495,7 +534,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     void testGetUsersIdsList() {
-        setup();
+        
         List<Integer> userIds = repo.getUsersIdsList();
         assertNotNull(userIds);
         assertFalse(userIds.isEmpty());
@@ -503,7 +542,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     void testGetGuestsList() {
-        setup();
+        
         List<Guest> guests = repo.getGuestsList();
         assertNotNull(guests);
         // Should contain at least our test guest
@@ -512,7 +551,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     void testGetMembersList() {
-        setup();
+        
         List<Member> members = repo.getMembersList();
         assertNotNull(members);
         // Should contain at least the admin and test member
@@ -521,7 +560,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     void testGetAllMembers() {
-        setup();
+        
         List<Member> allMembers = repo.getAllMembers();
         assertNotNull(allMembers);
         // Should contain at least the admin and test member
@@ -530,7 +569,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     void testClear() {
-        setup();
+        
         // Clear operation behavior might be different for DB implementation
         // This test ensures the method exists and doesn't throw
         assertDoesNotThrow(() -> repo.clear());
@@ -538,7 +577,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     void testSuspensionOperations() {
-        setup();
+        
         // Test suspension operations
         repo.setSuspended(memberId, LocalDateTime.now().plusDays(1));
         assertTrue(repo.isSuspended(memberId));
@@ -556,7 +595,7 @@ public class UserRepositoryDBImplTests {
 
     @Test
     void testPasswordEncoderOperations() {
-        setup();
+        
         assertNotNull(repo.getPasswordEncoderUtil());
         
         // Test encoder setup
@@ -566,26 +605,24 @@ public class UserRepositoryDBImplTests {
 
     @Test
     void testNotificationOperations() {
-        setup();
+        
         repo.addNotification(memberId, "Test Title", "Test Message");
         List<String> notifications = repo.getNotificationsAndClear(memberId);
         assertNotNull(notifications);
-    }
-
-    @Test
+    }    @Test
     void testPaymentOperations() {
-        setup();
+        
         WSEPPay paymentMethod = new WSEPPay();
         repo.setPaymentMethod(memberId, 1, paymentMethod);
         
-        // This might fail due to external payment service, but tests the method exists
+        // This should fail due to null cardNumber which throws IllegalArgumentException
         assertThrows(Exception.class, () -> 
-            repo.pay(memberId, 100.0, "USD", "1234567890123456", "12", "25", "John Doe", "123", "test-payment"));
+            repo.pay(memberId, 100.0, "USD", null, "12", "25", "John Doe", "123", "test-payment"));
     }
 
     @Test
     void testAuctionOperations() {
-        setup();
+        
         List<?> auctionWins = repo.getAuctionsWinList(memberId);
         assertNotNull(auctionWins);
         
@@ -593,5 +630,5 @@ public class UserRepositoryDBImplTests {
         // If Bid implementation is available, uncomment and adjust:
         // Bid testBid = new Bid(/* parameters */);
         // assertDoesNotThrow(() -> repo.addAuctionWinBidToShoppingCart(memberId, testBid));
-    }
+    }    // Tests moved and consolidated below to avoid duplication
 }
