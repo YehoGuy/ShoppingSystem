@@ -36,6 +36,7 @@ public class AuthTokenRepositoryDBImpl implements IAuthTokenRepository {
     @Override
     public void setAuthToken(int userId, AuthToken token) {
         try {
+            token.setUserId(userId);
             jpaRepo.save(token); // assumes token already has correct userId (memberId)
         } catch (Exception e) {
             throw new OurRuntime("Failed to set auth token for userId=" + userId, e);
