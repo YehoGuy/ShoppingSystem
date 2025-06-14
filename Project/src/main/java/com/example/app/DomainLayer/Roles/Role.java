@@ -29,6 +29,12 @@ public class Role {
         }
     }
 
+    public Role() {
+        this.assigneeId = -1; // Default value indicating no assignee
+        this.shopId = -1; // Default value indicating no shop
+        this.permissions = new PermissionsEnum[0]; // Default empty permissions
+    }
+
     public int getAssigneeId() {
         return assigneeId;
     }

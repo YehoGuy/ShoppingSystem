@@ -13,6 +13,11 @@ public class Notification {
         this.message = message;
     }
 
+    public Notification() {
+        this.title = ""; // Default title
+        this.message = ""; // Default message
+    }
+
     public String getTitle() {
         return title;
     }

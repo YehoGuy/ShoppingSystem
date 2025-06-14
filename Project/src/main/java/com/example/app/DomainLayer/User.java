@@ -9,6 +9,10 @@ public abstract class User {
     protected PaymentMethod paymentMethod; // Payment method associated with the user
     protected Address address; // Shipping address associated with the user
 
+    public User() {
+        this.shoppingCart = new ShoppingCart(); // Initialize the shopping cart
+    }
+
     public User(int cartId) {
         this.shoppingCart = new ShoppingCart(); // Initialize the shopping cart
     }

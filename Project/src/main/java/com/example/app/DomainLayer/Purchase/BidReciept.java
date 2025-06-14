@@ -24,6 +24,15 @@ public class BidReciept extends Reciept{
         this.endTime = endTime;
     }
 
+    public BidReciept(){
+        super();
+        this.thisBidderId = -1; // Default value indicating no bidder
+        this.initialPrice = 0; // Default initial price
+        this.highestBid = 0; // Default highest bid
+        this.highestBidderId = -1; // Default indicating no highest bidder
+        this.endTime = LocalDateTime.now(); // Default end time set to now
+    }
+
     public int getThisBidderId() {
         return thisBidderId;
     }

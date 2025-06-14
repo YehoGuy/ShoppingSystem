@@ -69,7 +69,7 @@ public class Member extends User {
     private final Object orderHistoryLock = new Object();
     private final Object notificationsLock = new Object();  
     public Member() {
-        super(0); // Call the User class constructor
+        super(); // Call the User class constructor
         this.memberId = 0; // Default member ID
         this.username = ""; // Default username
         this.password = ""; // Default password
