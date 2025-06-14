@@ -27,8 +27,8 @@ public class AuthTokenRepoTests {
         authTokenRepo = new AuthTokenRepository();
         expirationDate1 = new Date(System.currentTimeMillis() + 1000000000000L); 
         expirationDate2 = new Date(System.currentTimeMillis() + 2000000000000L); 
-        authToken1 = new AuthToken("token1", expirationDate1, 10); 
-        authToken2 = new AuthToken("token2", expirationDate2, 10); 
+        authToken1 = new AuthToken("token1", expirationDate1); 
+        authToken2 = new AuthToken("token2", expirationDate2); 
     }
 
     @Test
@@ -133,7 +133,7 @@ public class AuthTokenRepoTests {
 
     @Test
     void testSetAndGetValidAuthToken() {
-        AuthToken token = new AuthToken("tok1", new Date(System.currentTimeMillis() + 10_000), 10);
+        AuthToken token = new AuthToken("tok1", new Date(System.currentTimeMillis() + 10_000));
         authTokenRepo.setAuthToken(1, token);
         AuthToken fetched = authTokenRepo.getAuthToken(1);
         assertNotNull(fetched);
@@ -145,16 +145,16 @@ public class AuthTokenRepoTests {
         // null token
         assertThrows(OurArg.class, () -> authTokenRepo.setAuthToken(1, null));
         // negative userId
-        AuthToken valid = new AuthToken("ok", new Date(System.currentTimeMillis() + 10_000), 10);
+        AuthToken valid = new AuthToken("ok", new Date(System.currentTimeMillis() + 10_000));
         assertThrows(OurArg.class, () -> authTokenRepo.setAuthToken(-5, valid));
         // expired token
-        AuthToken expired = new AuthToken("e", new Date(System.currentTimeMillis() - 1000), 10);
+        AuthToken expired = new AuthToken("e", new Date(System.currentTimeMillis() - 1000));
         assertThrows(OurArg.class, () -> authTokenRepo.setAuthToken(2, expired));
     }
 
     @Test
     void testRemoveAndGetAuthToken_AfterRemovalIsNull() {
-        AuthToken token = new AuthToken("x", new Date(System.currentTimeMillis() + 10_000), 10);
+        AuthToken token = new AuthToken("x", new Date(System.currentTimeMillis() + 10_000));
         authTokenRepo.setAuthToken(3, token);
         authTokenRepo.removeAuthToken(3);
         assertNull(authTokenRepo.getAuthToken(3));
@@ -162,7 +162,7 @@ public class AuthTokenRepoTests {
 
     @Test
     void testGetUserIdByToken_Cases() {
-        AuthToken token = new AuthToken("findme", new Date(System.currentTimeMillis() + 10_000), 10);
+        AuthToken token = new AuthToken("findme", new Date(System.currentTimeMillis() + 10_000));
         authTokenRepo.setAuthToken(5, token);
 
         // found
