@@ -10,6 +10,6 @@ import com.example.app.DomainLayer.AuthToken;
 
 @Repository
 public interface AuthTokenRepositoryDB  extends JpaRepository<AuthToken, String> , IAuthTokenRepository{
-    Optional<AuthToken> findByMemberId(int memberId);
+    Optional<AuthToken> findByUserId(int userId);
     Optional<AuthToken> findByToken(String token);
 }

@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
 import com.example.app.ApplicationLayer.OurRuntime;
@@ -14,6 +15,7 @@ import com.example.app.DomainLayer.AuthToken;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
+@Primary
 @Repository
 public class AuthTokenRepositoryDBImpl implements IAuthTokenRepository {
 
@@ -28,7 +30,7 @@ public class AuthTokenRepositoryDBImpl implements IAuthTokenRepository {
 
     @Override
     public AuthToken getAuthToken(int userId) {
-        return jpaRepo.findByMemberId(userId).orElse(null);
+        return jpaRepo.findByUserId(userId).orElse(null);
     }
 
     @Override
@@ -42,13 +44,12 @@ public class AuthTokenRepositoryDBImpl implements IAuthTokenRepository {
 
     @Override
     public void removeAuthToken(int userId) {
-        Optional<AuthToken> existing = jpaRepo.findByMemberId(userId);
+        Optional<AuthToken> existing = jpaRepo.findByUserId(userId);
         existing.ifPresent(jpaRepo::delete);
     }
 
     @Override
     public int getUserIdByToken(String token) {
-        //TODO: implement
-        return -1; // Token not found
+        return jpaRepo.findByToken(token).map(AuthToken::getUserId).orElse(-1);
     }
 }
