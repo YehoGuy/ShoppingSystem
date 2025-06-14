@@ -1,5 +1,8 @@
 package com.example.app.DomainLayer;
 
+import jakarta.persistence.Embeddable;
+
+@Embeddable
 public class Notification {
 
     private String title;

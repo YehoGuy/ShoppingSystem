@@ -1,7 +1,9 @@
 package com.example.app.DomainLayer.Roles;
 
 import java.util.Arrays;
+import jakarta.persistence.Embeddable;
 
+@Embeddable
 public class Role {
 
     private final int assigneeId;

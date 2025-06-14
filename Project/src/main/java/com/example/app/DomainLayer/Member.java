@@ -14,6 +14,8 @@ import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Table;
 import jakarta.persistence.Id;
 import jakarta.persistence.Column;
@@ -25,25 +27,19 @@ import jakarta.persistence.CollectionTable;
 @Table(name = "members")
 public class Member extends User {
     @Id
-    @Column(name = "member_id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     final private int memberId;
     
-    @Column(name = "username")
     private volatile String username; // Username of the user
     
-    @Column(name = "password")
     private volatile String password; // Password of the user
     
-    @Column(name = "email")
     private volatile String email; // Email address of the user
     
-    @Column(name = "phone_number")
     private volatile String phoneNumber; // Phone number of the user
     
-    @Column(name = "suspended_until")
     private volatile LocalDateTime suspended; // Suspension status of the user
     
-    @Column(name = "is_admin")
     private volatile boolean isAdmin; // Admin status of the user
 
     @ElementCollection
@@ -52,7 +48,6 @@ public class Member extends User {
     
     @ElementCollection
     @CollectionTable(name = "member_order_history", joinColumns = @JoinColumn(name = "member_id"))
-    @Column(name = "order_id")
     private final List<Integer> orderHistory;// List of order IDs
     
     @ElementCollection
@@ -67,13 +62,28 @@ public class Member extends User {
     @CollectionTable(name = "member_auction_wins", joinColumns = @JoinColumn(name = "member_id"))
     private final List<BidReciept> auctionsWins; // List of auctions won by the user
 
-    @Column(name = "is_connected")
     private boolean isConnected; // Connection status of the user, used for notification purposes
 
     private final Object rolesLock = new Object();
     private final Object pendingRolesLock = new Object();
     private final Object orderHistoryLock = new Object();
-    private final Object notificationsLock = new Object();    
+    private final Object notificationsLock = new Object();  
+    public Member() {
+        super(0); // Call the User class constructor
+        this.memberId = 0; // Default member ID
+        this.username = ""; // Default username
+        this.password = ""; // Default password
+        this.email = ""; // Default email address
+        this.phoneNumber = ""; // Default phone number
+        this.suspended = LocalDateTime.now(); // Initialize suspension status (not suspended)
+        this.isAdmin = false; // Initialize admin status (not admin by default)
+        this.orderHistory = new CopyOnWriteArrayList<>(); // Initialize order history
+        this.roles = new CopyOnWriteArrayList<>(); // Initialize roles
+        this.pending_roles = new CopyOnWriteArrayList<>(); // Initialize pending roles
+        this.notifications = new CopyOnWriteArrayList<>(); // Initialize notifications
+        this.auctionsWins = new CopyOnWriteArrayList<>(); // Initialize auctions won
+        this.isConnected = false; // Initialize connection status
+    }  
     public Member(int memberId, String username, String password, String email, String phoneNumber,
             String addressToRemove) {
         super(memberId); // Call the User class constructor
