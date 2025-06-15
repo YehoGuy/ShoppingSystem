@@ -2,7 +2,9 @@ package com.example.app.DomainLayer.Purchase;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import jakarta.persistence.Embeddable;
 
+@Embeddable
 public class BidReciept extends Reciept{
 
     private final int thisBidderId;
@@ -12,6 +14,7 @@ public class BidReciept extends Reciept{
     private final int highestBidderId; // -1 if no Bidder
     private final LocalDateTime endTime; // End time of the auction, if applicable
 
+
     public BidReciept(int purchaseId, int userId, int storeId, Map<Integer, Integer> items, Address shippingAddress,int price, int thisBidderId, int initialPrice, int highestBid, int highestBidderId, boolean isCompleted, LocalDateTime endTime) {
         super(purchaseId, userId, storeId, items, shippingAddress, price, isCompleted);
         this.thisBidderId = thisBidderId;
@@ -19,6 +22,15 @@ public class BidReciept extends Reciept{
         this.highestBid = highestBid;
         this.highestBidderId = highestBidderId;
         this.endTime = endTime;
+    }
+
+    public BidReciept(){
+        super();
+        this.thisBidderId = -1; // Default value indicating no bidder
+        this.initialPrice = 0; // Default initial price
+        this.highestBid = 0; // Default highest bid
+        this.highestBidderId = -1; // Default indicating no highest bidder
+        this.endTime = LocalDateTime.now(); // Default end time set to now
     }
 
     public int getThisBidderId() {

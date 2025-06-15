@@ -1,5 +1,8 @@
 package com.example.app.DomainLayer;
 
+import jakarta.persistence.Embeddable;
+
+@Embeddable
 public class Notification {
 
     private String title;
@@ -8,6 +11,11 @@ public class Notification {
     public Notification(String title, String message) {
         this.title = title;
         this.message = message;
+    }
+
+    public Notification() {
+        this.title = ""; // Default title
+        this.message = ""; // Default message
     }
 
     public String getTitle() {

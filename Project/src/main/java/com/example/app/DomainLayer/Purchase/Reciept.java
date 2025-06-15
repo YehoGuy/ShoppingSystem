@@ -92,6 +92,19 @@ public class Reciept {
         this.endTime = endTime; // end time is applicable for auction purchases
     }
 
+    public Reciept() {
+        this.purchaseId = -1; // Default value indicating no purchase
+        this.userId = -1; // Default value indicating no user
+        this.storeId = -1; // Default value indicating no store
+        this.items = Map.of(); // Empty items map
+        this.shippingAddress = new Address(); // Default address
+        this.isCompleted = new AtomicBoolean(false); // Default to not completed
+        this.timeOfCompletion = null; // No completion time by default
+        this.timestampOfRecieptGeneration = LocalDateTime.now(); // Current time as generation time
+        this.price = 0.0; // Default price is zero
+        this.endTime = null; // No end time by default
+    }
+
     /**
      * Returns the ID of the purchase.
      *
