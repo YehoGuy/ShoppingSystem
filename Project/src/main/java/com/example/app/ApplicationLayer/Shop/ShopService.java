@@ -760,7 +760,7 @@ public class ShopService {
             User user = userService.getUserById(userId);
             String userName;
             if (user instanceof Member) {
-                userName = ((Member)user).getUsername();
+                userName = ((Member) user).getUsername();
             } else {
                 userName = "guest";
             }
@@ -866,7 +866,7 @@ public class ShopService {
         } else if (dto.getLeafPolicy1() != null) {
             left = mapLeafPolicy(dto.getLeafPolicy1(), shopId);
         } else {
-            left = (items, prices, categories) -> true; // no requirement
+            left = new PolicyLeaf(null, null, null, 0.0, (items, prices, categories) -> true); // no requirement
         }
         // map right side
         Policy right;
