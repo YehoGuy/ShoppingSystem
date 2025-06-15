@@ -1,5 +1,6 @@
 package UI;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +19,7 @@ import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.JsModule;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H2;
@@ -27,6 +29,8 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
+import com.vaadin.flow.component.textfield.NumberField;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.HasUrlParameter;
@@ -36,16 +40,19 @@ import com.vaadin.flow.server.VaadinSession;
 
 import DTOs.BidRecieptDTO; // for Map.Entry
 import DTOs.ItemDTO; // if you use List elsewhere
+import DTOs.ItemReviewDTO;
 import DTOs.ShopDTO;
 import DTOs.ShopReviewDTO;
 
 @Route(value = "shop", layout = AppLayoutBasic.class)
-
+@JsModule("@vaadin/dialog/vaadin-dialog.js")
+// ⬇️ Add this line so NumberField appears in the client
+@JsModule("@vaadin/number-field/vaadin-number-field.js")
 public class ShopView extends VerticalLayout implements HasUrlParameter<String>, BeforeEnterObserver {
 
     @Value("${url.api}/shops")
     private String SHOP_API_URL;
-    
+
 
     @Value("${url.api}/purchases/shops")
     private String PURCHASE_HISTORY_URL;
@@ -281,7 +288,154 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
             add(new Paragraph("👤 " + rev.getUserId() + ": "
                             + rev.getReviewText() + " (" + rev.getRating() + ")"));
         }
+
+        Button addReviewButton = new Button("Add Review");
+        addReviewButton.addClickListener(event -> addReview(shop.getShopId()));
+        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+            addReviewButton.setVisible(false);
+        }
+
+        add(addReviewButton);
+        displayReviews(); // Call to display reviews
+
+    
+        // reviewContainer = new VerticalLayout(); // <--- set reference
+        // reviewContainer.setWidth("80%");
+        // reviewContainer.getStyle().set("overflow", "auto");
+        // HorizontalLayout content = new HorizontalLayout(reviewContainer);
+        // content.setWidthFull();
+        // content.setHeightFull();
+        // content.setFlexGrow(1, reviewContainer);
+        // add(content);
+        // displayReviews();
     }
+
+
+
+    private void displayReviews() {
+        
+        VerticalLayout reviewsLayout = new VerticalLayout();
+        
+        for (ShopReviewDTO review : shop.getReviews()) {
+            VerticalLayout singleReview = new VerticalLayout();
+            singleReview.add(
+                    new Span("Rating: " + review.getRating()),
+                    new Span("Comment: " + review.getReviewText()));
+            singleReview.getStyle().set("border", "1px solid #ccc");
+            singleReview.getStyle().set("padding", "10px");
+            singleReview.getStyle().set("margin-bottom", "10px");
+            reviewsLayout.add(singleReview);
+        }
+        add(reviewsLayout);
+    }
+
+    private void getShopReviews() {
+        // This method is a placeholder for fetching shop reviews.
+        // You can implement it to fetch reviews from the backend or any other source.
+        // Currently, it does nothing.
+    }
+
+
+    private void addReview(int shopId) {
+        Dialog dialog = new Dialog();
+        
+        String shopName = (shop != null) ? shop.getName() : ("ID " + shopId);
+        H1 dialogTitle = new H1("Add Review to " + shopName);
+        dialog.add(dialogTitle);
+        VerticalLayout formLayout = new VerticalLayout();
+        formLayout.setSpacing(true);
+
+        NumberField ratingField = new NumberField("Rating (1-5)");
+        // Alternatively, use a Slider for rating selection:
+        ratingField.setMin(1);
+        ratingField.setMax(5);
+        ratingField.setStep(1);
+        ratingField.setWidthFull();
+        //ratingField.getStyle().set("border", "2px solid red");
+        ratingField.setVisible(true);
+        //ratingField.setHeight("50px"); // just to see it
+
+
+        TextField reviewTextField = new TextField("Your Review");
+        reviewTextField.setWidthFull();
+
+
+        Button submitButton = new Button("Submit Review");
+        submitButton.addClickListener(e -> sendReview(shopId, reviewTextField.getValue(), ratingField.getValue(),dialog));
+
+        Button closeButton = new Button("Close", event -> dialog.close());
+
+        formLayout.add(ratingField, reviewTextField, submitButton, closeButton);
+        dialog.add(formLayout);
+        
+        //UI.getCurrent().add(dialog);
+        dialog.open();
+
+    }
+
+    private void sendReview(int shopId, String reviewText,double double_rating, Dialog dialog) {
+        try{
+            if (reviewText == null || reviewText.trim().isEmpty()) {
+                Notification.show("Please enter your review text.");
+                return;
+            }
+            
+            if (double_rating !=1.0 && double_rating !=2.0 && double_rating !=3.0 && double_rating !=4.0 && double_rating !=5.0) {
+                Notification.show("Please enter a valid rating between 1 and 5.");
+                return;
+            }
+            
+            int rating = ((int)double_rating); // Convert double to int
+
+            String token = getToken();
+            HttpHeaders headers = getHeaders(token);
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+            String url = "http://localhost:8080" + "/api/shops/" + shopId + "/reviews"
+                        + "?token=" + token + "&rating=" + rating + "&reviewText=" + reviewText + "&shopId=" + shopId;
+
+            restTemplate.postForEntity(url, request, Void.class);
+            Notification.show("review added successfully");
+                        
+            getShopRefresh(shopId); // Refresh the displayed items
+
+            dialog.close();
+
+        } catch (Exception e) {
+            Notification.show("something failed");
+        }
+    }
+
+
+    private void getShopRefresh(int shopId)
+    {
+        String token = getToken();
+        String url = SHOP_API_URL + "/" + shopId + "?token=" + token;
+        try {
+            ResponseEntity<ShopDTO> resp = restTemplate.getForEntity(url, ShopDTO.class);
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
+                shop = resp.getBody();
+                prices = ShopDTO.itemPricesToMapConverter(shop.getItems(), shop.getItemPrices());
+                buildPage();
+            } else {
+                Notification.show("⚠️ Failed to load shop");
+            }
+        } catch (Exception e) {
+            Notification.show("❗ Error loading shop");
+        }
+    }
+
+
+    private String getToken() {
+        return (String) VaadinSession.getCurrent().getAttribute("authToken");
+    }
+
+    private HttpHeaders getHeaders(String token) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + token);
+        return headers;
+    }
+
+
 
     private void handleSuspence() {
         Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
@@ -302,4 +456,5 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
                     "Failed to check admin status");
         }
     }
+
 }
