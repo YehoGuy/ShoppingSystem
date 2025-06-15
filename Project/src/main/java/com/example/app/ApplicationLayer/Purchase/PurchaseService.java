@@ -89,12 +89,21 @@ public class PurchaseService {
             LoggerService.logMethodExecutionEnd("checkoutCart", purchaseIds);
             userService.purchaseNotification(cart);
             return purchaseIds.keySet().stream().toList();
-        } catch (OurArg e) {
-            LoggerService.logDebug("checkoutCart", e);
-            throw new OurArg("checkoutCart: " + e.getMessage(), e);
-        } catch (OurRuntime e) {
-            LoggerService.logDebug("checkoutCart", e);
-            throw new OurRuntime("checkoutCart: " + e.getMessage(), e);
+        // } catch (OurArg e) {
+        //     LoggerService.logDebug("checkoutCart", e);
+        //     throw new OurArg("checkoutCart: " + e.getMessage(), e);
+        // } catch (OurRuntime e) {
+        //     for (Integer shopId : aqcuired.keySet()) {
+        //         shopService.rollBackPurchase(aqcuired.get(shopId), shopId);
+        //     }
+        //     if (cartBackup != null) {
+        //         userService.restoreUserShoppingCart(userId, cartBackup);
+        //     }
+        //     for (Integer pid : paymentIds) {
+        //         userService.refundPaymentAuto(authToken, pid);
+        //     }
+        //     LoggerService.logError("checkoutCart", e, authToken, shippingAddress);
+        //     throw new OurRuntime("checkoutCart: " + e.getMessage(), e);
         } catch (Exception e) {
             for (Integer shopId : aqcuired.keySet()) {
                 shopService.rollBackPurchase(aqcuired.get(shopId), shopId);
