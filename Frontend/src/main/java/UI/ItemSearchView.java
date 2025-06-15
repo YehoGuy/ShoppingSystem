@@ -3,18 +3,18 @@ package UI;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.web.client.RestTemplate;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
 
-import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dependency.JsModule;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
@@ -22,20 +22,19 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.router.Route;
-
-import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
-import org.springframework.beans.factory.annotation.Value;
-import jakarta.annotation.PostConstruct;
+import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinSession;
 
 import DTOs.ItemDTO;
 import DTOs.ItemReviewDTO;
-import Domain.ItemCategory;
+import jakarta.annotation.PostConstruct;
 
 @Route(value = "items", layout = AppLayoutBasic.class)
-
+@JsModule("@vaadin/dialog/vaadin-dialog.js")
+// ⬇️ Add this line so NumberField appears in the client
+@JsModule("@vaadin/number-field/vaadin-number-field.js")
 public class ItemSearchView extends VerticalLayout implements BeforeEnterObserver {
     private List<ItemDTO> allItems = new ArrayList<>();
     private List<ItemDTO> filteredItems = new ArrayList<>();
@@ -195,16 +194,101 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
                 showMoreButton.setText(currentlyVisible ? "Show Reviews" : "Hide Reviews");
             });
 
+            // add review button
+            Button addReviewButton = new Button("Add Review");
+            addReviewButton.addClickListener(event -> addReview(item.getId()));
+            if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+                addReviewButton.setVisible(false);
+            }
+
             itemCard.add(
                     name,
                     description,
                     category,
                     averageRating,
                     reviewsLayout,
-                    showMoreButton);
+                    showMoreButton,
+                    addReviewButton);
             itemsContainer.add(itemCard);
         }
     }
+
+
+    private void addReview(int itemId) {
+        Dialog dialog = new Dialog();
+        ItemDTO item = allItems.stream()
+            .filter(i -> i.getId() == itemId)
+            .findFirst()
+            .orElse(null);
+
+        String itemName = (item != null) ? item.getName() : ("ID " + itemId);
+        H1 dialogTitle = new H1("Add Review to " + itemName);
+        dialog.add(dialogTitle);
+        VerticalLayout formLayout = new VerticalLayout();
+        formLayout.setSpacing(true);
+
+        NumberField ratingField = new NumberField("Rating (1-5)");
+        // Alternatively, use a Slider for rating selection:
+        ratingField.setMin(1);
+        ratingField.setMax(5);
+        ratingField.setStep(1);
+        ratingField.setWidthFull();
+        //ratingField.getStyle().set("border", "2px solid red");
+        ratingField.setVisible(true);
+        //ratingField.setHeight("50px"); // just to see it
+
+
+        TextField reviewTextField = new TextField("Your Review");
+        reviewTextField.setWidthFull();
+
+
+        Button submitButton = new Button("Submit Review");
+        submitButton.addClickListener(e -> sendReview(itemId, reviewTextField.getValue(), ratingField.getValue(),dialog));
+
+        Button closeButton = new Button("Close", event -> dialog.close());
+
+        formLayout.add(ratingField, reviewTextField, submitButton, closeButton);
+        dialog.add(formLayout);
+        
+        //UI.getCurrent().add(dialog);
+        dialog.open();
+
+    }
+
+    private void sendReview(int itemId, String reviewText,double double_rating, Dialog dialog) {
+        try{
+            if (reviewText == null || reviewText.trim().isEmpty()) {
+                Notification.show("Please enter your review text.");
+                return;
+            }
+            
+            if (double_rating !=1.0 && double_rating !=2.0 && double_rating !=3.0 && double_rating !=4.0 && double_rating !=5.0) {
+                Notification.show("Please enter a valid rating between 1 and 5.");
+                return;
+            }
+            
+            int rating = ((int)double_rating); // Convert double to int
+
+            String token = getToken();
+            HttpHeaders headers = getHeaders(token);
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+            String url = "http://localhost:8080" + "/api/items/" + itemId + "/reviews"
+                        + "?token=" + token + "&rating=" + rating + "&reviewText=" + reviewText;
+
+            restTemplate.postForEntity(url, request, Void.class);
+            Notification.show("review added successfully");
+                        
+            filteredItems.clear();
+            getItems(); // Refresh the user grid
+            displayItems(filteredItems); // Refresh the displayed items
+
+            dialog.close();
+
+        } catch (Exception e) {
+            Notification.show("something failed");
+        }
+    }
+
 
     private void handleSuspence() {
         Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
@@ -225,4 +309,15 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
                     "Failed to check admin status");
         }
     }
+
+    private String getToken() {
+        return (String) VaadinSession.getCurrent().getAttribute("authToken");
+    }
+
+    private HttpHeaders getHeaders(String token) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + token);
+        return headers;
+    }
+
 }
