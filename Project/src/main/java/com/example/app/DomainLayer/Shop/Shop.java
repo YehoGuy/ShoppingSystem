@@ -19,39 +19,78 @@ import com.example.app.DomainLayer.Shop.Discount.PolicyComposite;
 import com.example.app.DomainLayer.Shop.Discount.PolicyLeaf;
 import com.example.app.DomainLayer.Shop.Discount.SingleDiscount;
 import com.example.app.DomainLayer.Shop.Discount.TriPredicate;
+import com.example.app.InfrastructureLayer.WSEPShipping;
+
+import jakarta.annotation.Generated;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapKeyColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 /**
  * The Shop class representing a shop entity in your system.
  * It supports safe concurrent modifications and multi-threaded access.
  */
+@Entity
+@Table(name = "shops")
 public class Shop {
 
     // Immutable fields (set once at construction).
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private final int id;
     private final String name;
 
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "shop_id")
     private final List<Discount> discounts;
 
     // A thread-safe list to manage shop reviews.
+    @ElementCollection
     private final List<ShopReview> reviews;
 
     // Items: mapping from item ID to its quantity.
-    private final ConcurrentHashMap<Integer, AtomicInteger> items;
+    @ElementCollection
+    @CollectionTable(name = "shop_items", joinColumns = @JoinColumn(name = "shop_id"))
+    @MapKeyColumn(name = "item_id")
+    @Column(name = "quantity")
+    private final Map<Integer, AtomicInteger> items;
 
     // Prices: mapping from item ID to its price.
-    private final ConcurrentHashMap<Integer, AtomicInteger> itemsPrices;
+    @ElementCollection
+    @CollectionTable(name = "shop_item_prices", joinColumns = @JoinColumn(name = "shop_id"))
+    @MapKeyColumn(name = "item_id")
+    @Column(name = "price")
+    private final Map<Integer, AtomicInteger> itemsPrices;
 
-    private final ConcurrentHashMap<Integer, Object> itemAcquireLocks;
+    @Transient
+    private final Map<Integer, Object> itemAcquireLocks;
 
+    @Transient
     private ShippingMethod shippingMethod;
 
+    private String shippingMethodName;
+
     // ===== Fields for Purchase Policy =====
+    @Transient
     private Policy policytemp;
+
+    @Transient
     private PolicyComposite policyComposite;
 
     /**
      * Constructor to initialize the shop.
-     * The provided discount value will be used as a global discount (mapped with key 0).
+     * The provided discount value will be used as a global discount (mapped with
+     * key 0).
      *
      * @param id             the shop identifier.
      * @param name           the name of the shop.
@@ -66,10 +105,25 @@ public class Shop {
         this.itemsPrices = new ConcurrentHashMap<>();
         this.itemAcquireLocks = new ConcurrentHashMap<>();
         this.shippingMethod = shippingMethod;
+        this.shippingMethodName = shippingMethod == null ? "" : shippingMethod.getClass().getSimpleName();
         this.policytemp = null;
         this.policyComposite = null;
     }
-  
+
+    public Shop() {
+        // Default constructor for JPA
+        this.id = 0; // This will be set by the database
+        this.name = "";
+        this.discounts = new CopyOnWriteArrayList<>();
+        this.reviews = new CopyOnWriteArrayList<>();
+        this.items = new ConcurrentHashMap<>();
+        this.itemsPrices = new ConcurrentHashMap<>();
+        this.itemAcquireLocks = new ConcurrentHashMap<>();
+        this.shippingMethod = new WSEPShipping();
+        this.shippingMethodName = "";
+        this.policytemp = null;
+        this.policyComposite = null;
+    }
 
     public int getId() {
         return id;
@@ -83,12 +137,14 @@ public class Shop {
         this.shippingMethod = shippingMethod;
     }
 
-    public synchronized void addPolicy(Integer threshold, Integer itemId, ItemCategory itemCategory, double basketValue , Operator operator) {     
-        TriPredicate<Map<Integer,Integer>,Map<Integer,Double>,Map<Integer,ItemCategory>> predicate;
-        if(threshold != null && itemCategory == null){ //UC1 -- Threshold policy of a single item
-            predicate = new TriPredicate<Map<Integer,Integer>,Map<Integer,Double>,Map<Integer,ItemCategory>>() {
+    public synchronized void addPolicy(Integer threshold, Integer itemId, ItemCategory itemCategory, double basketValue,
+            Operator operator) {
+        TriPredicate<Map<Integer, Integer>, Map<Integer, Double>, Map<Integer, ItemCategory>> predicate;
+        if (threshold != null && itemCategory == null) { // UC1 -- Threshold policy of a single item
+            predicate = new TriPredicate<Map<Integer, Integer>, Map<Integer, Double>, Map<Integer, ItemCategory>>() {
                 @Override
-                public boolean test(Map<Integer, Integer> items, Map<Integer, Double> prices, Map<Integer, ItemCategory> itemsCategory) {
+                public boolean test(Map<Integer, Integer> items, Map<Integer, Double> prices,
+                        Map<Integer, ItemCategory> itemsCategory) {
                     Integer qty = items.get(itemId);
                     if (qty == null || qty <= 0 || qty < threshold) {
                         return false;
@@ -96,10 +152,11 @@ public class Shop {
                     return true;
                 }
             };
-        }else if(threshold != null && itemCategory != null){ //UC2 -- amount of items in category
-            predicate = new TriPredicate<Map<Integer,Integer>,Map<Integer,Double>,Map<Integer,ItemCategory>>() {
+        } else if (threshold != null && itemCategory != null) { // UC2 -- amount of items in category
+            predicate = new TriPredicate<Map<Integer, Integer>, Map<Integer, Double>, Map<Integer, ItemCategory>>() {
                 @Override
-                public boolean test(Map<Integer, Integer> items, Map<Integer, Double> prices, Map<Integer, ItemCategory> itemsCategory) {
+                public boolean test(Map<Integer, Integer> items, Map<Integer, Double> prices,
+                        Map<Integer, ItemCategory> itemsCategory) {
                     Integer qty = 0;
                     for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
                         Integer itemId = entry.getKey();
@@ -113,10 +170,11 @@ public class Shop {
                     return true;
                 }
             };
-        }else{ //UC3 -- shopping cart value is bigger than certain value
-            predicate = new TriPredicate<Map<Integer,Integer>,Map<Integer,Double>,Map<Integer,ItemCategory>>() {
+        } else { // UC3 -- shopping cart value is bigger than certain value
+            predicate = new TriPredicate<Map<Integer, Integer>, Map<Integer, Double>, Map<Integer, ItemCategory>>() {
                 @Override
-                public boolean test(Map<Integer, Integer> items, Map<Integer, Double> prices, Map<Integer, ItemCategory> itemsCategory) {
+                public boolean test(Map<Integer, Integer> items, Map<Integer, Double> prices,
+                        Map<Integer, ItemCategory> itemsCategory) {
                     Double totalPrice = 0.0;
                     for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
                         Integer itemId = entry.getKey();
@@ -130,14 +188,16 @@ public class Shop {
         PolicyLeaf newPolicy = new PolicyLeaf(predicate);
         if (policytemp == null) {
             policytemp = newPolicy;
-        } else if(policyComposite == null) {
-            if(operator == null) {
-                throw new IllegalArgumentException("Operator cannot be null when policyComposite is null ==  adding discount+policy in progress by other user");
+        } else if (policyComposite == null) {
+            if (operator == null) {
+                throw new IllegalArgumentException(
+                        "Operator cannot be null when policyComposite is null ==  adding discount+policy in progress by other user");
             }
             policyComposite = new PolicyComposite(policytemp, newPolicy, operator);
-        }else{
-            if(operator == null) {
-                throw new IllegalArgumentException("Operator cannot be null when policyComposite is not null ==  adding discount+policy in progress by other user");
+        } else {
+            if (operator == null) {
+                throw new IllegalArgumentException(
+                        "Operator cannot be null when policyComposite is not null ==  adding discount+policy in progress by other user");
             }
             PolicyComposite tempCimposite = new PolicyComposite(policyComposite, newPolicy, operator);
             policyComposite = tempCimposite;
@@ -148,6 +208,7 @@ public class Shop {
     /**
      * Returns an unmodifiable view of the purchase policies.
      * Currently for tests
+     * 
      * @return the list of purchase policies.
      */
     public List<PurchasePolicy> getPurchasePolicies() {
@@ -172,7 +233,7 @@ public class Shop {
      * @param reviewText the review text.
      */
     public void addReview(int userId, int rating, String reviewText) {
-        if(rating < 1 || rating > 5) {
+        if (rating < 1 || rating > 5) {
             throw new IllegalArgumentException("Rating must be between 1 and 5");
         }
         reviews.add(new ShopReview(userId, rating, reviewText));
@@ -264,7 +325,6 @@ public class Shop {
         }
     }
 
-
     /**
      * Returns the current quantity of the specified item.
      *
@@ -324,13 +384,15 @@ public class Shop {
     public int getItemPrice(int itemId) {
         AtomicInteger price = itemsPrices.get(itemId);
         return price != null ? price.get() : 0;
-    }    
+    }
 
     /**
      * Returns the total price for a given set of items.
-     * The total price is calculated as the sum of the prices of each item multiplied by its quantity.
+     * The total price is calculated as the sum of the prices of each item
+     * multiplied by its quantity.
      *
-     * @param items a map where the key is the item ID and the value is the quantity.
+     * @param items a map where the key is the item ID and the value is the
+     *              quantity.
      * @return the total price.
      */
     public int getTotalPrice(Map<Integer, Integer> items) {
@@ -344,24 +406,23 @@ public class Shop {
         return total;
     }
 
-
-    private double applyDiscount(Map<Integer,Integer> items, Map<Integer,ItemCategory> itemsCat){
+    private double applyDiscount(Map<Integer, Integer> items, Map<Integer, ItemCategory> itemsCat) {
         Map<Integer, Double> itemsDiscountedPrices = new HashMap<>();
         for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
             int itemId = entry.getKey();
             double price = itemsPrices.get(itemId).get();
             itemsDiscountedPrices.put(itemId, price);
         }
-        
+
         for (Discount discount : discounts) {
-            if(discount.isDouble()){
+            if (discount.isDouble()) {
                 itemsDiscountedPrices = discount.applyDiscounts(items, itemsPrices, itemsDiscountedPrices, itemsCat);
             }
         }
 
         // is not double discount
         for (Discount discount : discounts) {
-            if(!discount.isDouble()){
+            if (!discount.isDouble()) {
                 itemsDiscountedPrices = discount.applyDiscounts(items, itemsPrices, itemsDiscountedPrices, itemsCat);
             }
         }
@@ -385,24 +446,25 @@ public class Shop {
      */
     public synchronized void setGlobalDiscount(int percentage, boolean isDouble) {
         GlobalDiscount discount;
-        if(policyComposite == null)
+        if (policyComposite == null)
             discount = new GlobalDiscount(percentage, policytemp, isDouble);
         else
             discount = new GlobalDiscount(percentage, policyComposite, isDouble);
 
-        this.policyComposite= null;
+        this.policyComposite = null;
         this.policytemp = null;
-        //delete previous global discount - if exists
+        // delete previous global discount - if exists
         removeGlobalDiscount();
         discounts.add(discount);
     }
 
     /**
      * Removes a global discount from the shop.
-     * This method iterates through all discounts and removes the one that matches the given percentage.
+     * This method iterates through all discounts and removes the one that matches
+     * the given percentage.
      *
      * @param percentage the discount percentage to remove (0–100).
-     */ 
+     */
     public void removeGlobalDiscount() {
         for (int i = 0; i < discounts.size(); i++) {
             if (discounts.get(i) instanceof GlobalDiscount) {
@@ -411,7 +473,7 @@ public class Shop {
             }
         }
     }
-    
+
     /**
      * Applies a percentage discount to a single item.
      *
@@ -420,14 +482,14 @@ public class Shop {
      */
     public synchronized void setDiscountForItem(int itemId, int percentage, boolean isDouble) {
         SingleDiscount discount;
-        if(policyComposite == null)
+        if (policyComposite == null)
             discount = new SingleDiscount(itemId, percentage, policytemp, isDouble);
         else
             discount = new SingleDiscount(itemId, percentage, policyComposite, isDouble);
 
-        this.policyComposite= null;
+        this.policyComposite = null;
         this.policytemp = null;
-        //delete previous discount for this item - if exists
+        // delete previous discount for this item - if exists
         removeDiscountForItem(itemId);
         discounts.add(discount);
     }
@@ -439,7 +501,8 @@ public class Shop {
      */
     public void removeDiscountForItem(int itemId) {
         for (int i = 0; i < discounts.size(); i++) {
-            if (discounts.get(i) instanceof SingleDiscount && ((SingleDiscount) discounts.get(i)).getItemId() == itemId) {
+            if (discounts.get(i) instanceof SingleDiscount
+                    && ((SingleDiscount) discounts.get(i)).getItemId() == itemId) {
                 discounts.remove(i);
                 return;
             }
@@ -448,21 +511,22 @@ public class Shop {
 
     public synchronized void setCategoryDiscount(ItemCategory category, int percentage, boolean isDouble) {
         CategoryDiscount discount;
-        if(policyComposite == null)
+        if (policyComposite == null)
             discount = new CategoryDiscount(category, percentage, policytemp, isDouble);
         else
             discount = new CategoryDiscount(category, percentage, policyComposite, isDouble);
 
-        this.policyComposite= null;
+        this.policyComposite = null;
         this.policytemp = null;
-        //delete previous discount for this category - if exists
+        // delete previous discount for this category - if exists
         removeCategoryDiscount(category);
         discounts.add(discount);
     }
 
     public void removeCategoryDiscount(ItemCategory category) {
         for (int i = 0; i < discounts.size(); i++) {
-            if (discounts.get(i) instanceof CategoryDiscount && ((CategoryDiscount) discounts.get(i)).getCategory() == category) {
+            if (discounts.get(i) instanceof CategoryDiscount
+                    && ((CategoryDiscount) discounts.get(i)).getCategory() == category) {
                 discounts.remove(i);
                 return;
             }
@@ -470,21 +534,21 @@ public class Shop {
     }
 
     // ===== Purchase Method =====
-     
+
     /**
      * Processes a purchase of items:
-     *   1) Checks purchase policies up front
-     *   2) Locks each item & deducts stock
-     *   3) Computes total, applies discounts, and returns the final amount
+     * 1) Checks purchase policies up front
+     * 2) Locks each item & deducts stock
+     * 3) Computes total, applies discounts, and returns the final amount
      * If anything fails, rolls back any stock modifications.
      *
      * @param purchaseList map of itemId→quantity to purchase
      * @return the total price after discounts
      */
-    public double purchaseItems(Map<Integer, Integer> purchaseList,Map<Integer, ItemCategory> itemsCategory) {
+    public double purchaseItems(Map<Integer, Integer> purchaseList, Map<Integer, ItemCategory> itemsCategory) {
         // 1) policy check up-front
         // if (!checkPolicys(purchaseList)) {
-        //     throw new IllegalStateException("Purchase policy violation");
+        // throw new IllegalStateException("Purchase policy violation");
         // }
 
         // remember for rollback
@@ -494,7 +558,7 @@ public class Shop {
             // 2) lock & deduct each item
             for (Map.Entry<Integer, Integer> e : purchaseList.entrySet()) {
                 int itemId = e.getKey();
-                int qty    = e.getValue();
+                int qty = e.getValue();
 
                 Object lock = itemAcquireLocks.computeIfAbsent(itemId, k -> new Object());
                 synchronized (lock) {
@@ -516,7 +580,7 @@ public class Shop {
         } catch (RuntimeException ex) {
             // rollback only those we already touched
             for (Map.Entry<Integer, Integer> r : originalStock.entrySet()) {
-                int itemId  = r.getKey();
+                int itemId = r.getKey();
                 int prevQty = r.getValue();
                 Object lock = itemAcquireLocks.get(itemId);
                 synchronized (lock) {
@@ -530,7 +594,7 @@ public class Shop {
     public void rollBackPurchase(Map<Integer, Integer> purchaseList) {
         for (Map.Entry<Integer, Integer> e : purchaseList.entrySet()) {
             int itemId = e.getKey();
-            int qty    = e.getValue();
+            int qty = e.getValue();
 
             Object lock = itemAcquireLocks.computeIfAbsent(itemId, k -> new Object());
             synchronized (lock) {
@@ -544,7 +608,7 @@ public class Shop {
 
     public synchronized void setDiscountPolicy(Policy policy) {
         // clear any previous-in-progress policy
-        this.policytemp      = null;
+        this.policytemp = null;
         this.policyComposite = null;
 
         // attach either as a single leaf or a composite
@@ -555,8 +619,7 @@ public class Shop {
         }
     }
 
-    public Map<Integer, Double> getItemPrices()
-    {
+    public Map<Integer, Double> getItemPrices() {
         Map<Integer, Double> prices = new HashMap<>();
         for (Map.Entry<Integer, AtomicInteger> entry : itemsPrices.entrySet()) {
             int itemId = entry.getKey();
@@ -566,8 +629,7 @@ public class Shop {
         return prices;
     }
 
-    public Map<Integer, Integer> getItemQuantities()
-    {
+    public Map<Integer, Integer> getItemQuantities() {
         Map<Integer, Integer> quantities = new HashMap<>();
         for (Map.Entry<Integer, AtomicInteger> entry : items.entrySet()) {
             int itemId = entry.getKey();

@@ -5,9 +5,20 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.example.app.DomainLayer.Item.ItemCategory;
 
-public class GlobalDiscount implements Discount {
-    
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+
+@Entity
+@DiscriminatorValue("global")
+public class GlobalDiscount extends Discount {
+
     private final int percentage;
+
+    @ManyToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "policy_id")
     private Policy policyHead;
     private boolean isDouble;
 
@@ -18,10 +29,10 @@ public class GlobalDiscount implements Discount {
         this.isDouble = isDouble;
     }
 
-
     @Override
-    public Map<Integer, Double> applyDiscounts(Map<Integer, Integer> items, Map<Integer, AtomicInteger> prices, Map<Integer, Double> itemsDiscountedPrices, Map<Integer, ItemCategory> itemsCategory) {
-        if(!(checkPolicies(items, itemsDiscountedPrices, itemsCategory))) {
+    public Map<Integer, Double> applyDiscounts(Map<Integer, Integer> items, Map<Integer, AtomicInteger> prices,
+            Map<Integer, Double> itemsDiscountedPrices, Map<Integer, ItemCategory> itemsCategory) {
+        if (!(checkPolicies(items, itemsDiscountedPrices, itemsCategory))) {
             return itemsDiscountedPrices;
         }
         for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
@@ -29,11 +40,11 @@ public class GlobalDiscount implements Discount {
             Integer qty = entry.getValue();
             if (qty != null && qty > 0) {
                 // determine full price of that item (requires external price lookup)
-                if(!isDouble){
+                if (!isDouble) {
                     double itemPrice = prices.get(itemId).get();
                     double discountedPrice = itemPrice * (100 - percentage) / 100;
-                    itemsDiscountedPrices.put(itemId,Math.min(itemsDiscountedPrices.get(itemId), discountedPrice));
-                }else{
+                    itemsDiscountedPrices.put(itemId, Math.min(itemsDiscountedPrices.get(itemId), discountedPrice));
+                } else {
                     double itemPrice = itemsDiscountedPrices.get(itemId);
                     double discountedPrice = itemPrice * (100 - percentage) / 100;
                     itemsDiscountedPrices.put(itemId, discountedPrice);
@@ -44,8 +55,9 @@ public class GlobalDiscount implements Discount {
     }
 
     @Override
-    public boolean checkPolicies(Map<Integer,Integer> items, Map<Integer,Double> prices, Map<Integer,ItemCategory> itemsCategory) {
-        if(policyHead == null) {
+    public boolean checkPolicies(Map<Integer, Integer> items, Map<Integer, Double> prices,
+            Map<Integer, ItemCategory> itemsCategory) {
+        if (policyHead == null) {
             return true;
         }
         return policyHead.test(items, prices, itemsCategory);
@@ -82,4 +94,3 @@ public class GlobalDiscount implements Discount {
         return null; // Global discount does not apply to a specific item
     }
 }
-

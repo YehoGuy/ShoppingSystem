@@ -1,19 +1,29 @@
 package com.example.app.DomainLayer.Shop.Discount;
- 
+
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.example.app.DomainLayer.Item.ItemCategory;
 
-public class CategoryDiscount implements Discount {
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 
-    private final ItemCategory itemCategory; 
+@Entity
+@DiscriminatorValue("category")
+public class CategoryDiscount extends Discount {
+
+    private final ItemCategory itemCategory;
     private final int percentage;
+
+    @ManyToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "policy_id")
     private Policy policyHead;
     private boolean isDouble;
 
-
-    public CategoryDiscount(ItemCategory itemCategory, int percentage,Policy policyHead, boolean isDouble) {
+    public CategoryDiscount(ItemCategory itemCategory, int percentage, Policy policyHead, boolean isDouble) {
         validatePercentage(percentage);
         this.itemCategory = itemCategory;
         this.percentage = percentage;
@@ -22,7 +32,8 @@ public class CategoryDiscount implements Discount {
     }
 
     @Override
-    public Map<Integer, Double> applyDiscounts(Map<Integer, Integer> items, Map<Integer, AtomicInteger> prices, Map<Integer, Double> itemsDiscountedPrices, Map<Integer, ItemCategory> itemsCategory) {
+    public Map<Integer, Double> applyDiscounts(Map<Integer, Integer> items, Map<Integer, AtomicInteger> prices,
+            Map<Integer, Double> itemsDiscountedPrices, Map<Integer, ItemCategory> itemsCategory) {
         if (!(checkPolicies(items, itemsDiscountedPrices, itemsCategory))) {
             return itemsDiscountedPrices;
         }
@@ -31,11 +42,11 @@ public class CategoryDiscount implements Discount {
             Integer qty = entry.getValue();
             if (qty != null && qty > 0 && itemsCategory.get(itemId) == itemCategory) {
                 // determine full price of that item (requires external price lookup)
-                if(!isDouble){
+                if (!isDouble) {
                     double itemPrice = prices.get(itemId).get();
                     double discountedPrice = itemPrice * (100 - percentage) / 100;
-                    itemsDiscountedPrices.put(itemId,Math.min(itemsDiscountedPrices.get(itemId), discountedPrice));
-                }else{
+                    itemsDiscountedPrices.put(itemId, Math.min(itemsDiscountedPrices.get(itemId), discountedPrice));
+                } else {
                     double itemPrice = itemsDiscountedPrices.get(itemId);
                     double discountedPrice = itemPrice * (100 - percentage) / 100;
                     itemsDiscountedPrices.put(itemId, discountedPrice);
@@ -46,8 +57,9 @@ public class CategoryDiscount implements Discount {
     }
 
     @Override
-    public boolean checkPolicies(Map<Integer,Integer> items, Map<Integer,Double> prices, Map<Integer,ItemCategory> itemsCategory) {
-        if(policyHead == null) {
+    public boolean checkPolicies(Map<Integer, Integer> items, Map<Integer, Double> prices,
+            Map<Integer, ItemCategory> itemsCategory) {
+        if (policyHead == null) {
             return true;
         }
         return policyHead.test(items, prices, itemsCategory);
