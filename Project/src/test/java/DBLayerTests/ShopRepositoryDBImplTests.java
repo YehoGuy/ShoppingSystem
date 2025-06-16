@@ -1,32 +1,31 @@
 package DBLayerTests;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
-import com.example.app.SimpleHttpServerApplication;
 import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.DBLayer.Shop.ShopRepositoryDBImpl;
 import com.example.app.DomainLayer.Item.ItemCategory;
-import com.example.app.DomainLayer.Shop.Shop;
 import com.example.app.DomainLayer.Shop.Discount.Discount;
 import com.example.app.DomainLayer.Shop.Discount.Policy;
 import com.example.app.DomainLayer.Shop.Discount.PolicyLeaf;
+import com.example.app.DomainLayer.Shop.Shop;
 import com.example.app.InfrastructureLayer.WSEPShipping;
+import com.example.app.SimpleHttpServerApplication;
 
 import jakarta.transaction.Transactional;
 
 @SpringBootTest(classes = SimpleHttpServerApplication.class)
-@ActiveProfiles({ "test" })
+@ActiveProfiles({ "db-test" })
 @Transactional
 public class ShopRepositoryDBImplTests {
 

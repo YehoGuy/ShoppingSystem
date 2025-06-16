@@ -1,30 +1,27 @@
 package DBLayerTests;
 
-import com.example.app.SimpleHttpServerApplication;
-import com.example.app.ApplicationLayer.OurRuntime;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.DBLayer.Item.ItemRepositoryDBImpl;
 import com.example.app.DomainLayer.Item.Item;
 import com.example.app.DomainLayer.Item.ItemCategory;
 import com.example.app.DomainLayer.Item.ItemReview;
+import com.example.app.SimpleHttpServerApplication;
 
 import jakarta.transaction.Transactional;
 
 @SpringBootTest(classes = SimpleHttpServerApplication.class)
-@ActiveProfiles({ "test" })
+@ActiveProfiles({ "db-test" })
 @Transactional
 public class ItemRepositoryDBImplTests {
 
