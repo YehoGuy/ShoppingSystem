@@ -4,18 +4,44 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorColumn;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapKeyColumn;
+import jakarta.persistence.Table;
+
 /**
  * This Data Object class represents a receipt for a purchase.
- * It contains information about the items purchased, their prices, the purchase status etc...
+ * It contains information about the items purchased, their prices, the purchase
+ * status etc...
  */
+@Entity
+@Table(name = "receipts")
+@DiscriminatorColumn(name = "receipt_type")
+@DiscriminatorValue("regular")
 public class Reciept {
-    protected final int purchaseId;                     // purchase ID
-    protected final int userId;                        // initiating user ID
-    protected final int storeId;                      // store ID
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    protected final int purchaseId; // purchase ID
+    protected final int userId; // initiating user ID
+    protected final int storeId; // store ID
+
+    @ElementCollection
+    @CollectionTable(name = "receipt_items", joinColumns = @JoinColumn(name = "purchase_id"))
+    @MapKeyColumn(name = "item_id")
+    @Column(name = "quantity")
     protected final Map<Integer, Integer> items; // itemId -> quantity
-    protected final Address shippingAddress;              // shipping address
-    protected final AtomicBoolean isCompleted;                 // purchase status   
-    protected final LocalDateTime timeOfCompletion;     // time of purchase completion
+    protected final Address shippingAddress; // shipping address
+    protected final AtomicBoolean isCompleted; // purchase status
+    protected final LocalDateTime timeOfCompletion; // time of purchase completion
     protected final double price; // total price of the purchase
     protected final LocalDateTime endTime;
 
@@ -23,16 +49,18 @@ public class Reciept {
     protected final LocalDateTime timestampOfRecieptGeneration; // time of receipt generation!!
 
     /**
-     * Constructs a new {@code Reciept} with the specified user ID, store ID, and items.
+     * Constructs a new {@code Reciept} with the specified user ID, store ID, and
+     * items.
      * this constructor is meant for UNCOMPLETED purchases
      *
-     * @param purchaseId the ID of the purchase.
-     * @param userId the ID of the user initiating the purchase.
-     * @param storeId the ID of the store where the purchase is made.
-     * @param items a map of item IDs to their quantities.
+     * @param purchaseId      the ID of the purchase.
+     * @param userId          the ID of the user initiating the purchase.
+     * @param storeId         the ID of the store where the purchase is made.
+     * @param items           a map of item IDs to their quantities.
      * @param shippingAddress the shipping address for the purchase.
      */
-    public Reciept(int purchaseId, int userId, int storeId, Map<Integer, Integer> items, Address shippingAddress, double price, boolean isCompleted) {
+    public Reciept(int purchaseId, int userId, int storeId, Map<Integer, Integer> items, Address shippingAddress,
+            double price, boolean isCompleted) {
         this.purchaseId = purchaseId;
         this.userId = userId;
         this.storeId = storeId;
@@ -45,18 +73,19 @@ public class Reciept {
         this.endTime = null; // end time is not applicable for non-auction purchases
     }
 
-    
     /**
-     * Constructs a new {@code Reciept} with the specified user ID, store ID, and items.
+     * Constructs a new {@code Reciept} with the specified user ID, store ID, and
+     * items.
      * this constructor is meant for UNCOMPLETED purchases
      *
-     * @param purchaseId the ID of the purchase.
-     * @param userId the ID of the user initiating the purchase.
-     * @param storeId the ID of the store where the purchase is made.
-     * @param items a map of item IDs to their quantities.
+     * @param purchaseId      the ID of the purchase.
+     * @param userId          the ID of the user initiating the purchase.
+     * @param storeId         the ID of the store where the purchase is made.
+     * @param items           a map of item IDs to their quantities.
      * @param shippingAddress the shipping address for the purchase.
      */
-    public Reciept(int purchaseId, int userId, int storeId, Map<Integer, Integer> items, Address shippingAddress, LocalDateTime timeOfCompletion, double price) {
+    public Reciept(int purchaseId, int userId, int storeId, Map<Integer, Integer> items, Address shippingAddress,
+            LocalDateTime timeOfCompletion, double price) {
         this.purchaseId = purchaseId;
         this.userId = userId;
         this.storeId = storeId;
@@ -70,16 +99,18 @@ public class Reciept {
     }
 
     /**
-     * Constructs a new {@code Reciept} with the specified user ID, store ID, and items.
+     * Constructs a new {@code Reciept} with the specified user ID, store ID, and
+     * items.
      * this constructor is meant for UNCOMPLETED purchases
      *
-     * @param purchaseId the ID of the purchase.
-     * @param userId the ID of the user initiating the purchase.
-     * @param storeId the ID of the store where the purchase is made.
-     * @param items a map of item IDs to their quantities.
+     * @param purchaseId      the ID of the purchase.
+     * @param userId          the ID of the user initiating the purchase.
+     * @param storeId         the ID of the store where the purchase is made.
+     * @param items           a map of item IDs to their quantities.
      * @param shippingAddress the shipping address for the purchase.
      */
-    public Reciept(int purchaseId, int userId, int storeId, Map<Integer, Integer> items, Address shippingAddress, LocalDateTime timeOfCompletion, double price, LocalDateTime endTime) {
+    public Reciept(int purchaseId, int userId, int storeId, Map<Integer, Integer> items, Address shippingAddress,
+            LocalDateTime timeOfCompletion, double price, LocalDateTime endTime) {
         this.purchaseId = purchaseId;
         this.userId = userId;
         this.storeId = storeId;
@@ -113,6 +144,7 @@ public class Reciept {
     public int getPurchaseId() {
         return purchaseId;
     }
+
     /**
      * Returns the ID of the user who initiated the purchase.
      *
@@ -121,6 +153,7 @@ public class Reciept {
     public int getUserId() {
         return userId;
     }
+
     /**
      * Returns the ID of the store where the purchase was made.
      *
@@ -129,6 +162,7 @@ public class Reciept {
     public int getStoreId() {
         return storeId;
     }
+
     /**
      * Returns a map of item IDs to their quantities in the purchase.
      *
@@ -221,7 +255,5 @@ public class Reciept {
                 ", endTime=" + endTime +
                 '}';
     }
-    
-
 
 }
