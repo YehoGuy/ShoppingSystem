@@ -10,6 +10,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 import com.example.app.ApplicationLayer.OurRuntime;
@@ -34,6 +35,7 @@ import com.example.app.DomainLayer.User;
 // and has a method getId() to retrieve the user's ID.
 
 @Repository
+@Profile("no-db | test")
 public class UserRepository implements IUserRepository {
     // A map to store users with their IDs as keys
     private ConcurrentHashMap<Integer, com.example.app.DomainLayer.User> userMapping;

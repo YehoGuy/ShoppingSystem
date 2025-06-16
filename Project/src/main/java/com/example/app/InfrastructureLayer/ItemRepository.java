@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 import com.example.app.DomainLayer.Item.IItemRepository;
@@ -15,6 +16,7 @@ import com.example.app.DomainLayer.Item.ItemCategory;
 import com.example.app.DomainLayer.Item.ItemReview;
 
 @Repository
+@Profile("no-db | test")
 public class ItemRepository implements IItemRepository {
 
     // Thread-safe map to store items by ID
