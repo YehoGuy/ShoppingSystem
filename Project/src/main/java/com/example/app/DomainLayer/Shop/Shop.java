@@ -16,12 +16,9 @@ import com.example.app.DomainLayer.Shop.Discount.Discount;
 import com.example.app.DomainLayer.Shop.Discount.GlobalDiscount;
 import com.example.app.DomainLayer.Shop.Discount.Policy;
 import com.example.app.DomainLayer.Shop.Discount.PolicyComposite;
-import com.example.app.DomainLayer.Shop.Discount.PolicyLeaf;
 import com.example.app.DomainLayer.Shop.Discount.SingleDiscount;
-import com.example.app.DomainLayer.Shop.Discount.TriPredicate;
 import com.example.app.InfrastructureLayer.WSEPShipping;
 
-import jakarta.annotation.Generated;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -33,6 +30,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PostLoad;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 
@@ -47,33 +47,39 @@ public class Shop {
     // Immutable fields (set once at construction).
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private final int id;
-    private final String name;
+    private int id;
+    private String name;
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "shop_id")
-    private final List<Discount> discounts;
+    private List<Discount> discounts;
 
     // A thread-safe list to manage shop reviews.
     @ElementCollection
-    private final List<ShopReview> reviews;
+    private List<ShopReview> reviews;
 
     // Items: mapping from item ID to its quantity.
     @ElementCollection
     @CollectionTable(name = "shop_items", joinColumns = @JoinColumn(name = "shop_id"))
     @MapKeyColumn(name = "item_id")
     @Column(name = "quantity")
-    private final Map<Integer, AtomicInteger> items;
+    private Map<Integer, Integer> persistedItems = new HashMap<>();
+
+    @Transient
+    private Map<Integer, AtomicInteger> items;
 
     // Prices: mapping from item ID to its price.
     @ElementCollection
     @CollectionTable(name = "shop_item_prices", joinColumns = @JoinColumn(name = "shop_id"))
     @MapKeyColumn(name = "item_id")
     @Column(name = "price")
-    private final Map<Integer, AtomicInteger> itemsPrices;
+    private Map<Integer, Integer> persistedItemsPrices = new HashMap<>();
 
     @Transient
-    private final Map<Integer, Object> itemAcquireLocks;
+    private Map<Integer, AtomicInteger> itemsPrices;
+
+    @Transient
+    private Map<Integer, Object> itemAcquireLocks;
 
     @Transient
     private ShippingMethod shippingMethod;
@@ -86,6 +92,8 @@ public class Shop {
 
     @Transient
     private PolicyComposite policyComposite;
+
+    private boolean isClosed = false;
 
     /**
      * Constructor to initialize the shop.
@@ -108,6 +116,8 @@ public class Shop {
         this.shippingMethodName = shippingMethod == null ? "" : shippingMethod.getClass().getSimpleName();
         this.policytemp = null;
         this.policyComposite = null;
+        this.persistedItems = new HashMap<>();
+        this.persistedItemsPrices = new HashMap<>();
     }
 
     public Shop() {
@@ -123,6 +133,8 @@ public class Shop {
         this.shippingMethodName = "";
         this.policytemp = null;
         this.policyComposite = null;
+        this.persistedItems = new HashMap<>();
+        this.persistedItemsPrices = new HashMap<>();
     }
 
     public int getId() {
@@ -135,73 +147,6 @@ public class Shop {
 
     public void setShippingMethod(ShippingMethod shippingMethod) {
         this.shippingMethod = shippingMethod;
-    }
-
-    public synchronized void addPolicy(Integer threshold, Integer itemId, ItemCategory itemCategory, double basketValue,
-            Operator operator) {
-        TriPredicate<Map<Integer, Integer>, Map<Integer, Double>, Map<Integer, ItemCategory>> predicate;
-        if (threshold != null && itemCategory == null) { // UC1 -- Threshold policy of a single item
-            predicate = new TriPredicate<Map<Integer, Integer>, Map<Integer, Double>, Map<Integer, ItemCategory>>() {
-                @Override
-                public boolean test(Map<Integer, Integer> items, Map<Integer, Double> prices,
-                        Map<Integer, ItemCategory> itemsCategory) {
-                    Integer qty = items.get(itemId);
-                    if (qty == null || qty <= 0 || qty < threshold) {
-                        return false;
-                    }
-                    return true;
-                }
-            };
-        } else if (threshold != null && itemCategory != null) { // UC2 -- amount of items in category
-            predicate = new TriPredicate<Map<Integer, Integer>, Map<Integer, Double>, Map<Integer, ItemCategory>>() {
-                @Override
-                public boolean test(Map<Integer, Integer> items, Map<Integer, Double> prices,
-                        Map<Integer, ItemCategory> itemsCategory) {
-                    Integer qty = 0;
-                    for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
-                        Integer itemId = entry.getKey();
-                        if (itemsCategory.get(itemId) == itemCategory) {
-                            qty += entry.getValue();
-                        }
-                    }
-                    if (qty == null || qty <= 0 || qty < threshold) {
-                        return false;
-                    }
-                    return true;
-                }
-            };
-        } else { // UC3 -- shopping cart value is bigger than certain value
-            predicate = new TriPredicate<Map<Integer, Integer>, Map<Integer, Double>, Map<Integer, ItemCategory>>() {
-                @Override
-                public boolean test(Map<Integer, Integer> items, Map<Integer, Double> prices,
-                        Map<Integer, ItemCategory> itemsCategory) {
-                    Double totalPrice = 0.0;
-                    for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
-                        Integer itemId = entry.getKey();
-                        Integer qty = entry.getValue();
-                        totalPrice += prices.get(itemId) * qty;
-                    }
-                    return totalPrice >= basketValue;
-                }
-            };
-        }
-        PolicyLeaf newPolicy = new PolicyLeaf(predicate);
-        if (policytemp == null) {
-            policytemp = newPolicy;
-        } else if (policyComposite == null) {
-            if (operator == null) {
-                throw new IllegalArgumentException(
-                        "Operator cannot be null when policyComposite is null ==  adding discount+policy in progress by other user");
-            }
-            policyComposite = new PolicyComposite(policytemp, newPolicy, operator);
-        } else {
-            if (operator == null) {
-                throw new IllegalArgumentException(
-                        "Operator cannot be null when policyComposite is not null ==  adding discount+policy in progress by other user");
-            }
-            PolicyComposite tempCimposite = new PolicyComposite(policyComposite, newPolicy, operator);
-            policyComposite = tempCimposite;
-        }
     }
 
     // ===== Getters =====
@@ -661,6 +606,41 @@ public class Shop {
             policies.add(policytemp);
         }
         return policies;
+    }
+
+    public void setClosed(boolean closed) {
+        isClosed = closed;
+    }
+
+    public boolean isClosed() {
+        return isClosed;
+    }
+
+    @PostLoad
+    private void postLoad() {
+        // Sync persistedItems to items
+        for (Map.Entry<Integer, Integer> entry : persistedItems.entrySet()) {
+            items.put(entry.getKey(), new AtomicInteger(entry.getValue()));
+        }
+        // Sync persistedPrices to itemsPrices
+        for (Map.Entry<Integer, Integer> entry : persistedItemsPrices.entrySet()) {
+            itemsPrices.put(entry.getKey(), new AtomicInteger(entry.getValue()));
+        }
+    }
+
+    @PrePersist
+    @PreUpdate
+    private void prePersist() {
+        // Sync items to persistedItems
+        persistedItems.clear();
+        for (Map.Entry<Integer, AtomicInteger> entry : items.entrySet()) {
+            persistedItems.put(entry.getKey(), entry.getValue().get());
+        }
+        // Sync itemsPrices to persistedPrices
+        persistedItemsPrices.clear();
+        for (Map.Entry<Integer, AtomicInteger> entry : itemsPrices.entrySet()) {
+            persistedItemsPrices.put(entry.getKey(), entry.getValue().get());
+        }
     }
 
 }

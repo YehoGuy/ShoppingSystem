@@ -2,45 +2,45 @@ package com.example.app.DomainLayer.Shop.Discount;
 
 import java.util.Map;
 import com.example.app.DomainLayer.Item.ItemCategory;
-import com.example.app.DomainLayer.Shop.Discount.Policy;
-import com.example.app.DomainLayer.Shop.Discount.TriPredicate;
 
 import jakarta.persistence.DiscriminatorValue;
-import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 
 @Entity
 @DiscriminatorValue("leaf")
 public class PolicyLeaf extends Policy {
 
-    private final Integer threshold;
-    private final Integer itemId;
-    private final ItemCategory itemCategory;
-    private final Double basketValue;
-
-    // your predicate logic
-    @Embedded
-    private final TriPredicate<Map<Integer, Integer>, Map<Integer, Double>, Map<Integer, ItemCategory>> predicate;
+    private Integer threshold;
+    private Integer itemId;
+    private ItemCategory itemCategory;
+    private Double basketValue;
 
     // NEW ctor capturing metadata + predicate
-    public PolicyLeaf(Integer threshold, Integer itemId, ItemCategory itemCategory, Double basketValue,
-            TriPredicate<Map<Integer, Integer>, Map<Integer, Double>, Map<Integer, ItemCategory>> predicate) {
+    public PolicyLeaf(Integer threshold, Integer itemId, ItemCategory itemCategory, Double basketValue) {
         this.threshold = threshold;
         this.itemId = itemId;
         this.itemCategory = itemCategory;
         this.basketValue = basketValue;
-        this.predicate = predicate;
     }
 
-    // old ctor—delegate to new one with null metadata
-    public PolicyLeaf(TriPredicate<Map<Integer, Integer>, Map<Integer, Double>, Map<Integer, ItemCategory>> predicate) {
-        this(null, null, null, null, predicate);
+    public PolicyLeaf() {
+        this(null, null, null, null); // Default constructor for JPA
     }
 
     @Override
     public boolean test(Map<Integer, Integer> items, Map<Integer, Double> prices,
             Map<Integer, ItemCategory> itemsCategory) {
-        return predicate.test(items, prices, itemsCategory);
+        if (this.getThreshold() != null && this.getItemId() != null)
+            return items.getOrDefault(this.getItemId(), 0) >= this.getThreshold();
+        else if (this.getThreshold() != null && this.getCategory() != null)
+            return items.entrySet().stream().filter(e -> itemsCategory.get(e.getKey()) == this.getCategory())
+                    .mapToInt(Map.Entry::getValue).sum() >= this.getThreshold();
+        else if (this.getBasketValue() != null)
+            return items.entrySet().stream()
+                    .mapToDouble(e -> prices.getOrDefault(e.getKey(), 0.0) * e.getValue())
+                    .sum() >= this.getBasketValue();
+        else
+            return true; // Default case, no specific policy applied
     }
 
     // NEW getters so we can reverse-map to DTO:

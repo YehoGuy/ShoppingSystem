@@ -19,7 +19,11 @@ public abstract class Policy {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    protected Long id;
+    private Long id;
+
+    protected Policy() {
+        // Default constructor for JPA
+    }
 
     public abstract boolean test(Map<Integer, Integer> items, Map<Integer, Double> prices,
             Map<Integer, ItemCategory> itemsCategory);

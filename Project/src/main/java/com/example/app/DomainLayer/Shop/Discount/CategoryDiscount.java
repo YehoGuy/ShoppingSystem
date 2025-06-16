@@ -10,15 +10,17 @@ import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 
 @Entity
 @DiscriminatorValue("category")
 public class CategoryDiscount extends Discount {
 
-    private final ItemCategory itemCategory;
-    private final int percentage;
+    private ItemCategory itemCategory;
+    private int percentage;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "policy_id")
     private Policy policyHead;
     private boolean isDouble;
@@ -29,6 +31,13 @@ public class CategoryDiscount extends Discount {
         this.percentage = percentage;
         this.policyHead = policyHead;
         this.isDouble = isDouble;
+    }
+
+    public CategoryDiscount() {
+        this.itemCategory = null; // Default constructor for JPA
+        this.percentage = 0;
+        this.policyHead = null;
+        this.isDouble = false;
     }
 
     @Override

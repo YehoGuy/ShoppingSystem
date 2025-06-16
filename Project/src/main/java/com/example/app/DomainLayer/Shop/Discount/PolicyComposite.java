@@ -7,15 +7,25 @@ import com.example.app.DomainLayer.Shop.Operator;
 
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 
 @Entity
 @DiscriminatorValue("composite")
 public class PolicyComposite extends Policy {
 
+    @ManyToOne
+    @JoinColumn(name = "policy1_id")
     private Policy policy1;
+
+    @ManyToOne
+    @JoinColumn(name = "policy2_id")
     private Policy policy2;
 
-    private final Operator operator;
+    @Enumerated(value = EnumType.STRING)
+    private Operator operator;
 
     public PolicyComposite(Operator operator) {
         this.policy1 = null;
@@ -33,6 +43,12 @@ public class PolicyComposite extends Policy {
         this.policy1 = policy1;
         this.policy2 = policy2;
         this.operator = operator;
+    }
+
+    public PolicyComposite() {
+        this.policy1 = null; // Default constructor for JPA
+        this.policy2 = null;
+        this.operator = Operator.AND; // Default operator
     }
 
     public void addPolicy(Policy policy) {

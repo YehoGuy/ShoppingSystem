@@ -10,6 +10,7 @@ import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 
 /**
  * Single implementation of {@link Discount} for both global and item-specific
@@ -18,10 +19,10 @@ import jakarta.persistence.ManyToOne;
 @Entity
 @DiscriminatorValue("single")
 public class SingleDiscount extends Discount {
-    private final Integer itemId; // null for global
+    private Integer itemId; // null for global
     private int percentage;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "policy_id")
     private Policy policyHead;
     private boolean isDouble;
@@ -38,6 +39,13 @@ public class SingleDiscount extends Discount {
         this.percentage = percentage;
         this.policyHead = policyHead;
         this.isDouble = isDouble;
+    }
+
+    public SingleDiscount() {
+        this.itemId = null; // Default constructor for JPA
+        this.percentage = 0;
+        this.policyHead = null;
+        this.isDouble = false;
     }
 
     @Override
