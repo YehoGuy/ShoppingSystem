@@ -29,6 +29,8 @@ import com.example.app.DomainLayer.Member;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
 import com.example.app.DomainLayer.User;
+import com.example.app.DomainLayer.Purchase.BidReciept;
+import com.example.app.PresentationLayer.DTO.Purchase.BidRecieptDTO;
 import com.example.app.PresentationLayer.DTO.Role.RoleDTO;
 import com.example.app.PresentationLayer.DTO.User.GuestDTO;
 import com.example.app.PresentationLayer.DTO.User.MemberDTO;
@@ -653,7 +655,7 @@ public class UserController {
     }
 
     /* Check whether the user is currently suspended. */
-    @GetMapping("/{userId}/suspension")
+    @GetMapping("/{userId}/isSuspended")
     public ResponseEntity<?> isSuspended(
             @PathVariable @Min(1) int userId,
             @RequestParam String token) {
@@ -946,6 +948,25 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(false);
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(false);
+        }
+    }
+
+    @GetMapping("/auctions/won")
+    public ResponseEntity<List<BidRecieptDTO>> getUserWonAuctions(
+            @RequestParam String authToken) {
+        try {
+            int userId = authService.ValidateToken(authToken);
+            List<BidReciept> won = userService.getAuctionsWinList(userId);
+            // map domain‐model receipts → DTOs
+            List<BidRecieptDTO> dtos = won.stream()
+                .map(BidRecieptDTO::fromDomain)  
+                .toList();
+            return ResponseEntity.ok(dtos);
+        } catch (IllegalArgumentException ex) {
+            // token invalid
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

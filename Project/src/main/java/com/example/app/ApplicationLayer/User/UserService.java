@@ -17,6 +17,8 @@ import com.example.app.DomainLayer.IUserRepository;
 import com.example.app.DomainLayer.Member;
 import com.example.app.DomainLayer.Notification;
 import com.example.app.DomainLayer.Purchase.Address;
+import com.example.app.DomainLayer.Purchase.Bid;
+import com.example.app.DomainLayer.Purchase.BidReciept;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
 import com.example.app.DomainLayer.User;
@@ -1797,40 +1799,38 @@ public class UserService {
     // if isFromShop is true, then the message is from the shop to the user
     // if isFromShop is false, then the message is from the user to the shop
     public void messageNotification(Integer memberId, Integer shopId, boolean isFromShop) {
-        if (isFromShop) {
-            try {
-                LoggerService.logMethodExecution("messageUserNotification", memberId);
-                this.notificationService.sendToUser(memberId, "Message Received",
-                        "You have received a new message from the shop (id=" + shopId + ").");
-                LoggerService.logMethodExecutionEndVoid("messageUserNotification");
-            } catch (OurRuntime e) {
-                LoggerService.logDebug("messageUserNotification", e);
-                throw new OurRuntime("messageUserNotification: " + e.getMessage(), e); // Rethrow the custom exception
-            } catch (OurArg e) {
-                LoggerService.logDebug("messageUserNotification", e);
-                throw new OurArg("messageUserNotification: " + e.getMessage(), e); // Rethrow the custom exception
-            } catch (Exception e) {
-                LoggerService.logError("messageUserNotification", e, memberId);
-                throw new OurRuntime("messageUserNotification: " + e.getMessage(), e);
-            }
-        } else {
-            try {
-                LoggerService.logMethodExecution("messageUserNotification", memberId);
-                this.notificationService.sendToUser(memberId, "Message Received",
-                        "You have received a new message from the user (id=" + memberId + ").");
-                LoggerService.logMethodExecutionEndVoid("messageUserNotification");
-            } catch (OurRuntime e) {
-                LoggerService.logDebug("messageUserNotification", e);
-                throw new OurRuntime("messageUserNotification: " + e.getMessage(), e); // Rethrow the custom exception
-            } catch (OurArg e) {
-                LoggerService.logDebug("messageUserNotification", e);
-                throw new OurArg("messageUserNotification: " + e.getMessage(), e); // Rethrow the custom exception
-            } catch (Exception e) {
-                LoggerService.logError("messageUserNotification", e, memberId);
-                throw new OurRuntime("messageUserNotification: " + e.getMessage(), e);
-            }
-        }
+        try {
+            LoggerService.logMethodExecution("messageUserNotification", memberId);
 
+            // build the exact payload your tests expect
+            String payload;
+            if (isFromShop) {
+                payload = "You have received a new message from the shop (id=" + shopId + ").";
+            } else {
+                payload = "You have received a new message from the user (id=" + memberId + ").";
+            }
+
+            // now actually send the notification
+            this.notificationService.sendToUser(
+                memberId,
+                "Message Received",
+                payload
+            );
+
+            LoggerService.logMethodExecutionEndVoid("messageUserNotification");
+
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("messageUserNotification", e);
+            throw new OurRuntime("messageUserNotification: " + e.getMessage(), e);
+
+        } catch (OurArg e) {
+            LoggerService.logDebug("messageUserNotification", e);
+            throw new OurArg("messageUserNotification: " + e.getMessage(), e);
+
+        } catch (Exception e) {
+            LoggerService.logError("messageUserNotification", e, memberId);
+            throw new OurRuntime("messageUserNotification: " + e.getMessage(), e);
+        }
     }
 
     // LocalDateTime is used to represent the date and time of suspension
@@ -2076,6 +2076,41 @@ public class UserService {
         } catch (Exception e) {
             LoggerService.logError("hasRoleInShop", e, userId, shopId);
             throw new OurRuntime("hasRoleInShop: " + e.getMessage(), e);
+        }
+    }
+
+    public List<BidReciept> getAuctionsWinList(int userId) {
+        try {
+            LoggerService.logMethodExecution("getAuctionsWinList", userId);
+            List<BidReciept> auctionsWinList = userRepository.getAuctionsWinList(userId);
+            LoggerService.logMethodExecutionEnd("getAuctionsWinList", auctionsWinList);
+            return auctionsWinList;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getAuctionsWinList", e);
+            throw new OurRuntime("getAuctionsWinList: " + e.getMessage(), e);
+        } catch (OurArg e) {
+            LoggerService.logDebug("getAuctionsWinList", e);
+            throw new OurArg("getAuctionsWinList: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("getAuctionsWinList", e, userId);
+            throw new OurRuntime("getAuctionsWinList: " + e.getMessage(), e);
+        }
+    }
+
+    public void addAuctionWinBidToUserShoppingCart(int winnerId, Bid bid) {
+        try {
+            LoggerService.logMethodExecution("addAuctionWinBidToUserShoppingCart", winnerId, bid);
+            userRepository.addAuctionWinBidToShoppingCart(winnerId, bid); // Add the auction win bid to the user's shopping cart
+            LoggerService.logMethodExecutionEndVoid("addAuctionWinBidToUserShoppingCart");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("addAuctionWinBidToUserShoppingCart", e);
+            throw new OurRuntime("addAuctionWinBidToUserShoppingCart: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("addAuctionWinBidToUserShoppingCart", e);
+            throw new OurArg("addAuctionWinBidToUserShoppingCart: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("addAuctionWinBidToUserShoppingCart", e, winnerId, bid);
+            throw new OurRuntime("addAuctionWinBidToUserShoppingCart: " + e.getMessage(), e);
         }
     }
 }

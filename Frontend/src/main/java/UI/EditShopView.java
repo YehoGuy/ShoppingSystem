@@ -82,8 +82,8 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             return label;
         }
     }
-
     ////////////////////////
+    /// 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         getUserId(); // Ensure userId is set in session
@@ -175,6 +175,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         // “Close Shop” and “Create New Bid” buttons
         Button closeShopButton;
         Button createBidButton;
+        Button createAuctionButton; 
         String canCloseShopUrl = PERMISSIONS_URL +
                 "?token=" + getToken() +
                 "&userId=" + getUserId() +
@@ -197,18 +198,23 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             createBidButton = new Button("Create New Bid", e -> {
                 UI.getCurrent().navigate("shop/" + shop.getShopId() + "/create-bid");
             });
+            createAuctionButton = new Button("Create Auction", e -> {
+                UI.getCurrent().navigate("shop/" + shop.getShopId() + "/create-auction");
+            });
         } else {
             closeShopButton = new Button("Close Shop",
                     e -> Notification.show("You do not have permission to close the shop."));
             createBidButton = new Button("Create New Bid",
                     e -> Notification.show("You do not have permission to create bids."));
+            createAuctionButton = new Button("Create Auction",
+                    e -> Notification.show("You do not have permission to create auctions."));
         }
 
         if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
             addItemButton.setVisible(false);
             closeShopButton.setVisible(false);
         }
-        add(addItemButton, closeShopButton, createBidButton);
+        add(addItemButton, closeShopButton, createBidButton, createAuctionButton);
 
         itemsContainer = new VerticalLayout();
         add(itemsContainer);
@@ -1381,7 +1387,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         if (token == null) {
             return;
         }
-        String url = USERS_URL + "/" + userId + "/suspension?token=" + token;
+        String url = USERS_URL + "/" + userId + "/isSuspended?token=" + token;
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {

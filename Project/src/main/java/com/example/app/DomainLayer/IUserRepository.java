@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
+import com.example.app.DomainLayer.Purchase.Bid;
+import com.example.app.DomainLayer.Purchase.BidReciept;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
 import com.example.app.InfrastructureLayer.PasswordEncoderUtil;
@@ -151,5 +153,9 @@ public interface IUserRepository {
     void updateShoppingCartItemQuantity(int userId, int shopID, int itemID, boolean b);
 
     void removeShoppingCartItem(int userId, int shopID, int itemID);
+
+    List<BidReciept> getAuctionsWinList(int userId);
+
+    void addAuctionWinBidToShoppingCart(int winnerId, Bid bid);
 
 }

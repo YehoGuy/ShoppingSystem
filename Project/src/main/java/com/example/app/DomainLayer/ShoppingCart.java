@@ -5,7 +5,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import com.example.app.ApplicationLayer.OurRuntime;
+import jakarta.persistence.Embeddable;
 
+@Embeddable
 public class ShoppingCart {
     final private ConcurrentHashMap<Integer, ConcurrentHashMap<Integer,Integer>> items; // shopID, (productID, quantity)  
                                                                     //every entry in the HashMap is a basket.

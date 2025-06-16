@@ -1,9 +1,12 @@
 package com.example.app.PresentationLayer.Controller;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import org.springframework.boot.context.properties.bind.DefaultValue;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -14,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.format.annotation.DateTimeFormat.ISO;
 
 import com.example.app.ApplicationLayer.Purchase.PurchaseService;
 import com.example.app.PresentationLayer.DTO.Purchase.PaymentDetailsDTO;
@@ -374,7 +379,129 @@ public class PurchaseController {
         }
     }
 
-   
+    /* ─────────────────────────── AUCTIONS ────────────────────────── */
 
+    @PostMapping("/auctions")
+    public ResponseEntity<Integer> startAuction(
+            @RequestParam String authToken,
+            @RequestParam @Min(1) int storeId,
+            @RequestBody Map<Integer, Integer> items,
+            @RequestParam @Min(0) int initialPrice,
+            @RequestParam @DateTimeFormat(iso = ISO.DATE_TIME) LocalDateTime auctionEndTime
+    ) {
+        try {
+            int auctionId = purchaseService.startAuction(
+                authToken, storeId, items, initialPrice, auctionEndTime
+            );
+            return ResponseEntity.status(HttpStatus.CREATED).body(auctionId);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(-1);
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(-1);
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(-1);
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(-1);
+        }
+    }
+
+    @PostMapping("/auctions/{auctionId}/offers")
+    public ResponseEntity<Void> placeAuctionBid(
+            @PathVariable @Min(1) int auctionId,
+            @RequestParam String authToken,
+            @RequestParam @Min(1) int bidAmount
+    ) {
+        try {
+            purchaseService.postBiddingAuction(authToken, auctionId, bidAmount);
+            return ResponseEntity.accepted().build();
+        } catch (IllegalArgumentException | ConstraintViolationException ex) {
+            System.out.println("Invalid parameters (400): " + ex.getMessage());
+            return ResponseEntity.badRequest().body(null); // 400
+        } catch (NoSuchElementException ex) {
+            System.out.println("Invalid parameters (404): " + ex.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); // 404
+        } catch (RuntimeException ex) {
+            System.out.println("Invalid parameters (409): " + ex.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(null); // 409
+        } catch (Exception ex) {
+            System.out.println("Invalid parameters (500): " + ex.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(null); // 500
+        }
+    }
+
+    @PostMapping("/auctions/{auctionId}/finalize")
+    public ResponseEntity<?> finalizeAuctionInternal(
+            @PathVariable @Min(1) int bidId,
+            @RequestParam String authToken) {
+
+        try {
+            // Parse the payment details JSON
+            
+            int winnerId = purchaseService.finalizeBid(authToken, bidId);
+            // success → 200 OK, return the winner's user‑id
+            return ResponseEntity.ok(winnerId);
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            // bad parameters (e.g., negative id, malformed token) → 400
+            return ResponseEntity.badRequest().body(ex.getMessage());
+
+        } catch (NoSuchElementException ex) {
+            // bid doesn't exist → 404
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+
+        } catch (RuntimeException ex) {
+            // business‑rule violations (e.g., bid already finalized) → 409
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+
+        } catch (Exception ex) {
+            // anything unexpected → 500
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Internal server error");
+        }
+    }
+
+    @GetMapping("/auctions")
+    public ResponseEntity<List<BidRecieptDTO>> listAuctions(
+            @RequestParam String authToken) {
+        try {
+            List<BidReciept> domain = purchaseService.getAllBids(authToken);
+            List<BidRecieptDTO> dtos = domain.stream()
+                .map(BidRecieptDTO::fromDomain)
+                .toList();
+            return ResponseEntity.ok(dtos);
+        } catch (IllegalArgumentException | NoSuchElementException ex) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception ex) {
+            return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .build();
+        }
+    }
+
+    @GetMapping("/auctions/{auctionId}")
+    public ResponseEntity<BidRecieptDTO> getAuctionDetails(
+            @PathVariable @Min(1) int auctionId,
+            @RequestParam String authToken) {
+
+        try {
+            BidReciept rec = purchaseService.getBid(authToken, auctionId);
+            return ResponseEntity.ok(BidRecieptDTO.fromDomain(rec)); // 200
+
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(null); // 400
+
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); // 404
+
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(null); // 409
+
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(null); // 500
+        }
+    }
+
+    
 
 }

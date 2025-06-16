@@ -10,6 +10,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 import com.example.app.ApplicationLayer.OurRuntime;
@@ -20,6 +21,8 @@ import com.example.app.DomainLayer.IUserRepository;
 import com.example.app.DomainLayer.Member;
 import com.example.app.DomainLayer.Notification;
 import com.example.app.DomainLayer.Purchase.Address;
+import com.example.app.DomainLayer.Purchase.Bid;
+import com.example.app.DomainLayer.Purchase.BidReciept;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
 
@@ -32,6 +35,7 @@ import com.example.app.DomainLayer.User;
 // and has a method getId() to retrieve the user's ID.
 
 @Repository
+@Profile("no-db | test")
 public class UserRepository implements IUserRepository {
     // A map to store users with their IDs as keys
     private ConcurrentHashMap<Integer, com.example.app.DomainLayer.User> userMapping;
@@ -741,6 +745,25 @@ public class UserRepository implements IUserRepository {
         User user = userMapping.get(userId);
         ShoppingCart shoppingCart = user.getShoppingCart();
         shoppingCart.removeItem(shopID, itemID);
+    }
+
+    @Override
+    public List<BidReciept> getAuctionsWinList(int userId) {
+        if (!userMapping.containsKey(userId)) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        Member user = (Member) userMapping.get(userId);
+        return user.getAuctionsWins(); // Assuming Member has a method to get won bids
+    }
+
+    @Override
+    public void addAuctionWinBidToShoppingCart(int winnerId, Bid bid){
+        Member user = (Member) userMapping.get(winnerId);
+        BidReciept bidReciept = bid.generateReciept();
+        if (user == null) {
+            throw new OurRuntime("User " + user.getUsername() + " doesn't exist.");
+        }
+        user.addAuctionWin(bidReciept); // Assuming Member has a method to add an auction win to the shopping cart
     }
 
 }

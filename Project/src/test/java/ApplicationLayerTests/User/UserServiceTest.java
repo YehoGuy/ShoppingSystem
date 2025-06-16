@@ -527,15 +527,27 @@ public class UserServiceTest {
 
     @Test
     void testMessageNotificationFromUserSuccess() {
+        // 1) mock the repo and stub existence
         UserRepository mockRepo = mock(UserRepository.class);
-        UserService svc = new UserService(userRepository, authTokenService, notificationService);
+        when(mockRepo.getMemberById(44)).thenReturn(mock(Member.class));
+        //    (or, if your service does findById(...), stub that:
+        // when(mockRepo.findById(44)).thenReturn(Optional.of(new User(44, /*…*/)));
 
+        // 2) pass the mock into the service constructor
+        UserService svc = new UserService(mockRepo, authTokenService, notificationService);
+
+        // 3) wire up the notificationService to point back at svc
         notificationService.setService(svc);
 
+        // 4) call the “from user” path
         svc.messageNotification(44, 0, false);
-        verify(notificationService).sendToUser(44,
-                "Message Received",
-                "You have received a new message from the user (id=44).");
+
+        // 5) verify the notification was sent
+        verify(notificationService).sendToUser(
+            44,
+            "Message Received",
+            "You have received a new message from the user (id=44)."
+        );
     }
 
     @Test

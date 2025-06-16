@@ -65,4 +65,5 @@ public class PurchaseDTO {
     public double getPrice() {
         return price;
     }
+
 }

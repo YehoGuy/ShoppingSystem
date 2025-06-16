@@ -1,5 +1,7 @@
 package com.example.app.DomainLayer.Purchase;
 
+import jakarta.persistence.Embeddable;
+
 /**
  * The {@code Address} class represents a physical real-world address in the shopping system.
  * 
@@ -27,6 +29,7 @@ package com.example.app.DomainLayer.Purchase;
  * }</pre>
  * 
  */
+@Embeddable
 public class Address {
     
     protected String Country;

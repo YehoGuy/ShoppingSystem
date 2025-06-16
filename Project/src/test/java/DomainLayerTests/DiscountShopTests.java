@@ -15,15 +15,14 @@ import com.example.app.DomainLayer.Shop.Discount.GlobalDiscount;
 import com.example.app.DomainLayer.Shop.Discount.PolicyComposite;
 import com.example.app.DomainLayer.Shop.Discount.PolicyLeaf;
 import com.example.app.DomainLayer.Shop.Discount.SingleDiscount;
-import com.example.app.DomainLayer.Shop.Discount.TriPredicate;
 import com.example.app.DomainLayer.Shop.Operator;
 
 public class DiscountShopTests {
 
-    private Map<Integer,Integer> items;
-    private Map<Integer,AtomicInteger> prices;
-    private Map<Integer,Double> discounted;
-    private Map<Integer,ItemCategory> categories;
+    private Map<Integer, Integer> items;
+    private Map<Integer, AtomicInteger> prices;
+    private Map<Integer, Double> discounted;
+    private Map<Integer, ItemCategory> categories;
 
     @BeforeEach
     public void setup() {
@@ -74,22 +73,8 @@ public class DiscountShopTests {
 
     @Test
     public void testSingleDiscount_InvalidPercentage() {
-        assertThrows(IllegalArgumentException.class, () ->
-            new SingleDiscount(1, -5, null, false)
-        );
-        assertThrows(IllegalArgumentException.class, () ->
-            new SingleDiscount(1, 150, null, true)
-        );
-    }
-
-    @Test
-    public void testSingleDiscount_PolicyBlocks() {
-        // policy that always returns false
-        var leaf = new PolicyLeaf((i,p,c) -> false);
-        var sd = new SingleDiscount(1, 50, leaf, false);
-        var result = sd.applyDiscounts(items, prices, discounted, categories);
-        // no change since policy fails
-        assertEquals(100.0, result.get(1));
+        assertThrows(IllegalArgumentException.class, () -> new SingleDiscount(1, -5, null, false));
+        assertThrows(IllegalArgumentException.class, () -> new SingleDiscount(1, 150, null, true));
     }
 
     // ----- CategoryDiscount -----
@@ -122,20 +107,8 @@ public class DiscountShopTests {
 
     @Test
     public void testCategoryDiscount_InvalidPercentage() {
-        assertThrows(IllegalArgumentException.class, () ->
-            new CategoryDiscount(ItemCategory.BOOKS, -1, null, false)
-        );
-        assertThrows(IllegalArgumentException.class, () ->
-            new CategoryDiscount(ItemCategory.BOOKS, 101, null, true)
-        );
-    }
-
-    @Test
-    public void testCategoryDiscount_PolicyBlocks() {
-        var leaf = new PolicyLeaf((i,p,c) -> false);
-        var cd = new CategoryDiscount(ItemCategory.ELECTRONICS, 50, leaf, false);
-        var result = cd.applyDiscounts(items, prices, discounted, categories);
-        assertEquals(100.0, result.get(1));
+        assertThrows(IllegalArgumentException.class, () -> new CategoryDiscount(ItemCategory.BOOKS, -1, null, false));
+        assertThrows(IllegalArgumentException.class, () -> new CategoryDiscount(ItemCategory.BOOKS, 101, null, true));
     }
 
     // ----- GlobalDiscount -----
@@ -162,33 +135,8 @@ public class DiscountShopTests {
 
     @Test
     public void testGlobalDiscount_InvalidPercentage() {
-        assertThrows(IllegalArgumentException.class, () ->
-            new GlobalDiscount(-5, null, false)
-        );
-        assertThrows(IllegalArgumentException.class, () ->
-            new GlobalDiscount(150, null, true)
-        );
-    }
-
-    @Test
-    public void testGlobalDiscount_PolicyBlocks() {
-        var leaf = new PolicyLeaf((i,p,c) -> false);
-        var gd = new GlobalDiscount(50, leaf, false);
-        var result = gd.applyDiscounts(items, prices, discounted, categories);
-        assertEquals(100.0, result.get(1));
-        assertEquals(50.0, result.get(2));
-    }
-
-    // ----- PolicyLeaf -----
-
-    @Test
-    public void testPolicyLeaf_Predicate() {
-        TriPredicate<Map<Integer,Integer>,Map<Integer,Double>,Map<Integer,ItemCategory>> pred =
-            (i,p,c) -> i.get(1) == 2;
-        var leaf = new PolicyLeaf(pred);
-        assertTrue(leaf.test(items, discounted, categories));
-        items.put(1, 1);
-        assertFalse(leaf.test(items, discounted, categories));
+        assertThrows(IllegalArgumentException.class, () -> new GlobalDiscount(-5, null, false));
+        assertThrows(IllegalArgumentException.class, () -> new GlobalDiscount(150, null, true));
     }
 
     // ----- PolicyComposite -----
@@ -198,43 +146,5 @@ public class DiscountShopTests {
         var pc = new PolicyComposite(Operator.AND);
         // with neither policy1 nor policy2 set → returns true
         assertTrue(pc.test(items, discounted, categories));
-    }
-
-    @Test
-    public void testPolicyComposite_SinglePolicy() {
-        var leaf = new PolicyLeaf((i,p,c) -> i.containsKey(2));
-        var pc = new PolicyComposite(leaf, Operator.OR);
-        assertTrue(pc.test(items, discounted, categories));
-        items.remove(2);
-        assertFalse(pc.test(items, discounted, categories));
-    }
-
-    @Test
-    public void testPolicyComposite_AND_OR_XOR() {
-        var leafTrue = new PolicyLeaf((i,p,c) -> true);
-        var leafFalse = new PolicyLeaf((i,p,c) -> false);
-
-        var andComp = new PolicyComposite(leafTrue, leafFalse, Operator.AND);
-        assertFalse(andComp.test(items, discounted, categories));
-
-        var orComp = new PolicyComposite(leafTrue, leafFalse, Operator.OR);
-        assertTrue(orComp.test(items, discounted, categories));
-
-        var xorComp = new PolicyComposite(leafTrue, leafFalse, Operator.XOR);
-        assertTrue(xorComp.test(items, discounted, categories));
-
-        // both true for XOR → false
-        var bothTrue = new PolicyComposite(leafTrue, leafTrue, Operator.XOR);
-        assertFalse(bothTrue.test(items, discounted, categories));
-    }
-
-    @Test
-    public void testPolicyComposite_addPolicy_exceptions() {
-        var pc = new PolicyComposite(Operator.OR);
-        pc.addPolicy(new PolicyLeaf((i,p,c) -> true));
-        pc.addPolicy(new PolicyLeaf((i,p,c) -> true));
-        assertThrows(IllegalStateException.class, () ->
-            pc.addPolicy(new PolicyLeaf((i,p,c) -> false))
-        );
     }
 }

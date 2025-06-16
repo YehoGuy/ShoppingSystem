@@ -28,7 +28,6 @@ import com.example.app.DomainLayer.Member;
 import com.example.app.DomainLayer.Shop.Discount.Policy;
 import com.example.app.DomainLayer.Shop.Discount.PolicyComposite;
 import com.example.app.DomainLayer.Shop.Discount.PolicyLeaf;
-import com.example.app.DomainLayer.Shop.Discount.TriPredicate;
 import com.example.app.PresentationLayer.DTO.Shop.CompositePolicyDTO;
 import com.example.app.PresentationLayer.DTO.Shop.LeafPolicyDTO;
 import com.example.app.PresentationLayer.DTO.Shop.PoliciesDTO;
@@ -760,7 +759,7 @@ public class ShopService {
             User user = userService.getUserById(userId);
             String userName;
             if (user instanceof Member) {
-                userName = ((Member)user).getUsername();
+                userName = ((Member) user).getUsername();
             } else {
                 userName = "guest";
             }
@@ -806,28 +805,6 @@ public class ShopService {
         }
     }
 
-    public void addDiscountPolicy(String token, int threshold, int itemId, ItemCategory category, double basketValue,
-            Operator operator, int shopId) throws Exception {
-        try {
-            LoggerService.logMethodExecution("addDiscountPolicy", threshold, itemId, category, basketValue, operator);
-            Integer userId = authTokenService.ValidateToken(token);
-            if (!userService.hasPermission(userId, PermissionsEnum.setPolicy, shopId)) {
-                OurRuntime e = new OurRuntime("User does not have permission to add discount policy for item " + itemId
-                        + " in shop " + shopId);
-                LoggerService.logDebug("addDiscountPolicy", e);
-                throw e;
-            }
-            shopRepository.addDiscountPolicy(threshold, itemId, category, basketValue, operator, shopId);
-            LoggerService.logMethodExecutionEndVoid("addDiscountPolicy");
-        } catch (OurArg e) {
-            LoggerService.logDebug("addDiscountPolicy", e);
-            throw new OurArg("addDiscountPolicy" + e.getMessage());
-        } catch (OurRuntime e) {
-            LoggerService.logDebug("addDiscountPolicy", e);
-            throw new OurRuntime("addDiscountPolicy" + e.getMessage());
-        }
-    }
-
     public void setDiscountPolicy(int shopId, CompositePolicyDTO dto, String token) {
         try {
             LoggerService.logMethodExecution("setDiscountPolicy", shopId, dto);
@@ -866,7 +843,7 @@ public class ShopService {
         } else if (dto.getLeafPolicy1() != null) {
             left = mapLeafPolicy(dto.getLeafPolicy1(), shopId);
         } else {
-            left = (items, prices, categories) -> true; // no requirement
+            left = new PolicyLeaf(null, null, null, 0.0); // no requirement
         }
         // map right side
         Policy right;
@@ -894,28 +871,17 @@ public class ShopService {
         if (leaf.getThreshold() != null && leaf.getItemId() != null) {
             int threshold = leaf.getThreshold();
             int itemId = leaf.getItemId();
-            TriPredicate<Map<Integer, Integer>, Map<Integer, Double>, Map<Integer, ItemCategory>> p = (items, prices,
-                    cats) -> items.getOrDefault(itemId, 0) >= threshold;
-            return new PolicyLeaf(threshold, itemId, null, 0.0, p);
+            return new PolicyLeaf(threshold, itemId, null, 0.0);
         }
         // category-level
         if (leaf.getThreshold() != null && leaf.getItemCategory() != null) {
             int threshold = leaf.getThreshold();
             ItemCategory cat = leaf.getItemCategory();
-            TriPredicate<Map<Integer, Integer>, Map<Integer, Double>, Map<Integer, ItemCategory>> p = (items, prices,
-                    cats) -> items.entrySet().stream()
-                            .filter(e -> cats.get(e.getKey()) == cat)
-                            .mapToInt(Map.Entry::getValue)
-                            .sum() >= threshold;
-            return new PolicyLeaf(threshold, null, cat, 0.0, p);
+            return new PolicyLeaf(threshold, null, cat, 0.0);
         }
         // basket-value
         double minValue = leaf.getBasketValue();
-        TriPredicate<Map<Integer, Integer>, Map<Integer, Double>, Map<Integer, ItemCategory>> p = (items, prices,
-                cats) -> items.entrySet().stream()
-                        .mapToDouble(e -> prices.get(e.getKey()) * e.getValue())
-                        .sum() >= minValue;
-        return new PolicyLeaf(null, null, null, minValue, p);
+        return new PolicyLeaf(null, null, null, minValue);
     }
 
     public List<Discount> getDiscounts(int shopId, String token) {
