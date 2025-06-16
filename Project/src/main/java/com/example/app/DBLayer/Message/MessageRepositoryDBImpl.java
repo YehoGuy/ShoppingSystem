@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 import com.example.app.DomainLayer.IMessageRepository;
@@ -19,6 +20,7 @@ import jakarta.persistence.PersistenceContext;
  * Manages message IDs via an internal counter initialized from the database.
  */
 @Repository
+@Profile("!no-db & !test")
 public class MessageRepositoryDBImpl implements IMessageRepository {
 
     private final MessageRepositoryDB jpaRepo;

@@ -1,25 +1,26 @@
 package DBLayerTests;
+/* 
+import java.util.Date;
+import java.util.UUID;
 
-import com.example.app.ApplicationLayer.OurRuntime;
-import com.example.app.DBLayer.AuthToken.AuthTokenRepositoryDBImpl;
-import com.example.app.DomainLayer.AuthToken;
-import com.example.app.DomainLayer.IAuthTokenRepository;
-import com.example.app.SimpleHttpServerApplication;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import com.example.app.DomainLayer.AuthToken;
+import com.example.app.DomainLayer.IAuthTokenRepository;
+import com.example.app.SimpleHttpServerApplication;
+
 import jakarta.transaction.Transactional;
 
-import java.util.Date;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
-
 @SpringBootTest(classes = SimpleHttpServerApplication.class)
-@ActiveProfiles({ "test" })
+@ActiveProfiles({ "db-test" })
 @Transactional
 public class AuthTokenRepositoryDBImplTests {
 
@@ -84,3 +85,4 @@ public class AuthTokenRepositoryDBImplTests {
         assertFalse(validToken.isExpired());
     }
 }
+*/

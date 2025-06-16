@@ -23,7 +23,7 @@ import com.example.app.SimpleHttpServerApplication;
  * Comprehensive tests for MessageRepositoryDBImpl.
  */
 @SpringBootTest(classes = SimpleHttpServerApplication.class)
-@ActiveProfiles("test")
+@ActiveProfiles("db-test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 @Transactional
 public class MessageRepositoryDBImplTests {

@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 import com.example.app.DomainLayer.Purchase.Address;
@@ -16,6 +17,7 @@ import com.example.app.DomainLayer.Purchase.Purchase;
 import com.example.app.DomainLayer.Purchase.Reciept;
 
 @Repository
+@Profile("no-db | test")
 public class PurchaseRepository implements IPurchaseRepository {
     /**
      * This class handles the purchases data storage and retrieval.

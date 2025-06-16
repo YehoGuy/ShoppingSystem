@@ -32,7 +32,7 @@ import com.example.app.SimpleHttpServerApplication;
 import jakarta.transaction.Transactional;
 
 @SpringBootTest(classes = SimpleHttpServerApplication.class)
-@ActiveProfiles({ "test" })
+@ActiveProfiles({ "db-test" })
 @Transactional
 public class UserRepositoryDBImplTests {
 

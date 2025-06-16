@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 import com.example.app.ApplicationLayer.OurArg;
@@ -11,6 +12,7 @@ import com.example.app.DomainLayer.AuthToken;
 import com.example.app.DomainLayer.IAuthTokenRepository;
 
 @Repository
+@Profile("no-db | test")
 public class AuthTokenRepository implements IAuthTokenRepository {
     private Map<Integer, com.example.app.DomainLayer.AuthToken> authTokenMap; // Maps user IDs to their authentication tokens
 

@@ -1,22 +1,21 @@
 package com.example.app.DBLayer.AuthToken;
 
-import java.lang.reflect.Member;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 import com.example.app.ApplicationLayer.OurRuntime;
-import com.example.app.DomainLayer.IAuthTokenRepository;
 import com.example.app.DomainLayer.AuthToken;
+import com.example.app.DomainLayer.IAuthTokenRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
-@Primary
 @Repository
+@Profile("!no-db & !test")
 public class AuthTokenRepositoryDBImpl implements IAuthTokenRepository {
 
     private final AuthTokenRepositoryDB jpaRepo;
