@@ -14,12 +14,11 @@ import org.springframework.stereotype.Repository;
 import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Purchase.ShippingMethod;
 import com.example.app.DomainLayer.Item.ItemCategory;
-import com.example.app.DomainLayer.Shop.IShopRepository;
-import com.example.app.DomainLayer.Shop.Operator;
-import com.example.app.DomainLayer.Shop.PurchasePolicy;
-import com.example.app.DomainLayer.Shop.Shop;
 import com.example.app.DomainLayer.Shop.Discount.Discount;
 import com.example.app.DomainLayer.Shop.Discount.Policy;
+import com.example.app.DomainLayer.Shop.IShopRepository;
+import com.example.app.DomainLayer.Shop.PurchasePolicy;
+import com.example.app.DomainLayer.Shop.Shop;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
