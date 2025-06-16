@@ -32,7 +32,6 @@ public class ShopRepository implements IShopRepository {
     private final List<Shop> closedShops = new CopyOnWriteArrayList<>();
     private final Map<Integer, Shop> inMemory = new HashMap<>();
 
-
     @Override
     public Shop createShop(String name, PurchasePolicy purchasePolicy, ShippingMethod shippingMethod) {
         try {
@@ -248,9 +247,9 @@ public class ShopRepository implements IShopRepository {
     @Override
     public void closeShop(Integer shopId) {
         try {
-            
+
             Shop removed = shops.remove(shopId);
-            //print the removed shop for debugging purposes
+            // print the removed shop for debugging purposes
             System.out.println("Closing shop: " + removed);
             if (removed == null) {
                 throw new IllegalArgumentException("Shop not found: " + shopId);
@@ -419,20 +418,6 @@ public class ShopRepository implements IShopRepository {
             return Collections.unmodifiableList(closedShops);
         } catch (Exception e) {
             throw new RuntimeException("Error retrieving closed shops: " + e.getMessage(), e);
-        }
-    }
-
-    @Override
-    public void addDiscountPolicy(int threshold, int itemId, ItemCategory category, double basketValue,
-            Operator operator, int shopId) {
-        try {
-            Shop shop = shops.get(shopId);
-            if (shop == null) {
-                throw new IllegalArgumentException("Shop not found: " + shopId);
-            }
-            shop.addPolicy(threshold, itemId, category, basketValue, operator);
-        } catch (Exception e) {
-            throw new RuntimeException("Error adding discount policy: " + e.getMessage(), e);
         }
     }
 
