@@ -40,11 +40,12 @@ public class ShopRepositoryDBImpl implements IShopRepository {
     @Override
     public Shop createShop(String name, PurchasePolicy purchasePolicy, ShippingMethod shippingMethod) {
         Shop shop = new Shop(shopIdCounter.getAndIncrement(), name, shippingMethod);
-        Shop saved = jpaRepo.save(shop);
-        if (saved == null) {
-            throw new RuntimeException("Failed to save shop: " + shop);
+        try {
+            Shop saved = jpaRepo.save(shop);
+            return saved;
+        } catch (Exception e) {
+            throw new OurRuntime("Failed to create shop: " + name, e);
         }
-        return saved;
     }
 
     @Override
@@ -339,6 +340,14 @@ public class ShopRepositoryDBImpl implements IShopRepository {
             return shop.getPolicies();
         } catch (RuntimeException e) {
             throw e;
+        }
+    }
+
+    public void deleteAll() {
+        try {
+            jpaRepo.deleteAll();
+        } catch (Exception e) {
+            throw new OurRuntime("Failed to delete all shops", e);
         }
     }
 
