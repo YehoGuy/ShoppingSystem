@@ -51,11 +51,12 @@ public class MessageServiceTests {
     private PurchasePolicy purchasePolicyMock;
     
     @BeforeEach
-    void setUp(@Value("${admin.username:admin}") String adminUsername,
-        @Value("${admin.password:admin}") String adminPlainPassword,
-        @Value("${admin.email:admin@mail.com}") String adminEmail,
-        @Value("${admin.phoneNumber:0}") String adminPhoneNumber,
-        @Value("${admin.address:admin st.}") String adminAddress) {
+    void setUp() {
+        String adminUsername       = "admin";
+        String adminPlainPassword  = "admin";
+        String adminEmail          = "admin@mail.com";
+        String adminPhoneNumber    = "0";
+        String adminAddress        = "admin st.";
 
         // Initialize the message service and repository before each test
         NotificationService notificationMock = mock(NotificationService.class);
