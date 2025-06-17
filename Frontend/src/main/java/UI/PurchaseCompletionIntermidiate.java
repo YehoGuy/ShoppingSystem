@@ -60,18 +60,11 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
         return null; // Return null if userId is not available
     }
 
-<<<<<<< Configuration-frontend
     public PurchaseCompletionIntermidiate(@Value("${url.api}") String api, ShoppingCartDTO cart) {
         this.api = api;
 
-        setAllItems();
-=======
-    public PurchaseCompletionIntermidiate(ShoppingCartDTO cart) {
->>>>>>> V2
-
         this.cartDto = cart;
         this.totalPrice = cart.getTotalPrice();
-
 
         setAllItems();
         setSizeFull();
@@ -146,22 +139,15 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
     }
 
     private void completePurchase(AddressDTO address) {
-<<<<<<< Configuration-frontend
         PaymenPageView paymentPage = new PaymenPageView(
-            api,
-            totalPrice,
-            address.getCountry(),
-            address.getCity(),
-            address.getStreet(),
-            address.getHouseNumber(),
-            address.getZipCode());
+                api,
+                totalPrice,
+                address.getCountry(),
+                address.getCity(),
+                address.getStreet(),
+                address.getHouseNumber(),
+                address.getZipCode());
 
-=======
-        
-
-        PaymenPageView paymentPage = new PaymenPageView(totalPrice, address.getCountry(), address.getCity(),
-                address.getStreet(), address.getHouseNumber(), address.getZipCode());
->>>>>>> V2
         Dialog paymentDialog = new Dialog(paymentPage);
         paymentDialog.setWidth("400px");
         paymentDialog.setHeight("300px");
@@ -211,7 +197,7 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
             return;
         }
         String url = api + "/users/" + userId + "/isSuspended?token=" + token;
-        
+
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {

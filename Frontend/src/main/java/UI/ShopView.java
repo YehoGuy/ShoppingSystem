@@ -43,28 +43,19 @@ import DTOs.ShopReviewDTO;
 
 public class ShopView extends VerticalLayout implements HasUrlParameter<String>, BeforeEnterObserver {
 
-<<<<<<< Configuration-frontend
     private final String api;
     private final String shopApiUrl;
     private final String purchaseHistoryUrl;
-=======
-    @Value("${url.api}/shops")
-    private String SHOP_API_URL;
-    
-
-    @Value("${url.api}/purchases/shops")
-    private String PURCHASE_HISTORY_URL;
->>>>>>> V2
 
     private final RestTemplate restTemplate = new RestTemplate();
     private ShopDTO shop;
     private Map<ItemDTO, Double> prices;
 
     public ShopView(@Value("${url.api}") String api) {
-        this.api                  = api;
-        this.shopApiUrl           = api + "/shops";
-        this.purchaseHistoryUrl   = api + "/purchases/shops";
-    
+        this.api = api;
+        this.shopApiUrl = api + "/shops";
+        this.purchaseHistoryUrl = api + "/purchases/shops";
+
         setPadding(true);
         setSpacing(true);
     }
@@ -176,11 +167,9 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         VerticalLayout itemsLayout = new VerticalLayout();
         itemsLayout.setWidthFull();
 
-        for (Map.Entry<ItemDTO, Integer> e :
-                ShopDTO.itemQuantitiesToMapConverter(
-                        shop.getItems(),
-                        shop.getItemQuantities()
-                ).entrySet()) {
+        for (Map.Entry<ItemDTO, Integer> e : ShopDTO.itemQuantitiesToMapConverter(
+                shop.getItems(),
+                shop.getItemQuantities()).entrySet()) {
 
             ItemDTO item = e.getKey();
             int available = e.getValue();
@@ -222,7 +211,8 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
                     return;
                 }
 
-                // Build URL: POST http://localhost:8080/shops/{shopId}/cart/add?itemId={itemId}&quantity={qty}&token={authToken}
+                // Build URL: POST
+                // http://localhost:8080/shops/{shopId}/cart/add?itemId={itemId}&quantity={qty}&token={authToken}
                 String url = "http://localhost:8080/api/users/"
                         + "/shoppingCart/"
                         + shop.getShopId()
@@ -240,8 +230,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
                             url,
                             HttpMethod.POST,
                             request,
-                            Void.class
-                    );
+                            Void.class);
 
                     if (resp.getStatusCode() == HttpStatus.NO_CONTENT) {
                         Notification.show("🚀 Added “" + item.getName() + "” x" + qty + " to cart");
@@ -288,13 +277,13 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         // Reviews section
         add(new H2("📝 Reviews"));
         double avg = shop.getReviews().stream()
-                        .mapToInt(ShopReviewDTO::getRating)
-                        .average()
-                        .orElse(0.0);
+                .mapToInt(ShopReviewDTO::getRating)
+                .average()
+                .orElse(0.0);
         add(new Paragraph("⭐ Average Rating: " + String.format("%.1f", avg) + "/5"));
         for (ShopReviewDTO rev : shop.getReviews()) {
             add(new Paragraph("👤 " + rev.getUserId() + ": "
-                            + rev.getReviewText() + " (" + rev.getRating() + ")"));
+                    + rev.getReviewText() + " (" + rev.getRating() + ")"));
         }
     }
 
