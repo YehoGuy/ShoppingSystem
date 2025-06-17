@@ -32,6 +32,7 @@ import com.example.app.PresentationLayer.DTO.Shop.DiscountDTO;
 import com.example.app.PresentationLayer.DTO.Shop.PoliciesDTO;
 import com.example.app.PresentationLayer.DTO.Shop.ShopDTO;
 import com.example.app.DomainLayer.Shop.Discount.SingleDiscount;
+import com.example.app.InfrastructureLayer.WSEPShipping;
 import com.example.app.DomainLayer.Shop.Discount.CategoryDiscount;
 import com.example.app.DomainLayer.Shop.Discount.GlobalDiscount;
 import com.example.app.DomainLayer.Shop.Discount.Policy;
@@ -162,7 +163,7 @@ public class ShopController {
             @RequestParam String name) {
 
         try {
-            Shop shop = shopService.createShop(name, null, null, token);
+            Shop shop = shopService.createShop(name, null, new WSEPShipping(), token);
             List<ItemDTO> itemDTOs = new ArrayList<>(); // No items initially
             ShopDTO shopDTO = ShopDTO.fromDomain(shop, itemDTOs);
             return ResponseEntity.status(HttpStatus.CREATED).body(shopDTO);

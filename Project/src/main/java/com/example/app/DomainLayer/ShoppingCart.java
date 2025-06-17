@@ -21,19 +21,18 @@ public class ShoppingCart {
     public void clearCart() {
         items.clear();
     }
-    
+
     public void addBasket(int shopId) {
         items.putIfAbsent(shopId, new ConcurrentHashMap<>());
-        
+
     }
-    
+
     public void removeBasket(int shopId) {
         items.remove(shopId);
     }
 
-    public HashMap<Integer, Integer> getBasket(int shopId) {
-        ConcurrentHashMap<Integer, Integer> basket = items.get(shopId);
-        return basket != null ? new HashMap<>(basket) : null;
+    public ConcurrentHashMap<Integer, Integer> getBasket(int shopId) {
+        return items.getOrDefault(shopId, new ConcurrentHashMap<>());
     }
 
     public void addItem(int shopId, int productId, int quantity) {
@@ -84,7 +83,9 @@ public class ShoppingCart {
 
     /**
      * Returns a copy of the items in the shopping cart.
-     * The copy is a deep copy, meaning that changes to the copy will not affect the original items.
+     * The copy is a deep copy, meaning that changes to the copy will not affect the
+     * original items.
+     * 
      * @return A deep copy of the items in the shopping cart.
      */
     public HashMap<Integer, HashMap<Integer, Integer>> getItems() {
@@ -96,15 +97,17 @@ public class ShoppingCart {
     }
 
     /**
-    * Restores the shopping cart with the given items.
-    * @param items A HashMap containing the items to restore in the shopping cart. shopId -> <itemId -> quantity>
-    */
+     * Restores the shopping cart with the given items.
+     * 
+     * @param items A HashMap containing the items to restore in the shopping cart.
+     *              shopId -> <itemId -> quantity>
+     */
     public void restoreCart(HashMap<Integer, HashMap<Integer, Integer>> newItems) {
         for (Integer shopId : newItems.keySet()) {
             items.putIfAbsent(shopId, new ConcurrentHashMap<>());
             ConcurrentHashMap<Integer, Integer> shopItems = items.get(shopId);
             HashMap<Integer, Integer> newShopItems = newItems.get(shopId);
-    
+
             synchronized (shopItems) {
                 for (Integer productId : newShopItems.keySet()) {
                     shopItems.merge(productId, newShopItems.get(productId), Integer::sum);
