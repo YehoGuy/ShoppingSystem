@@ -365,6 +365,7 @@ public class PurchaseController {
                 .stream()
                 .map(RecieptDTO::fromDomain)          // map to DTO
                 .toList();
+
             return ResponseEntity.ok(receipts);     // 200 + JSON array
 
         } catch (ConstraintViolationException|IllegalArgumentException ex) {

@@ -103,6 +103,10 @@ public class ShoppingCart {
      *              shopId -> <itemId -> quantity>
      */
     public void restoreCart(HashMap<Integer, HashMap<Integer, Integer>> newItems) {
+        if(!items.isEmpty())
+        {
+            return;
+        }
         for (Integer shopId : newItems.keySet()) {
             items.putIfAbsent(shopId, new ConcurrentHashMap<>());
             ConcurrentHashMap<Integer, Integer> shopItems = items.get(shopId);

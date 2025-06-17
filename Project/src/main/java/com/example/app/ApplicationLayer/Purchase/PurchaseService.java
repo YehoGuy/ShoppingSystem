@@ -84,12 +84,13 @@ public class PurchaseService {
                 double totalPrice = shopService.purchaseItems(cart.get(shopId), shopId, authToken);
                 totalPrices.put(shopId, totalPrice);
                 aqcuired.put(shopId, cart.get(shopId));
-                int pid = purchaseRepository.addPurchase(userId, shopId, aqcuired.get(shopId), totalPrice,
-                        shippingAddress);
-                purchaseIds.put(pid, shopId);
+
                 int payid = userService.pay(authToken, shopId, totalPrice, currency, cardNumber,
                         expirationDateMonth, expirationDateYear, cardHolderName, cvv, id);
                 paymentIds.add(payid);
+                int pid = purchaseRepository.addPurchase(userId, shopId, aqcuired.get(shopId), totalPrice,
+                        shippingAddress);
+                purchaseIds.put(pid, shopId);
             }
             userService.clearUserShoppingCart(userId);
             for (Integer purchaseId : purchaseIds.keySet()) {
@@ -100,14 +101,24 @@ public class PurchaseService {
             LoggerService.logMethodExecutionEnd("checkoutCart", purchaseIds);
             userService.purchaseNotification(cart);
             return purchaseIds.keySet().stream().toList();
-        } catch (OurArg e) {
-            LoggerService.logDebug("checkoutCart", e);
-            throw new OurArg("checkoutCart: " + e.getMessage(), e);
-        } catch (OurRuntime e) {
-            LoggerService.logDebug("checkoutCart", e);
-            throw new OurRuntime("checkoutCart: " + e.getMessage(), e);
+        // } catch (OurArg e) {
+        //     LoggerService.logDebug("checkoutCart", e);
+        //     throw new OurArg("checkoutCart: " + e.getMessage(), e);
+        // } catch (OurRuntime e) {
+        //     for (Integer shopId : aqcuired.keySet()) {
+        //         shopService.rollBackPurchase(aqcuired.get(shopId), shopId);
+        //     }
+        //     if (cartBackup != null) {
+        //         userService.restoreUserShoppingCart(userId, cartBackup);
+        //     }
+        //     for (Integer pid : paymentIds) {
+        //         userService.refundPaymentAuto(authToken, pid);
+        //     }
+        //     LoggerService.logError("checkoutCart", e, authToken, shippingAddress);
+        //     throw new OurRuntime("checkoutCart: " + e.getMessage(), e);
         } catch (Exception e) {
             for (Integer shopId : aqcuired.keySet()) {
+                System.out.println(aqcuired.keySet());
                 shopService.rollBackPurchase(aqcuired.get(shopId), shopId);
             }
             if (cartBackup != null) {

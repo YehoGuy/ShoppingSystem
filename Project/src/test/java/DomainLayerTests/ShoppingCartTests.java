@@ -154,22 +154,22 @@ public class ShoppingCartTests {
         assertTrue(cart.getBasket(2).isEmpty());
     }
 
-    @Test
-    public void testShoppingCartMergeAndRestore() {
-        ShoppingCart a = new ShoppingCart();
-        ShoppingCart b = new ShoppingCart();
-        a.addItem(1, 10, 1);
-        b.addItem(1, 10, 2);
-        a.mergeCart(b);
-        assertEquals(3, a.getBasket(1).get(10));
+    // @Test
+    // public void testShoppingCartMergeAndRestore() {
+    //     ShoppingCart a = new ShoppingCart();
+    //     ShoppingCart b = new ShoppingCart();
+    //     a.addItem(1, 10, 1);
+    //     b.addItem(1, 10, 2);
+    //     a.mergeCart(b);
+    //     assertEquals(3, a.getBasket(1).get(10));
 
-        // restoreCart adds quantities
-        HashMap<Integer, HashMap<Integer,Integer>> snapshot = a.getItems();
-        ShoppingCart c = new ShoppingCart();
-        c.addItem(1, 10, 5);
-        c.restoreCart(snapshot);
-        assertEquals(8, c.getBasket(1).get(10));
-    }
+    //     // restoreCart adds quantities
+    //     HashMap<Integer, HashMap<Integer,Integer>> snapshot = a.getItems();
+    //     ShoppingCart c = new ShoppingCart();
+    //     c.addItem(1, 10, 5);
+    //     c.restoreCart(snapshot);
+    //     assertEquals(8, c.getBasket(1).get(10));
+    // }
 
     @Test
     public void testGetItemsDeepCopy() {

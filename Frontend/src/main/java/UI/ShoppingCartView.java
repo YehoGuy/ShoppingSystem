@@ -130,11 +130,14 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         buyButton.addClickListener(event -> {
             try {
 
-                PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(baseUrl, cart);
-
                 Dialog dialog = new Dialog();
                 dialog.setHeaderTitle("Purchase Summary");
 
+                PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(baseUrl, cart,
+                        dialog);
+
+                // Add your component to the dialog
+                dialog.add(purchaseCompletion);
                 // Add your component to the dialog
                 dialog.add(purchaseCompletion);
 
@@ -143,7 +146,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 dialog.getFooter().add(closeButton);
 
                 dialog.open(); // Show the dialog
-
+                buildView(); // Refresh the view after purchase
             } catch (Exception e) {
                 Notification.show("Failed to proceed with purchase. Please try again later.",
                         3000, Notification.Position.MIDDLE);
@@ -183,11 +186,11 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             buyBasketButton.getStyle().set("background-color", "blue").set("color", "white");
             buyBasketButton.addClickListener(event -> {
 
-                PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(baseUrl,
-                        cart.getShoppingCartDTOofShop(shopID));
-
                 Dialog dialog = new Dialog();
                 dialog.setHeaderTitle("Purchase Summary");
+
+                PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(
+                        baseUrl, cart.getShoppingCartDTOofShop(shopID), dialog);
 
                 // Add your component to the dialog
                 dialog.add(purchaseCompletion);
@@ -197,6 +200,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 dialog.getFooter().add(closeButton);
 
                 dialog.open(); // Show the dialog
+                buildView(); // Refresh the view after purchase
             });
             H3 shopHeader = new H3(shopName + " - total price: " + shopTotal + "₪");
             VerticalLayout shopHeaderContainer = new VerticalLayout(shopHeader, buyBasketButton);

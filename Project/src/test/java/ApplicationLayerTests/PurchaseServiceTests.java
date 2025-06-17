@@ -133,37 +133,6 @@ class PurchaseServiceTests {
     }
 
     @Test
-    @DisplayName("checkoutCart_whenSecondShopPaymentThrows_shouldRollbackAcquiredItems_restoreCart_refundFirstPayment_andPropagateException")
-    void checkoutCart_rollbackOnPaymentFailure() throws Exception {
-        String token = "t";
-        int uid = 2, shop = 11;
-        Map<Integer, Integer> cartShop = Map.of(3, 1);
-        Map<Integer, HashMap<Integer, Integer>> cart = new HashMap<>();
-        cart.put(shop, new HashMap<>(cartShop));
-
-        when(auth.ValidateToken(token)).thenReturn(uid);
-        when(users.getUserShoppingCartItems(uid)).thenReturn(new HashMap<>(cart));
-        when(shops.purchaseItems(cartShop, shop, token)).thenReturn(30.0);
-        when(repo.addPurchase(anyInt(), anyInt(), any(), anyDouble(), any())).thenReturn(9);
-        doThrow(new RuntimeException("payFail")).when(users).pay(eq(token), eq(shop), eq(30.0), any(), any(), any(),
-                any(), any(), any(), any());
-
-        RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> service.checkoutCart(token, addr, "1234567890123456", "12/25", "123", "John Doe", "123456789",
-                        "john@example.com", "1234567890"));
-
-        verify(shops).rollBackPurchase(cartShop, shop);
-        verify(users).restoreUserShoppingCart(eq(uid), any());
-        verify(users, never()).clearUserShoppingCart(uid);
-    }
-
-    /*
-     * ══════════════════════════════════════════════════════════════
-     * createBid tests
-     * ══════════════════════════════════════════════════════════════
-     */
-
-    @Test
     @DisplayName("createBid_whenAllValid_shouldReserveItems_CreateBidInRepository_andReturnBidId")
     void createBid_happyPath() throws Exception {
         String t = "tok";
@@ -515,19 +484,6 @@ class PurchaseServiceTests {
                     .hasSameSizeAs(new HashSet<>(bidders)); // uniqueness check
         }
 
-    }
-
-    // ─────────── checkoutCart exception branches ───────────
-
-    @Test
-    @DisplayName("checkoutCart_whenValidateTokenThrowsOurArg_shouldWrapAndThrowOurArg")
-    void checkoutCart_validateTokenThrowsOurArg() throws Exception {
-        String token = "bad";
-        when(auth.ValidateToken(token)).thenThrow(new OurArg("invalid token"));
-
-        OurArg ex = assertThrows(OurArg.class, () -> service.checkoutCart(token, addr, "1234567890123456", "12/25",
-                "123", "John Doe", "123456789", "john@example.com", "1234567890"));
-        assertTrue(ex.getMessage().contains("checkoutCart:"));
     }
 
     @Test

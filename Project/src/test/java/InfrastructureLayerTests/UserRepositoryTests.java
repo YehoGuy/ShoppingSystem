@@ -39,13 +39,13 @@ public class UserRepositoryTests {
 
     @BeforeEach
     public void setup() {
-        String adminUsername       = "admin";
-        String adminPlainPassword  = "admin";
-        String adminEmail          = "admin@mail.com";
-        String adminPhoneNumber    = "0";
-        String adminAddress        = "admin st.";
+        String adminUsername = "admin";
+        String adminPlainPassword = "admin";
+        String adminEmail = "admin@mail.com";
+        String adminPhoneNumber = "0";
+        String adminAddress = "admin st.";
 
-        repo = new UserRepository(adminUsername, adminPlainPassword, adminEmail, adminPhoneNumber, adminAddress); 
+        repo = new UserRepository(adminUsername, adminPlainPassword, adminEmail, adminPhoneNumber, adminAddress);
         repo.setEncoderToTest(true); // Set the encoder to test mode
         guestId = repo.addGuest();
         guest = repo.getUserById(guestId);

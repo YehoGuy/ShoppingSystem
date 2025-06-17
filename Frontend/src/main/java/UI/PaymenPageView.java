@@ -9,6 +9,7 @@ import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.JsModule;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H3;
@@ -48,6 +49,7 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
     private String street;
     private String houseNumber;
     private String zipCode;
+    private Dialog addressDialog;
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
@@ -69,7 +71,7 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
 
     public PaymenPageView(@Value("${url.api}") String api, double totalAmount, String country, String city,
             String street, String houseNumber,
-            String zipCode) {
+            String zipCode, Dialog addressDialog) {
 
         this.api = api;
         this.paymentMethodUrl = api + "/payment-method";
@@ -83,6 +85,7 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         this.street = street;
         this.houseNumber = houseNumber;
         this.zipCode = zipCode;
+        this.addressDialog = addressDialog;
 
         setUpLayout();
     }
@@ -135,7 +138,13 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         Button payButton = new Button("Pay");
 
         // Hook the button click to your processPayment() method
-        payButton.addClickListener(event -> processPayment());
+        payButton.addClickListener(event -> {
+            if (isPaymentDetailsValid()) {
+                processPayment();
+            } else {
+                Notification.show("Please fill in all payment details correctly.");
+            }
+        });
 
         // Check if the button should be disabled or enabled (instead of hiding it!)
         Boolean isSuspended = (Boolean) VaadinSession.getCurrent().getAttribute("isSuspended");
@@ -169,12 +178,24 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
 
             if (response.getStatusCode() == HttpStatus.CREATED) {
                 Notification.show("Payment successful");
+                addressDialog.close(); // Close the dialog if payment is successful
+
             } else {
-                Notification.show("Payment failed: ");
+                Notification.show("Payment failed");
             }
         } catch (Exception e) {
-            Notification.show("Payment error: " + e.getMessage());
+            Notification.show("Payment error");
         }
+    }
+
+    private boolean isPaymentDetailsValid() {
+        return currency != null && !currency.isEmpty() &&
+                cardNumber != null && !cardNumber.isEmpty() &&
+                expirationDateMonth != null && !expirationDateMonth.isEmpty() &&
+                expirationDateYear != null && !expirationDateYear.isEmpty() &&
+                cardHolderName != null && !cardHolderName.isEmpty() &&
+                cvv != null && !cvv.isEmpty() &&
+                id != null && !id.isEmpty();
     }
 
     private String getToken() {
