@@ -85,11 +85,12 @@ public class UserServiceTest {
     SimpMessagingTemplate messagingTemplate;
 
     @BeforeEach
-    void setUp(@Value("${admin.username:admin}") String adminUsername,
-        @Value("${admin.password:admin}") String adminPlainPassword,
-        @Value("${admin.email:admin@mail.com}") String adminEmail,
-        @Value("${admin.phoneNumber:0}") String adminPhoneNumber,
-        @Value("${admin.address:admin st.}") String adminAddress) {
+    void setUp() {
+        String adminUsername       = "admin";
+        String adminPlainPassword  = "admin";
+        String adminEmail          = "admin@mail.com";
+        String adminPhoneNumber    = "0";
+        String adminAddress        = "admin st.";
 
         authTokenRepository = new AuthTokenRepository(); // Your real repo
         authTokenService = new AuthTokenService(authTokenRepository); // Real service
@@ -100,17 +101,7 @@ public class UserServiceTest {
         userService = new UserService(userRepository, authTokenService, notificationService);
         notificationService.setService(userService);
 
-        // ─── Manually create the “admin” user exactly as initAdmin() would have ───
-        String rawAdminPassword = "admin"; // must match adminPlainPassword
-        String encodedAdminPassword = userRepository.getPasswordEncoderUtil().encode(rawAdminPassword);
-        int adminId = userRepository.addMember(
-            "admin", 
-            encodedAdminPassword, 
-            "admin@mail.com", 
-            "0", 
-            "admin st."
-        );
-        userRepository.addAdmin(adminId);
+        userRepository.setEncoderToTest(true);
     }
 
     @Test
