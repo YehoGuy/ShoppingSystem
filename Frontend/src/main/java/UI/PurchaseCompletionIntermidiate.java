@@ -57,7 +57,7 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
         return null; // Return null if userId is not available
     }
 
-    public PurchaseCompletionIntermidiate(ShoppingCartDTO cart) {
+    public PurchaseCompletionIntermidiate(ShoppingCartDTO cart, Dialog addressDialog) {
 
         this.cartDto = cart;
         this.totalPrice = cart.getTotalPrice();
@@ -74,13 +74,27 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
         displayCartSummary();
 
         Button completeButton = new Button("Complete Purchase", event -> {
-            AddressDTO address = getAddressFromForm();
-            completePurchase(address);
+            if(isAddressDetailsValid())
+            {
+                AddressDTO address = getAddressFromForm();
+                completePurchase(address,addressDialog);
+            }
+            else
+            {
+                Notification.show("Please fill in all address details correctly.");
+            }
+
         });
         if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
             completeButton.setVisible(false);
         }
         add(completeButton);
+    }
+
+    private boolean isAddressDetailsValid() {
+        return !countryField.isEmpty() && !cityField.isEmpty() && !streetField.isEmpty()
+                && !houseNumberField.isEmpty() && !zipCodeField.isEmpty()
+                && shippingTypeCombo.getValue() != null;
     }
 
     private void setupAddressForm() {
@@ -135,11 +149,9 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
         add(total);
     }
 
-    private void completePurchase(AddressDTO address) {
-        
-
+    private void completePurchase(AddressDTO address, Dialog addressDialog) {
         PaymenPageView paymentPage = new PaymenPageView(totalPrice, address.getCountry(), address.getCity(),
-                address.getStreet(), address.getHouseNumber(), address.getZipCode());
+                address.getStreet(), address.getHouseNumber(), address.getZipCode(), addressDialog);
         Dialog paymentDialog = new Dialog(paymentPage);
         paymentDialog.setWidth("400px");
         paymentDialog.setHeight("300px");
