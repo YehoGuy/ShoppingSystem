@@ -1,6 +1,7 @@
 package com.example.app.DBLayer.Purchase;
 
 import java.time.LocalDateTime;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -75,17 +76,13 @@ public class PurchaseRepositoryDBImpl implements IPurchaseRepository {
 
     @Override
     public Purchase getPurchaseById(int purchaseId) {
-        try {
-            return jpaRepo.getPurchaseById(purchaseId);
-        } catch (Exception e) {
-            throw new OurRuntime(e.getCause());
-        }
+        return jpaRepo.findById(purchaseId).orElseThrow(() -> new OurRuntime("Error when trying to fetch purchase."));
     }
 
     @Override
     public void deletePurchase(int purchaseId) {
         try {
-            jpaRepo.delete(jpaRepo.getPurchaseById(purchaseId));
+            jpaRepo.delete(getPurchaseById(purchaseId));
         } catch (Exception e) {
             throw new OurRuntime(e.getCause());
         }
@@ -93,27 +90,44 @@ public class PurchaseRepositoryDBImpl implements IPurchaseRepository {
 
     @Override
     public List<Reciept> getUserPurchases(int userId) {
-        return jpaRepo.getUserPurchases(userId);
+        return jpaRepo.findAll().stream().filter(purchase -> purchase.getUserId() == userId)
+                .map(Purchase::generateReciept).toList();
     }
 
     @Override
     public List<Reciept> getStorePurchases(int storeId) {
-        return jpaRepo.getStorePurchases(storeId);
+        return jpaRepo.findAll().stream().filter(purchase -> purchase.getStoreId() == storeId)
+                .map(Purchase::generateReciept).toList();
     }
 
     @Override
     public List<Reciept> getUserStorePurchases(int userId, int storeId) {
-        return jpaRepo.getUserStorePurchases(userId, storeId);
+        return jpaRepo.findAll().stream().filter(purchase -> purchase.getUserId() == userId)
+                .filter(purchase -> purchase.getStoreId() == storeId)
+                .map(Purchase::generateReciept).toList();
     }
 
     @Override
     public List<BidReciept> getAllBids() {
-        return jpaRepo.getAllBids();
+        List<Purchase> bids = jpaRepo.findAll().stream().filter(purchase -> purchase instanceof Bid).toList();
+        List<BidReciept> reciepts = new LinkedList<>();
+        for (Purchase bid : bids) {
+            if (bid instanceof Bid)
+                reciepts.add(((Bid) bid).generateReciept());
+        }
+        return reciepts;
     }
 
     @Override
     public List<BidReciept> getShopBids(int shopId) {
-        return jpaRepo.getShopBids(shopId);
+        List<Purchase> bids = jpaRepo.findAll().stream().filter(purchase -> purchase instanceof Bid)
+                .filter(purchase -> purchase.getStoreId() == shopId).toList();
+        List<BidReciept> reciepts = new LinkedList<>();
+        for (Purchase bid : bids) {
+            if (bid instanceof Bid)
+                reciepts.add(((Bid) bid).generateReciept());
+        }
+        return reciepts;
     }
 
 }

@@ -24,13 +24,14 @@ import com.example.app.DomainLayer.Purchase.Bid;
 import com.example.app.DomainLayer.Purchase.BidReciept;
 
 /**
- * Solid JUnit-5 test-suite for {@link Bid} with exhaustive coverage and dead-lock-proof
- * concurrency checks.  Every method name is verbose and self-explaining.
+ * Solid JUnit-5 test-suite for {@link Bid} with exhaustive coverage and
+ * dead-lock-proof
+ * concurrency checks. Every method name is verbose and self-explaining.
  *
- * ⚠  Production-code pre-req: in Bid.addBidding replace  
- *       biddersIds.put(userId, null);  
- *   with  
- *       biddersIds.put(userId, Boolean.TRUE);
+ * ⚠ Production-code pre-req: in Bid.addBidding replace
+ * biddersIds.put(userId, null);
+ * with
+ * biddersIds.put(userId, Boolean.TRUE);
  */
 @DisplayName("Bid – comprehensive unit tests with dead-lock-free concurrency checks")
 class BidTests {
@@ -44,113 +45,108 @@ class BidTests {
 
     /* ───────── constructor baseline ────── */
     @Test
-    @DisplayName(
-        "constructor_givenInitialPriceAndItems_shouldStartIncomplete_highestBidEqualsInitial_andBidderIdIsMinusOne"
-    )
+    @DisplayName("constructor_givenInitialPriceAndItems_shouldStartIncomplete_highestBidEqualsInitial_andBidderIdIsMinusOne")
     void constructor_setsBaselineStateCorrectly() throws Exception {
         Bid bid = new Bid(1, 10, 20, Map.of(5, 2), 50);
 
         assertAll(
-            () -> assertEquals(50, bid.getMaxBidding()),
-            () -> assertFalse(bid.isCompleted()),
-            () -> assertEquals(-1,
-                    ((AtomicInteger) pry(bid, "highestBidderId")).get()),
-            () -> assertTrue(bid.getBiddersIds().isEmpty()),
-            () -> assertEquals(Map.of(5, 2), bid.getItems()));
+                () -> assertEquals(50, bid.getMaxBidding()),
+                () -> assertFalse(bid.isCompleted()),
+                () -> assertEquals(-1,
+                        bid.getHighestBidderId()),
+                () -> assertTrue(bid.getBiddersIds().isEmpty()),
+                () -> assertEquals(Map.of(5, 2), bid.getItems()));
     }
 
     /* ───────── addBidding rules (low / equal) ───────── */
     @Test
-    @DisplayName(
-        "addBidding_whenBidNotHigherThanCurrent_shouldLeaveEverythingUnchanged"
-    )
+    @DisplayName("addBidding_whenBidNotHigherThanCurrent_shouldLeaveEverythingUnchanged")
     void addBidding_lowerOrEqualDoesNothing() {
         Bid bid = new Bid(1, 10, 20, Map.of(), 100);
         bid.setAuctionStartTime(LocalDateTime.now().minusMinutes(1));
-        bid.setAuctionEndTime  (LocalDateTime.now().plusMinutes (1));
+        bid.setAuctionEndTime(LocalDateTime.now().plusMinutes(1));
 
-        bid.addBidding(11, 90);   // lower
-        bid.addBidding(12, 100);  // equal
+        bid.addBidding(11, 90); // lower
+        bid.addBidding(12, 100); // equal
 
         assertAll(
-            () -> assertEquals(100, bid.getMaxBidding()),
-            () -> assertFalse(bid.isCompleted()),
-            () -> assertTrue(bid.getBiddersIds().isEmpty()));
+                () -> assertEquals(100, bid.getMaxBidding()),
+                () -> assertFalse(bid.isCompleted()),
+                () -> assertTrue(bid.getBiddersIds().isEmpty()));
     }
-
 
     /* ───────── completePurchase scenarios ───────── */
     @Test
-    @DisplayName(
-        "completePurchase_onFreshBid_shouldMarkCompleted_setTimestamp_andReturnReceiptWithSentinelValues"
-    )
+    @DisplayName("completePurchase_onFreshBid_shouldMarkCompleted_setTimestamp_andReturnReceiptWithSentinelValues")
     void completePurchase_firstCallSucceeds() {
         Bid bid = new Bid(1, 10, 20, Map.of(), 80);
 
         BidReciept r = bid.completePurchase();
 
         assertAll(
-            () -> assertTrue(bid.isCompleted()),
-            () -> assertNotNull(bid.getTimeOfCompletion()),
-            () -> assertEquals(80, r.getInitialPrice()),
-            () -> assertEquals(80, r.getHighestBid()),
-            () -> assertEquals(-1, r.getHighestBidderId()));
+                () -> assertTrue(bid.isCompleted()),
+                () -> assertNotNull(bid.getTimeOfCompletion()),
+                () -> assertEquals(80, r.getInitialPrice()),
+                () -> assertEquals(80, r.getHighestBid()),
+                () -> assertEquals(-1, r.getHighestBidderId()));
     }
 
     @Test
-    @DisplayName(
-        "completePurchase_afterBidAlreadyCompleted_shouldThrowIllegalStateException"
-    )
+    @DisplayName("completePurchase_afterBidAlreadyCompleted_shouldThrowIllegalStateException")
     void completePurchase_secondCallThrows() {
         Bid bid = new Bid(1, 10, 20, Map.of(), 90);
         bid.completePurchase();
         assertThrows(IllegalStateException.class, bid::completePurchase);
     }
 
-
     /* ───────── concurrency – mixed operations ───────── */
     @Test
     @Timeout(10)
-    @DisplayName(
-        "completePurchaseAndAddBiddingInvokedConcurrently_shouldFinishWithConsistentCompletedStateAndNoThreadLeakage"
-    )
+    @DisplayName("completePurchaseAndAddBiddingInvokedConcurrently_shouldFinishWithConsistentCompletedStateAndNoThreadLeakage")
     void completePurchase_and_addBidding_concurrentInvocationsStayConsistent() {
         Bid bid = new Bid(1, 10, 20, Map.of(), 90);
         bid.setAuctionStartTime(LocalDateTime.now().minusMinutes(1));
-        bid.setAuctionEndTime  (LocalDateTime.now().plusMinutes (1));
+        bid.setAuctionEndTime(LocalDateTime.now().plusMinutes(1));
 
         ExecutorService pool = Executors.newFixedThreadPool(4);
         CompletableFuture.allOf(
-            CompletableFuture.runAsync(() -> { try { bid.completePurchase(); } catch (IllegalStateException ignored) {} }, pool),
-            CompletableFuture.runAsync(() -> bid.addBidding(42, 120), pool),
-            CompletableFuture.runAsync(() -> { try { bid.completePurchase(); } catch (IllegalStateException ignored) {} }, pool),
-            CompletableFuture.runAsync(() -> bid.addBidding(43, 130), pool)
-        ).join();
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        bid.completePurchase();
+                    } catch (IllegalStateException ignored) {
+                    }
+                }, pool),
+                CompletableFuture.runAsync(() -> bid.addBidding(42, 120), pool),
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        bid.completePurchase();
+                    } catch (IllegalStateException ignored) {
+                    }
+                }, pool),
+                CompletableFuture.runAsync(() -> bid.addBidding(43, 130), pool)).join();
         pool.shutdownNow();
 
         assertTrue(bid.isCompleted());
         assertNotNull(bid.getTimeOfCompletion());
     }
 
-
     /* ───────── concurrency – readers vs. writers ───────── */
     @Test
     @Timeout(10)
-    @DisplayName(
-        "getBiddersIdsInvokedConcurrentlyWhileMultipleBidsArrive_shouldNeverThrowConcurrentModification_andShouldEventuallyReportExactlyOneBidder"
-    )
-    void getBiddersIdsInvokedConcurrentlyWhileMultipleBidsArrive_shouldNeverThrowConcurrentModification_andShouldEventuallyReportExactlyOneBidder() throws Exception {
+    @DisplayName("getBiddersIdsInvokedConcurrentlyWhileMultipleBidsArrive_shouldNeverThrowConcurrentModification_andShouldEventuallyReportExactlyOneBidder")
+    void getBiddersIdsInvokedConcurrentlyWhileMultipleBidsArrive_shouldNeverThrowConcurrentModification_andShouldEventuallyReportExactlyOneBidder()
+            throws Exception {
         int base = 100;
-        Bid bid  = new Bid(1, 10, 20, Map.of(), base);
+        Bid bid = new Bid(1, 10, 20, Map.of(), base);
 
         bid.setAuctionStartTime(LocalDateTime.now().minusMinutes(1));
-        bid.setAuctionEndTime  (LocalDateTime.now().plusMinutes (1));
+        bid.setAuctionEndTime(LocalDateTime.now().plusMinutes(1));
 
         ExecutorService pool = Executors.newCachedThreadPool();
 
         // Writer: one high bid plus many lower bids
         CompletableFuture<Void> writer = CompletableFuture.runAsync(() -> {
-            bid.addBidding(55, 200);           // winning bid
+            bid.addBidding(55, 200); // winning bid
             IntStream.range(0, 50).forEach(i -> bid.addBidding(i, base + i));
         }, pool);
 
@@ -170,29 +166,30 @@ class BidTests {
     /* ───────── concurrency – many completePurchase() calls ───────── */
     @Test
     @Timeout(10)
-    @DisplayName(
-        "completePurchaseInvokedConcurrentlyByManyThreads_shouldSucceedExactlyOnce_andAllOtherThreadsMustReceiveIllegalStateException"
-    )
+    @DisplayName("completePurchaseInvokedConcurrentlyByManyThreads_shouldSucceedExactlyOnce_andAllOtherThreadsMustReceiveIllegalStateException")
     void completePurchaseInvokedConcurrentlyByManyThreads_shouldSucceedExactlyOnce_andAllOtherThreadsMustReceiveIllegalStateException() {
         Bid bid = new Bid(1, 10, 20, Map.of(), 120);
 
         int threads = 30;
         ExecutorService pool = Executors.newFixedThreadPool(threads);
 
-        List<CompletableFuture<Boolean>> results =
-            IntStream.range(0, threads)
-                    .mapToObj(i -> CompletableFuture.supplyAsync(() -> {
-                        try { bid.completePurchase(); return Boolean.TRUE; }
-                        catch (IllegalStateException e) { return Boolean.FALSE; }
-                    }, pool))
-                    .toList();
+        List<CompletableFuture<Boolean>> results = IntStream.range(0, threads)
+                .mapToObj(i -> CompletableFuture.supplyAsync(() -> {
+                    try {
+                        bid.completePurchase();
+                        return Boolean.TRUE;
+                    } catch (IllegalStateException e) {
+                        return Boolean.FALSE;
+                    }
+                }, pool))
+                .toList();
 
         long successes = results.stream().map(CompletableFuture::join).filter(b -> b).count();
         pool.shutdownNow();
 
         assertAll(
-            () -> assertEquals(1, successes, "exactly one thread should succeed"),
-            () -> assertTrue(bid.isCompleted()),
-            () -> assertNotNull(bid.getTimeOfCompletion()));
+                () -> assertEquals(1, successes, "exactly one thread should succeed"),
+                () -> assertTrue(bid.isCompleted()),
+                () -> assertNotNull(bid.getTimeOfCompletion()));
     }
 }

@@ -1,8 +1,10 @@
 package com.example.app.DomainLayer.Purchase;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.print.attribute.HashAttributeSet;
 
@@ -11,6 +13,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorColumn;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -19,7 +22,11 @@ import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapKeyColumn;
+import jakarta.persistence.PostLoad;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 @Entity
 @Table(name = "purchases")
@@ -38,9 +45,12 @@ public class Purchase {
     @CollectionTable(name = "purchase_items", joinColumns = @JoinColumn(name = "purchase_id"))
     @MapKeyColumn(name = "item_id")
     @Column(name = "quantity")
+    private Map<Integer, Integer> persistedItems = new HashMap<>();
+
+    @Transient
     protected ConcurrentHashMap<Integer, Integer> items; // itemId -> quantity
 
-    // TODO: understand how to connect it
+    @Embedded
     protected Address shippingAddress; // shipping address
     protected boolean isCompleted; // purchase status
     protected LocalDateTime timeOfCompletion; // time of purchase completion
@@ -235,5 +245,23 @@ public class Purchase {
             return new Reciept(purchaseId, userId, storeId, items, shippingAddress, null, this.price);
         else
             return new Reciept(purchaseId, userId, storeId, items, shippingAddress, timeOfCompletion, this.price);
+    }
+
+    @PostLoad
+    private void postLoad() {
+        // Sync persistedItems to items
+        for (Map.Entry<Integer, Integer> entry : persistedItems.entrySet()) {
+            items.put(entry.getKey(), entry.getValue());
+        }
+    }
+
+    @PrePersist
+    @PreUpdate
+    private void prePersist() {
+        // Sync items to persistedItems
+        persistedItems.clear();
+        for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
+            persistedItems.put(entry.getKey(), entry.getValue());
+        }
     }
 }

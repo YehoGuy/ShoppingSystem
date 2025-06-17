@@ -14,20 +14,27 @@ import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapKeyColumn;
+import jakarta.persistence.PostLoad;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Transient;
 
 @Entity
 @DiscriminatorValue("bid")
 public class Bid extends Purchase {
 
-    private final AtomicInteger initialPrice;
+    private final Integer initialPrice;
 
     @ElementCollection
     @CollectionTable(name = "bid_ids", joinColumns = @JoinColumn(name = "purchase_id"))
     @MapKeyColumn(name = "member_id")
     @Column(name = "quantity")
+    private Map<Integer, Boolean> persistedBiddersIds = new HashMap<>();
+
+    @Transient
     private final ConcurrentHashMap<Integer, Boolean> biddersIds = new ConcurrentHashMap<>();
-    private final AtomicInteger highestBid; // initialPrice if no Bidder
-    private final AtomicInteger highestBidderId; // -1 if no Bidder
+    private Integer highestBid; // initialPrice if no Bidder
+    private Integer highestBidderId; // -1 if no Bidder
     private LocalDateTime auctionStartTime;
     private LocalDateTime auctionEndTime;
 
@@ -40,9 +47,9 @@ public class Bid extends Purchase {
      */
     public Bid(int purchaseId, int userId, int storeId, Map<Integer, Integer> items, int initialPrice) {
         super(purchaseId, userId, storeId, items, initialPrice, null);
-        this.initialPrice = new AtomicInteger(initialPrice);
-        highestBid = new AtomicInteger(initialPrice);
-        highestBidderId = new AtomicInteger(-1);
+        this.initialPrice = initialPrice;
+        highestBid = initialPrice;
+        highestBidderId = -1;
         this.auctionStartTime = null;
         this.auctionEndTime = null;
     }
@@ -86,10 +93,10 @@ public class Bid extends Purchase {
             throw new IllegalStateException("Auction has already ended or is completed. Current time: " + now
                     + ", Auction end time: " + auctionEndTime);
         }
-        if (bidAmount > highestBid.get()) {
+        if (bidAmount > highestBid) {
             if (!isCompleted) {
-                highestBid.set(bidAmount);
-                highestBidderId.set(userId);
+                highestBid = bidAmount;
+                highestBidderId = userId;
                 biddersIds.put(userId, Boolean.TRUE); // ← ALWAYS non-null, thread-safe marker
             }
         }
@@ -101,7 +108,7 @@ public class Bid extends Purchase {
      * @return the maximum bid amount, or -1 if no bids have been placed.
      */
     public int getMaxBidding() {
-        return highestBid.get();
+        return highestBid;
     }
 
     @Override
@@ -114,8 +121,8 @@ public class Bid extends Purchase {
             this.isCompleted = true;
             this.timeOfCompletion = LocalDateTime.now();
             return new BidReciept(this.purchaseId, this.userId, this.storeId, this.items, this.shippingAddress,
-                    this.highestBid.get(), this.highestBidderId.get(), this.initialPrice.get(), this.highestBid.get(),
-                    this.highestBidderId.get(), this.isCompleted, this.auctionEndTime);
+                    this.highestBid, this.highestBidderId, this.initialPrice, this.highestBid,
+                    this.highestBidderId, this.isCompleted, this.auctionEndTime);
         } else {
             throw new IllegalStateException("Purchase is already completed");
         }
@@ -133,20 +140,20 @@ public class Bid extends Purchase {
     @Override
     public BidReciept generateReciept() {
         return new BidReciept(this.purchaseId, this.userId, this.storeId, this.items, this.shippingAddress,
-                this.initialPrice.get(), this.highestBidderId.get(), this.initialPrice.get(), this.highestBid.get(),
-                this.highestBidderId.get(), this.isCompleted, this.auctionEndTime);
+                this.initialPrice, this.highestBidderId, this.initialPrice, this.highestBid,
+                this.highestBidderId, this.isCompleted, this.auctionEndTime);
     }
 
     public int getInitialPrice() {
-        return initialPrice.get();
+        return initialPrice;
     }
 
     public int getHighestBid() {
-        return highestBid.get();
+        return highestBid;
     }
 
     public int getHighestBidderId() {
-        return highestBidderId.get();
+        return highestBidderId;
     }
 
     public LocalDateTime getAuctionStartTime() {
@@ -163,5 +170,23 @@ public class Bid extends Purchase {
 
     public void setAuctionEndTime(LocalDateTime plusMinutes) {
         this.auctionEndTime = plusMinutes;
+    }
+
+    @PostLoad
+    private void postLoad() {
+        // Sync persistedItems to items
+        for (Map.Entry<Integer, Boolean> entry : persistedBiddersIds.entrySet()) {
+            biddersIds.put(entry.getKey(), entry.getValue());
+        }
+    }
+
+    @PrePersist
+    @PreUpdate
+    private void prePersist() {
+        // Sync items to persistedItems
+        persistedBiddersIds.clear();
+        for (Map.Entry<Integer, Boolean> entry : biddersIds.entrySet()) {
+            persistedBiddersIds.put(entry.getKey(), entry.getValue());
+        }
     }
 }
