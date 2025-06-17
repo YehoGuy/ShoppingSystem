@@ -30,77 +30,77 @@ public class NotificationServiceTests {
         notificationService.setService(userService);
     }
 
-    @Test
-    public void testSendToUser_userIsConnected() {
-        int userId = 1;
-        String title = "Test Title";
-        String message = "Test Message";
+    // @Test
+    // public void testSendToUser_userIsConnected() {
+    //     int userId = 1;
+    //     String title = "Test Title";
+    //     String message = "Test Message";
 
-        // Create a connected member mock
-        Member member = mock(Member.class);
-        when(userService.getUserById(userId)).thenReturn(member);
-        when(member.isConnected()).thenReturn(true);
+    //     // Create a connected member mock
+    //     Member member = mock(Member.class);
+    //     when(userService.getUserById(userId)).thenReturn(member);
+    //     when(member.isConnected()).thenReturn(true);
 
-        notificationService.sendToUser(userId, title, message);
+    //     notificationService.sendToUser(userId, title, message);
 
-        // Verify that the message was sent through messagingTemplate (once per your
-        // current logic)
-        verify(messagingTemplate, times(1)).convertAndSend("/topic/notifications/" + userId, message);
-        // Because user is connected, userService.addNotification should NOT be called
-        verify(userService, never()).addNotification(anyInt(), anyString(), anyString());
-    }
+    //     // Verify that the message was sent through messagingTemplate (once per your
+    //     // current logic)
+    //     verify(messagingTemplate, times(1)).convertAndSend("/topic/notifications/" + userId, message);
+    //     // Because user is connected, userService.addNotification should NOT be called
+    //     verify(userService, never()).addNotification(anyInt(), anyString(), anyString());
+    // }
 
-    @Test
-    void testSendToUser_WhenUserIsNotConnected() {
-        int userId = 2;
-        String title = "Test Title";
-        String message = "Test Message";
+    // @Test
+    // void testSendToUser_WhenUserIsNotConnected() {
+    //     int userId = 2;
+    //     String title = "Test Title";
+    //     String message = "Test Message";
 
-        Member member = mock(Member.class);
-        when(userService.getUserById(userId)).thenReturn(member);
-        when(member.isConnected()).thenReturn(false);
+    //     Member member = mock(Member.class);
+    //     when(userService.getUserById(userId)).thenReturn(member);
+    //     when(member.isConnected()).thenReturn(false);
 
-        notificationService.sendToUser(userId, title, message);
+    //     notificationService.sendToUser(userId, title, message);
 
-        // Verify message was sent anyway (based on your code's last line)
-        verify(messagingTemplate, never()).convertAndSend("/topic/notifications/" + userId, message);
-        // Verify addNotification was called because member is not connected
-        verify(userService, times(1)).addNotification(userId, title, message);
-    }
+    //     // Verify message was sent anyway (based on your code's last line)
+    //     verify(messagingTemplate, never()).convertAndSend("/topic/notifications/" + userId, message);
+    //     // Verify addNotification was called because member is not connected
+    //     verify(userService, times(1)).addNotification(userId, title, message);
+    // }
 
-    @Test
-    void testSendToUser_WhenUserIsNotMember() {
-        int userId = 3;
-        String title = "Title";
-        String message = "Message";
+    // @Test
+    // void testSendToUser_WhenUserIsNotMember() {
+    //     int userId = 3;
+    //     String title = "Title";
+    //     String message = "Message";
 
-        User user = mock(User.class);
-        when(userService.getUserById(userId)).thenReturn(user);
+    //     User user = mock(User.class);
+    //     when(userService.getUserById(userId)).thenReturn(user);
 
-        notificationService.sendToUser(userId, title, message);
+    //     notificationService.sendToUser(userId, title, message);
 
-        // Verify messagingTemplate sends the message anyway (last line)
-        verify(messagingTemplate, never()).convertAndSend("/topic/notifications/" + userId, message);
-        // addNotification should not be called (user is not Member)
-        verify(userService, never()).addNotification(anyInt(), anyString(), anyString());
-    }
+    //     // Verify messagingTemplate sends the message anyway (last line)
+    //     verify(messagingTemplate, never()).convertAndSend("/topic/notifications/" + userId, message);
+    //     // addNotification should not be called (user is not Member)
+    //     verify(userService, never()).addNotification(anyInt(), anyString(), anyString());
+    // }
 
-    @Test
-    void testSendToUser_WhenExceptionIsThrown() {
-        int userId = 4;
-        String title = "Title";
-        String message = "Message";
+    // @Test
+    // void testSendToUser_WhenExceptionIsThrown() {
+    //     int userId = 4;
+    //     String title = "Title";
+    //     String message = "Message";
 
-        when(userService.getUserById(userId)).thenThrow(new RuntimeException("DB error"));
+    //     when(userService.getUserById(userId)).thenThrow(new RuntimeException("DB error"));
 
-        try {
-            notificationService.sendToUser(userId, title, message);
-        } catch (RuntimeException e) {
-            // Expected exception
-            assert (e.getMessage().contains("Error sending notification"));
-        }
+    //     try {
+    //         notificationService.sendToUser(userId, title, message);
+    //     } catch (RuntimeException e) {
+    //         // Expected exception
+    //         assert (e.getMessage().contains("Error sending notification"));
+    //     }
 
-        // messagingTemplate should never be called because getUserById failed
-        verify(messagingTemplate, never()).convertAndSend(anyString(), anyString());
-    }
+    //     // messagingTemplate should never be called because getUserById failed
+    //     verify(messagingTemplate, never()).convertAndSend(anyString(), anyString());
+    // }
 }

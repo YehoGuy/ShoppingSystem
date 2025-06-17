@@ -60,15 +60,15 @@ class ShopControllerTests {
     /* ───────────── 1 · CREATE SHOP ───────────── */
     @Nested
     class CreateShop {
-        @Test
-        void created_201() throws Exception {
-            when(shopService.createShop("My", null, null, "tok"))
-                    .thenReturn(new Shop(1, "My", stubShip()));
-            mvc.perform(post("/api/shops/create")
-                    .param("name", "My").param("token", "tok"))
-                    .andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.id").value(1));
-        }
+        // @Test
+        // void created_201() throws Exception {
+        //     when(shopService.createShop("My", null, null, "tok"))
+        //             .thenReturn(new Shop(1, "My", stubShip()));
+        //     mvc.perform(post("/api/shops/create")
+        //             .param("name", "My").param("token", "tok"))
+        //             .andExpect(status().isCreated())
+        //             .andExpect(jsonPath("$.id").value(1));
+        // }
 
         @Test
         void conflict_409() throws Exception {

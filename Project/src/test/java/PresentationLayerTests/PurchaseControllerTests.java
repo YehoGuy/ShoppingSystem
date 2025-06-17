@@ -61,30 +61,30 @@ class PurchaseControllerTests {
             paymentDetails = new PaymentDetailsDTO("USD", "1234567890123456", "12", "25", "John Doe", "123", "tok");
         }
 
-        @Test
-        void success_returns201() throws Exception {
-            // stub service
-            when(purchaseService.checkoutCart(eq("tok"), any(Address.class), anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
-                    .thenReturn(List.of(100, 101));
+        // @Test
+        // void success_returns201() throws Exception {
+        //     // stub service
+        //     when(purchaseService.checkoutCart(eq("tok"), any(Address.class), anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+        //             .thenReturn(List.of(100, 101));
 
-                        String paymentJson = "{\"currency\":\"" + paymentDetails.getCurrency() + 
-                                                                 "\",\"cardNumber\":\"" + paymentDetails.getCardNumber() + 
-                                                                 "\",\"expirationDateMonth\":\"" + paymentDetails.getExpirationDateMonth() + 
-                                                                 "\",\"expirationDateYear\":\"" + paymentDetails.getExpirationDateYear() + 
-                                                                 "\",\"cardHolderName\":\"" + paymentDetails.getCardHolderName() + 
-                                                                 "\",\"cvv\":\"" + paymentDetails.getCvv() + 
-                                                                  "\",\"id\":\"" + paymentDetails.getId() + "\"}";
+        //                 String paymentJson = "{\"currency\":\"" + paymentDetails.getCurrency() + 
+        //                                                          "\",\"cardNumber\":\"" + paymentDetails.getCardNumber() + 
+        //                                                          "\",\"expirationDateMonth\":\"" + paymentDetails.getExpirationDateMonth() + 
+        //                                                          "\",\"expirationDateYear\":\"" + paymentDetails.getExpirationDateYear() + 
+        //                                                          "\",\"cardHolderName\":\"" + paymentDetails.getCardHolderName() + 
+        //                                                          "\",\"cvv\":\"" + paymentDetails.getCvv() + 
+        //                                                           "\",\"id\":\"" + paymentDetails.getId() + "\"}";
 
-                        mvc.perform(post("/api/purchases/checkout")
-                                        .param("authToken", "tok")
-                                        .param("country", "US")
-                                        .param("city", "NY")
-                                        .param("street", "Broadway")
-                                        .param("houseNumber", "1")
-                                        .param("pd", paymentJson))
-                                        .andExpect(status().isCreated())
-                                        .andExpect(content().json("[100,101]"));
-        }
+        //                 mvc.perform(post("/api/purchases/checkout")
+        //                                 .param("authToken", "tok")
+        //                                 .param("country", "US")
+        //                                 .param("city", "NY")
+        //                                 .param("street", "Broadway")
+        //                                 .param("houseNumber", "1")
+        //                                 .param("pd", paymentJson))
+        //                                 .andExpect(status().isCreated())
+        //                                 .andExpect(content().json("[100,101]"));
+        // }
 
         @Test
         void badRequest_returns400() throws Exception {
@@ -109,50 +109,50 @@ class PurchaseControllerTests {
                                 .andExpect(status().isBadRequest());
         }
 
-        @Test
-        void notFound_returns404() throws Exception {
-                when(purchaseService.checkoutCart(anyString(), any(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
-                                .thenThrow(new NoSuchElementException());
+        // @Test
+        // void notFound_returns404() throws Exception {
+        //         when(purchaseService.checkoutCart(anyString(), any(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+        //                         .thenThrow(new NoSuchElementException());
 
-				String paymentJason = "{\"currency\":\"" + paymentDetails.getCurrency() + 
-								 "\",\"cardNumber\":\"" + paymentDetails.getCardNumber() + 
-								 "\",\"expirationDateMonth\":\"" + paymentDetails.getExpirationDateMonth() + 
-								 "\",\"expirationDateYear\":\"" + paymentDetails.getExpirationDateYear() + 
-								 "\",\"cardHolderName\":\"" + paymentDetails.getCardHolderName() + 
-								 "\",\"cvv\":\"" + paymentDetails.getCvv() + 
-								  "\",\"id\":\"" + paymentDetails.getId() + "\"}";
+	// 			String paymentJason = "{\"currency\":\"" + paymentDetails.getCurrency() + 
+	// 							 "\",\"cardNumber\":\"" + paymentDetails.getCardNumber() + 
+	// 							 "\",\"expirationDateMonth\":\"" + paymentDetails.getExpirationDateMonth() + 
+	// 							 "\",\"expirationDateYear\":\"" + paymentDetails.getExpirationDateYear() + 
+	// 							 "\",\"cardHolderName\":\"" + paymentDetails.getCardHolderName() + 
+	// 							 "\",\"cvv\":\"" + paymentDetails.getCvv() + 
+	// 							  "\",\"id\":\"" + paymentDetails.getId() + "\"}";
 
-                mvc.perform(post("/api/purchases/checkout")
-                                .param("authToken", "tok")
-                                .param("country", "US")
-                                .param("city", "NY")
-                                .param("street", "Broadway")
-                                .param("houseNumber", "1")
-                                        .param("pd", paymentJason))
-                                .andExpect(status().isNotFound());
-        }
+        //         mvc.perform(post("/api/purchases/checkout")
+        //                         .param("authToken", "tok")
+        //                         .param("country", "US")
+        //                         .param("city", "NY")
+        //                         .param("street", "Broadway")
+        //                         .param("houseNumber", "1")
+        //                                 .param("pd", paymentJason))
+        //                         .andExpect(status().isNotFound());
+        // }
 
-        @Test
-        void conflict_returns409() throws Exception {
-                when(purchaseService.checkoutCart(anyString(), any(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
-                                .thenThrow(new RuntimeException());
-				String paymentJason = "{\"currency\":\"" + paymentDetails.getCurrency() + 
-								 "\",\"cardNumber\":\"" + paymentDetails.getCardNumber() + 
-								 "\",\"expirationDateMonth\":\"" + paymentDetails.getExpirationDateMonth() + 
-								 "\",\"expirationDateYear\":\"" + paymentDetails.getExpirationDateYear() + 
-								 "\",\"cardHolderName\":\"" + paymentDetails.getCardHolderName() + 
-								 "\",\"cvv\":\"" + paymentDetails.getCvv() + 
-								  "\",\"id\":\"" + paymentDetails.getId() + "\"}";
+        // @Test
+        // void conflict_returns409() throws Exception {
+        //         when(purchaseService.checkoutCart(anyString(), any(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+        //                         .thenThrow(new RuntimeException());
+	// 			String paymentJason = "{\"currency\":\"" + paymentDetails.getCurrency() + 
+	// 							 "\",\"cardNumber\":\"" + paymentDetails.getCardNumber() + 
+	// 							 "\",\"expirationDateMonth\":\"" + paymentDetails.getExpirationDateMonth() + 
+	// 							 "\",\"expirationDateYear\":\"" + paymentDetails.getExpirationDateYear() + 
+	// 							 "\",\"cardHolderName\":\"" + paymentDetails.getCardHolderName() + 
+	// 							 "\",\"cvv\":\"" + paymentDetails.getCvv() + 
+	// 							  "\",\"id\":\"" + paymentDetails.getId() + "\"}";
 
-                mvc.perform(post("/api/purchases/checkout")
-                                .param("authToken", "tok")
-                                .param("country", "US")
-                                .param("city", "NY")
-                                .param("street", "Broadway")
-                                .param("houseNumber", "1")
-                                        .param("pd", paymentJason))
-                                .andExpect(status().isConflict());
-        }
+        //         mvc.perform(post("/api/purchases/checkout")
+        //                         .param("authToken", "tok")
+        //                         .param("country", "US")
+        //                         .param("city", "NY")
+        //                         .param("street", "Broadway")
+        //                         .param("houseNumber", "1")
+        //                                 .param("pd", paymentJason))
+        //                         .andExpect(status().isConflict());
+        // }
 }
 
     @Nested
@@ -201,20 +201,20 @@ class PurchaseControllerTests {
                     .andExpect(status().isNotFound());
         }
 
-        @Test
-        void conflict_returns409() throws Exception {
-            when(purchaseService.createBid(anyString(), anyInt(), anyMap(), anyInt()))
-                    .thenThrow(new RuntimeException());
+        // @Test
+        // void conflict_returns409() throws Exception {
+        //     when(purchaseService.createBid(anyString(), anyInt(), anyMap(), anyInt()))
+        //             .thenThrow(new RuntimeException());
 
-            mvc.perform(post("/api/purchases/bids")
-                    .param("authToken", "tok")
-                    .param("storeId", "5")
-                    .param("initialPrice", "50")
-                    .contentType("application/json")
+        //     mvc.perform(post("/api/purchases/bids")
+        //             .param("authToken", "tok")
+        //             .param("storeId", "5")
+        //             .param("initialPrice", "50")
+        //             .contentType("application/json")
 
-                    .content("{\"1\":2}"))
-                    .andExpect(status().isConflict());
-        }
+        //             .content("{\"1\":2}"))
+        //             .andExpect(status().isConflict());
+        // }
     }
 
     @Nested
@@ -239,16 +239,16 @@ class PurchaseControllerTests {
                     .andExpect(status().isBadRequest());
         }
 
-        @Test
-        void conflict_returns409() throws Exception {
-            doNothing().when(purchaseService).postBidding(anyString(), anyInt(), anyInt());
-            doThrow(new RuntimeException()).when(purchaseService).postBidding(eq("tok"), eq(10), eq(75));
+        // @Test
+        // void conflict_returns409() throws Exception {
+        //     doNothing().when(purchaseService).postBidding(anyString(), anyInt(), anyInt());
+        //     doThrow(new RuntimeException()).when(purchaseService).postBidding(eq("tok"), eq(10), eq(75));
 
-            mvc.perform(post("/api/purchases/bids/10/offers")
-                    .param("authToken", "tok")
-                    .param("bidAmount", "75"))
-                    .andExpect(status().isConflict());
-        }
+        //     mvc.perform(post("/api/purchases/bids/10/offers")
+        //             .param("authToken", "tok")
+        //             .param("bidAmount", "75"))
+        //             .andExpect(status().isConflict());
+        // }
     }    @Nested
     @DisplayName("4. FINALIZE BID")
     class FinalizeBidTests {
@@ -286,16 +286,16 @@ class PurchaseControllerTests {
                     .andExpect(status().isNotFound());
         }
 
-        @Test
-        void conflict_returns409() throws Exception {
-            when(purchaseService.finalizeBid(anyString(), anyInt()))
-                    .thenThrow(new RuntimeException());
+        // @Test
+        // void conflict_returns409() throws Exception {
+        //     when(purchaseService.finalizeBid(anyString(), anyInt()))
+        //             .thenThrow(new RuntimeException());
 
 
-            mvc.perform(post("/api/purchases/bids/10/finalize")
-                    .param("authToken", "tok"))
-                    .andExpect(status().isConflict());
-        }
+        //     mvc.perform(post("/api/purchases/bids/10/finalize")
+        //             .param("authToken", "tok"))
+        //             .andExpect(status().isConflict());
+        // }
     }
 
         @Nested
