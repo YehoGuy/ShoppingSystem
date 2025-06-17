@@ -23,6 +23,9 @@ import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
+
 
 import DTOs.RecieptDTO;
 
@@ -30,15 +33,18 @@ import DTOs.RecieptDTO;
 
 public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<Integer>, BeforeEnterObserver {
 
-    @Value("${url.api}/purchases/shops")
-    private String PURCHASE_HISTORY_URL;
+    private final String api;
+    private final String purchaseHistoryUrl;
 
     private final RestTemplate rest = new RestTemplate();
     private final VerticalLayout receiptsLayout = new VerticalLayout();
     private String token;
     private int shopId;
 
-    public ShopHistoryView() {
+    public ShopHistoryView(@Value("${url.api}") String api) {
+        this.api = api;
+        this.purchaseHistoryUrl = api + "/purchases/shops";
+        
         setSizeFull();
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.START);
@@ -77,8 +83,9 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
     private void loadReceipts() {
         receiptsLayout.removeAll();
 
-        String url = PURCHASE_HISTORY_URL + "/" + shopId + "?authToken="
-                + VaadinSession.getCurrent().getAttribute("authToken");
+        String url = purchaseHistoryUrl + "/" + shopId
+           + "?authToken=" + VaadinSession.getCurrent().getAttribute("authToken");
+
         try {
             ResponseEntity<RecieptDTO[]> resp = rest.getForEntity(url, RecieptDTO[].class);
             if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
@@ -149,7 +156,7 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/" + userId + "/isSuspended?token=" + token;
+        String url = api + "/users/" + userId + "/isSuspended?token=" + token;
         ResponseEntity<Boolean> response = rest.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {

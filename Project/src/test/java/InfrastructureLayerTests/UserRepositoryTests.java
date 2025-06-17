@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Value;
 
 import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
@@ -38,8 +39,13 @@ public class UserRepositoryTests {
 
     @BeforeEach
     public void setup() {
-        repo = new UserRepository();
-        repo.initAdmin();
+        String adminUsername       = "admin";
+        String adminPlainPassword  = "admin";
+        String adminEmail          = "admin@mail.com";
+        String adminPhoneNumber    = "0";
+        String adminAddress        = "admin st.";
+
+        repo = new UserRepository(adminUsername, adminPlainPassword, adminEmail, adminPhoneNumber, adminAddress); 
         repo.setEncoderToTest(true); // Set the encoder to test mode
         guestId = repo.addGuest();
         guest = repo.getUserById(guestId);
@@ -260,35 +266,6 @@ public class UserRepositoryTests {
         repo.clearShoppingCart(uid);
         assertTrue(repo.getBasket(uid, 20).isEmpty(), "After clearShoppingCart, there should be no basket at all");
     }
-
-    // @Test
-    // void testSuspendAndNotificationsAndPayment() {
-    // repo.addMember("notifier","pw","n@e","ph","ad");
-    // int uid = repo.isUsernameAndPasswordValid("notifier","pw");
-    // repo.setSuspended(uid, LocalDateTime.now().plusDays(1));
-    // assertTrue(repo.isSuspended(uid));
-    // List<Integer> suspended = repo.getSuspendedUsers();
-    // assertTrue(suspended.contains(uid));
-
-    // // payment method
-    // PaymentMethod pm = new PaymentMethod() {
-    // @Override public void processPayment(double amt,int sid){}
-    // @Override public String getDetails(){return "d";}
-    // @Override public void refundPayment(double amt,int sid){}
-    // @Override public void processRefund(double r,int sid){}
-    // };
-    // repo.setPaymentMethod(uid,0,pm);
-    // assertEquals("d", repo.getUserById(uid).getPaymentMethod().getDetails());
-    // // refund and pay success
-    // repo.pay(uid,0,10.0);
-    // repo.refund(uid,0,5.0);
-
-    // // notifications
-    // repo.addNotification(uid,"T","M");
-    // List<Notification> notes = repo.getNotificationsAndClear(uid);
-    // assertEquals(1, notes.size());
-    // assertTrue(notes.get(0).getTitle().contains("T"));
-    // }
 
     @Test
     void testRoleAndWorkerMappings() {

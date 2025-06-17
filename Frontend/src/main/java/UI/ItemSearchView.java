@@ -5,22 +5,17 @@ import java.util.List;
 
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpStatus;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 
-import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.NumberField;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 
@@ -28,11 +23,9 @@ import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import org.springframework.beans.factory.annotation.Value;
-import jakarta.annotation.PostConstruct;
 
 import DTOs.ItemDTO;
 import DTOs.ItemReviewDTO;
-import Domain.ItemCategory;
 
 @Route(value = "items", layout = AppLayoutBasic.class)
 
@@ -43,8 +36,7 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${url.api}/items")
-    private String URL;
+    private final String api;
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
@@ -64,16 +56,15 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
         return null; // Return null if userId is not available
     }
 
-    public ItemSearchView() {
+    public ItemSearchView(@Value("${url.api}") String api) {
+        this.api = api;
+
         setSizeFull();
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.START);
         setSpacing(true);
         setPadding(true);
-    }
 
-    @PostConstruct
-    private void init() {
         getItems();
 
         H1 title = new H1("Available Items");
@@ -100,8 +91,9 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
         displayItems(filteredItems);
     }
 
+
     private void getItems() {
-        String url = URL + "/all?token=" + VaadinSession.getCurrent().getAttribute("authToken");
+        String url = api + "/items/all?token=" + VaadinSession.getCurrent().getAttribute("authToken");
         ResponseEntity<List<ItemDTO>> response = restTemplate.exchange(
                 url,
                 HttpMethod.GET,

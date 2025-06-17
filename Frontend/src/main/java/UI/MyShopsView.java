@@ -20,6 +20,8 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
@@ -32,21 +34,20 @@ import DTOs.ShopDTO;
 
 public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
 
-    @Value("${url.api}/shops")
-    private String BASE_URL;
-
-    @Value("${url.api}/shops/ByWorkerId")
-    private String GET_SHOPS;
-
-    @Value("${url.api}/shops/create")
-    private String CREATE;
+    private final String api;
+    private final String getShopsUrl;
+    private final String createUrl;
 
     private final RestTemplate restTemplate = new RestTemplate();
     private List<ShopDTO> allShops;
     private VerticalLayout shopsContainer;
     private TextField searchField;
 
-    public MyShopsView() {
+    public MyShopsView(@Value("${url.api}") String api) {
+        this.api           = api;
+        this.getShopsUrl   = api + "/shops/ByWorkerId";
+        this.createUrl     = api + "/shops/create";
+
         setSizeFull();
         setPadding(true);
         setSpacing(true);
@@ -284,9 +285,10 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
     private void loadShops() {
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
         try {
-            System.out.println("url: " + GET_SHOPS + "?workerId=" + getUserId() + "&token=" + token);
+            System.out.println("url: " + getShopsUrl + "?workerId=" + getUserId() + "&token=" + token);
             ResponseEntity<ShopDTO[]> resp = restTemplate
-                    .getForEntity(GET_SHOPS + "?workerId=" + getUserId() + "&token=" + token, ShopDTO[].class);
+                .getForEntity(getShopsUrl + "?workerId=" + getUserId() + "&token=" + token,
+                  ShopDTO[].class);
             if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 allShops = Arrays.asList(resp.getBody());
                 filterAndDisplay();
@@ -321,8 +323,10 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
     private void createShop(String name) {
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
         try {
-            String url = CREATE + "?token=" + token + "&name=" + URLEncoder.encode(name, StandardCharsets.UTF_8);
-            ResponseEntity<ShopDTO> resp = restTemplate.postForEntity(url, null, ShopDTO.class);
+            String url = createUrl + "?token=" + token
+                + "&name=" + URLEncoder.encode(name, StandardCharsets.UTF_8);
+                
+             ResponseEntity<ShopDTO> resp = restTemplate.postForEntity(url, null, ShopDTO.class);
 
             if (resp.getStatusCode() == HttpStatus.CREATED) {
                 Notification.show("✅ Shop created: " + name);
@@ -523,7 +527,9 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/" + userId + "/isSuspended?token=" + token;
+        String url = api + "/users/"
+            + userId + "/isSuspended?token=" + token;
+
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {

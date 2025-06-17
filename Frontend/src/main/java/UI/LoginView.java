@@ -26,13 +26,15 @@ public class LoginView extends VerticalLayout {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${url.api}/users")
-    private String BASE_URL;
+    private final String baseUrl;
 
-    @Value("${url.api}/auth")
-    private String AUTH_URL;
+    private final String authUrl;
 
-    public LoginView() {
+
+    public LoginView(@Value("${url.api}") String api) {
+        this.baseUrl = api + "/users";
+        this.authUrl  = api + "/auth";
+
         setSizeFull();
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.CENTER);
@@ -75,7 +77,7 @@ public class LoginView extends VerticalLayout {
     }
 
     private String loginAsMember(String username, String password) {
-        String url = BASE_URL + "/login/member";
+        String url = baseUrl + "/login/member";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
@@ -95,7 +97,7 @@ public class LoginView extends VerticalLayout {
     }
 
     private String loginAsGuest() {
-        String url = BASE_URL + "/login/guest";
+        String url = baseUrl + "/login/guest";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
@@ -128,7 +130,7 @@ public class LoginView extends VerticalLayout {
         }
 
         // build the URL with the authToken as a query‐param
-        String url = AUTH_URL + "/validate?authToken=" + token;
+        String url = authUrl + "/validate?authToken=" + token;
 
         // simply use GET—no HttpHeaders object needed
 
@@ -153,7 +155,7 @@ public class LoginView extends VerticalLayout {
         if (token == null) {
             return;
         }
-        String url = BASE_URL + "/" + userId + "/isAdmin?token=" + token;
+        String url = baseUrl + "/" + userId + "/isAdmin?token=" + token;
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
@@ -173,7 +175,7 @@ public class LoginView extends VerticalLayout {
         if (token == null) {
             return;
         }
-        String url = BASE_URL + "/" + userId + "/isSuspended?token=" + token;
+        String url = baseUrl + "/" + userId + "/isSuspended?token=" + token;
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {

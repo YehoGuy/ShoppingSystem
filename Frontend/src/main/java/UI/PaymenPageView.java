@@ -14,6 +14,7 @@ import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -31,6 +32,9 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
     private double totalAmount = 0.0;
     private final RestTemplate restTemplate = new RestTemplate();
 
+    private final String api;
+    private final String paymentMethodUrl;
+    private final String checkoutUrl;
     private String currency;
     private String cardNumber;
     private String expirationDateMonth;
@@ -38,8 +42,6 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
     private String cardHolderName;
     private String cvv;
     private String id;
-
-    private String BASE_URL;
 
     private String country;
     private String city;
@@ -65,9 +67,15 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         return null; // Return null if userId is not available
     }
 
-    public PaymenPageView(double totalAmount, String country, String city, String street, String houseNumber,
+    public PaymenPageView(@Value("${url.api}") String api, double totalAmount, String country, String city,
+            String street, String houseNumber,
             String zipCode) {
-        this.BASE_URL = "http://localhost:8080/api/";
+
+        this.api = api;
+        this.paymentMethodUrl = api + "/payment-method";
+        this.checkoutUrl = api + "/checkout";
+
+        paymentMethod = getUserPaymentMethod();
 
         this.totalAmount = totalAmount;
         this.country = country;
@@ -79,6 +87,19 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         setUpLayout();
     }
 
+    private PaymentMethodDTO getUserPaymentMethod() {
+        String token = getToken();
+        String url = paymentMethodUrl + "?authToken=" + token;
+
+        ResponseEntity<PaymentMethodDTO> response = restTemplate.getForEntity(url, PaymentMethodDTO.class);
+        if (response.getStatusCode().is2xxSuccessful()) {
+            PaymentMethodDTO paymentMethod = response.getBody();
+            if (paymentMethod != null) {
+                return paymentMethod; // Return the first payment method
+            }
+        }
+        return null; // Handle case where no payment methods are available
+    }
 
     private void setUpLayout() {
         setSizeFull();
@@ -99,7 +120,7 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         TextField idField = new TextField("ID");
 
         add(currencyField, cardNumberField, expirationMonthField, expirationYearField,
-            cardHolderNameField, cvvField, idField);
+                cardHolderNameField, cvvField, idField);
 
         // Bind the fields to your variables
         currencyField.addValueChangeListener(e -> currency = e.getValue());
@@ -131,26 +152,25 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         add(payButton);
     }
 
-
     private void processPayment() {
         try {
             this.paymentMethod = new PaymentMethodDTO(currency, cardNumber, expirationDateMonth,
                     expirationDateYear, cardHolderName, cvv, id);
 
             String token = getToken();
-            String url = BASE_URL + "purchases/checkout" +
-                    "?authToken=" + token +
-                    "&country=" + country +
-                    "&city=" + city +
-                    "&street=" + street +
-                    "&houseNumber=" + houseNumber
+            String url = checkoutUrl
+                    + "?authToken=" + token
+                    + "&country=" + country
+                    + "&city=" + city
+                    + "&street=" + street
+                    + "&houseNumber=" + houseNumber
                     + "&zipCode=" + zipCode;
             ResponseEntity<String> response = restTemplate.postForEntity(url, paymentMethod, String.class);
 
             if (response.getStatusCode() == HttpStatus.CREATED) {
                 Notification.show("Payment successful");
             } else {
-                Notification.show("Payment failed: " );
+                Notification.show("Payment failed: ");
             }
         } catch (Exception e) {
             Notification.show("Payment error: " + e.getMessage());
@@ -170,7 +190,8 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/" + userId + "/isSuspended?token=" + token;
+        String url = api + "/users/"
+                + userId + "/isSuspended?token=" + token;
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {

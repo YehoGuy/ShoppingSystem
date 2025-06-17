@@ -1,6 +1,5 @@
 package UI;
 
-import java.io.Serializable;
 
 import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;

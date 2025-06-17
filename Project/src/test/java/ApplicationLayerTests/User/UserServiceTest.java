@@ -34,6 +34,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.support.AbstractMessageChannel;
@@ -85,26 +86,22 @@ public class UserServiceTest {
 
     @BeforeEach
     void setUp() {
+        String adminUsername       = "admin";
+        String adminPlainPassword  = "admin";
+        String adminEmail          = "admin@mail.com";
+        String adminPhoneNumber    = "0";
+        String adminAddress        = "admin st.";
+
         authTokenRepository = new AuthTokenRepository(); // Your real repo
         authTokenService = new AuthTokenService(authTokenRepository); // Real service
-        userRepository = new UserRepository();
+        userRepository = new UserRepository(adminUsername, adminPlainPassword, adminEmail, adminPhoneNumber, adminAddress);
         messagingTemplate = Mockito.mock(SimpMessagingTemplate.class);
         doNothing().when(messagingTemplate).convertAndSend(anyString(), any(Object.class));
         notificationService = mock(NotificationService.class);
         userService = new UserService(userRepository, authTokenService, notificationService);
         notificationService.setService(userService);
 
-        // ─── Manually create the “admin” user exactly as initAdmin() would have ───
-        String rawAdminPassword = "admin"; // must match adminPlainPassword
-        String encodedAdminPassword = userRepository.getPasswordEncoderUtil().encode(rawAdminPassword);
-        int adminId = userRepository.addMember(
-            "admin", 
-            encodedAdminPassword, 
-            "admin@mail.com", 
-            "0", 
-            "admin st."
-        );
-        userRepository.addAdmin(adminId);
+        userRepository.setEncoderToTest(true);
     }
 
     @Test
@@ -1439,9 +1436,8 @@ public class UserServiceTest {
 
     @Test
     void testAddMember_InvalidDetails() {
-        UserRepository repo = new UserRepository();
         AuthTokenService auth = new AuthTokenService(null);
-        UserService svc = new UserService(repo, auth, notificationService);
+        UserService svc = new UserService(userRepository, auth, notificationService);
         notificationService.setService(svc);
 
         assertThrows(com.example.app.ApplicationLayer.OurRuntime.class,

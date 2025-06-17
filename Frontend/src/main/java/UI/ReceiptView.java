@@ -21,6 +21,9 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
+
 
 import DTOs.AddressDTO;
 import DTOs.RecieptDTO;
@@ -29,12 +32,15 @@ import DTOs.RecieptDTO;
 
 public class ReceiptView extends VerticalLayout implements BeforeEnterObserver {
 
-    @Value("${url.api}/purchases")
-    private String URL;
+    private final String api;
+    private final String purchasesUrl;
 
     private RecieptDTO receipt;
 
-    public ReceiptView() {
+    public ReceiptView(@Value("${url.api}") String api) {
+        this.api          = api;
+        this.purchasesUrl = api + "/purchases";
+
         configureLayout(); // keep this as is
 
         Integer purchaseId = (Integer) VaadinSession.getCurrent().getAttribute("purchaseId");
@@ -143,7 +149,7 @@ public class ReceiptView extends VerticalLayout implements BeforeEnterObserver {
             return;
         }
 
-        String url = URL + "/" + purchaseId;
+        String url = purchasesUrl + "/" + purchaseId;
         RestTemplate restTemplate = new RestTemplate();
 
         // Add authToken as header if needed, or modify URL with query param
@@ -179,7 +185,7 @@ public class ReceiptView extends VerticalLayout implements BeforeEnterObserver {
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/" + userId + "/isSuspended?token=" + token;
+        String url = api + "/users/" + userId + "/isSuspended?token=" + token;
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {

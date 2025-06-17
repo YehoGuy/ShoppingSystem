@@ -11,7 +11,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
-import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H2;
@@ -27,7 +26,6 @@ import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 
 import DTOs.BidRecieptDTO;
-import jakarta.annotation.PostConstruct;
 
 /**
  * Route: /bid/{bidId}
@@ -47,10 +45,9 @@ public class BidDetailView extends VerticalLayout implements BeforeEnterObserver
 
     private final RestTemplate rest = new RestTemplate();
 
-    @Value("${url.api}")
-    private String apiBase;
+    private final String apiBase;
 
-    private String BID_API_URL;
+    private final String BID_API_URL;
 
     // Read‐only fields for bid details
     private final TextField purchaseIdField = new TextField("Bid ID");
@@ -67,12 +64,10 @@ public class BidDetailView extends VerticalLayout implements BeforeEnterObserver
     private final com.vaadin.flow.component.button.Button finalizeBidButton = new com.vaadin.flow.component.button.Button(
             "Finalize Bid");
 
-    @PostConstruct
-    private void init() {
-        BID_API_URL = apiBase + "/purchases/bids";
-    }
+    public BidDetailView(@Value("${url.api}") String apiBase) {
+        this.apiBase    = apiBase;
+        this.BID_API_URL = this.apiBase + "/purchases/bids";
 
-    public BidDetailView() {
         getUserId(); // Ensure userId is set in session
         setPadding(true);
         setSpacing(true);

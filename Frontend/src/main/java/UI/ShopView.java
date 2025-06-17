@@ -43,16 +43,22 @@ import DTOs.ShopReviewDTO;
 
 public class ShopView extends VerticalLayout implements HasUrlParameter<String>, BeforeEnterObserver {
 
-    @Value("${url.api}/shops")
-    private String SHOP_API_URL;
-    
-
-    @Value("${url.api}/purchases/shops")
-    private String PURCHASE_HISTORY_URL;
+    private final String api;
+    private final String shopApiUrl;
+    private final String purchaseHistoryUrl;
 
     private final RestTemplate restTemplate = new RestTemplate();
     private ShopDTO shop;
     private Map<ItemDTO, Double> prices;
+
+    public ShopView(@Value("${url.api}") String api) {
+        this.api = api;
+        this.shopApiUrl = api + "/shops";
+        this.purchaseHistoryUrl = api + "/purchases/shops";
+
+        setPadding(true);
+        setSpacing(true);
+    }
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
@@ -80,7 +86,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         }
 
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-        String url = SHOP_API_URL + "/" + shopId + "?token=" + token;
+        String url = shopApiUrl + "/" + shopId + "?token=" + token;
         try {
             ResponseEntity<ShopDTO> resp = restTemplate.getForEntity(url, ShopDTO.class);
             if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
@@ -116,7 +122,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
             // Therefore we must call:
             // GET /api/purchases/shops/{shopId}/bids?authToken=<token>
             //
-            String url = PURCHASE_HISTORY_URL + "/" + shop.getShopId() + "/bids?authToken=" + authToken;
+            String url = purchaseHistoryUrl + "/" + shop.getShopId() + "/bids?authToken=" + authToken;
 
             // 3. Prepare headers (JSON)
             HttpHeaders headers = new HttpHeaders();
@@ -161,11 +167,9 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         VerticalLayout itemsLayout = new VerticalLayout();
         itemsLayout.setWidthFull();
 
-        for (Map.Entry<ItemDTO, Integer> e :
-                ShopDTO.itemQuantitiesToMapConverter(
-                        shop.getItems(),
-                        shop.getItemQuantities()
-                ).entrySet()) {
+        for (Map.Entry<ItemDTO, Integer> e : ShopDTO.itemQuantitiesToMapConverter(
+                shop.getItems(),
+                shop.getItemQuantities()).entrySet()) {
 
             ItemDTO item = e.getKey();
             int available = e.getValue();
@@ -207,7 +211,8 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
                     return;
                 }
 
-                // Build URL: POST http://localhost:8080/shops/{shopId}/cart/add?itemId={itemId}&quantity={qty}&token={authToken}
+                // Build URL: POST
+                // http://localhost:8080/shops/{shopId}/cart/add?itemId={itemId}&quantity={qty}&token={authToken}
                 String url = "http://localhost:8080/api/users/"
                         + "/shoppingCart/"
                         + shop.getShopId()
@@ -225,8 +230,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
                             url,
                             HttpMethod.POST,
                             request,
-                            Void.class
-                    );
+                            Void.class);
 
                     if (resp.getStatusCode() == HttpStatus.NO_CONTENT) {
                         Notification.show("🚀 Added “" + item.getName() + "” x" + qty + " to cart");
@@ -273,13 +277,13 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         // Reviews section
         add(new H2("📝 Reviews"));
         double avg = shop.getReviews().stream()
-                        .mapToInt(ShopReviewDTO::getRating)
-                        .average()
-                        .orElse(0.0);
+                .mapToInt(ShopReviewDTO::getRating)
+                .average()
+                .orElse(0.0);
         add(new Paragraph("⭐ Average Rating: " + String.format("%.1f", avg) + "/5"));
         for (ShopReviewDTO rev : shop.getReviews()) {
             add(new Paragraph("👤 " + rev.getUserId() + ": "
-                            + rev.getReviewText() + " (" + rev.getRating() + ")"));
+                    + rev.getReviewText() + " (" + rev.getRating() + ")"));
         }
     }
 
