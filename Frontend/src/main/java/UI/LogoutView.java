@@ -11,6 +11,8 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpEntity;
@@ -25,8 +27,8 @@ import org.springframework.beans.factory.annotation.Value;
 @Route("logout")
 public class LogoutView extends VerticalLayout implements BeforeEnterObserver {
 
-    @Value("${url.api}/users/logout")
-    private String LOGOUT_API_URL;
+    private final String logoutApiUrl;
+
 
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -47,7 +49,9 @@ public class LogoutView extends VerticalLayout implements BeforeEnterObserver {
         return (Integer) VaadinSession.getCurrent().getAttribute("userId");
     }
 
-    public LogoutView() {
+    public LogoutView(@Value("${url.api}") String api) {
+        this.logoutApiUrl = api + "/users/logout";
+
         setSizeFull();
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.CENTER);
@@ -66,7 +70,7 @@ public class LogoutView extends VerticalLayout implements BeforeEnterObserver {
         }
 
         // Append token as request parameter
-        String urlWithParam = LOGOUT_API_URL + "?token=" + token;
+        String urlWithParam = logoutApiUrl + "?token=" + token;
 
         try {
             HttpHeaders headers = new HttpHeaders();

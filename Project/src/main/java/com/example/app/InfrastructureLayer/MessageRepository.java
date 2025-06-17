@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 import com.example.app.ApplicationLayer.OurRuntime;
@@ -13,6 +14,7 @@ import com.example.app.DomainLayer.IMessageRepository;
 import com.example.app.DomainLayer.Message;
 
 @Repository
+@Profile("no-db | test")
 public class MessageRepository implements IMessageRepository {
     private Map<Integer, Message> messages; // Map to store messages with their IDs as keys
     private AtomicInteger nextId; // Counter for generating unique message IDs

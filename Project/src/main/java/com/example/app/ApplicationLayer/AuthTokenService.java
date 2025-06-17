@@ -42,7 +42,7 @@ public class AuthTokenService {
         }
         String token = generateAuthToken("guest");
         long expirationTime = System.currentTimeMillis() + EXPIRATION_TIME;
-        AuthToken authToken = new AuthToken(token, new Date(expirationTime));
+        AuthToken authToken = new AuthToken(token, new Date(expirationTime), guestId);
         authTokenRepository.setAuthToken(guestId, authToken);
         LoggerService.logMethodExecutionEnd("AuthenticateGuest",token);
         return token;
@@ -62,7 +62,7 @@ public class AuthTokenService {
         }
             String token = generateAuthToken(username); 
             long expirationTime = System.currentTimeMillis() + EXPIRATION_TIME; 
-            AuthToken authToken = new AuthToken(token, new Date(expirationTime));
+            AuthToken authToken = new AuthToken(token, new Date(expirationTime), userId);
             authTokenRepository.setAuthToken(userId, authToken);
             LoggerService.logMethodExecutionEnd("Login",token);
             return token;

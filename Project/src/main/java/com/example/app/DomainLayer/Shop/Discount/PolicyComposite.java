@@ -5,13 +5,27 @@ import java.util.Map;
 import com.example.app.DomainLayer.Item.ItemCategory;
 import com.example.app.DomainLayer.Shop.Operator;
 
-public class PolicyComposite implements Policy{
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 
+@Entity
+@DiscriminatorValue("composite")
+public class PolicyComposite extends Policy {
+
+    @ManyToOne
+    @JoinColumn(name = "policy1_id")
     private Policy policy1;
+
+    @ManyToOne
+    @JoinColumn(name = "policy2_id")
     private Policy policy2;
 
-    private final Operator operator;
-
+    @Enumerated(value = EnumType.STRING)
+    private Operator operator;
 
     public PolicyComposite(Operator operator) {
         this.policy1 = null;
@@ -31,6 +45,12 @@ public class PolicyComposite implements Policy{
         this.operator = operator;
     }
 
+    public PolicyComposite() {
+        this.policy1 = null; // Default constructor for JPA
+        this.policy2 = null;
+        this.operator = Operator.AND; // Default operator
+    }
+
     public void addPolicy(Policy policy) {
         if (policy1 == null) {
             policy1 = policy;
@@ -42,7 +62,8 @@ public class PolicyComposite implements Policy{
     }
 
     @Override
-    public boolean test(Map<Integer,Integer> items, Map<Integer,Double> prices, Map<Integer,ItemCategory> itemsCategory) {
+    public boolean test(Map<Integer, Integer> items, Map<Integer, Double> prices,
+            Map<Integer, ItemCategory> itemsCategory) {
         if (policy1 == null && policy2 == null) {
             return true;
         }
@@ -78,5 +99,5 @@ public class PolicyComposite implements Policy{
     public Operator getOperator() {
         return operator;
     }
-    
+
 }

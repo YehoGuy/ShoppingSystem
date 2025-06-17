@@ -1,10 +1,12 @@
 package com.example.app.InfrastructureLayer;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 import com.example.app.DomainLayer.Purchase.Address;
@@ -15,33 +17,20 @@ import com.example.app.DomainLayer.Purchase.Purchase;
 import com.example.app.DomainLayer.Purchase.Reciept;
 
 @Repository
+@Profile("no-db | test")
 public class PurchaseRepository implements IPurchaseRepository {
     /**
-    * This class handles the purchases data storage and retrieval.
-    * It implement's the IPurchaseRepository interface to provide
-    * methods for adding, retrieving, and deleting purchases.
-    */
+     * This class handles the purchases data storage and retrieval.
+     * It implement's the IPurchaseRepository interface to provide
+     * methods for adding, retrieving, and deleting purchases.
+     */
 
     // purchase_id --> Purchase
     private final ConcurrentHashMap<Integer, Purchase> purchaseStorage;
-    // Singleton instance of PurchaseRepository.
-    private static PurchaseRepository instance = null;
-     // Counter for generating unique purchase IDs
+    // Counter for generating unique purchase IDs
     private final AtomicInteger purchaseIdCounter = new AtomicInteger(1);
 
-    /**
-     * Returns the singleton instance of PurchaseRepository.
-     *
-     * @return The singleton instance of PurchaseRepository.
-     */
-    public static synchronized  PurchaseRepository getInstance() {
-        if (instance == null) {
-            instance = new PurchaseRepository();
-        }
-        return instance;
-    }
-
-    private PurchaseRepository() {
+    public PurchaseRepository() {
         this.purchaseStorage = new ConcurrentHashMap<>();
     }
 
@@ -55,18 +44,18 @@ public class PurchaseRepository implements IPurchaseRepository {
         return purchaseIdCounter.getAndIncrement();
     }
 
-    
     @Override
     /**
      * Adds a purchase to the repository.
      *
-     * @param userId The ID of the user making the purchase.
-     * @param storeId The ID of the store where the purchase is made.
-     * @param items A map of item IDs to their quantities.
+     * @param userId           The ID of the user making the purchase.
+     * @param storeId          The ID of the store where the purchase is made.
+     * @param items            A map of item IDs to their quantities.
      * @param shippingAddresse The shipping address for the purchase.
      * @return The ID of the newly created purchase.
      */
-    public int addPurchase(int userId, int storeId, Map<Integer, Integer> items, double price, Address shippingAddresse) {
+    public int addPurchase(int userId, int storeId, Map<Integer, Integer> items, double price,
+            Address shippingAddresse) {
         int id = getNewPurchaseId();
         Purchase purchase = new Purchase(id, userId, storeId, items, price, shippingAddresse);
         purchaseStorage.put(id, purchase);
@@ -77,15 +66,36 @@ public class PurchaseRepository implements IPurchaseRepository {
     /**
      * Adds a bid to the repository.
      *
-     * @param userId The ID of the user making the bid.
+     * @param userId  The ID of the user making the bid.
      * @param storeId The ID of the store where the bid is made.
-     * @param items A map of item IDs to their quantities.
+     * @param items   A map of item IDs to their quantities.
      * @return The ID of the newly created bid.
-     * @throws UnsupportedOperationException if bids are not supported in this repository.
+     * @throws UnsupportedOperationException if bids are not supported in this
+     *                                       repository.
      */
     public int addBid(int userId, int storeId, Map<Integer, Integer> items, int initialPrice) {
         int id = getNewPurchaseId();
-        Bid bid = new Bid(id, userId, storeId, items, initialPrice );
+        Bid bid = new Bid(id, userId, storeId, items, initialPrice);
+        purchaseStorage.put(id, bid);
+        return id;
+    }
+
+    @Override
+    /**
+     * Adds a bid to the repository with auction start and end times.
+     *
+     * @param userId       The ID of the user making the bid.
+     * @param storeId      The ID of the store where the bid is made.
+     * @param items        A map of item IDs to their quantities.
+     * @param initialPrice The initial price for the bid.
+     * @param auctionStart The start time of the auction.
+     * @param auctionEnd   The end time of the auction.
+     * @return The ID of the newly created bid.
+     */
+    public int addBid(int userId, int storeId, Map<Integer, Integer> items, int initialPrice,
+            LocalDateTime auctionStart, LocalDateTime auctionEnd) {
+        int id = getNewPurchaseId();
+        Bid bid = new Bid(id, userId, storeId, items, initialPrice, auctionStart, auctionEnd);
         purchaseStorage.put(id, bid);
         return id;
     }
@@ -148,16 +158,17 @@ public class PurchaseRepository implements IPurchaseRepository {
     /**
      * Retrieves all purchases made by a specific user in a specific store.
      *
-     * @param userId The ID of the user whose purchases to retrieve.
+     * @param userId  The ID of the user whose purchases to retrieve.
      * @param storeId The ID of the store whose purchases to retrieve.
-     * @return A list of purchases made by the specified user in the specified store.
+     * @return A list of purchases made by the specified user in the specified
+     *         store.
      */
     public List<Reciept> getUserStorePurchases(int userId, int storeId) {
         return purchaseStorage.values().stream()
                 .filter(purchase -> purchase.getUserId() == userId && purchase.getStoreId() == storeId)
                 .map(Purchase::generateReciept)
                 .toList();
-    }   
+    }
 
     @Override
     /**
@@ -185,6 +196,4 @@ public class PurchaseRepository implements IPurchaseRepository {
                 .map(purchase -> ((Bid) purchase).generateReciept())
                 .toList();
     }
-    
-
 }

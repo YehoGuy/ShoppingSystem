@@ -50,16 +50,22 @@ import DTOs.ShopReviewDTO;
 @JsModule("@vaadin/number-field/vaadin-number-field.js")
 public class ShopView extends VerticalLayout implements HasUrlParameter<String>, BeforeEnterObserver {
 
-    @Value("${url.api}/shops")
-    private String SHOP_API_URL;
-
-
-    @Value("${url.api}/purchases/shops")
-    private String PURCHASE_HISTORY_URL;
+    private final String api;
+    private final String shopApiUrl;
+    private final String purchaseHistoryUrl;
 
     private final RestTemplate restTemplate = new RestTemplate();
     private ShopDTO shop;
     private Map<ItemDTO, Double> prices;
+
+    public ShopView(@Value("${url.api}") String api) {
+        this.api = api;
+        this.shopApiUrl = api + "/shops";
+        this.purchaseHistoryUrl = api + "/purchases/shops";
+
+        setPadding(true);
+        setSpacing(true);
+    }
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
@@ -87,7 +93,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         }
 
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-        String url = SHOP_API_URL + "/" + shopId + "?token=" + token;
+        String url = shopApiUrl + "/" + shopId + "?token=" + token;
         try {
             ResponseEntity<ShopDTO> resp = restTemplate.getForEntity(url, ShopDTO.class);
             if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
@@ -123,7 +129,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
             // Therefore we must call:
             // GET /api/purchases/shops/{shopId}/bids?authToken=<token>
             //
-            String url = PURCHASE_HISTORY_URL + "/" + shop.getShopId() + "/bids?authToken=" + authToken;
+            String url = purchaseHistoryUrl + "/" + shop.getShopId() + "/bids?authToken=" + authToken;
 
             // 3. Prepare headers (JSON)
             HttpHeaders headers = new HttpHeaders();
@@ -168,11 +174,9 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         VerticalLayout itemsLayout = new VerticalLayout();
         itemsLayout.setWidthFull();
 
-        for (Map.Entry<ItemDTO, Integer> e :
-                ShopDTO.itemQuantitiesToMapConverter(
-                        shop.getItems(),
-                        shop.getItemQuantities()
-                ).entrySet()) {
+        for (Map.Entry<ItemDTO, Integer> e : ShopDTO.itemQuantitiesToMapConverter(
+                shop.getItems(),
+                shop.getItemQuantities()).entrySet()) {
 
             ItemDTO item = e.getKey();
             int available = e.getValue();
@@ -214,7 +218,8 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
                     return;
                 }
 
-                // Build URL: POST http://localhost:8080/shops/{shopId}/cart/add?itemId={itemId}&quantity={qty}&token={authToken}
+                // Build URL: POST
+                // http://localhost:8080/shops/{shopId}/cart/add?itemId={itemId}&quantity={qty}&token={authToken}
                 String url = "http://localhost:8080/api/users/"
                         + "/shoppingCart/"
                         + shop.getShopId()
@@ -232,8 +237,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
                             url,
                             HttpMethod.POST,
                             request,
-                            Void.class
-                    );
+                            Void.class);
 
                     if (resp.getStatusCode() == HttpStatus.NO_CONTENT) {
                         Notification.show("🚀 Added “" + item.getName() + "” x" + qty + " to cart");
@@ -280,13 +284,13 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         // Reviews section
         add(new H2("📝 Reviews"));
         double avg = shop.getReviews().stream()
-                        .mapToInt(ShopReviewDTO::getRating)
-                        .average()
-                        .orElse(0.0);
+                .mapToInt(ShopReviewDTO::getRating)
+                .average()
+                .orElse(0.0);
         add(new Paragraph("⭐ Average Rating: " + String.format("%.1f", avg) + "/5"));
         for (ShopReviewDTO rev : shop.getReviews()) {
             add(new Paragraph("👤 " + rev.getUserId() + ": "
-                            + rev.getReviewText() + " (" + rev.getRating() + ")"));
+                    + rev.getReviewText() + " (" + rev.getRating() + ")"));
         }
 
         Button addReviewButton = new Button("Add Review");
@@ -298,7 +302,6 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         add(addReviewButton);
         displayReviews(); // Call to display reviews
 
-    
         // reviewContainer = new VerticalLayout(); // <--- set reference
         // reviewContainer.setWidth("80%");
         // reviewContainer.getStyle().set("overflow", "auto");
@@ -310,12 +313,10 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         // displayReviews();
     }
 
-
-
     private void displayReviews() {
-        
+
         VerticalLayout reviewsLayout = new VerticalLayout();
-        
+
         for (ShopReviewDTO review : shop.getReviews()) {
             VerticalLayout singleReview = new VerticalLayout();
             singleReview.add(
@@ -335,10 +336,9 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         // Currently, it does nothing.
     }
 
-
     private void addReview(int shopId) {
         Dialog dialog = new Dialog();
-        
+
         String shopName = (shop != null) ? shop.getName() : ("ID " + shopId);
         H1 dialogTitle = new H1("Add Review to " + shopName);
         dialog.add(dialogTitle);
@@ -351,51 +351,51 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         ratingField.setMax(5);
         ratingField.setStep(1);
         ratingField.setWidthFull();
-        //ratingField.getStyle().set("border", "2px solid red");
+        // ratingField.getStyle().set("border", "2px solid red");
         ratingField.setVisible(true);
-        //ratingField.setHeight("50px"); // just to see it
-
+        // ratingField.setHeight("50px"); // just to see it
 
         TextField reviewTextField = new TextField("Your Review");
         reviewTextField.setWidthFull();
 
-
         Button submitButton = new Button("Submit Review");
-        submitButton.addClickListener(e -> sendReview(shopId, reviewTextField.getValue(), ratingField.getValue(),dialog));
+        submitButton
+                .addClickListener(e -> sendReview(shopId, reviewTextField.getValue(), ratingField.getValue(), dialog));
 
         Button closeButton = new Button("Close", event -> dialog.close());
 
         formLayout.add(ratingField, reviewTextField, submitButton, closeButton);
         dialog.add(formLayout);
-        
-        //UI.getCurrent().add(dialog);
+
+        // UI.getCurrent().add(dialog);
         dialog.open();
 
     }
 
-    private void sendReview(int shopId, String reviewText,double double_rating, Dialog dialog) {
-        try{
+    private void sendReview(int shopId, String reviewText, double double_rating, Dialog dialog) {
+        try {
             if (reviewText == null || reviewText.trim().isEmpty()) {
                 Notification.show("Please enter your review text.");
                 return;
             }
-            
-            if (double_rating !=1.0 && double_rating !=2.0 && double_rating !=3.0 && double_rating !=4.0 && double_rating !=5.0) {
+
+            if (double_rating != 1.0 && double_rating != 2.0 && double_rating != 3.0 && double_rating != 4.0
+                    && double_rating != 5.0) {
                 Notification.show("Please enter a valid rating between 1 and 5.");
                 return;
             }
-            
-            int rating = ((int)double_rating); // Convert double to int
+
+            int rating = ((int) double_rating); // Convert double to int
 
             String token = getToken();
             HttpHeaders headers = getHeaders(token);
             HttpEntity<Void> request = new HttpEntity<>(headers);
             String url = "http://localhost:8080" + "/api/shops/" + shopId + "/reviews"
-                        + "?token=" + token + "&rating=" + rating + "&reviewText=" + reviewText + "&shopId=" + shopId;
+                    + "?token=" + token + "&rating=" + rating + "&reviewText=" + reviewText + "&shopId=" + shopId;
 
             restTemplate.postForEntity(url, request, Void.class);
             Notification.show("review added successfully");
-                        
+
             getShopRefresh(shopId); // Refresh the displayed items
 
             dialog.close();
@@ -405,11 +405,9 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         }
     }
 
-
-    private void getShopRefresh(int shopId)
-    {
+    private void getShopRefresh(int shopId) {
         String token = getToken();
-        String url = SHOP_API_URL + "/" + shopId + "?token=" + token;
+        String url = shopApiUrl + "/" + shopId + "?token=" + token;
         try {
             ResponseEntity<ShopDTO> resp = restTemplate.getForEntity(url, ShopDTO.class);
             if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
@@ -424,7 +422,6 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         }
     }
 
-
     private String getToken() {
         return (String) VaadinSession.getCurrent().getAttribute("authToken");
     }
@@ -435,8 +432,6 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         return headers;
     }
 
-
-
     private void handleSuspence() {
         Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
         if (userId == null) {
@@ -446,7 +441,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/" + userId + "/suspension?token=" + token;
+        String url = "http://localhost:8080/api/users" + "/" + userId + "/isSuspended?token=" + token;
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {

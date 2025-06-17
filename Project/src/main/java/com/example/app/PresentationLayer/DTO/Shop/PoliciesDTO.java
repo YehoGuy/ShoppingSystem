@@ -7,43 +7,62 @@ import com.example.app.DomainLayer.Item.ItemCategory;
 import com.example.app.DomainLayer.Shop.Discount.Policy;
 
 public class PoliciesDTO implements Serializable {
-    private Integer        itemId;        // which item this policy applies to
-    private ItemCategory   itemCategory;  // if category‐level
-    private CompositePolicyDTO policy;    // the full policy tree
+    private Integer itemId; // which item this policy applies to
+    private ItemCategory itemCategory; // if category‐level
+    private CompositePolicyDTO policy; // the full policy tree
 
-    public PoliciesDTO() { }
-
-    public PoliciesDTO(Integer itemId,
-                       ItemCategory itemCategory,
-                       CompositePolicyDTO policy) {
-        this.itemId       = itemId;
-        this.itemCategory = itemCategory;
-        this.policy       = policy;
+    public PoliciesDTO() {
     }
 
-    public Integer getItemId() { return itemId; }
-    public void setItemId(Integer itemId) { this.itemId = itemId; }
+    public PoliciesDTO(Integer itemId,
+            ItemCategory itemCategory,
+            CompositePolicyDTO policy) {
+        this.itemId = itemId;
+        this.itemCategory = itemCategory;
+        this.policy = policy;
+    }
 
-    public ItemCategory getItemCategory() { return itemCategory; }
-    public void setItemCategory(ItemCategory itemCategory) { this.itemCategory = itemCategory; }
+    public Integer getItemId() {
+        return itemId;
+    }
 
-    public CompositePolicyDTO getPolicy() { return policy; }
-    public void setPolicy(CompositePolicyDTO policy) { this.policy = policy; }
+    public void setItemId(Integer itemId) {
+        this.itemId = itemId;
+    }
+
+    public ItemCategory getItemCategory() {
+        return itemCategory;
+    }
+
+    public void setItemCategory(ItemCategory itemCategory) {
+        this.itemCategory = itemCategory;
+    }
+
+    public CompositePolicyDTO getPolicy() {
+        return policy;
+    }
+
+    public void setPolicy(CompositePolicyDTO policy) {
+        this.policy = policy;
+    }
 
     @Override
     public String toString() {
-        if (policy == null) return "No Policy";
+        if (policy == null)
+            return "No Policy";
         return policy.toString();
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof PoliciesDTO)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof PoliciesDTO))
+            return false;
         PoliciesDTO that = (PoliciesDTO) o;
         return Objects.equals(itemId, that.itemId)
-            && itemCategory == that.itemCategory
-            && Objects.equals(policy, that.policy);
+                && itemCategory == that.itemCategory
+                && Objects.equals(policy, that.policy);
     }
 
     @Override
@@ -52,18 +71,17 @@ public class PoliciesDTO implements Serializable {
     }
 
     /**
-     * Factory: convert a domain‐layer PoliciesDTO → this frontend DTO
+     * Factory: convert a domain‐layer Policy → this frontend DTO
      */
-    public static PoliciesDTO fromDomain(PoliciesDTO d) {
+    public static PoliciesDTO fromDomain(Policy d) {
         if (d == null) {
             return null;
         }
         // Convert the embedded Policy → CompositePolicyDTO
-        CompositePolicyDTO dtoPolicy = CompositePolicyDTO.fromDomain((Policy) d.getPolicy());
+        CompositePolicyDTO dtoPolicy = CompositePolicyDTO.fromDomain(d);
         return new PoliciesDTO(
-            d.getItemId(),
-            d.getItemCategory(),
-            dtoPolicy
-        );
+                null,
+                null,
+                dtoPolicy);
     }
 }

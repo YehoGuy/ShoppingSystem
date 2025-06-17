@@ -1,12 +1,16 @@
 package com.example.app.DomainLayer.Roles;
 
 import java.util.Arrays;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.Transient;
 
+@Embeddable
 public class Role {
 
     private final int assigneeId;
     private final int shopId;
     private PermissionsEnum[] permissions;
+    @Transient
     private final Object lock = new Object(); // lock object for synchronization
 
     /**
@@ -25,6 +29,12 @@ public class Role {
         else {
             this.permissions = Arrays.copyOf(permissions, permissions.length);
         }
+    }
+
+    public Role() {
+        this.assigneeId = -1; // Default value indicating no assignee
+        this.shopId = -1; // Default value indicating no shop
+        this.permissions = new PermissionsEnum[0]; // Default empty permissions
     }
 
     public int getAssigneeId() {
@@ -146,10 +156,35 @@ public class Role {
 
     public boolean isOwner() {
         return hasPermission(PermissionsEnum.manageOwners);
+    }    public boolean isFounder() {
+        return hasPermission(PermissionsEnum.closeShop);
     }
 
-    public boolean isFounder() {
-        return hasPermission(PermissionsEnum.closeShop);
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        
+        Role role = (Role) obj;
+        
+        if (assigneeId != role.assigneeId) return false;
+        if (shopId != role.shopId) return false;
+        
+        synchronized (lock) {
+            synchronized (role.lock) {
+                return Arrays.equals(permissions, role.permissions);
+            }
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        synchronized (lock) {
+            int result = assigneeId;
+            result = 31 * result + shopId;
+            result = 31 * result + Arrays.hashCode(permissions);
+            return result;
+        }
     }
 
 }

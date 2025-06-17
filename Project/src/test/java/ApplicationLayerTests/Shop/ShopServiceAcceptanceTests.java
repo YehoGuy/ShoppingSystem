@@ -76,10 +76,8 @@ class ShopServiceAcceptanceTests {
     @Mock
     private PurchasePolicy purchasePolicy;
 
-
     @InjectMocks
     private ShopService shopService;
-
 
     private AutoCloseable mocks;
 
@@ -108,10 +106,11 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken(token)).thenReturn(10);
         when(shopRepository.getShop(shopId)).thenReturn(new Shop(shopId, "ShopA", shippingMethod));
         when(shopRepository.getItemsByShop(shopId)).thenReturn(Arrays.asList(item.getId()));
-        when(itemService.getItemsByIds(Arrays.asList(item.getId()),token))
-            .thenReturn(Arrays.asList(item));
+        when(itemService.getItemsByIds(Arrays.asList(item.getId()), token))
+                .thenReturn(Arrays.asList(item));
 
-        List<Item> results = shopService.searchItemsInShop(shopId, "wid", ItemCategory.ELECTRONICS, null, 0, 1000000000, null, token);
+        List<Item> results = shopService.searchItemsInShop(shopId, "wid", ItemCategory.ELECTRONICS, null, 0, 1000000000,
+                null, token);
         assertEquals(1, results.size());
         assertEquals(item, results.get(0));
     }
@@ -126,7 +125,8 @@ class ShopServiceAcceptanceTests {
         when(shopRepository.getShop(shopId)).thenReturn(new Shop(shopId, "ShopA", shippingMethod));
         when(shopRepository.getItemsByShop(shopId)).thenReturn(Collections.emptyList());
 
-        List<Item> results = shopService.searchItemsInShop(((Integer)shopId), "nonexistent", ItemCategory.AUTOMOTIVE, new ArrayList<>(), 0, 1000000000, 0.0, token);
+        List<Item> results = shopService.searchItemsInShop(((Integer) shopId), "nonexistent", ItemCategory.AUTOMOTIVE,
+                new ArrayList<>(), 0, 1000000000, 0.0, token);
         assertTrue(results.isEmpty());
     }
 
@@ -140,7 +140,7 @@ class ShopServiceAcceptanceTests {
         doNothing().when(userService).validateMemberId(1);
         when(shopRepository.createShop("MyShop", purchasePolicy, shippingMethod)).thenReturn(newShop);
 
-        Shop created = shopService.createShop("MyShop",purchasePolicy, shippingMethod, token);
+        Shop created = shopService.createShop("MyShop", purchasePolicy, shippingMethod, token);
         assertEquals(newShop, created);
     }
 
@@ -152,19 +152,19 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken(token)).thenReturn(1);
         doNothing().when(userService).validateMemberId(1);
         when(shopRepository.createShop(any(), any(), any()))
-            .thenThrow(new RuntimeException("Shop name is already taken"));
+                .thenThrow(new RuntimeException("Shop name is already taken"));
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.createShop("dup", purchasePolicy, shippingMethod, token));
+                () -> shopService.createShop("dup", purchasePolicy, shippingMethod, token));
         assertTrue(ex.getMessage().contains("Shop name is already taken"));
     }
 
     // UC10 – Create Shop (missing details)
     @Test
     void testCreateShop_MissingDetails_Failure() throws Exception {
-        String token       = "t";
-        int userId         = 1;
-        String emptyName   = "";
+        String token = "t";
+        int userId = 1;
+        String emptyName = "";
 
         // stub token validation and member check
         when(authTokenService.ValidateToken(token)).thenReturn(userId);
@@ -172,14 +172,12 @@ class ShopServiceAcceptanceTests {
 
         // simulate repository rejecting missing name
         when(shopRepository.createShop(emptyName, purchasePolicy, shippingMethod))
-            .thenThrow(new IllegalArgumentException("Shop name is required"));
+                .thenThrow(new IllegalArgumentException("Shop name is required"));
 
-        RuntimeException ex = assertThrows(RuntimeException.class, () ->
-            shopService.createShop(emptyName, purchasePolicy, shippingMethod, token)
-        );
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> shopService.createShop(emptyName, purchasePolicy, shippingMethod, token));
         assertTrue(ex.getMessage().contains("Shop name is required"));
     }
-
 
     // UC11 – Rate Shop
     @Test
@@ -205,7 +203,7 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken(token)).thenThrow(new RuntimeException("Invalid token"));
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.addReviewToShop(1, 5, "X", token));
+                () -> shopService.addReviewToShop(1, 5, "X", token));
         assertTrue(ex.getMessage().contains("Invalid token"));
     }
 
@@ -219,7 +217,7 @@ class ShopServiceAcceptanceTests {
         when(userService.hasPermission(8, PermissionsEnum.manageItems, shopId)).thenReturn(true);
         doNothing().when(shopRepository).addItemToShop(shopId, itemId, qty, price);
 
-        shopService.addItemToShop(shopId, "item1", "no description", qty,ItemCategory.ELECTRONICS, price, token);
+        shopService.addItemToShop(shopId, "item1", "no description", qty, ItemCategory.ELECTRONICS, price, token);
         verify(shopRepository).addItemToShop(shopId, itemId, qty, price);
     }
 
@@ -232,10 +230,11 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken(token)).thenReturn(8);
         when(userService.hasPermission(8, PermissionsEnum.manageItems, shopId)).thenReturn(true);
         doThrow(new IllegalArgumentException("Quantity must be positive"))
-            .when(shopRepository).addItemToShop(shopId, itemId, -1, 5);
+                .when(shopRepository).addItemToShop(shopId, itemId, -1, 5);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.addItemToShop(shopId, "item1", "no description", -1,ItemCategory.ELECTRONICS, 5, token));
+                () -> shopService.addItemToShop(shopId, "item1", "no description", -1, ItemCategory.ELECTRONICS, 5,
+                        token));
         assertTrue(ex.getMessage().contains("Error adding item"));
     }
 
@@ -249,7 +248,8 @@ class ShopServiceAcceptanceTests {
         when(userService.hasPermission(8, PermissionsEnum.manageItems, shopId)).thenReturn(false);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.addItemToShop(shopId, "item1", "no description", 5,ItemCategory.ELECTRONICS, 100, token));
+                () -> shopService.addItemToShop(shopId, "item1", "no description", 5, ItemCategory.ELECTRONICS, 100,
+                        token));
         assertTrue(ex.getMessage().contains("does not have permission"));
     }
 
@@ -262,10 +262,11 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken(token)).thenReturn(8);
         when(userService.hasPermission(8, PermissionsEnum.manageItems, shopId)).thenReturn(true);
         doThrow(new IllegalArgumentException("Price must be non-negative"))
-            .when(shopRepository).addItemToShop(shopId, itemId, 5, -100);
+                .when(shopRepository).addItemToShop(shopId, itemId, 5, -100);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.addItemToShop(shopId, "item1", "no description", 5,ItemCategory.ELECTRONICS, -100, token));
+                () -> shopService.addItemToShop(shopId, "item1", "no description", 5, ItemCategory.ELECTRONICS, -100,
+                        token));
         assertTrue(ex.getMessage().contains("Error adding item"));
     }
 
@@ -292,10 +293,10 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken(token)).thenReturn(9);
         when(userService.hasPermission(9, PermissionsEnum.manageItems, shopId)).thenReturn(true);
         doThrow(new IllegalArgumentException("Item does not exist"))
-            .when(shopRepository).removeItemFromShop(shopId, itemId);
+                .when(shopRepository).removeItemFromShop(shopId, itemId);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.removeItemFromShop(shopId, itemId, token));
+                () -> shopService.removeItemFromShop(shopId, itemId, token));
         assertTrue(ex.getMessage().contains("Error removing item"));
     }
 
@@ -309,7 +310,7 @@ class ShopServiceAcceptanceTests {
         when(userService.hasPermission(9, PermissionsEnum.manageItems, shopId)).thenReturn(false);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.removeItemFromShop(shopId, 1, token));
+                () -> shopService.removeItemFromShop(shopId, 1, token));
         assertTrue(ex.getMessage().contains("does not have permission"));
     }
 
@@ -336,10 +337,10 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken(token)).thenReturn(11);
         when(userService.hasPermission(11, PermissionsEnum.manageItems, shopId)).thenReturn(true);
         doThrow(new IllegalArgumentException("Price must be non-negative"))
-            .when(shopRepository).updateItemPriceInShop(shopId, 1, -10);
+                .when(shopRepository).updateItemPriceInShop(shopId, 1, -10);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.updateItemPriceInShop(shopId, 1, -10, token));
+                () -> shopService.updateItemPriceInShop(shopId, 1, -10, token));
         assertTrue(ex.getMessage().contains("Error updating price"));
     }
 
@@ -353,7 +354,7 @@ class ShopServiceAcceptanceTests {
         when(userService.hasPermission(11, PermissionsEnum.manageItems, shopId)).thenReturn(false);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.updateItemPriceInShop(shopId, 1, 10, token));
+                () -> shopService.updateItemPriceInShop(shopId, 1, 10, token));
         assertTrue(ex.getMessage().contains("does not have permission"));
     }
 
@@ -363,7 +364,7 @@ class ShopServiceAcceptanceTests {
         int shopId = 6, itemId = 40, qty = 5;
 
         when(authTokenService.ValidateToken(token)).thenReturn(12);
-        when(userService.hasPermission(anyInt(), eq(PermissionsEnum.manageItems), eq(shopId))).thenReturn(true);        
+        when(userService.hasPermission(anyInt(), eq(PermissionsEnum.manageItems), eq(shopId))).thenReturn(true);
         doNothing().when(shopRepository).addSupplyToItem(shopId, itemId, qty);
         shopService.addSupplyToItem(shopId, itemId, qty, token);
         verify(shopRepository).addSupplyToItem(shopId, itemId, qty);
@@ -376,10 +377,10 @@ class ShopServiceAcceptanceTests {
 
         when(authTokenService.ValidateToken(token)).thenReturn(12);
         doThrow(new RuntimeException("Supply failed"))
-            .when(shopRepository).addSupplyToItem(shopId, 1, 1);
+                .when(shopRepository).addSupplyToItem(shopId, 1, 1);
 
         assertThrows(RuntimeException.class,
-            () -> shopService.addSupplyToItem(shopId, 1, 1, token));
+                () -> shopService.addSupplyToItem(shopId, 1, 1, token));
 
     }
 
@@ -405,10 +406,10 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken(token)).thenReturn(13);
         when(userService.hasPermission(13, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
         doThrow(new IllegalArgumentException("Invalid policy"))
-            .when(shopRepository).updatePurchasePolicy(shopId, purchasePolicy);
+                .when(shopRepository).updatePurchasePolicy(shopId, purchasePolicy);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.updatePurchasePolicy(shopId, purchasePolicy, token));
+                () -> shopService.updatePurchasePolicy(shopId, purchasePolicy, token));
         assertTrue(ex.getMessage().contains("Error updating purchase policy"));
     }
 
@@ -422,11 +423,11 @@ class ShopServiceAcceptanceTests {
         when(userService.hasPermission(13, PermissionsEnum.setPolicy, shopId)).thenReturn(false);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.updatePurchasePolicy(shopId, purchasePolicy, token));
+                () -> shopService.updatePurchasePolicy(shopId, purchasePolicy, token));
         assertTrue(ex.getMessage().contains("does not have permission"));
     }
 
-    // UC19 – Define Discount  
+    // UC19 – Define Discount
     @Test
     void testSetGlobalDiscount_Success() throws Exception {
         String token = "t";
@@ -449,10 +450,10 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken(token)).thenReturn(14);
         when(userService.hasPermission(14, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
         doThrow(new IllegalArgumentException("Discount must be <=100"))
-            .when(shopRepository).setGlobalDiscount(shopId, 200, true);
+                .when(shopRepository).setGlobalDiscount(shopId, 200, true);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.setGlobalDiscount(shopId, 200, true, token));
+                () -> shopService.setGlobalDiscount(shopId, 200, true, token));
         assertTrue(ex.getMessage().contains("Error setting global discount"));
     }
 
@@ -466,7 +467,7 @@ class ShopServiceAcceptanceTests {
         when(userService.hasPermission(14, PermissionsEnum.setPolicy, shopId)).thenReturn(false);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.setGlobalDiscount(shopId, 10, true, token));
+                () -> shopService.setGlobalDiscount(shopId, 10, true, token));
         assertTrue(ex.getMessage().contains("does not have permission"));
     }
 
@@ -493,10 +494,10 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken(token)).thenReturn(14);
         when(userService.hasPermission(14, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
         doThrow(new IllegalArgumentException("Discount must be <=100"))
-            .when(shopRepository).setDiscountForItem(shopId, itemId, 200, true);
+                .when(shopRepository).setDiscountForItem(shopId, itemId, 200, true);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.setDiscountForItem(shopId, itemId, 200, true, token));
+                () -> shopService.setDiscountForItem(shopId, itemId, 200, true, token));
         assertTrue(ex.getMessage().contains("Error setting discount for item"));
     }
 
@@ -510,7 +511,7 @@ class ShopServiceAcceptanceTests {
         when(userService.hasPermission(14, PermissionsEnum.setPolicy, shopId)).thenReturn(false);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.setDiscountForItem(shopId, itemId, 10, true, token));
+                () -> shopService.setDiscountForItem(shopId, itemId, 10, true, token));
         assertTrue(ex.getMessage().contains("does not have permission"));
     }
 
@@ -537,10 +538,10 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken(token)).thenReturn(15);
         when(userService.hasPermission(15, PermissionsEnum.closeShop, shopId)).thenReturn(true);
         doThrow(new IllegalArgumentException("Shop already closed"))
-            .when(shopRepository).closeShop(shopId);
+                .when(shopRepository).closeShop(shopId);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.closeShop(shopId, token));
+                () -> shopService.closeShop(shopId, token));
         assertTrue(ex.getMessage().contains("Error closing shop"));
     }
 
@@ -554,13 +555,13 @@ class ShopServiceAcceptanceTests {
         when(userService.hasPermission(15, PermissionsEnum.closeShop, shopId)).thenReturn(false);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.closeShop(shopId, token));
+                () -> shopService.closeShop(shopId, token));
         assertTrue(ex.getMessage().contains("does not have permission"));
     }
 
     // UC28 – Enforce Actions by Permission
-    void testActionByPermission_Succeess() throws Exception{
-        //TODO
+    void testActionByPermission_Succeess() throws Exception {
+        // TODO
     }
 
     // UC28 – Enforce Actions by Permission (sample)
@@ -573,7 +574,8 @@ class ShopServiceAcceptanceTests {
         when(userService.hasPermission(16, PermissionsEnum.manageItems, shopId)).thenReturn(false);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.addItemToShop(shopId, "item1", "no description", 5,ItemCategory.ELECTRONICS, 100, token));
+                () -> shopService.addItemToShop(shopId, "item1", "no description", 5, ItemCategory.ELECTRONICS, 100,
+                        token));
         assertTrue(ex.getMessage().contains("does not have permission"));
     }
 
@@ -605,7 +607,8 @@ class ShopServiceAcceptanceTests {
     }
 
     // Closing & reopening shops (success)
-    // Closes a shop and verifies it cannot be retrieved, then “reopens” by creating another.
+    // Closes a shop and verifies it cannot be retrieved, then “reopens” by creating
+    // another.
     @Test
     void testClosingAndReopeningShopsInRepo_Success() {
         ShopRepository repo = new ShopRepository();
@@ -616,13 +619,13 @@ class ShopServiceAcceptanceTests {
         Shop a = repo.createShop("A", pp, sm);
         repo.closeShop(a.getId());
         assertThrows(RuntimeException.class,
-            () -> repo.getShop(a.getId()),
-            "Closed shop should no longer be retrievable");
+                () -> repo.getShop(a.getId()),
+                "Closed shop should no longer be retrievable");
 
         // “Reopen” = create a new shop under a different name; ID must differ
         Shop b = repo.createShop("B", pp, sm);
         assertNotEquals(a.getId(), b.getId(),
-            "Reopened shop should get a new, unique ID");
+                "Reopened shop should get a new, unique ID");
     }
 
     // Concurrent shop creation (success)
@@ -656,9 +659,8 @@ class ShopServiceAcceptanceTests {
 
         // Expect exactly `threads` distinct IDs
         assertEquals(threads, ids.size(),
-            "Each thread must create a shop with a unique ID");
+                "Each thread must create a shop with a unique ID");
     }
-
 
     @Test
     void testRemoveGlobalDiscount_NoPerm() throws Exception {
@@ -666,7 +668,7 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken(tok)).thenReturn(3);
         when(userService.hasPermission(anyInt(), any(), anyInt())).thenReturn(false);
         OurRuntime ex = assertThrows(OurRuntime.class,
-            () -> shopService.removeGlobalDiscount(9, tok));
+                () -> shopService.removeGlobalDiscount(9, tok));
         assertTrue(ex.getMessage().contains("does not have permission"));
     }
 
@@ -677,7 +679,7 @@ class ShopServiceAcceptanceTests {
         when(userService.hasPermission(4, PermissionsEnum.setPolicy, 5)).thenReturn(true);
         doThrow(new IllegalArgumentException("oops")).when(shopRepository).removeDiscountForItem(5, 99);
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.removeDiscountForItem(5, 99, t));
+                () -> shopService.removeDiscountForItem(5, 99, t));
         assertTrue(ex.getMessage().contains("Error removing discount for item"));
     }
 
@@ -713,11 +715,12 @@ class ShopServiceAcceptanceTests {
     // purchaseItems
     @Test
     void testPurchaseItems_Success() throws Exception {
-        String t = "x"; int uid = 10, sid = 5;
-        Map<Integer,Integer> cart = Map.of(1,2);
+        String t = "x";
+        int uid = 10, sid = 5;
+        Map<Integer, Integer> cart = Map.of(1, 2);
         when(authTokenService.ValidateToken(t)).thenReturn(uid);
         when(userService.isSuspended(uid)).thenReturn(false);
-        Map<Integer,ItemCategory> catMap = Map.of(1, ItemCategory.ELECTRONICS);
+        Map<Integer, ItemCategory> catMap = Map.of(1, ItemCategory.ELECTRONICS);
         when(itemService.getItemdId2Cat(cart)).thenReturn(catMap);
         when(shopRepository.purchaseItems(cart, catMap, sid)).thenReturn(123.0);
         double tot = shopService.purchaseItems(cart, sid, t);
@@ -730,14 +733,14 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken(t)).thenReturn(11);
         when(userService.isSuspended(11)).thenReturn(true);
         OurRuntime ex = assertThrows(OurRuntime.class,
-            () -> shopService.purchaseItems(Map.of(), 1, t));
+                () -> shopService.purchaseItems(Map.of(), 1, t));
         assertTrue(ex.getMessage().contains("cannot purchase items"));
     }
 
     // rollBackPurchase
     @Test
     void testRollBackPurchase_Success() throws Exception {
-        Map<Integer,Integer> cart = Map.of(2,3);
+        Map<Integer, Integer> cart = Map.of(2, 3);
         doNothing().when(shopRepository).rollBackPurchase(cart, 6);
         shopService.rollBackPurchase(cart, 6);
         verify(shopRepository).rollBackPurchase(cart, 6);
@@ -746,8 +749,8 @@ class ShopServiceAcceptanceTests {
     // checkSupplyAvailabilityAndAcquire
     @Test
     void testCheckSupplyAvailabilityAndAcquire_Success() {
-        when(shopRepository.checkSupplyAvailabilityAndAqcuire(1,2,5)).thenReturn(false);
-        assertFalse(shopService.checkSupplyAvailabilityAndAcquire(1,2,5));
+        when(shopRepository.checkSupplyAvailabilityAndAqcuire(1, 2, 5)).thenReturn(false);
+        assertFalse(shopService.checkSupplyAvailabilityAndAcquire(1, 2, 5));
     }
 
     // addSupply
@@ -756,25 +759,25 @@ class ShopServiceAcceptanceTests {
         String t = "t";
         when(authTokenService.ValidateToken(t)).thenReturn(12);
         when(userService.hasPermission(12, PermissionsEnum.manageItems, 7)).thenReturn(true);
-        doNothing().when(shopRepository).addSupply(7,8,9);
-        shopService.addSupply(7,8,9,t);
-        verify(shopRepository).addSupply(7,8,9);
+        doNothing().when(shopRepository).addSupply(7, 8, 9);
+        shopService.addSupply(7, 8, 9, t);
+        verify(shopRepository).addSupply(7, 8, 9);
     }
 
     // removeSupply
     @Test
-    void testRemoveSupply_Success() throws Exception{
+    void testRemoveSupply_Success() throws Exception {
         String t = "t";
         when(authTokenService.ValidateToken(t)).thenReturn(13);
         when(userService.hasPermission(13, PermissionsEnum.manageItems, 7)).thenReturn(true);
-        doNothing().when(shopRepository).removeSupply(7,8,9);
-        shopService.removeSupply(7,8,9,t);
-        verify(shopRepository).removeSupply(7,8,9);
+        doNothing().when(shopRepository).removeSupply(7, 8, 9);
+        shopService.removeSupply(7, 8, 9, t);
+        verify(shopRepository).removeSupply(7, 8, 9);
     }
 
     // getItemsByShop
     @Test
-    void testGetItemsByShop_Success() throws Exception{
+    void testGetItemsByShop_Success() throws Exception {
         String t = "t";
         List<Integer> ids = List.of(100);
         when(authTokenService.ValidateToken(t)).thenReturn(15);
@@ -788,7 +791,7 @@ class ShopServiceAcceptanceTests {
 
     // getAllShops
     @Test
-    void testGetAllShops_Success() throws Exception{
+    void testGetAllShops_Success() throws Exception {
         String tok = "tok";
         List<Shop> list = List.of(new Shop(1, "A", shippingMethod));
         when(authTokenService.ValidateToken(tok)).thenReturn(2);
@@ -798,18 +801,18 @@ class ShopServiceAcceptanceTests {
     }
 
     @Test
-    void testGetAllShops_Error() throws Exception{
+    void testGetAllShops_Error() throws Exception {
         String tok = "tok";
         when(authTokenService.ValidateToken(tok)).thenReturn(2);
         when(shopRepository.getAllShops()).thenThrow(new RuntimeException("fail"));
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.getAllShops(tok));
+                () -> shopService.getAllShops(tok));
         assertTrue(ex.getMessage().contains("Error retrieving all shops"));
     }
 
     // getItems (global)
     @Test
-    void testGetItems_Success() throws Exception{
+    void testGetItems_Success() throws Exception {
         String tok = "t";
         List<Integer> ids = List.of(200);
         when(authTokenService.ValidateToken(tok)).thenReturn(3);
@@ -822,18 +825,18 @@ class ShopServiceAcceptanceTests {
     }
 
     @Test
-    void testGetItems_Error() throws Exception{
+    void testGetItems_Error() throws Exception {
         String tok = "t";
         when(authTokenService.ValidateToken(tok)).thenReturn(4);
         when(shopRepository.getItems()).thenThrow(new RuntimeException("err"));
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.getItems(tok));
+                () -> shopService.getItems(tok));
         assertTrue(ex.getMessage().contains("Error retrieving all items"));
     }
 
     // searchItems (global)
     @Test
-    void testSearchItems_Global_Success() throws Exception{
+    void testSearchItems_Global_Success() throws Exception {
         String tok = "x";
         when(authTokenService.ValidateToken(tok)).thenReturn(5);
         Shop shop1 = new Shop(1, "S1", shippingMethod);
@@ -850,19 +853,19 @@ class ShopServiceAcceptanceTests {
     }
 
     @Test
-    void testSearchItems_Global_Error() throws Exception{
+    void testSearchItems_Global_Error() throws Exception {
         String tok = "x";
         when(authTokenService.ValidateToken(tok)).thenReturn(6);
         when(shopRepository.getAllShops()).thenThrow(new RuntimeException("no shops"));
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.searchItems(null, null, null, null, null, null, null, tok));
+                () -> shopService.searchItems(null, null, null, null, null, null, null, tok));
         // Should wrap and prefix with "Error searching items: "
         assertTrue(ex.getMessage().contains("Error searching items:") || ex.getMessage().contains("searchItems"));
     }
 
     // shipPurchase
     @Test
-    void testShipPurchase_Success() throws Exception{
+    void testShipPurchase_Success() throws Exception {
         String tok = "tk";
         when(authTokenService.ValidateToken(tok)).thenReturn(7);
         when(shopRepository.shipPurchase(any(), anyInt(), any(), any(), any(), any())).thenReturn(true);
@@ -871,19 +874,21 @@ class ShopServiceAcceptanceTests {
     }
 
     @Test
-    void testShipPurchase_Error() throws Exception{
+    void testShipPurchase_Error() throws Exception {
         String tok = "tk";
         when(authTokenService.ValidateToken(tok)).thenReturn(7);
-        doThrow(new RuntimeException("fail ship")).when(shopRepository).shipPurchase(anyString(), anyInt(), anyString(), anyString(), anyString(), anyString());
+        doThrow(new RuntimeException("fail ship")).when(shopRepository).shipPurchase(anyString(), anyInt(), anyString(),
+                anyString(), anyString(), anyString());
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.shipPurchase(tok,3,4,"C","C","C","C"));
+                () -> shopService.shipPurchase(tok, 3, 4, "C", "C", "C", "C"));
         assertTrue(ex.getMessage().contains("Error shipping purchase"));
     }
 
     // removeGlobalDiscount
     @Test
     void testRemoveGlobalDiscount_Success() throws Exception {
-        String tok = "x"; int shopId = 10;
+        String tok = "x";
+        int shopId = 10;
         when(authTokenService.ValidateToken(tok)).thenReturn(3);
         when(userService.hasPermission(3, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
         doNothing().when(shopRepository).removeGlobalDiscount(shopId);
@@ -893,19 +898,20 @@ class ShopServiceAcceptanceTests {
 
     @Test
     void testRemoveGlobalDiscount_NoPermission_Failure() throws Exception {
-        String tok = "x"; int shopId = 9;
+        String tok = "x";
+        int shopId = 9;
         when(authTokenService.ValidateToken(tok)).thenReturn(3);
         when(userService.hasPermission(anyInt(), any(), anyInt())).thenReturn(false);
         OurRuntime ex = assertThrows(OurRuntime.class,
-            () -> shopService.removeGlobalDiscount(shopId, tok)
-        );
+                () -> shopService.removeGlobalDiscount(shopId, tok));
         assertTrue(ex.getMessage().contains("does not have permission"));
     }
 
     // removeDiscountForItem
     @Test
     void testRemoveDiscountForItem_Success() throws Exception {
-        String t = "tk"; int shopId = 5, itemId = 99;
+        String t = "tk";
+        int shopId = 5, itemId = 99;
         when(authTokenService.ValidateToken(t)).thenReturn(4);
         when(userService.hasPermission(4, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
         doNothing().when(shopRepository).removeDiscountForItem(shopId, itemId);
@@ -915,21 +921,22 @@ class ShopServiceAcceptanceTests {
 
     @Test
     void testRemoveDiscountForItem_Error_Failure() throws Exception {
-        String t = "tk"; int shopId = 5, itemId = 99;
+        String t = "tk";
+        int shopId = 5, itemId = 99;
         when(authTokenService.ValidateToken(t)).thenReturn(4);
         when(userService.hasPermission(4, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
         doThrow(new IllegalArgumentException("oops"))
-            .when(shopRepository).removeDiscountForItem(shopId, itemId);
+                .when(shopRepository).removeDiscountForItem(shopId, itemId);
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.removeDiscountForItem(shopId, itemId, t)
-        );
+                () -> shopService.removeDiscountForItem(shopId, itemId, t));
         assertTrue(ex.getMessage().contains("Error removing discount for item"));
     }
 
     // category discounts
     @Test
     void testSetCategoryDiscount_Success() throws Exception {
-        String t = "t"; int shopId = 11;
+        String t = "t";
+        int shopId = 11;
         when(authTokenService.ValidateToken(t)).thenReturn(5);
         when(userService.hasPermission(5, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
         doNothing().when(shopRepository).setCategoryDiscount(shopId, ItemCategory.BOOKS, 30, false);
@@ -939,32 +946,33 @@ class ShopServiceAcceptanceTests {
 
     @Test
     void testSetCategoryDiscount_InvalidDiscount_Failure() throws Exception {
-        String t = "t"; int shopId = 11;
+        String t = "t";
+        int shopId = 11;
         when(authTokenService.ValidateToken(t)).thenReturn(5);
         when(userService.hasPermission(5, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
         doThrow(new IllegalArgumentException("Invalid discount"))
-            .when(shopRepository).setCategoryDiscount(shopId, ItemCategory.CLOTHING, 150, false);
+                .when(shopRepository).setCategoryDiscount(shopId, ItemCategory.CLOTHING, 150, false);
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.setCategoryDiscount(shopId, ItemCategory.CLOTHING, 150, false, t)
-        );
+                () -> shopService.setCategoryDiscount(shopId, ItemCategory.CLOTHING, 150, false, t));
         assertTrue(ex.getMessage().contains("Error setting category discount"));
     }
 
     @Test
     void testSetCategoryDiscount_NoPermission_Failure() throws Exception {
-        String t = "t"; int shopId = 11;
+        String t = "t";
+        int shopId = 11;
         when(authTokenService.ValidateToken(t)).thenReturn(5);
         when(userService.hasPermission(5, PermissionsEnum.setPolicy, shopId)).thenReturn(false);
         OurRuntime ex = assertThrows(OurRuntime.class,
-            () -> shopService.setCategoryDiscount(shopId, ItemCategory.CLOTHING, 20, false, t)
-        );
+                () -> shopService.setCategoryDiscount(shopId, ItemCategory.CLOTHING, 20, false, t));
         assertTrue(ex.getMessage().contains("does not have permission"));
     }
 
     // removeCategoryDiscount
     @Test
     void testRemoveCategoryDiscount_Success() throws Exception {
-        String t = "t"; int shopId = 12;
+        String t = "t";
+        int shopId = 12;
         when(authTokenService.ValidateToken(t)).thenReturn(6);
         when(userService.hasPermission(6, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
         doNothing().when(shopRepository).removeCategoryDiscount(shopId, ItemCategory.CLOTHING);
@@ -974,62 +982,61 @@ class ShopServiceAcceptanceTests {
 
     @Test
     void testRemoveCategoryDiscount_Error_Failure() throws Exception {
-        String t = "t"; int shopId = 12;
+        String t = "t";
+        int shopId = 12;
         when(authTokenService.ValidateToken(t)).thenReturn(6);
         when(userService.hasPermission(6, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
         doThrow(new IllegalStateException("fail"))
-            .when(shopRepository).removeCategoryDiscount(shopId, ItemCategory.ELECTRONICS);
+                .when(shopRepository).removeCategoryDiscount(shopId, ItemCategory.ELECTRONICS);
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.removeCategoryDiscount(shopId, ItemCategory.ELECTRONICS, t)
-        );
+                () -> shopService.removeCategoryDiscount(shopId, ItemCategory.ELECTRONICS, t));
         assertTrue(ex.getMessage().contains("Error removing category discount"));
     }
 
     @Test
     void testRemoveCategoryDiscount_NoPermission_Failure() throws Exception {
-        String t = "t"; int shopId = 12;
+        String t = "t";
+        int shopId = 12;
         when(authTokenService.ValidateToken(t)).thenReturn(6);
         when(userService.hasPermission(6, PermissionsEnum.setPolicy, shopId)).thenReturn(false);
         OurRuntime ex = assertThrows(OurRuntime.class,
-            () -> shopService.removeCategoryDiscount(shopId, ItemCategory.ELECTRONICS, t)
-        );
+                () -> shopService.removeCategoryDiscount(shopId, ItemCategory.ELECTRONICS, t));
         assertTrue(ex.getMessage().contains("does not have permission"));
     }
 
     // addReviewToShop (suspended user)
     @Test
     void testAddReviewToShop_Suspended_Failure() throws Exception {
-        String token = "t"; int shopId = 2;
+        String token = "t";
+        int shopId = 2;
         when(authTokenService.ValidateToken(token)).thenReturn(7);
         doNothing().when(userService).validateMemberId(7);
         when(userService.isSuspended(7)).thenReturn(true);
         OurRuntime ex = assertThrows(OurRuntime.class,
-            () -> shopService.addReviewToShop(shopId, 5, "text", token)
-        );
+                () -> shopService.addReviewToShop(shopId, 5, "text", token));
         assertTrue(ex.getMessage().contains("cannot add a review"));
     }
 
     // addItemToShop (item service error)
     @Test
     void testAddItemToShop_ItemServiceError_Failure() throws Exception {
-        String token = "tok"; int shopId = 3;
+        String token = "tok";
+        int shopId = 3;
         when(authTokenService.ValidateToken(token)).thenReturn(8);
         when(userService.hasPermission(8, PermissionsEnum.manageItems, shopId)).thenReturn(true);
         when(itemService.createItem(eq(shopId), any(), any(), eq(ItemCategory.AUTOMOTIVE), eq(token)))
-            .thenThrow(new RuntimeException("create failed"));
+                .thenThrow(new RuntimeException("create failed"));
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.addItemToShop(shopId, "n", "d", 1,ItemCategory.AUTOMOTIVE, 1, token)
-        );
+                () -> shopService.addItemToShop(shopId, "n", "d", 1, ItemCategory.AUTOMOTIVE, 1, token));
         assertTrue(ex.getMessage().contains("Error adding item to shop"));
     }
-    
+
     // getShop throws on invalid token
     @Test
     void testGetShop_InvalidToken() throws Exception {
         when(authTokenService.ValidateToken("bad")).thenThrow(new RuntimeException("no auth"));
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.getShop(1, "bad")
-        );
+                () -> shopService.getShop(1, "bad"));
         assertTrue(ex.getMessage().contains("no auth"));
     }
 
@@ -1060,12 +1067,13 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken(tok)).thenReturn(1);
         Shop s = new Shop(1, "S", shippingMethod);
         when(shopRepository.getAllShops()).thenReturn(List.of(s));
-        when(shopRepository.getItemsByShop(1)).thenReturn(List.of(1,2));
+        when(shopRepository.getItemsByShop(1)).thenReturn(List.of(1, 2));
         Item a = new Item(1, "A", "desc", 0);
         Item b = new Item(2, "B", "desc", 2);
-        when(itemService.getItemsByIds(List.of(1,2), tok)).thenReturn(List.of(a,b));
+        when(itemService.getItemsByIds(List.of(1, 2), tok)).thenReturn(List.of(a, b));
         List<Item> found = shopService.searchItems(null, ItemCategory.ELECTRONICS, null, null, null, null, null, tok);
-        assertEquals(1, found.size()); assertEquals(a, found.get(0));
+        assertEquals(1, found.size());
+        assertEquals(a, found.get(0));
     }
 
     // searchItems keywords filter on description
@@ -1091,7 +1099,7 @@ class ShopServiceAcceptanceTests {
         when(shopRepository.getAllShops()).thenReturn(List.of(s));
         when(shopRepository.getItemsByShop(1)).thenReturn(List.of(1));
         Item it = new Item(1, "N", "D", 5);
-        it.addReview(new ItemReview(5,""));
+        it.addReview(new ItemReview(5, ""));
         when(itemService.getItemsByIds(List.of(1), tok)).thenReturn(List.of(it));
         List<Item> res1 = shopService.searchItems(null, null, null, null, null, 4.0, null, tok);
         assertEquals(1, res1.size());
@@ -1102,16 +1110,16 @@ class ShopServiceAcceptanceTests {
     // purchaseItems repository exception
     @Test
     void testPurchaseItems_RepoError() throws Exception {
-        String tok = "t"; int uid=1, sid=1;
-        Map<Integer,Integer> cart = Map.of(1,1);
+        String tok = "t";
+        int uid = 1, sid = 1;
+        Map<Integer, Integer> cart = Map.of(1, 1);
         when(authTokenService.ValidateToken(tok)).thenReturn(uid);
         when(userService.isSuspended(uid)).thenReturn(false);
         when(itemService.getItemdId2Cat(cart)).thenReturn(Collections.emptyMap());
         when(shopRepository.purchaseItems(cart, Collections.emptyMap(), sid))
-            .thenThrow(new RuntimeException("fail"));
+                .thenThrow(new RuntimeException("fail"));
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.purchaseItems(cart, sid, tok)
-        );
+                () -> shopService.purchaseItems(cart, sid, tok));
         assertTrue(ex.getMessage().contains("Error purchasing items"));
     }
 
@@ -1119,25 +1127,23 @@ class ShopServiceAcceptanceTests {
     @Test
     void testCheckPolicy_SuccessAndError() throws Exception {
         String tok = "t";
-        HashMap<Integer,HashMap<Integer,Integer>> cart = new HashMap<>();
+        HashMap<Integer, HashMap<Integer, Integer>> cart = new HashMap<>();
         when(authTokenService.ValidateToken(tok)).thenReturn(1);
         when(shopRepository.checkPolicy(cart, tok)).thenReturn(true);
         assertTrue(shopService.checkPolicy(cart, tok));
         when(shopRepository.checkPolicy(cart, tok)).thenThrow(new RuntimeException("oops"));
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.checkPolicy(cart, tok)
-        );
+                () -> shopService.checkPolicy(cart, tok));
         assertTrue(ex.getMessage().contains("Error checking policy"));
     }
 
     // rollBackPurchase exception
     @Test
     void testRollBackPurchase_Error() throws Exception {
-        Map<Integer,Integer> cart = Map.of(1,1);
+        Map<Integer, Integer> cart = Map.of(1, 1);
         doThrow(new RuntimeException("rbfail")).when(shopRepository).rollBackPurchase(cart, 1);
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.rollBackPurchase(cart, 1)
-        );
+                () -> shopService.rollBackPurchase(cart, 1));
         assertTrue(ex.getMessage().contains("Error rolling back purchase"));
     }
 
@@ -1148,8 +1154,7 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken(tok)).thenReturn(1);
         when(shopRepository.getItemsByShop(1)).thenThrow(new RuntimeException("gone"));
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.getItemsByShop(1, tok)
-        );
+                () -> shopService.getItemsByShop(1, tok));
         assertTrue(ex.getMessage().contains("Error retrieving items for shop"));
     }
 
@@ -1158,8 +1163,7 @@ class ShopServiceAcceptanceTests {
     void testShipPurchase_InvalidToken() throws Exception {
         when(authTokenService.ValidateToken("bad")).thenThrow(new RuntimeException("noAuth"));
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.shipPurchase("bad",1,1,"C","C","C","C")
-        );
+                () -> shopService.shipPurchase("bad", 1, 1, "C", "C", "C", "C"));
         assertTrue(ex.getMessage().contains("noAuth"));
     }
 
@@ -1183,7 +1187,7 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken("bad")).thenThrow(new RuntimeException("no auth"));
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.getAllShops("bad"));
+                () -> shopService.getAllShops("bad"));
         assertTrue(ex.getMessage().contains("no auth"));
     }
 
@@ -1197,7 +1201,7 @@ class ShopServiceAcceptanceTests {
         when(shopRepository.getShop(shopId)).thenThrow(new RuntimeException("fail getShop"));
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.searchItemsInShop(shopId, null, null, null, null, null, null, tok));
+                () -> shopService.searchItemsInShop(shopId, null, null, null, null, null, null, tok));
         assertTrue(ex.getMessage().contains("Error searching items:") || ex.getMessage().contains("searchItems"));
     }
 
@@ -1211,7 +1215,7 @@ class ShopServiceAcceptanceTests {
         when(userService.hasPermission(1, PermissionsEnum.manageItems, shopId)).thenReturn(false);
 
         OurRuntime ex = assertThrows(OurRuntime.class,
-            () -> shopService.removeSupply(shopId, itemId, qty, tok));
+                () -> shopService.removeSupply(shopId, itemId, qty, tok));
         assertTrue(ex.getMessage().contains("does not have permission"));
     }
 
@@ -1224,10 +1228,10 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken(tok)).thenReturn(1);
         when(userService.hasPermission(1, PermissionsEnum.manageItems, shopId)).thenReturn(true);
         doThrow(new RuntimeException("err"))
-            .when(shopRepository).removeSupply(shopId, itemId, qty);
+                .when(shopRepository).removeSupply(shopId, itemId, qty);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.removeSupply(shopId, itemId, qty, tok));
+                () -> shopService.removeSupply(shopId, itemId, qty, tok));
         assertTrue(ex.getMessage().contains("Error removing supply"));
     }
 
@@ -1235,10 +1239,10 @@ class ShopServiceAcceptanceTests {
     @Test
     void testCheckSupplyAvailabilityAndAcquire_Error() {
         when(shopRepository.checkSupplyAvailabilityAndAqcuire(1, 2, 3))
-            .thenThrow(new RuntimeException("fail"));
+                .thenThrow(new RuntimeException("fail"));
 
         OurRuntime ex = assertThrows(OurRuntime.class,
-            () -> shopService.checkSupplyAvailabilityAndAcquire(1, 2, 3));
+                () -> shopService.checkSupplyAvailabilityAndAcquire(1, 2, 3));
         assertTrue(ex.getMessage().contains("Error checking supply"));
     }
 
@@ -1249,7 +1253,7 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken(tok)).thenThrow(new RuntimeException("no auth"));
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.createShop("Name", purchasePolicy, shippingMethod, tok));
+                () -> shopService.createShop("Name", purchasePolicy, shippingMethod, tok));
         assertTrue(ex.getMessage().contains("no auth"));
     }
 
@@ -1260,16 +1264,16 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken(tok)).thenThrow(new RuntimeException("no auth"));
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.updatePurchasePolicy(1, purchasePolicy, tok));
+                () -> shopService.updatePurchasePolicy(1, purchasePolicy, tok));
         assertTrue(ex.getMessage().contains("Error updating purchase policy"));
     }
-    
-        // getItemsByShop – invalid token
+
+    // getItemsByShop – invalid token
     @Test
     void testGetItemsByShop_InvalidToken() throws Exception {
         when(authTokenService.ValidateToken("bad")).thenThrow(new RuntimeException("auth fail"));
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.getItemsByShop(10, "bad"));
+                () -> shopService.getItemsByShop(10, "bad"));
         assertTrue(ex.getMessage().contains("auth fail"));
     }
 
@@ -1280,7 +1284,7 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken(tok)).thenReturn(1);
         when(shopRepository.getItemsByShop(2)).thenThrow(new RuntimeException("db error"));
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.getItemsByShop(2, tok));
+                () -> shopService.getItemsByShop(2, tok));
         assertTrue(ex.getMessage().contains("Error retrieving items for shop"));
     }
 
@@ -1289,7 +1293,7 @@ class ShopServiceAcceptanceTests {
     void testGetItems_InvalidToken() throws Exception {
         when(authTokenService.ValidateToken("bad")).thenThrow(new RuntimeException("no auth"));
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.getItems("bad"));
+                () -> shopService.getItems("bad"));
         assertTrue(ex.getMessage().contains("no auth"));
     }
 
@@ -1298,7 +1302,7 @@ class ShopServiceAcceptanceTests {
     void testSetGlobalDiscount_InvalidToken() throws Exception {
         when(authTokenService.ValidateToken("bad")).thenThrow(new RuntimeException("no auth"));
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.setGlobalDiscount(1, 10, true, "bad"));
+                () -> shopService.setGlobalDiscount(1, 10, true, "bad"));
         assertTrue(ex.getMessage().contains("no auth"));
     }
 
@@ -1307,7 +1311,7 @@ class ShopServiceAcceptanceTests {
     void testSetDiscountForItem_InvalidToken() throws Exception {
         when(authTokenService.ValidateToken("bad")).thenThrow(new RuntimeException("no auth"));
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.setDiscountForItem(1, 1, 5, true, "bad"));
+                () -> shopService.setDiscountForItem(1, 1, 5, true, "bad"));
         assertTrue(ex.getMessage().contains("no auth"));
     }
 
@@ -1316,7 +1320,7 @@ class ShopServiceAcceptanceTests {
     void testSetCategoryDiscount_InvalidToken() throws Exception {
         when(authTokenService.ValidateToken("bad")).thenThrow(new RuntimeException("no auth"));
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.setCategoryDiscount(1, ItemCategory.BOOKS, 5, false, "bad"));
+                () -> shopService.setCategoryDiscount(1, ItemCategory.BOOKS, 5, false, "bad"));
         assertTrue(ex.getMessage().contains("no auth"));
     }
 
@@ -1325,7 +1329,7 @@ class ShopServiceAcceptanceTests {
     void testRemoveCategoryDiscount_InvalidToken() throws Exception {
         when(authTokenService.ValidateToken("bad")).thenThrow(new RuntimeException("no auth"));
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.removeCategoryDiscount(1, ItemCategory.CLOTHING, "bad"));
+                () -> shopService.removeCategoryDiscount(1, ItemCategory.CLOTHING, "bad"));
         assertTrue(ex.getMessage().contains("no auth"));
     }
 
@@ -1336,7 +1340,7 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken(tok)).thenReturn(1);
         when(shopRepository.getShopAverageRating(3)).thenThrow(new RuntimeException("db fail"));
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.getShopAverageRating(3, tok));
+                () -> shopService.getShopAverageRating(3, tok));
         assertTrue(ex.getMessage().contains("Error retrieving average rating"));
     }
 
@@ -1347,7 +1351,7 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken(tok)).thenReturn(1);
         when(shopRepository.checkSupplyAvailability(5, 6)).thenThrow(new RuntimeException("db fail"));
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.checkSupplyAvailability(5, 6, tok));
+                () -> shopService.checkSupplyAvailability(5, 6, tok));
         assertTrue(ex.getMessage().contains("Error checking supply"));
     }
 
@@ -1356,13 +1360,13 @@ class ShopServiceAcceptanceTests {
     void testPurchaseItems_ItemServiceError() throws Exception {
         String tok = "t";
         int uid = 2, sid = 3;
-        Map<Integer,Integer> cart = Map.of(1,1);
+        Map<Integer, Integer> cart = Map.of(1, 1);
         when(authTokenService.ValidateToken(tok)).thenReturn(uid);
         when(userService.isSuspended(uid)).thenReturn(false);
         when(itemService.getItemdId2Cat(cart)).thenThrow(new OurArg("bad arg"));
 
         OurArg ex = assertThrows(OurArg.class,
-            () -> shopService.purchaseItems(cart, sid, tok));
+                () -> shopService.purchaseItems(cart, sid, tok));
         assertTrue(ex.getMessage().contains("purchaseItems"));
     }
 
@@ -1374,12 +1378,12 @@ class ShopServiceAcceptanceTests {
         Item it = new Item(1, "X", "Y", 0);
 
         when(authTokenService.ValidateToken(tok)).thenReturn(1);
-        when(shopRepository.getShop(shopId)).thenReturn(new Shop(shopId,"S",shippingMethod));
+        when(shopRepository.getShop(shopId)).thenReturn(new Shop(shopId, "S", shippingMethod));
         when(shopRepository.getItemsByShop(shopId)).thenReturn(List.of(1));
         when(itemService.getItemsByIds(List.of(1), tok)).thenReturn(List.of(it));
 
         // spy shop so getItemPrice(1) == 5
-        Shop spyShop = spy(new Shop(shopId,"S",shippingMethod));
+        Shop spyShop = spy(new Shop(shopId, "S", shippingMethod));
         doReturn(5).when(spyShop).getItemPrice(1);
         when(shopRepository.getShop(shopId)).thenReturn(spyShop);
 
@@ -1394,7 +1398,7 @@ class ShopServiceAcceptanceTests {
         HashMap<Integer, HashMap<Integer, Integer>> cart = new HashMap<>();
         when(authTokenService.ValidateToken("bad")).thenThrow(new OurArg("bad token"));
         OurArg ex = assertThrows(OurArg.class,
-            () -> shopService.checkPolicy(cart, "bad"));
+                () -> shopService.checkPolicy(cart, "bad"));
         assertTrue(ex.getMessage().contains("checkPolicy"));
     }
 
@@ -1403,35 +1407,37 @@ class ShopServiceAcceptanceTests {
     void testAddSupply_InvalidToken() throws Exception {
         when(authTokenService.ValidateToken("bad")).thenThrow(new OurArg("no auth"));
         OurArg ex = assertThrows(OurArg.class,
-            () -> shopService.addSupply(1, 2, 3, "bad"));
+                () -> shopService.addSupply(1, 2, 3, "bad"));
         assertTrue(ex.getMessage().contains("addSupply"));
     }
 
     // setGlobalDiscount – repo error → catches Exception and throws OurRuntime
     @Test
     void testSetGlobalDiscount_RepoError() throws Exception {
-        String tok = "t"; int shopId = 2;
+        String tok = "t";
+        int shopId = 2;
         when(authTokenService.ValidateToken(tok)).thenReturn(1);
         when(userService.hasPermission(1, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
         doThrow(new IllegalStateException("db fail"))
-            .when(shopRepository).setGlobalDiscount(shopId, 50, false);
+                .when(shopRepository).setGlobalDiscount(shopId, 50, false);
 
         OurRuntime ex = assertThrows(OurRuntime.class,
-            () -> shopService.setGlobalDiscount(shopId, 50, false, tok));
+                () -> shopService.setGlobalDiscount(shopId, 50, false, tok));
         assertTrue(ex.getMessage().contains("Error setting global discount for shop"));
     }
 
     // removeGlobalDiscount – repo error
     @Test
     void testRemoveGlobalDiscount_RepoError() throws Exception {
-        String tok = "t"; int shopId = 3;
+        String tok = "t";
+        int shopId = 3;
         when(authTokenService.ValidateToken(tok)).thenReturn(1);
         when(userService.hasPermission(1, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
         doThrow(new IllegalArgumentException("db fail"))
-            .when(shopRepository).removeGlobalDiscount(shopId);
+                .when(shopRepository).removeGlobalDiscount(shopId);
 
         OurRuntime ex = assertThrows(OurRuntime.class,
-            () -> shopService.removeGlobalDiscount(shopId, tok));
+                () -> shopService.removeGlobalDiscount(shopId, tok));
         assertTrue(ex.getMessage().contains("Error removing global discount for shop"));
     }
 
@@ -1440,24 +1446,26 @@ class ShopServiceAcceptanceTests {
     void testGetShopAverageRating_InvalidToken() throws Exception {
         when(authTokenService.ValidateToken("bad")).thenThrow(new OurRuntime("no auth"));
         OurRuntime ex = assertThrows(OurRuntime.class,
-            () -> shopService.getShopAverageRating(5, "bad"));
+                () -> shopService.getShopAverageRating(5, "bad"));
         assertTrue(ex.getMessage().contains("getShopAverageRating"));
     }
-    
-    // createShop – userService.validateMemberId throws OurRuntime → should wrap into createShop… branch
+
+    // createShop – userService.validateMemberId throws OurRuntime → should wrap
+    // into createShop… branch
     @Test
     void testCreateShop_UserServiceOurRuntimeFailure() throws Exception {
         String tok = "t";
         when(authTokenService.ValidateToken(tok)).thenReturn(1);
         doThrow(new OurRuntime("member fail"))
-            .when(userService).validateMemberId(1);
+                .when(userService).validateMemberId(1);
 
         OurRuntime ex = assertThrows(OurRuntime.class,
-            () -> shopService.createShop("Name", purchasePolicy, shippingMethod, tok));
+                () -> shopService.createShop("Name", purchasePolicy, shippingMethod, tok));
         assertTrue(ex.getMessage().contains("createShop"));
     }
 
-    // searchItemsInShop – shop.getItemPrice throws → filterItemsInShop → caught and rethrown by searchItemsInShop
+    // searchItemsInShop – shop.getItemPrice throws → filterItemsInShop → caught and
+    // rethrown by searchItemsInShop
     @Test
     void testSearchItemsInShop_FilterError() throws Exception {
         String tok = "t";
@@ -1470,45 +1478,49 @@ class ShopServiceAcceptanceTests {
         when(shopRepository.getItemsByShop(shopId)).thenReturn(List.of(1));
         when(itemService.getItemsByIds(List.of(1), tok)).thenReturn(List.of(it));
         doThrow(new RuntimeException("price fail"))
-            .when(spyShop).getItemPrice(1);
+                .when(spyShop).getItemPrice(1);
 
         OurRuntime ex = assertThrows(OurRuntime.class,
-            () -> shopService.searchItemsInShop(shopId, null, null, null, null, null, null, tok));
+                () -> shopService.searchItemsInShop(shopId, null, null, null, null, null, null, tok));
         assertTrue(ex.getMessage().contains("searchItemsInShop"));
     }
 
-    // checkPolicy – ValidateToken throws OurArg → should propagate as OurArg("checkPolicy"+…)
+    // checkPolicy – ValidateToken throws OurArg → should propagate as
+    // OurArg("checkPolicy"+…)
     @Test
     void testCheckPolicy_InvalidTokenOurArg() throws Exception {
-        HashMap<Integer,HashMap<Integer,Integer>> cart = new HashMap<>();
+        HashMap<Integer, HashMap<Integer, Integer>> cart = new HashMap<>();
         when(authTokenService.ValidateToken("bad")).thenThrow(new OurArg("bad token"));
 
         OurArg ex = assertThrows(OurArg.class,
-            () -> shopService.checkPolicy(cart, "bad"));
+                () -> shopService.checkPolicy(cart, "bad"));
         assertTrue(ex.getMessage().contains("checkPolicy"));
     }
 
-    // addSupply – ValidateToken throws OurArg → should propagate as OurArg("addSupply"+…)
+    // addSupply – ValidateToken throws OurArg → should propagate as
+    // OurArg("addSupply"+…)
     @Test
     void testAddSupply_InvalidTokenOurArg() throws Exception {
         when(authTokenService.ValidateToken("bad")).thenThrow(new OurArg("auth fail"));
 
         OurArg ex = assertThrows(OurArg.class,
-            () -> shopService.addSupply(1, 2, 3, "bad"));
+                () -> shopService.addSupply(1, 2, 3, "bad"));
         assertTrue(ex.getMessage().contains("addSupply"));
     }
 
-    // searchItems – ValidateToken throws OurArg → should propagate as OurArg("searchItems"+…)
+    // searchItems – ValidateToken throws OurArg → should propagate as
+    // OurArg("searchItems"+…)
     @Test
     void testSearchItems_InvalidTokenOurArg() throws Exception {
         when(authTokenService.ValidateToken("bad")).thenThrow(new OurArg("no auth"));
 
         OurArg ex = assertThrows(OurArg.class,
-            () -> shopService.searchItems(null, null, null, null, null, null, null, "bad"));
+                () -> shopService.searchItems(null, null, null, null, null, null, null, "bad"));
         assertTrue(ex.getMessage().contains("searchItems"));
     }
 
-    // searchItems – itemService.getItemsByIds throws OurArg inside filterItemsInShop → bubbles up to searchItems
+    // searchItems – itemService.getItemsByIds throws OurArg inside
+    // filterItemsInShop → bubbles up to searchItems
     @Test
     void testSearchItems_ItemServiceOurArg() throws Exception {
         String tok = "t";
@@ -1519,13 +1531,14 @@ class ShopServiceAcceptanceTests {
         when(itemService.getItemsByIds(List.of(1), tok)).thenThrow(new OurArg("item bad"));
 
         OurArg ex = assertThrows(OurArg.class,
-            () -> shopService.searchItems(null, null, null, null, null, null, null, tok));
+                () -> shopService.searchItems(null, null, null, null, null, null, null, tok));
         assertTrue(ex.getMessage().contains("searchItems"));
         assertTrue(ex.getMessage().contains("filterItemsInShop"));
         assertTrue(ex.getMessage().contains("item bad"));
     }
 
-    // closeShop – userService.closeShopNotification throws → should wrap into "Error closing shop…"
+    // closeShop – userService.closeShopNotification throws → should wrap into
+    // "Error closing shop…"
     @Test
     void testCloseShop_NotificationError() throws Exception {
         String tok = "t";
@@ -1534,55 +1547,59 @@ class ShopServiceAcceptanceTests {
         when(userService.hasPermission(1, PermissionsEnum.closeShop, shopId)).thenReturn(true);
         doNothing().when(shopRepository).closeShop(shopId);
         doThrow(new RuntimeException("notify fail"))
-            .when(userService).closeShopNotification(shopId);
+                .when(userService).closeShopNotification(shopId);
 
         OurRuntime ex = assertThrows(OurRuntime.class,
-            () -> shopService.closeShop(shopId, tok));
+                () -> shopService.closeShop(shopId, tok));
         assertTrue(ex.getMessage().contains("Error closing shop"));
     }
 
-    // getAllShops – ValidateToken throws OurArg → should propagate as OurArg("getAllShops"+…)
+    // getAllShops – ValidateToken throws OurArg → should propagate as
+    // OurArg("getAllShops"+…)
     @Test
     void testGetAllShops_OurArg() throws Exception {
         when(authTokenService.ValidateToken("bad")).thenThrow(new OurArg("no auth"));
 
         OurArg ex = assertThrows(OurArg.class,
-            () -> shopService.getAllShops("bad"));
+                () -> shopService.getAllShops("bad"));
         assertTrue(ex.getMessage().contains("getAllShops"));
     }
 
-    // rollBackPurchase – repository throws OurArg → should wrap into rollBackPurchase… branch
+    // rollBackPurchase – repository throws OurArg → should wrap into
+    // rollBackPurchase… branch
     @Test
     void testRollBackPurchase_OurArg() throws Exception {
-        Map<Integer,Integer> cart = Map.of(1,1);
+        Map<Integer, Integer> cart = Map.of(1, 1);
         doThrow(new OurArg("rb fail"))
-            .when(shopRepository).rollBackPurchase(cart, 1);
+                .when(shopRepository).rollBackPurchase(cart, 1);
 
         OurArg ex = assertThrows(OurArg.class,
-            () -> shopService.rollBackPurchase(cart, 1));
+                () -> shopService.rollBackPurchase(cart, 1));
         assertTrue(ex.getMessage().contains("rollBackPurchase"));
     }
 
-    // shipPurchase – repository throws OurRuntime → should wrap into shipPurchase… branch
+    // shipPurchase – repository throws OurRuntime → should wrap into shipPurchase…
+    // branch
     @Test
     void testShipPurchase_RepoOurRuntime() throws Exception {
         String tok = "t";
         when(authTokenService.ValidateToken(tok)).thenReturn(1);
         doThrow(new OurRuntime("ship fail"))
-            .when(shopRepository).shipPurchase(anyString(), anyInt(), anyString(), anyString(), anyString(), anyString());
+                .when(shopRepository)
+                .shipPurchase(anyString(), anyInt(), anyString(), anyString(), anyString(), anyString());
 
         OurRuntime ex = assertThrows(OurRuntime.class,
-            () -> shopService.shipPurchase(tok, 1, 2, "C", "C", "C", "C"));
+                () -> shopService.shipPurchase(tok, 1, 2, "C", "C", "C", "C"));
         assertTrue(ex.getMessage().contains("shipPurchase"));
         assertTrue(ex.getMessage().contains("ship fail"));
     }
-    
+
     // getItemQuantityFromShop → authToken throws OurArg
     @Test
     void testGetItemQuantityFromShop_InvalidTokenOurArg() throws Exception {
         when(authTokenService.ValidateToken("bad")).thenThrow(new OurArg("no auth"));
         OurArg ex = assertThrows(OurArg.class,
-            () -> shopService.getItemQuantityFromShop(1, 2, "bad"));
+                () -> shopService.getItemQuantityFromShop(1, 2, "bad"));
         assertTrue(ex.getMessage().contains("getItemQuantityFromShop"));
     }
 
@@ -1592,9 +1609,9 @@ class ShopServiceAcceptanceTests {
         String tok = "t";
         when(authTokenService.ValidateToken(tok)).thenReturn(1);
         when(shopRepository.getItemQuantityFromShop(1, 2))
-            .thenThrow(new RuntimeException("db fail"));
+                .thenThrow(new RuntimeException("db fail"));
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.getItemQuantityFromShop(1, 2, tok));
+                () -> shopService.getItemQuantityFromShop(1, 2, tok));
         assertTrue(ex.getMessage().contains("Error retrieving quantity"));
     }
 
@@ -1611,10 +1628,10 @@ class ShopServiceAcceptanceTests {
         when(shopRepository.getItemsByShop(shopId)).thenReturn(List.of(1));
         when(itemService.getItemsByIds(List.of(1), tok)).thenReturn(List.of(it));
         doThrow(new OurArg("price error"))
-            .when(spyShop).getItemPrice(1);
+                .when(spyShop).getItemPrice(1);
 
         OurArg ex = assertThrows(OurArg.class,
-            () -> shopService.searchItemsInShop(shopId, null, null, null, null, null, null, tok));
+                () -> shopService.searchItemsInShop(shopId, null, null, null, null, null, null, tok));
         assertTrue(ex.getMessage().contains("filterItemsInShop"));
     }
 
@@ -1623,7 +1640,7 @@ class ShopServiceAcceptanceTests {
     void testCheckSupplyAvailability_InvalidTokenOurArg() throws Exception {
         when(authTokenService.ValidateToken("bad")).thenThrow(new OurArg("no auth"));
         OurArg ex = assertThrows(OurArg.class,
-            () -> shopService.checkSupplyAvailability(1, 2, "bad"));
+                () -> shopService.checkSupplyAvailability(1, 2, "bad"));
         assertTrue(ex.getMessage().contains("checkSupplyAvailability"));
     }
 
@@ -1633,9 +1650,9 @@ class ShopServiceAcceptanceTests {
         String tok = "t";
         when(authTokenService.ValidateToken(tok)).thenReturn(1);
         when(shopRepository.checkSupplyAvailability(1, 2))
-            .thenThrow(new IllegalStateException("db fail"));
+                .thenThrow(new IllegalStateException("db fail"));
         OurRuntime ex = assertThrows(OurRuntime.class,
-            () -> shopService.checkSupplyAvailability(1, 2, tok));
+                () -> shopService.checkSupplyAvailability(1, 2, tok));
         assertTrue(ex.getMessage().contains("Error checking supply"));
     }
 
@@ -1643,9 +1660,9 @@ class ShopServiceAcceptanceTests {
     @Test
     void testCheckSupplyAvailabilityAndAcquire_RepoOurArg() {
         when(shopRepository.checkSupplyAvailabilityAndAqcuire(1, 2, 3))
-            .thenThrow(new OurArg("fail"));
+                .thenThrow(new OurArg("fail"));
         OurArg ex = assertThrows(OurArg.class,
-            () -> shopService.checkSupplyAvailabilityAndAcquire(1, 2, 3));
+                () -> shopService.checkSupplyAvailabilityAndAcquire(1, 2, 3));
         assertTrue(ex.getMessage().contains("checkSupplyAvailabilityAndAqcuire"));
     }
 
@@ -1653,9 +1670,9 @@ class ShopServiceAcceptanceTests {
     @Test
     void testCheckSupplyAvailabilityAndAcquire_RepoOurRuntime() {
         when(shopRepository.checkSupplyAvailabilityAndAqcuire(1, 2, 3))
-            .thenThrow(new RuntimeException("fail"));
+                .thenThrow(new RuntimeException("fail"));
         OurRuntime ex = assertThrows(OurRuntime.class,
-            () -> shopService.checkSupplyAvailabilityAndAcquire(1, 2, 3));
+                () -> shopService.checkSupplyAvailabilityAndAcquire(1, 2, 3));
         assertTrue(ex.getMessage().contains("Error checking supply"));
     }
 
@@ -1664,7 +1681,7 @@ class ShopServiceAcceptanceTests {
     void testGetItemsByShop_InvalidTokenOurArg() throws Exception {
         when(authTokenService.ValidateToken("bad")).thenThrow(new OurArg("no auth"));
         OurArg ex = assertThrows(OurArg.class,
-            () -> shopService.getItemsByShop(1, "bad"));
+                () -> shopService.getItemsByShop(1, "bad"));
         assertTrue(ex.getMessage().contains("getItems"));
     }
 
@@ -1674,9 +1691,9 @@ class ShopServiceAcceptanceTests {
         String tok = "t";
         when(authTokenService.ValidateToken(tok)).thenReturn(1);
         when(shopRepository.getItemsByShop(2))
-            .thenThrow(new IllegalStateException("db error"));
+                .thenThrow(new IllegalStateException("db error"));
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.getItemsByShop(2, tok));
+                () -> shopService.getItemsByShop(2, tok));
         assertTrue(ex.getMessage().contains("Error retrieving items"));
     }
 
@@ -1685,7 +1702,7 @@ class ShopServiceAcceptanceTests {
     void testGetItems_InvalidTokenOurArg() throws Exception {
         when(authTokenService.ValidateToken("bad")).thenThrow(new OurArg("no auth"));
         OurArg ex = assertThrows(OurArg.class,
-            () -> shopService.getItems("bad"));
+                () -> shopService.getItems("bad"));
         assertTrue(ex.getMessage().contains("getItems"));
     }
 
@@ -1695,9 +1712,9 @@ class ShopServiceAcceptanceTests {
         String tok = "t";
         when(authTokenService.ValidateToken(tok)).thenReturn(1);
         when(shopRepository.getItems())
-            .thenThrow(new IllegalStateException("db fail"));
+                .thenThrow(new IllegalStateException("db fail"));
         OurRuntime ex = assertThrows(OurRuntime.class,
-            () -> shopService.getItems(tok));
+                () -> shopService.getItems(tok));
         assertTrue(ex.getMessage().contains("Error retrieving all items"));
     }
 
@@ -1708,14 +1725,15 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken(tok)).thenReturn(1);
         when(shopRepository.getItems()).thenReturn(List.of(1));
         when(itemService.getItemsByIds(List.of(1), tok))
-            .thenThrow(new OurArg("item error"));
+                .thenThrow(new OurArg("item error"));
         OurArg ex = assertThrows(OurArg.class,
-            () -> shopService.getItems(tok));
+                () -> shopService.getItems(tok));
         assertTrue(ex.getMessage().contains("getItems"));
         assertTrue(ex.getMessage().contains("item error"));
     }
 
-    // searchItems → filterItemsInShop throws RuntimeException, bubbles up as OurRuntime
+    // searchItems → filterItemsInShop throws RuntimeException, bubbles up as
+    // OurRuntime
     @Test
     void testSearchItems_FilterItemsError() throws Exception {
         String tok = "t";
@@ -1724,13 +1742,12 @@ class ShopServiceAcceptanceTests {
         when(shopRepository.getAllShops()).thenReturn(List.of(s));
         when(shopRepository.getItemsByShop(1)).thenReturn(List.of(1));
         when(itemService.getItemsByIds(List.of(1), tok))
-            .thenThrow(new RuntimeException("item fail"));
-        
+                .thenThrow(new RuntimeException("item fail"));
+
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.searchItems(null, null, null, null, null, null, null, tok));
+                () -> shopService.searchItems(null, null, null, null, null, null, null, tok));
         assertTrue(ex.getMessage().contains("searchItems"));
     }
-
 
     @Test
     void testGetShop_Success2() throws Exception {
@@ -1749,7 +1766,7 @@ class ShopServiceAcceptanceTests {
     void testGetShop_InvalidToken_Failure() throws Exception {
         when(authTokenService.ValidateToken("bad")).thenThrow(new RuntimeException("no auth"));
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.getShop(1, "bad"));
+                () -> shopService.getShop(1, "bad"));
         assertTrue(ex.getMessage().contains("no auth"));
     }
 
@@ -1762,10 +1779,9 @@ class ShopServiceAcceptanceTests {
         when(shopRepository.getShop(shopId)).thenThrow(new RuntimeException("db fail"));
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.getShop(shopId, token));
+                () -> shopService.getShop(shopId, token));
         assertTrue(ex.getMessage().contains("Error retrieving shop"));
     }
-
 
     //
     // ----- searchItems(...)
@@ -1778,13 +1794,13 @@ class ShopServiceAcceptanceTests {
 
         // one shop that passes minShopRating
         Shop s = new Shop(1, "S", shippingMethod);
-        s.addReview(1,5,"r");
+        s.addReview(1, 5, "r");
         when(shopRepository.getAllShops()).thenReturn(List.of(s));
 
         // underlying in-shop search
         when(shopRepository.getShop(1)).thenReturn(s);
         when(shopRepository.getItemsByShop(1)).thenReturn(List.of(10));
-        Item it = new Item(10,"Find","desc",0);
+        Item it = new Item(10, "Find", "desc", 0);
         when(itemService.getItemsByIds(List.of(10), token)).thenReturn(List.of(it));
 
         // only "find" matches
@@ -1794,13 +1810,12 @@ class ShopServiceAcceptanceTests {
     }
 
     @Test
-    void testSearchItems_InvalidToken_OurArg() throws Exception{
+    void testSearchItems_InvalidToken_OurArg() throws Exception {
         when(authTokenService.ValidateToken("bad")).thenThrow(new OurArg("bad token"));
         OurArg ex = assertThrows(OurArg.class,
-            () -> shopService.searchItems(null, null, null, null, null, null, null, "bad"));
+                () -> shopService.searchItems(null, null, null, null, null, null, null, "bad"));
         assertTrue(ex.getMessage().contains("searchItems"));
     }
-
 
     //
     // ----- searchItemsInShop(...)
@@ -1835,10 +1850,9 @@ class ShopServiceAcceptanceTests {
         when(shopRepository.getShop(shopId)).thenThrow(new RuntimeException("no shop"));
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.searchItemsInShop(shopId, null, null, null, null, null, null, token));
+                () -> shopService.searchItemsInShop(shopId, null, null, null, null, null, null, token));
         assertTrue(ex.getMessage().contains("searchItemsInShop"));
     }
-
 
     //
     // ----- addSupplyToItem(...)
@@ -1862,7 +1876,7 @@ class ShopServiceAcceptanceTests {
         when(userService.hasPermission(1, PermissionsEnum.manageItems, 2)).thenReturn(false);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.addSupplyToItem(2,3,4,tok));
+                () -> shopService.addSupplyToItem(2, 3, 4, tok));
         assertTrue(ex.getMessage().contains("permission"));
     }
 
@@ -1871,13 +1885,12 @@ class ShopServiceAcceptanceTests {
         String tok = "t";
         when(authTokenService.ValidateToken(tok)).thenReturn(1);
         when(userService.hasPermission(1, PermissionsEnum.manageItems, 2)).thenReturn(true);
-        doThrow(new RuntimeException("fail")).when(shopRepository).addSupplyToItem(2,3,4);
+        doThrow(new RuntimeException("fail")).when(shopRepository).addSupplyToItem(2, 3, 4);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.addSupplyToItem(2,3,4,tok));
+                () -> shopService.addSupplyToItem(2, 3, 4, tok));
         assertTrue(ex.getMessage().contains("Error adding supply"));
     }
-
 
     //
     // ----- removeDiscountForItem(...)
@@ -1901,7 +1914,7 @@ class ShopServiceAcceptanceTests {
         when(userService.hasPermission(1, PermissionsEnum.setPolicy, 7)).thenReturn(false);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.removeDiscountForItem(7,99,tok));
+                () -> shopService.removeDiscountForItem(7, 99, tok));
         assertTrue(ex.getMessage().contains("permission"));
     }
 
@@ -1911,13 +1924,12 @@ class ShopServiceAcceptanceTests {
         when(authTokenService.ValidateToken(tok)).thenReturn(1);
         when(userService.hasPermission(1, PermissionsEnum.setPolicy, 7)).thenReturn(true);
         doThrow(new IllegalArgumentException("oops"))
-            .when(shopRepository).removeDiscountForItem(7, 99);
+                .when(shopRepository).removeDiscountForItem(7, 99);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.removeDiscountForItem(7,99,tok));
+                () -> shopService.removeDiscountForItem(7, 99, tok));
         assertTrue(ex.getMessage().contains("Error removing discount for item"));
     }
-
 
     //
     // ----- addSupply(...)
@@ -1930,8 +1942,8 @@ class ShopServiceAcceptanceTests {
         when(userService.hasPermission(2, PermissionsEnum.manageItems, 5)).thenReturn(true);
 
         doNothing().when(shopRepository).addSupply(5, 6, 7);
-        shopService.addSupply(5,6,7,tok);
-        verify(shopRepository).addSupply(5,6,7);
+        shopService.addSupply(5, 6, 7, tok);
+        verify(shopRepository).addSupply(5, 6, 7);
     }
 
     @Test
@@ -1941,7 +1953,7 @@ class ShopServiceAcceptanceTests {
         when(userService.hasPermission(2, PermissionsEnum.manageItems, 5)).thenReturn(false);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.addSupply(5,6,7,tok));
+                () -> shopService.addSupply(5, 6, 7, tok));
         assertTrue(ex.getMessage().contains("permission"));
     }
 
@@ -1950,50 +1962,12 @@ class ShopServiceAcceptanceTests {
         String tok = "t";
         when(authTokenService.ValidateToken(tok)).thenReturn(2);
         when(userService.hasPermission(2, PermissionsEnum.manageItems, 5)).thenReturn(true);
-        doThrow(new RuntimeException("fail")).when(shopRepository).addSupply(5,6,7);
+        doThrow(new RuntimeException("fail")).when(shopRepository).addSupply(5, 6, 7);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.addSupply(5,6,7,tok));
+                () -> shopService.addSupply(5, 6, 7, tok));
         assertTrue(ex.getMessage().contains("Error adding supply"));
     }
-
-
-    //
-    // ----- addDiscountPolicy(...)
-    //
-
-    @Test
-    void testAddDiscountPolicy_Success() throws Exception {
-        String tok = "t";
-        int shopId = 8;
-        when(authTokenService.ValidateToken(tok)).thenReturn(3);
-        when(userService.hasPermission(3, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
-
-        doNothing().when(shopRepository)
-            .addDiscountPolicy(2, 10, ItemCategory.BOOKS, 50.0, Operator.AND, shopId);
-
-        shopService.addDiscountPolicy(tok, 2, 10, ItemCategory.BOOKS, 50.0, Operator.AND, shopId);
-        verify(shopRepository).addDiscountPolicy(2,10,ItemCategory.BOOKS,50.0,Operator.AND,shopId);
-    }
-
-    @Test
-    void testAddDiscountPolicy_NoPermission() throws Exception {
-        String tok = "t";
-        when(authTokenService.ValidateToken(tok)).thenReturn(3);
-        when(userService.hasPermission(3, PermissionsEnum.setPolicy, 8)).thenReturn(false);
-
-        RuntimeException ex = assertThrows(RuntimeException.class,
-            () -> shopService.addDiscountPolicy(tok,2,10,ItemCategory.BOOKS,10,Operator.OR,8));
-        assertTrue(ex.getMessage().contains("permission"));
-    }
-
-    @Test
-    void testAddDiscountPolicy_InvalidToken_OurArg() {
-        assertThrows(OurRuntime.class, () ->
-            shopService.addDiscountPolicy("bad",1,2,null,0.0,Operator.OR,5)
-        );
-    }
-
 
     //
     // ----- getShopsByWorker(...)
@@ -2004,10 +1978,10 @@ class ShopServiceAcceptanceTests {
         String token = "tok";
         int workerId = 99;
         // userService.getShopIdsByWorkerId does not use token
-        when(userService.getShopIdsByWorkerId(workerId)).thenReturn(List.of(1,2));
+        when(userService.getShopIdsByWorkerId(workerId)).thenReturn(List.of(1, 2));
 
-        Shop a = new Shop(1,"A",shippingMethod);
-        Shop b = new Shop(2,"B",shippingMethod);
+        Shop a = new Shop(1, "A", shippingMethod);
+        Shop b = new Shop(2, "B", shippingMethod);
         // getShop is called with token
         when(authTokenService.ValidateToken(token)).thenReturn(10);
         when(shopRepository.getShop(1)).thenReturn(a);
@@ -2015,7 +1989,7 @@ class ShopServiceAcceptanceTests {
 
         var out = shopService.getShopsByWorker(workerId, token);
         assertEquals(2, out.size());
-        assertTrue(out.containsAll(List.of(a,b)));
+        assertTrue(out.containsAll(List.of(a, b)));
     }
 
     @Test
@@ -2027,7 +2001,7 @@ class ShopServiceAcceptanceTests {
         when(shopRepository.getShop(42)).thenThrow(new OurArg("nope"));
 
         OurArg ex = assertThrows(OurArg.class,
-            () -> shopService.getShopsByWorker(workerId, tok));
+                () -> shopService.getShopsByWorker(workerId, tok));
         assertTrue(ex.getMessage().contains("getShopsByWorker"));
     }
 

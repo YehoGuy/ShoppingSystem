@@ -10,6 +10,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -85,26 +95,23 @@ public class UserServiceTest {
 
     @BeforeEach
     void setUp() {
+        String adminUsername = "admin";
+        String adminPlainPassword = "admin";
+        String adminEmail = "admin@mail.com";
+        String adminPhoneNumber = "0";
+        String adminAddress = "admin st.";
+
         authTokenRepository = new AuthTokenRepository(); // Your real repo
         authTokenService = new AuthTokenService(authTokenRepository); // Real service
-        userRepository = new UserRepository();
+        userRepository = new UserRepository(adminUsername, adminPlainPassword, adminEmail, adminPhoneNumber,
+                adminAddress);
         messagingTemplate = Mockito.mock(SimpMessagingTemplate.class);
         doNothing().when(messagingTemplate).convertAndSend(anyString(), any(Object.class));
         notificationService = mock(NotificationService.class);
         userService = new UserService(userRepository, authTokenService, notificationService);
         notificationService.setService(userService);
 
-        // ─── Manually create the “admin” user exactly as initAdmin() would have ───
-        String rawAdminPassword = "admin"; // must match adminPlainPassword
-        String encodedAdminPassword = userRepository.getPasswordEncoderUtil().encode(rawAdminPassword);
-        int adminId = userRepository.addMember(
-            "admin", 
-            encodedAdminPassword, 
-            "admin@mail.com", 
-            "0", 
-            "admin st."
-        );
-        userRepository.addAdmin(adminId);
+        userRepository.setEncoderToTest(true);
     }
 
     @Test
@@ -218,10 +225,12 @@ public class UserServiceTest {
         userService.addMember("john", "snow", "aaa@gmail.com", "123457890", "address");
         String token = userService.loginAsMember("john", "snow", "");
         userService.setPaymentMethod(token, paymentMethod, 1);
-        when(paymentMethod.processPayment(anyDouble(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+        when(paymentMethod.processPayment(anyDouble(), anyString(), anyString(), anyString(), anyString(), anyString(),
+                anyString(), anyString()))
                 .thenReturn(10005); // Simulate successful payment processing
         // Verify that the payment was processed correctly
-        int id = (userService.pay(token, 1, 100.0, "cardNumber", "expiryDate", "cvv", "holderName", "holderID", "address", "zipCode"));
+        int id = (userService.pay(token, 1, 100.0, "cardNumber", "expiryDate", "cvv", "holderName", "holderID",
+                "address", "zipCode"));
         assertTrue(id >= 10000 && id <= 100000);
     }
 
@@ -523,7 +532,7 @@ public class UserServiceTest {
         // 1) mock the repo and stub existence
         UserRepository mockRepo = mock(UserRepository.class);
         when(mockRepo.getMemberById(44)).thenReturn(mock(Member.class));
-        //    (or, if your service does findById(...), stub that:
+        // (or, if your service does findById(...), stub that:
         // when(mockRepo.findById(44)).thenReturn(Optional.of(new User(44, /*…*/)));
 
         // 2) pass the mock into the service constructor
@@ -537,10 +546,9 @@ public class UserServiceTest {
 
         // 5) verify the notification was sent
         verify(notificationService).sendToUser(
-            44,
-            "Message Received",
-            "You have received a new message from the user (id=44)."
-        );
+                44,
+                "Message Received",
+                "You have received a new message from the user (id=44).");
     }
 
     @Test
@@ -1380,7 +1388,8 @@ public class UserServiceTest {
         int id = userRepository.isUsernameAndPasswordValid("max", "pwd");
         String token = userService.loginAsMember("max", "pwd", "");
         userService.setSuspended(id, LocalDateTime.now().plusDays(1));
-        OurRuntime ex = assertThrows(OurRuntime.class, () -> userService.pay(token, 1, 50.0, "cardNumber", "expiryDate", "cvv", "holderName", "holderID", "address", "zipCode"));
+        OurRuntime ex = assertThrows(OurRuntime.class, () -> userService.pay(token, 1, 50.0, "cardNumber", "expiryDate",
+                "cvv", "holderName", "holderID", "address", "zipCode"));
         assertTrue(ex.getMessage().contains("the user is suspended"));
     }
 
@@ -1439,9 +1448,8 @@ public class UserServiceTest {
 
     @Test
     void testAddMember_InvalidDetails() {
-        UserRepository repo = new UserRepository();
         AuthTokenService auth = new AuthTokenService(null);
-        UserService svc = new UserService(repo, auth, notificationService);
+        UserService svc = new UserService(userRepository, auth, notificationService);
         notificationService.setService(svc);
 
         assertThrows(com.example.app.ApplicationLayer.OurRuntime.class,
@@ -1915,7 +1923,8 @@ public class UserServiceTest {
         UserService svc = new UserService(repo, auth, notificationService);
         notificationService.setService(svc);
         OurRuntime ex = assertThrows(OurRuntime.class,
-                () -> svc.pay(token, 100, 50.0, "cardNumber", "expiryDate", "cvv", "holderName", "holderID", "address", "zipCode"));
+                () -> svc.pay(token, 100, 50.0, "cardNumber", "expiryDate", "cvv", "holderName", "holderID", "address",
+                        "zipCode"));
         assertTrue(ex.getMessage().contains("the user is suspended"));
     }
 
@@ -1927,12 +1936,14 @@ public class UserServiceTest {
 
         when(auth.ValidateToken(token)).thenReturn(2);
         when(repo.isSuspended(2)).thenReturn(false);
-        doThrow(new RuntimeException("DB fail")).when(repo).pay(2, 75.0, "cardNumber", "expiryDate", "cvv", "holderName", "holderID", "address", "zipCode");
+        doThrow(new RuntimeException("DB fail")).when(repo).pay(2, 75.0, "cardNumber", "expiryDate", "cvv",
+                "holderName", "holderID", "address", "zipCode");
 
         UserService svc = new UserService(repo, auth, notificationService);
         notificationService.setService(svc);
         OurRuntime ex = assertThrows(OurRuntime.class,
-                () -> svc.pay(token, 200, 75.0, "cardNumber", "expiryDate", "cvv", "holderName", "holderID", "address", "zipCode"));
+                () -> svc.pay(token, 200, 75.0, "cardNumber", "expiryDate", "cvv", "holderName", "holderID", "address",
+                        "zipCode"));
         assertTrue(ex.getMessage().contains("pay: DB fail"));
     }
 
@@ -3847,13 +3858,15 @@ public class UserServiceTest {
         userService.addMember("alice", "pwd", "a@a.com", "0123456789", "addr");
         String token = userService.loginAsMember("alice", "pwd", "");
         PaymentMethod pm = mock(PaymentMethod.class);
-        when(pm.processPayment(anyDouble(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+        when(pm.processPayment(anyDouble(), anyString(), anyString(), anyString(), anyString(), anyString(),
+                anyString(), anyString()))
                 .thenReturn(10005);
 
         userService.setPaymentMethod(token, pm, 1);
         assertEquals(pm, userService.getUserPaymentMethod(userRepository.isUsernameAndPasswordValid("alice", "pwd")));
 
-        int id = userService.pay(token, 1, 100.0, "John Doe", "1234567890123456", "12/25", "123", "123 Main St", "City", "12345");
+        int id = userService.pay(token, 1, 100.0, "John Doe", "1234567890123456", "12/25", "123", "123 Main St", "City",
+                "12345");
         assertTrue(id >= 10000 && id <= 100000, "failed id:" + id); // Assuming payment IDs are in this range
     }
 

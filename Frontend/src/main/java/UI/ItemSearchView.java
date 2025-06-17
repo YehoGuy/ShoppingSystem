@@ -20,6 +20,7 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -42,8 +43,7 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${url.api}/items")
-    private String URL;
+    private final String api;
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
@@ -63,16 +63,15 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
         return null; // Return null if userId is not available
     }
 
-    public ItemSearchView() {
+    public ItemSearchView(@Value("${url.api}") String api) {
+        this.api = api;
+
         setSizeFull();
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.START);
         setSpacing(true);
         setPadding(true);
-    }
 
-    @PostConstruct
-    private void init() {
         getItems();
 
         H1 title = new H1("Available Items");
@@ -100,7 +99,7 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
     }
 
     private void getItems() {
-        String url = URL + "/all?token=" + VaadinSession.getCurrent().getAttribute("authToken");
+        String url = api + "/items/all?token=" + VaadinSession.getCurrent().getAttribute("authToken");
         ResponseEntity<List<ItemDTO>> response = restTemplate.exchange(
                 url,
                 HttpMethod.GET,
@@ -213,13 +212,12 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
         }
     }
 
-
     private void addReview(int itemId) {
         Dialog dialog = new Dialog();
         ItemDTO item = allItems.stream()
-            .filter(i -> i.getId() == itemId)
-            .findFirst()
-            .orElse(null);
+                .filter(i -> i.getId() == itemId)
+                .findFirst()
+                .orElse(null);
 
         String itemName = (item != null) ? item.getName() : ("ID " + itemId);
         H1 dialogTitle = new H1("Add Review to " + itemName);
@@ -233,51 +231,51 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
         ratingField.setMax(5);
         ratingField.setStep(1);
         ratingField.setWidthFull();
-        //ratingField.getStyle().set("border", "2px solid red");
+        // ratingField.getStyle().set("border", "2px solid red");
         ratingField.setVisible(true);
-        //ratingField.setHeight("50px"); // just to see it
-
+        // ratingField.setHeight("50px"); // just to see it
 
         TextField reviewTextField = new TextField("Your Review");
         reviewTextField.setWidthFull();
 
-
         Button submitButton = new Button("Submit Review");
-        submitButton.addClickListener(e -> sendReview(itemId, reviewTextField.getValue(), ratingField.getValue(),dialog));
+        submitButton
+                .addClickListener(e -> sendReview(itemId, reviewTextField.getValue(), ratingField.getValue(), dialog));
 
         Button closeButton = new Button("Close", event -> dialog.close());
 
         formLayout.add(ratingField, reviewTextField, submitButton, closeButton);
         dialog.add(formLayout);
-        
-        //UI.getCurrent().add(dialog);
+
+        // UI.getCurrent().add(dialog);
         dialog.open();
 
     }
 
-    private void sendReview(int itemId, String reviewText,double double_rating, Dialog dialog) {
-        try{
+    private void sendReview(int itemId, String reviewText, double double_rating, Dialog dialog) {
+        try {
             if (reviewText == null || reviewText.trim().isEmpty()) {
                 Notification.show("Please enter your review text.");
                 return;
             }
-            
-            if (double_rating !=1.0 && double_rating !=2.0 && double_rating !=3.0 && double_rating !=4.0 && double_rating !=5.0) {
+
+            if (double_rating != 1.0 && double_rating != 2.0 && double_rating != 3.0 && double_rating != 4.0
+                    && double_rating != 5.0) {
                 Notification.show("Please enter a valid rating between 1 and 5.");
                 return;
             }
-            
-            int rating = ((int)double_rating); // Convert double to int
+
+            int rating = ((int) double_rating); // Convert double to int
 
             String token = getToken();
             HttpHeaders headers = getHeaders(token);
             HttpEntity<Void> request = new HttpEntity<>(headers);
             String url = "http://localhost:8080" + "/api/items/" + itemId + "/reviews"
-                        + "?token=" + token + "&rating=" + rating + "&reviewText=" + reviewText;
+                    + "?token=" + token + "&rating=" + rating + "&reviewText=" + reviewText;
 
             restTemplate.postForEntity(url, request, Void.class);
             Notification.show("review added successfully");
-                        
+
             filteredItems.clear();
             getItems(); // Refresh the user grid
             displayItems(filteredItems); // Refresh the displayed items
@@ -289,7 +287,6 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
         }
     }
 
-
     private void handleSuspence() {
         Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
         if (userId == null) {
@@ -299,7 +296,7 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/" + userId + "/suspension?token=" + token;
+        String url = "http://localhost:8080/api/users" + "/" + userId + "/isSuspended?token=" + token;
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {

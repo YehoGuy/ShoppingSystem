@@ -16,31 +16,29 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
-import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
-import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 
 import DTOs.BidRecieptDTO;
-import jakarta.annotation.PostConstruct;
 
 @Route(value = "bids", layout = AppLayoutBasic.class)
 @AnonymousAllowed
 public class BidsListView extends VerticalLayout {
 
-    @Value("${url.api}/purchases/bids")
-    private String BASE_URL;
+    private final String bidsBaseUrl;
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final Grid<BidRecieptDTO> bidGrid = new Grid<>(BidRecieptDTO.class, false);
 
-    public BidsListView() {
+    public BidsListView(@Value("${url.api}") String apiBase) {
+        this.bidsBaseUrl = apiBase + "/purchases/bids";
+
         getUserId(); // Ensure userId is set in session
         setPadding(true);
         setSpacing(true);
@@ -76,6 +74,7 @@ public class BidsListView extends VerticalLayout {
             }
         });
 
+        fetchAllBids();
     }
 
     public Integer getUserId() {
@@ -84,11 +83,6 @@ public class BidsListView extends VerticalLayout {
         }
         UI.getCurrent().navigate(""); // Redirect to login if userId is not set
         return null; // Return null if userId is not available
-    }
-
-    @PostConstruct
-    private void init() {
-        fetchAllBids();
     }
 
     private void fetchAllBids() {
@@ -100,7 +94,7 @@ public class BidsListView extends VerticalLayout {
             }
 
             // Call GET /api/purchases/bids?authToken=<token>
-            String urlWithToken = BASE_URL + "?authToken=" + authToken;
+            String urlWithToken = bidsBaseUrl + "?authToken=" + authToken;
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Void> entity = new HttpEntity<>(headers);

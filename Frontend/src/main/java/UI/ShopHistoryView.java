@@ -28,6 +28,8 @@ import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 
 import DTOs.ItemDTO;
 import DTOs.RecieptDTO;
@@ -35,15 +37,12 @@ import DTOs.ShopReviewDTO;
 
 import org.springframework.http.*;
 
-
-
-
 @Route(value = "history", layout = AppLayoutBasic.class)
 
 public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<Integer>, BeforeEnterObserver {
 
-    @Value("${url.api}/purchases/shops")
-    private String PURCHASE_HISTORY_URL;
+    private final String api;
+    private final String purchaseHistoryUrl;
 
     private final RestTemplate rest = new RestTemplate();
     private final VerticalLayout receiptsLayout = new VerticalLayout();
@@ -51,7 +50,10 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
     private String token;
     private int shopId;
 
-    public ShopHistoryView() {
+    public ShopHistoryView(@Value("${url.api}") String api) {
+        this.api = api;
+        this.purchaseHistoryUrl = api + "/purchases/shops";
+
         setSizeFull();
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.START);
@@ -85,7 +87,7 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
     public void setParameter(BeforeEvent event, Integer parameter) {
         this.shopId = parameter;
         buildView();
-    
+
     }
 
     private void buildView() {
@@ -96,7 +98,6 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         setSizeFull();
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.START);
-        
 
         H1 header = new H1("Purchase History for Shop ID: " + shopId);
         header.getStyle().set("margin-bottom", "var(--lumo-space-m)");
@@ -113,33 +114,29 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         loadReceipts();
     }
 
-
     private void loadReceipts() {
-        try {
-            
+        receiptsLayout.removeAll();
 
-            String token = getToken();
-            HttpHeaders headers = getHeaders(token);
-            HttpEntity<Void> request = new HttpEntity<>(headers);
-            String url = "http://localhost:8080/api/purchases/shops/" + shopId + "?authToken="+ token;
-            ResponseEntity<List<RecieptDTO>> response = rest.exchange(url,HttpMethod.GET,request ,new ParameterizedTypeReference<List<RecieptDTO>>() {});
-            if (response.getStatusCode().is2xxSuccessful()) {
-                reciepts = response.getBody();
-                if (reciepts == null || reciepts.isEmpty()) {
+        String url = purchaseHistoryUrl + "/" + shopId
+                + "?authToken=" + VaadinSession.getCurrent().getAttribute("authToken");
+
+        try {
+            ResponseEntity<RecieptDTO[]> resp = rest.getForEntity(url, RecieptDTO[].class);
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
+                RecieptDTO[] receipts = resp.getBody();
+                if (reciepts == null || receipts.length == 0) {
                     receiptsLayout.add(new H3("No purchase history for this shop."));
-                } 
-                else 
-                {
+                } else {
 
                     displayReciepts();
 
                     // for (RecieptDTO r : reciepts) {
-                    //     System.out.println("000000000000000");
-                    //     addReceiptCard(r);
-                    //     System.out.println("aaaaaaaaaaaaaaaaa");
+                    // System.out.println("000000000000000");
+                    // addReceiptCard(r);
+                    // System.out.println("aaaaaaaaaaaaaaaaa");
                     // }
                 }
-                //receiptsLayout.removeAll();
+                // receiptsLayout.removeAll();
             }
 
         } catch (Exception e) {
@@ -147,37 +144,31 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
             Notification.show("Error loading purchase history");
             return;
         }
-        
-
-        
-        
 
         // String url = PURCHASE_HISTORY_URL + "/" + shopId + "?authToken="
-        //         + VaadinSession.getCurrent().getAttribute("authToken");
+        // + VaadinSession.getCurrent().getAttribute("authToken");
         // try {
-        //     ResponseEntity<RecieptDTO[]> resp = rest.getForEntity(url, RecieptDTO[].class);
-        //     if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
-        //         RecieptDTO[] receipts = resp.getBody();
-        //         if (receipts.length == 0) {
-        //             receiptsLayout.add(new H3("No purchase history for this shop."));
-        //         } else {
-        //             for (RecieptDTO r : receipts) {
-        //                 addReceiptCard(r);
-        //             }
-        //         }
-        //     } else {
-        //         receiptsLayout.add(new H3("Failed to load history"));
-        //     }
-        // } catch (Exception ex) {
-        //     receiptsLayout.add(new H3("Error loading history"));
+        // ResponseEntity<RecieptDTO[]> resp = rest.getForEntity(url,
+        // RecieptDTO[].class);
+        // if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
+        // RecieptDTO[] receipts = resp.getBody();
+        // if (receipts.length == 0) {
+        // receiptsLayout.add(new H3("No purchase history for this shop."));
+        // } else {
+        // for (RecieptDTO r : receipts) {
+        // addReceiptCard(r);
         // }
-
+        // }
+        // } else {
+        // receiptsLayout.add(new H3("Failed to load history"));
+        // }
+        // } catch (Exception ex) {
+        // receiptsLayout.add(new H3("Error loading history"));
+        // }
 
     }
 
-
-    private void displayReciepts()
-    {
+    private void displayReciepts() {
         for (RecieptDTO reciept : reciepts) {
             VerticalLayout singleReciept = new VerticalLayout();
             singleReciept.add(
@@ -194,7 +185,6 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         add(receiptsLayout);
 
     }
-
 
     private void addReceiptCard(RecieptDTO r) {
         // card container
@@ -247,9 +237,6 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         return (String) VaadinSession.getCurrent().getAttribute("authToken");
     }
 
-
-
-
     private void handleSuspence() {
 
         Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
@@ -260,7 +247,7 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/" + userId + "/suspension?token=" + token;
+        String url = api + "/users/" + userId + "/isSuspended?token=" + token;
         ResponseEntity<Boolean> response = rest.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {

@@ -22,15 +22,17 @@ import org.springframework.beans.factory.annotation.Value;
 @Route("register")
 public class RegistrationView extends VerticalLayout {
 
-    @Value("${url.api}/users/register")
-    private String REGISTER_API_URL;
-
-    @Value("${url.api}/auth")
-    private String AUTH_URL;
+    private final String api;
+    private final String registerUrl;
+    private final String authUrl;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    public RegistrationView() {
+    public RegistrationView(@Value("${url.api}") String api) {
+        this.api         = api;
+        this.registerUrl = api + "/users/register";
+        this.authUrl     = api + "/auth";
+
         setSizeFull();
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.CENTER);
@@ -67,8 +69,9 @@ public class RegistrationView extends VerticalLayout {
                 HttpEntity<?> request = new HttpEntity<>(null, headers);
 
                 // build query string
-                String url = REGISTER_API_URL
-                        + "?username={username}&password={password}&email={email}&phoneNumber={phoneNumber}&address={address}";
+                String url = registerUrl
+                    + "?username={username}&password={password}&email={email}"
+                    + "&phoneNumber={phoneNumber}&address={address}";
 
                 ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class, params);
 
@@ -104,7 +107,7 @@ public class RegistrationView extends VerticalLayout {
         }
 
         // build the URL with the authToken as a query‐param
-        String url = AUTH_URL + "/validate?authToken=" + token;
+        String url = authUrl + "/validate?authToken=" + token;
 
         // simply use GET—no HttpHeaders object needed
         ResponseEntity<Integer> response = restTemplate.getForEntity(url, Integer.class);

@@ -1,5 +1,6 @@
 package ApplicationLayerTests;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -40,6 +41,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
+import com.example.app.ApplicationLayer.NotificationService;
 import com.example.app.ApplicationLayer.Item.ItemService;
 import com.example.app.ApplicationLayer.Message.MessageService;
 import com.example.app.ApplicationLayer.OurArg;
@@ -47,6 +49,7 @@ import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Purchase.PurchaseService;
 import com.example.app.ApplicationLayer.Shop.ShopService;
 import com.example.app.ApplicationLayer.User.UserService;
+import com.example.app.DomainLayer.Notification;
 import com.example.app.DomainLayer.Purchase.Address;
 import com.example.app.DomainLayer.Purchase.Bid;
 import com.example.app.DomainLayer.Purchase.BidReciept;
@@ -77,6 +80,8 @@ class PurchaseServiceTests {
     ShopService shops;
     @Mock
     MessageService msg;
+    @Mock
+    NotificationService nots;
     PurchaseService service;
 
     Address addr = new Address().withCountry("IL").withCity("TLV")
@@ -87,7 +92,7 @@ class PurchaseServiceTests {
 
     @BeforeEach
     void setUp() {
-        service = new PurchaseService(repo, auth, users, shops, items, msg);
+        service = new PurchaseService(repo, auth, users, shops, items, msg, nots, null);
     }
     /*
      * ══════════════════════════════════════════════════════════════
@@ -114,44 +119,18 @@ class PurchaseServiceTests {
         when(repo.addPurchase(eq(uid), eq(shopA), eq(cartShopA), eq(100.0), any())).thenReturn(1);
         when(repo.addPurchase(eq(uid), eq(shopB), eq(cartShopB), eq(50.0), any())).thenReturn(2);
 
-        List<Integer> ids = service.checkoutCart(token, addr, "1234567890123456", "12/25", "123", "John Doe", "123456789", "john@example.com", "1234567890");
+        List<Integer> ids = service.checkoutCart(token, addr, "1234567890123456", "12/25", "123", "John Doe",
+                "123456789", "john@example.com", "1234567890");
 
         assertEquals(Set.of(1, 2), new HashSet<>(ids));
         verify(users).clearUserShoppingCart(uid);
-        verify(users).pay(token, shopA, 100.0, "1234567890123456", "12/25", "123", "John Doe", "123456789", "john@example.com", "1234567890");
-        verify(users).pay(token, shopB, 50.0, "1234567890123456", "12/25", "123", "John Doe", "123456789", "john@example.com", "1234567890");
+        verify(users).pay(token, shopA, 100.0, "1234567890123456", "12/25", "123", "John Doe", "123456789",
+                "john@example.com", "1234567890");
+        verify(users).pay(token, shopB, 50.0, "1234567890123456", "12/25", "123", "John Doe", "123456789",
+                "john@example.com", "1234567890");
         verify(shops).shipPurchase(token, 1, shopA, "IL", "TLV", "Rothschild", "6800000");
         verify(shops).shipPurchase(token, 2, shopB, "IL", "TLV", "Rothschild", "6800000");
     }
-
-    // @Test
-    // @DisplayName("checkoutCart_whenSecondShopPaymentThrows_shouldRollbackAcquiredItems_restoreCart_refundFirstPayment_andPropagateException")
-    // void checkoutCart_rollbackOnPaymentFailure() throws Exception {
-    //     String token = "t";
-    //     int uid = 2, shop = 11;
-    //     Map<Integer, Integer> cartShop = Map.of(3, 1);
-    //     Map<Integer, HashMap<Integer, Integer>> cart = new HashMap<>();
-    //     cart.put(shop, new HashMap<>(cartShop));
-
-    //     when(auth.ValidateToken(token)).thenReturn(uid);
-    //     when(users.getUserShoppingCartItems(uid)).thenReturn(new HashMap<>(cart));
-    //     when(shops.purchaseItems(cartShop, shop, token)).thenReturn(30.0);
-    //     when(repo.addPurchase(anyInt(), anyInt(), any(), anyDouble(), any())).thenReturn(9);
-    //     doThrow(new RuntimeException("payFail")).when(users).pay(eq(token), eq(shop), eq(30.0), any(), any(), any(), any(), any(), any(), any());
-
-    //     RuntimeException ex = assertThrows(RuntimeException.class,
-    //             () -> service.checkoutCart(token, addr, "1234567890123456", "12/25", "123", "John Doe", "123456789", "john@example.com", "1234567890"));
-
-    //     verify(shops).rollBackPurchase(cartShop, shop);
-    //     verify(users).restoreUserShoppingCart(eq(uid), any());
-    //     verify(users, never()).clearUserShoppingCart(uid);
-    // }
-
-    /*
-     * ══════════════════════════════════════════════════════════════
-     * createBid tests
-     * ══════════════════════════════════════════════════════════════
-     */
 
     @Test
     @DisplayName("createBid_whenAllValid_shouldReserveItems_CreateBidInRepository_andReturnBidId")
@@ -181,6 +160,8 @@ class PurchaseServiceTests {
         String token = "a";
         int owner = 1, bidder = 2, pid = 10;
         Bid bid = spy(new Bid(pid, owner, 7, Map.of(1, 1), 50));
+        bid.setAuctionStartTime(LocalDateTime.now().minusMinutes(1));
+        bid.setAuctionEndTime(LocalDateTime.now().plusMinutes(1));
 
         when(auth.ValidateToken(token)).thenReturn(bidder);
         when(repo.getPurchaseById(pid)).thenReturn(bid);
@@ -285,8 +266,6 @@ class PurchaseServiceTests {
         verify(msg).sendMessageToUser(eq(token), eq(5), contains("Congratulations"), eq(0));
     }
 
-    
-
     /*
      * ══════════════════════════════════════════════════════════════
      * simple query helpers
@@ -324,7 +303,7 @@ class PurchaseServiceTests {
     class Concurrency {
 
         @Autowired
-        PurchaseRepository purchaseRepo = PurchaseRepository.getInstance();
+        PurchaseRepository purchaseRepo = new PurchaseRepository();
 
         private static final int THREADS = 16;
         private ExecutorService pool;
@@ -507,18 +486,6 @@ class PurchaseServiceTests {
 
     }
 
-    // ─────────── checkoutCart exception branches ───────────
-
-    // @Test
-    // @DisplayName("checkoutCart_whenValidateTokenThrowsOurArg_shouldWrapAndThrowOurArg")
-    // void checkoutCart_validateTokenThrowsOurArg() throws Exception {
-    //     String token = "bad";
-    //     when(auth.ValidateToken(token)).thenThrow(new OurArg("invalid token"));
-
-    //     OurArg ex = assertThrows(OurArg.class, () -> service.checkoutCart(token, addr, "1234567890123456", "12/25", "123", "John Doe", "123456789", "john@example.com", "1234567890"));
-    //     assertTrue(ex.getMessage().contains("checkoutCart:"));
-    // }
-
     @Test
     @DisplayName("checkoutCart_whenPurchaseItemsThrowsOurRuntime_shouldWrapAndThrowOurRuntime")
     void checkoutCart_purchaseItemsThrowsOurRuntime() throws Exception {
@@ -532,7 +499,8 @@ class PurchaseServiceTests {
         when(shops.purchaseItems(cartShop, shop, token))
                 .thenThrow(new OurRuntime("purchase error"));
 
-        OurRuntime ex = assertThrows(OurRuntime.class, () -> service.checkoutCart(token, addr, "1234567890123456", "12/25", "123", "John Doe", "123456789", "john@example.com", "1234567890"));
+        OurRuntime ex = assertThrows(OurRuntime.class, () -> service.checkoutCart(token, addr, "1234567890123456",
+                "12/25", "123", "John Doe", "123456789", "john@example.com", "1234567890"));
         assertTrue(ex.getMessage().contains("checkoutCart:"));
         verify(users, never()).pay(any(), anyInt(), anyDouble(), any(), any(), any(), any(), any(), any(), any());
     }
@@ -550,7 +518,8 @@ class PurchaseServiceTests {
         when(repo.addPurchase(uid, shop, cartShop, 44.0, addr))
                 .thenThrow(new RuntimeException("db fail"));
 
-        OurRuntime ex = assertThrows(OurRuntime.class, () -> service.checkoutCart(token, addr, "1234567890123456", "12/25", "123", "John Doe", "123456789", "john@example.com", "1234567890"));
+        OurRuntime ex = assertThrows(OurRuntime.class, () -> service.checkoutCart(token, addr, "1234567890123456",
+                "12/25", "123", "John Doe", "123456789", "john@example.com", "1234567890"));
         assertTrue(ex.getMessage().contains("checkoutCart:"));
         verify(shops).rollBackPurchase(cartShop, shop);
         verify(users).restoreUserShoppingCart(eq(uid), any());
