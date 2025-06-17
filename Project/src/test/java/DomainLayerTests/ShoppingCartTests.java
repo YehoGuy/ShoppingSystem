@@ -102,7 +102,7 @@ public class ShoppingCartTests {
 
     @Test
     void testGetBasketNotFound() {
-        assertNull(shoppingCart.getBasket(1), "Basket 1 should not exist and return null");
+        assertTrue(shoppingCart.getBasket(1).isEmpty(), "Basket 1 should not exist and return empty map");
     }
 
     @Test
@@ -121,7 +121,7 @@ public class ShoppingCartTests {
     @Test
     public void testShoppingCartBasketOperations() {
         ShoppingCart cart = new ShoppingCart();
-        assertNull(cart.getBasket(1));
+        assertTrue(cart.getBasket(1).isEmpty());
 
         cart.addBasket(1);
         assertNotNull(cart.getBasket(1));
@@ -148,10 +148,10 @@ public class ShoppingCartTests {
 
         // removeBasket and clearCart
         cart.removeBasket(1);
-        assertNull(cart.getBasket(1));
+        assertTrue(cart.getBasket(1).isEmpty());
         cart.addBasket(2);
         cart.clearCart();
-        assertNull(cart.getBasket(2));
+        assertTrue(cart.getBasket(2).isEmpty());
     }
 
     @Test

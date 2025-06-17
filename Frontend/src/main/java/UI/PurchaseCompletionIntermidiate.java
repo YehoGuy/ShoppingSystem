@@ -58,10 +58,12 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
     }
 
     public PurchaseCompletionIntermidiate(ShoppingCartDTO cart) {
-        setAllItems();
 
         this.cartDto = cart;
         this.totalPrice = cart.getTotalPrice();
+
+
+        setAllItems();
         setSizeFull();
         setSpacing(true);
         setPadding(true);
@@ -107,6 +109,14 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
     }
 
     private void displayCartSummary() {
+        if (cartDto == null) {
+            Notification.show("No cart data available.");
+            return;
+        }
+        if (cartDto.getShopItemPrices() == null || cartDto.getShopItemQuantities() == null) {
+            Notification.show("No items in cart.");
+            return;
+        }
         add(new H1("🛒 Cart Summary"));
 
         cartDto.getShopItemPrices().forEach((shopId, itemPrices) -> {
@@ -126,17 +136,22 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
     }
 
     private void completePurchase(AddressDTO address) {
+        
+
         PaymenPageView paymentPage = new PaymenPageView(totalPrice, address.getCountry(), address.getCity(),
                 address.getStreet(), address.getHouseNumber(), address.getZipCode());
         Dialog paymentDialog = new Dialog(paymentPage);
         paymentDialog.setWidth("400px");
         paymentDialog.setHeight("300px");
-        paymentDialog.add(new Span("Please complete your payment in the dialog."));
         paymentDialog.open();
     }
 
     private void setAllItems() {
         items = new java.util.HashMap<>();
+        if (cartDto == null || cartDto.getItems() == null) {
+            Notification.show(getUserId() + " - No items in cart.");
+            return;
+        }
         cartDto.getShopItemQuantities()
                 .forEach((shopId, itemQuantities) -> {
                     itemQuantities.forEach((itemId, quantity) -> {
@@ -152,6 +167,10 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
     }
 
     private ItemDTO getItemById(int id) {
+        if (items == null || items.isEmpty()) {
+            Notification.show("No items available.");
+            return null;
+        }
         return items.keySet().stream()
                 .filter(item -> item.getId() == id)
                 .findFirst()

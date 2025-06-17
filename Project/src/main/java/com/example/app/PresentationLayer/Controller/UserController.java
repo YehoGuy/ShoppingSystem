@@ -838,7 +838,26 @@ public class UserController {
         }
     }
 
-    @GetMapping("/shoppingCart/{shopID}/{itemID}/plus")
+    @PostMapping("/shoppingCart/{shopID}/{itemID}")
+    public ResponseEntity<Void> addNewItemToShoppingCart(
+            @RequestParam int quantity,
+            @RequestParam String token,
+            @PathVariable int shopID,
+            @PathVariable int itemID) {
+        try {
+            authService.ValidateToken(token);
+            userService.addItemToShoppingCart(token, shopID, itemID, quantity);
+            return ResponseEntity.noContent().build();
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().build();
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/shoppingCart/{shopID}/{itemID}/plus")
     public ResponseEntity<Void> addItemToShoppingCart(
             @RequestParam String token,
             @RequestParam int userId,
@@ -857,7 +876,7 @@ public class UserController {
         }
     }
 
-    @GetMapping("/shoppingCart/{shopID}/{itemID}/minus")
+    @PostMapping("/shoppingCart/{shopID}/{itemID}/minus")
     public ResponseEntity<Void> decreaseItemInShoppingCart(
             @RequestParam String token,
             @RequestParam int userId,
@@ -876,7 +895,7 @@ public class UserController {
         }
     }
 
-    @GetMapping("/shoppingCart/{shopID}/{itemID}/remove")
+    @PostMapping("/shoppingCart/{shopID}/{itemID}/remove")
     public ResponseEntity<Void> removeCompletelyItemFromShoppingCart(
             @RequestParam String token,
             @RequestParam int userId,

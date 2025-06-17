@@ -533,10 +533,9 @@ public class UserRepository implements IUserRepository {
         if (user == null) {
             throw new OurRuntime("User with ID " + userId + " doesn't exist.");
         }
-        PaymentMethod paymentMethod = user.getPaymentMethod();
-        if (paymentMethod == null) {
-            throw new OurRuntime("Payment method not set for user with ID " + userId);
-        }
+  
+        PaymentMethod paymentMethod = new WSEPPay();
+        
         try {
             int pid = paymentMethod.processPayment(amount, currency, cardNumber, expirationDateMonth, expirationDateYear, cardHolderName, cvv, id);
             if (pid < 0) {
@@ -715,18 +714,18 @@ public class UserRepository implements IUserRepository {
                 .map(user -> (Member) user).toList());
     }
 
-    public void updateShoppingCartItemQuantity(int userId, int shopID, int itemID, boolean b)
-    {
+    public void updateShoppingCartItemQuantity(int userId, int shopID, int itemID, boolean b) {
         if (!userMapping.containsKey(userId)) {
             throw new OurRuntime("User with ID " + userId + " doesn't exist.");
         }
         User user = userMapping.get(userId);
         ShoppingCart shoppingCart = user.getShoppingCart();
-        Map<Integer, Integer> basket = shoppingCart.getBasket(userId);
+        Map<Integer, Integer> basket = shoppingCart.getBasket(shopID);
         if (basket == null || !basket.containsKey(itemID)) {
             throw new OurRuntime("Item with ID " + itemID + " not found in the shopping cart.");
         }
         int quantity = basket.get(itemID);
+        System.out.println("Current quantity: " + quantity);
         if (b) {
             basket.put(itemID, quantity + 1);
         } else {
@@ -736,6 +735,7 @@ public class UserRepository implements IUserRepository {
                 shoppingCart.removeItem(shopID, itemID);
             }
         }
+        System.out.println("Updated quantity: " + basket.get(itemID));
     }
 
     public void removeShoppingCartItem(int userId, int shopID, int itemID) {

@@ -21,6 +21,10 @@ import org.springframework.web.client.RestTemplate;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+
+import com.vaadin.flow.component.dependency.JsModule;
+import com.vaadin.flow.component.dialog.Dialog;
+
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Div;
@@ -62,6 +66,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         getUserId(); // Ensure userId is set in session
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("");
+            return;
         }
 
         handleSuspence();
@@ -77,16 +82,21 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         return null; // Return null if userId is not available
     }
 
+
     public ShoppingCartView(@Value("${url.api}") String baseUrl) {
         this.URLShop = baseUrl + "/shops";
         this.URLUser = baseUrl + "/users";
         this.URLPurchases = baseUrl + "/purchases";
         this.URLItem = baseUrl + "/items";
+      
         setSizeFull();
         setSpacing(true);
         setPadding(true);
         setAlignItems(Alignment.CENTER);
+        buildView();
+    }
 
+    private void buildView() {
         getData();
         
 
@@ -96,11 +106,9 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             add(empty);
 
             // optional: add a “continue shopping” button
-            Button shopMore = new Button("Continue Shopping", e -> UI.getCurrent().navigate("items") // or whatever your
-                                                                                                     // product listing
-                                                                                                     // route is
+            Button shopMore = new Button("Continue Shopping", e -> UI.getCurrent().navigate("items") 
             );
-            add(shopMore);
+           
 
             return;
         }
@@ -120,9 +128,27 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             buyButton.setVisible(false);
         }
         buyButton.addClickListener(event -> {
-            PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(cart);
-            this.removeAll();
-            this.add(purchaseCompletion);
+            try {
+                
+                  PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(cart);
+
+                    Dialog dialog = new Dialog();
+                    dialog.setHeaderTitle("Purchase Summary");
+
+                    // Add your component to the dialog
+                    dialog.add(purchaseCompletion);
+
+                    // Optional: add a close button in the footer
+                    Button closeButton = new Button("Close", e -> dialog.close());
+                    dialog.getFooter().add(closeButton);
+
+                    dialog.open();  // Show the dialog
+                
+            } catch (Exception e) {
+                Notification.show("Failed to proceed with purchase. Please try again later.",
+                        3000, Notification.Position.MIDDLE);
+                log.warn("Could not proceed with purchase", e);
+            }
         });
         buyButton.getStyle().set("background-color", "red").set("color", "white");
         buyButtonContainer.add(buyButton);
@@ -156,13 +182,20 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             }
             buyBasketButton.getStyle().set("background-color", "blue").set("color", "white");
             buyBasketButton.addClickListener(event -> {
-                ShoppingCartDTO shopCart = new ShoppingCartDTO();
-                shopCart.setShopItems(Map.of(shopID, itemIDs));
-                shopCart.setShopItemPrices(Map.of(shopID, itemPricesMap));
-                shopCart.setShopItemQuantities(Map.of(shopID, itemQuantitiesMap));
-                PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(shopCart);
-                this.removeAll();
-                this.add(purchaseCompletion);
+    
+                PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(cart.getShoppingCartDTOofShop(shopID));
+
+                Dialog dialog = new Dialog();
+                dialog.setHeaderTitle("Purchase Summary");
+
+                // Add your component to the dialog
+                dialog.add(purchaseCompletion);
+
+                // Optional: add a close button in the footer
+                Button closeButton = new Button("Close", e -> dialog.close());
+                dialog.getFooter().add(closeButton);
+
+                dialog.open();  // Show the dialog
             });
             H3 shopHeader = new H3(shopName + " - total price: " + shopTotal + "₪");
             VerticalLayout shopHeaderContainer = new VerticalLayout(shopHeader, buyBasketButton);
@@ -187,7 +220,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 Double price = itemPricesMap != null && itemPricesMap.containsKey(item.getId())
                         ? itemPricesMap.get(item.getId())
                         : 0;
-                rows.add(new ItemRow(item, quantity, price));
+                rows.add(new ItemRow(item, quantity, price, item.getId()));
             }
 
             grid.setItems(rows);
@@ -203,13 +236,15 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 }
 
                 removeCompletlyButton.addClickListener(event -> {
-                    handleCartAuction(shopID, renderer.name(), "remove");
+
+                    handleCartAction(shopID, renderer.itemId(), "remove");
                 });
                 addButton.addClickListener(event -> {
-                    handleCartAuction(shopID, renderer.name(), "plus");
+                    handleCartAction(shopID, renderer.itemId(), "plus");
                 });
                 removeButton.addClickListener(event -> {
-                    handleCartAuction(shopID, renderer.name(), "minus");
+                    handleCartAction(shopID, renderer.itemId(), "minus");
+
                 });
                 HorizontalLayout buttonLayout = new HorizontalLayout(addButton, removeButton, removeCompletlyButton);
                 buttonLayout.setAlignItems(Alignment.CENTER);
@@ -279,6 +314,18 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
     private void getData() {
         HashMap<Integer, HashMap<Integer, Integer>> IDs = getCartIDs();
+
+        // Initialize cart with empty collections first
+        cart = new ShoppingCartDTO();
+        cart.setShopItems(new HashMap<>());
+        cart.setShopItemPrices(new HashMap<>());
+        cart.setShopItemQuantities(new HashMap<>());
+
+        if (IDs.isEmpty()) {
+            shops = new ArrayList<>();
+            return; // Return early if cart is empty
+        }
+
         shops = getShopNames(IDs.keySet());
         List<ItemDTO> items = getAllItems();
 
@@ -308,10 +355,10 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             shopItemQuantities.put(shopId, itemQuantities);
         }
 
-        cart = new ShoppingCartDTO();
         cart.setShopItems(shopItems);
         cart.setShopItemPrices(shopItemPrices);
         cart.setShopItemQuantities(shopItemQuantities);
+        cart.setItems(items);
     }
 
     private List<ItemDTO> getAllItems() {
@@ -324,7 +371,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                     URLItem + "/all?token=" + token,
                     HttpMethod.GET,
                     entity,
-                    new ParameterizedTypeReference<>() {
+                    new ParameterizedTypeReference<List<ItemDTO>>() {
                     },
                     token);
             List<ItemDTO> items = response.getBody();
@@ -378,13 +425,21 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             HttpEntity<Void> entity = new HttpEntity<>(headers);
 
             ResponseEntity<HashMap<Integer, HashMap<Integer, Integer>>> resp = restTemplate.exchange(
-                    URLUser + "/shoppingCart?token=" + token,
+
+                    URLUser + "/shoppingCart?token=" + token + "&userId=" + getUserId(),
+
                     HttpMethod.GET,
                     entity,
                     new ParameterizedTypeReference<>() {
                     },
                     token);
             HashMap<Integer, HashMap<Integer, Integer>> body = resp.getBody();
+            if (body == null || body.isEmpty()) {
+                Dialog dialog = new Dialog();
+                dialog.add(new H2("No items in your cart!"));
+                dialog.add(new Button("OK", e -> dialog.close()));
+                dialog.open();
+            }
             return (body != null) ? body : new HashMap<>();
         } catch (HttpClientErrorException.NotFound nf) {
             // no cart yet ⇒ empty
@@ -396,9 +451,9 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
     }
 
     // Helper record class to populate the grid
-    public record ItemRow(String name, double price, int quantity, double totalPrice, String description) {
-        public ItemRow(ItemDTO item, int quantity, double price) {
-            this(item.getName(), price, quantity, price * quantity, item.getDescription());
+    public record ItemRow(String name, double price, int quantity, double totalPrice, String description, int itemId) {
+        public ItemRow(ItemDTO item, int quantity, double price, int itemId) {
+            this(item.getName(), price, quantity, price * quantity, item.getDescription(), itemId);
         }
     }
 
@@ -410,34 +465,42 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 .orElse("Unknown Shop");
     }
 
-    private void handleCartAuction(int shopID, String itemName, String action) {
+  private void handleCartAction(int shopID, int itemId, String action) {
+
         try {
             String token = VaadinSession.getCurrent().getAttribute("authToken").toString();
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-            // find itemID …
-            int itemID = getAllItems().stream()
-                    .filter(item -> item.getName().equals(itemName))
-                    .map(ItemDTO::getId)
-                    .findFirst()
-                    .orElse(-1);
-            if (itemID < 0)
+            if (itemId < 0)
                 return;
 
             restTemplate.postForEntity(
-                    URLUser + "/shoppingCart/" + shopID + "/" + itemID + "/" + action + "?token=" + token,
+
+                    URLUser + "/shoppingCart/" + shopID + "/" + itemId + "/" + action + "?token=" + token + "&userId="
+                            + getUserId(),
+
                     entity,
-                    String.class,
+                    Void.class,
                     token);
-            UI.getCurrent().getPage().reload();
+            resetView();
         } catch (Exception e) {
             // completely silent on failure
+            Notification.show("Failed to update shopping cart. Please try again later.",
+                    3000, Notification.Position.MIDDLE);
             log.warn("Could not retrieve shopping cart, treating as empty", e);
         }
     }
 
+
+    private void resetView() {
+        this.removeAll();
+        this.cart = null;
+        this.shops = null;
+        buildView();
+    }
+  
     private void handleSuspence() {
         Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
         if (userId == null) {
