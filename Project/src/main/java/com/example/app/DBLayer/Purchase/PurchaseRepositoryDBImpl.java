@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Repository;
-import org.w3c.dom.Entity;
 
 import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.DomainLayer.Purchase.Address;
