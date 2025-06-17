@@ -73,12 +73,13 @@ public class PurchaseService {
                 double totalPrice = shopService.purchaseItems(cart.get(shopId), shopId, authToken);
                 totalPrices.put(shopId, totalPrice);
                 aqcuired.put(shopId, cart.get(shopId));
-                int pid = purchaseRepository.addPurchase(userId, shopId, aqcuired.get(shopId), totalPrice,
-                        shippingAddress);
-                purchaseIds.put(pid, shopId);
+
                 int payid = userService.pay(authToken, shopId, totalPrice, currency, cardNumber,
                         expirationDateMonth, expirationDateYear, cardHolderName, cvv, id);
                 paymentIds.add(payid);
+                int pid = purchaseRepository.addPurchase(userId, shopId, aqcuired.get(shopId), totalPrice,
+                        shippingAddress);
+                purchaseIds.put(pid, shopId);
             }
             userService.clearUserShoppingCart(userId);
             for (Integer purchaseId : purchaseIds.keySet()) {
@@ -106,6 +107,7 @@ public class PurchaseService {
         //     throw new OurRuntime("checkoutCart: " + e.getMessage(), e);
         } catch (Exception e) {
             for (Integer shopId : aqcuired.keySet()) {
+                System.out.println(aqcuired.keySet());
                 shopService.rollBackPurchase(aqcuired.get(shopId), shopId);
             }
             if (cartBackup != null) {
