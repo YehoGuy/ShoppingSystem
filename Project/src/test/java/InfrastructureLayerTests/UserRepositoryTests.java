@@ -28,21 +28,20 @@ import com.example.app.DomainLayer.Notification;
 import com.example.app.DomainLayer.ShoppingCart;
 import com.example.app.InfrastructureLayer.WSEPPay;
 
-    
 public class UserRepositoryTests {
 
     private UserRepository repo;
     private User guest;
-    private User member;    
+    private User member;
     private int guestId;
     private int memberId;
 
     @BeforeEach
     public void setup() {
-        repo = new UserRepository();  
-        repo.initAdmin(); 
+        repo = new UserRepository();
+        repo.initAdmin();
         repo.setEncoderToTest(true); // Set the encoder to test mode
-        guestId = repo.addGuest();  
+        guestId = repo.addGuest();
         guest = repo.getUserById(guestId);
         repo.addMember("username", "password", "email@example.com", "111", "address");
         memberId = repo.isUsernameAndPasswordValid("username", "password");
@@ -50,14 +49,12 @@ public class UserRepositoryTests {
     }
 
     @Test
-    void testIsAdmin()
-    {
+    void testIsAdmin() {
         assertTrue(repo.isAdmin(repo.isUsernameAndPasswordValid("admin", "admin")));
     }
 
     @Test
-    void addAdmin()
-    {
+    void addAdmin() {
         repo.addMember("username", "password", "email@email.com", "phoneNumber", "address");
         int userid = repo.isUsernameAndPasswordValid("username", "password");
         repo.addAdmin(userid);
@@ -65,8 +62,7 @@ public class UserRepositoryTests {
     }
 
     @Test
-    void removeAdmin()
-    {
+    void removeAdmin() {
         repo.addMember("username", "password", "email@email.com", "phoneNumber", "address");
         int userid = repo.isUsernameAndPasswordValid("username", "password");
         repo.addAdmin(userid);
@@ -77,48 +73,45 @@ public class UserRepositoryTests {
 
     @Test
     public void testAddGuestAndGetUserById() {
-        assertEquals(guestId, ((Guest)guest).getGuestId());
+        assertEquals(guestId, ((Guest) guest).getGuestId());
     }
 
     @Test
     public void testAddMember() {
-        assertEquals("username", ((Member)member).getUsername());
-        assertEquals("password", ((Member)member).getPassword());
-        assertEquals("email@example.com", ((Member)member).getEmail());
-        assertEquals("111", ((Member)member).getPhoneNumber());
+        assertEquals("username", ((Member) member).getUsername());
+        assertEquals("password", ((Member) member).getPassword());
+        assertEquals("email@example.com", ((Member) member).getEmail());
+        assertEquals("111", ((Member) member).getPhoneNumber());
     }
-
 
     @Test
     public void testUpdateMemberUsername() {
         repo.updateMemberUsername(memberId, "newUsername");
-        assertEquals("newUsername", ((Member)member).getUsername());
+        assertEquals("newUsername", ((Member) member).getUsername());
     }
 
     @Test
     public void testUpdateMemberPassword() {
         repo.updateMemberPassword(memberId, "newPassword");
-        assertEquals("newPassword", ((Member)member).getPassword());
+        assertEquals("newPassword", ((Member) member).getPassword());
     }
 
     @Test
     public void testUpdateMemberEmail() {
         repo.updateMemberEmail(memberId, "newemail@example.com");
-        assertEquals("newemail@example.com", ((Member)member).getEmail());
+        assertEquals("newemail@example.com", ((Member) member).getEmail());
     }
 
     @Test
     public void testUpdateMemberPhoneNumber() {
         repo.updateMemberPhoneNumber(memberId, "123456789");
-        assertEquals("123456789", ((Member)member).getPhoneNumber());
-    }   
+        assertEquals("123456789", ((Member) member).getPhoneNumber());
+    }
 
-
-       
     @Test
     public void testIsUsernameAndPasswordValid() {
         assertNotEquals(-1, memberId);
-        assertEquals(((Member)member).getMemberId(), memberId);
+        assertEquals(((Member) member).getMemberId(), memberId);
         int invalidUserId = repo.isUsernameAndPasswordValid("invalidUser", "invalidPass");
         assertEquals(-1, invalidUserId);
     }
@@ -143,8 +136,6 @@ public class UserRepositoryTests {
         assertFalse(repo.isGuestById(guestId)); // Check if the guest is removed
     }
 
-    
-    
     @Test
     public void testGetUserMapping() {
         Map<Integer, User> userMapping = repo.getUserMapping();
@@ -167,15 +158,14 @@ public class UserRepositoryTests {
     @Test
     public void testGetGuestsList() {
         List<Guest> guests = repo.getGuestsList();
-        assertTrue(guests.contains((Guest)guest));
+        assertTrue(guests.contains((Guest) guest));
     }
-
 
     @Test
     public void testGetMembersList() {
         List<Member> members = repo.getMembersList();
-        assertTrue(members.contains((Member)member));
-        assertFalse(members.contains((Guest)guest));
+        assertTrue(members.contains((Member) member));
+        assertFalse(members.contains((Guest) guest));
         assertEquals(2, members.size()); // Assuming only one member is added in setup
     }
 
@@ -192,27 +182,26 @@ public class UserRepositoryTests {
         // userId=1 was created as a Member ("admin")
         User u = repo.getUserById(1);
         assertNotNull(u);
-    
+
         // unknown user should throw
         assertThrows(OurRuntime.class, () -> repo.getUserById(999));
-    
+
         // admin is a Member, so getMemberById(1) should succeed
         Member admin = repo.getMemberById(1);
         assertEquals(1, admin.getMemberId());
-    
+
         // create a true guest
         int guestId = repo.addGuest();
         assertTrue(repo.isGuestById(guestId));
         // but asking for a Member on a guest should throw
         assertThrows(OurRuntime.class, () -> repo.getMemberById(guestId));
-    
+
         // now add a real member and verify retrieval
-        repo.addMember("m","p","m@x","ph","addr");
+        repo.addMember("m", "p", "m@x", "ph", "addr");
         int newMemberId = guestId + 1;
         Member m = repo.getMemberById(newMemberId);
         assertEquals(newMemberId, m.getMemberId());
     }
-    
 
     @Test
     void testAdminManagement() {
@@ -230,11 +219,11 @@ public class UserRepositoryTests {
     void testGuestAndMemberLogin() {
         int g1 = repo.addGuest();
         assertTrue(repo.isGuestById(g1));
-        repo.addMember("u2","pw","u2@e","ph","ad");
+        repo.addMember("u2", "pw", "u2@e", "ph", "ad");
         assertTrue(repo.isUsernameTaken("u2"));
-        int mid = repo.isUsernameAndPasswordValid("u2","pw");
+        int mid = repo.isUsernameAndPasswordValid("u2", "pw");
         assertTrue(mid > 0);
-        assertEquals(-1, repo.isUsernameAndPasswordValid("x","y"));
+        assertEquals(-1, repo.isUsernameAndPasswordValid("x", "y"));
     }
 
     @Test
@@ -248,73 +237,72 @@ public class UserRepositoryTests {
 
     @Test
     void testShoppingCartOps() {
-        repo.addMember("shopper","pw","a@b","ph","ad");
-        int uid = repo.isUsernameAndPasswordValid("shopper","pw");
-    
+        repo.addMember("shopper", "pw", "a@b", "ph", "ad");
+        int uid = repo.isUsernameAndPasswordValid("shopper", "pw");
+
         // add 2 of item 100 in shop 10
         repo.addItemToShoppingCart(uid, 10, 100, 2);
         assertEquals(2, repo.getBasket(uid, 10).get(100));
-    
+
         // update quantity: old 2 + new 5 = 7
         repo.updateItemQuantityInShoppingCart(uid, 10, 100, 5);
         assertEquals(7, repo.getBasket(uid, 10).get(100));
-    
+
         // remove the only item → basket still exists but is empty
         repo.removeItemFromShoppingCart(uid, 10, 100);
         assertTrue(repo.getBasket(uid, 10).isEmpty(), "After removing the last item, the basket should be empty");
-    
+
         // explicitly create a new basket
         repo.createBasket(uid, 20);
         assertNotNull(repo.getBasket(uid, 20));
-    
+
         // clear all baskets → getBasket returns null
         repo.clearShoppingCart(uid);
         assertTrue(repo.getBasket(uid, 20).isEmpty(), "After clearShoppingCart, there should be no basket at all");
     }
-    
 
     // @Test
     // void testSuspendAndNotificationsAndPayment() {
-    //     repo.addMember("notifier","pw","n@e","ph","ad");
-    //     int uid = repo.isUsernameAndPasswordValid("notifier","pw");
-    //     repo.setSuspended(uid, LocalDateTime.now().plusDays(1));
-    //     assertTrue(repo.isSuspended(uid));
-    //     List<Integer> suspended = repo.getSuspendedUsers();
-    //     assertTrue(suspended.contains(uid));
+    // repo.addMember("notifier","pw","n@e","ph","ad");
+    // int uid = repo.isUsernameAndPasswordValid("notifier","pw");
+    // repo.setSuspended(uid, LocalDateTime.now().plusDays(1));
+    // assertTrue(repo.isSuspended(uid));
+    // List<Integer> suspended = repo.getSuspendedUsers();
+    // assertTrue(suspended.contains(uid));
 
-    //     // payment method
-    //     PaymentMethod pm = new PaymentMethod() {
-    //         @Override public void processPayment(double amt,int sid){}
-    //         @Override public String getDetails(){return "d";}
-    //         @Override public void refundPayment(double amt,int sid){}
-    //         @Override public void processRefund(double r,int sid){}
-    //     };
-    //     repo.setPaymentMethod(uid,0,pm);
-    //     assertEquals("d", repo.getUserById(uid).getPaymentMethod().getDetails());
-    //     // refund and pay success
-    //     repo.pay(uid,0,10.0);
-    //     repo.refund(uid,0,5.0);
+    // // payment method
+    // PaymentMethod pm = new PaymentMethod() {
+    // @Override public void processPayment(double amt,int sid){}
+    // @Override public String getDetails(){return "d";}
+    // @Override public void refundPayment(double amt,int sid){}
+    // @Override public void processRefund(double r,int sid){}
+    // };
+    // repo.setPaymentMethod(uid,0,pm);
+    // assertEquals("d", repo.getUserById(uid).getPaymentMethod().getDetails());
+    // // refund and pay success
+    // repo.pay(uid,0,10.0);
+    // repo.refund(uid,0,5.0);
 
-    //     // notifications
-    //     repo.addNotification(uid,"T","M");
-    //     List<Notification> notes = repo.getNotificationsAndClear(uid);
-    //     assertEquals(1, notes.size());
-    //     assertTrue(notes.get(0).getTitle().contains("T"));
+    // // notifications
+    // repo.addNotification(uid,"T","M");
+    // List<Notification> notes = repo.getNotificationsAndClear(uid);
+    // assertEquals(1, notes.size());
+    // assertTrue(notes.get(0).getTitle().contains("T"));
     // }
 
     @Test
     void testRoleAndWorkerMappings() {
-        repo.addMember("owner","pw","o@e","ph","ad");
-        int uid = repo.isUsernameAndPasswordValid("owner","pw");
-        Role r = new Role(uid, 99, new PermissionsEnum[]{PermissionsEnum.manageOwners});
+        repo.addMember("owner", "pw", "o@e", "ph", "ad");
+        int uid = repo.isUsernameAndPasswordValid("owner", "pw");
+        Role r = new Role(uid, 99, new PermissionsEnum[] { PermissionsEnum.manageOwners });
         // pending roles / setPermissions / getRole
         repo.addRoleToPending(uid, r);
         assertThrows(OurRuntime.class, () -> repo.addRoleToPending(uid, r));
         assertThrows(OurRuntime.class, () -> repo.getPendingRole(uid, 100));
-        Role pr = repo.getPendingRole(uid,99);
+        Role pr = repo.getPendingRole(uid, 99);
         assertEquals(r, pr);
         repo.acceptRole(uid, r);
-        Role rr = repo.getRole(uid,99);
+        Role rr = repo.getRole(uid, 99);
         assertEquals(r, rr);
         repo.addPermission(uid, PermissionsEnum.handleMessages, 99);
         assertTrue(rr.hasPermission(PermissionsEnum.handleMessages));
@@ -323,7 +311,7 @@ public class UserRepositoryTests {
 
         List<Integer> workerShops = repo.getShopIdsByWorkerId(uid);
         assertTrue(workerShops.contains(99));
-        assertTrue(repo.getShopMembers(99).stream().anyMatch(m -> m.getMemberId()==uid));
+        assertTrue(repo.getShopMembers(99).stream().anyMatch(m -> m.getMemberId() == uid));
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
@@ -338,24 +326,21 @@ public class UserRepositoryTests {
         repo.acceptRole(puid, r);
 
         // now setPermissions to a non-empty array
-        repo.setPermissions(puid, 42, r, new PermissionsEnum[]{PermissionsEnum.manageItems});
+        repo.setPermissions(puid, 42, r, new PermissionsEnum[] { PermissionsEnum.manageItems });
         assertTrue(r.hasPermission(PermissionsEnum.manageItems));
 
         // missing role should fail
-        Role notBound = new Role(puid+1, 99, null);
+        Role notBound = new Role(puid + 1, 99, null);
         assertThrows(OurRuntime.class,
-            () -> repo.setPermissions(puid, 99, notBound, new PermissionsEnum[]{PermissionsEnum.manageItems})
-        );
+                () -> repo.setPermissions(puid, 99, notBound, new PermissionsEnum[] { PermissionsEnum.manageItems }));
 
         // null role
         assertThrows(OurRuntime.class,
-            () -> repo.setPermissions(puid, 42, null, new PermissionsEnum[]{PermissionsEnum.manageItems})
-        );
+                () -> repo.setPermissions(puid, 42, null, new PermissionsEnum[] { PermissionsEnum.manageItems }));
 
         // empty permissions
         assertThrows(OurRuntime.class,
-            () -> repo.setPermissions(puid, 42, r, new PermissionsEnum[0])
-        );
+                () -> repo.setPermissions(puid, 42, r, new PermissionsEnum[0]));
     }
 
     @Test
@@ -371,21 +356,18 @@ public class UserRepositoryTests {
 
         // updating a guest should fail
         assertThrows(OurRuntime.class,
-            () -> repo.updateMemberAddress(guestId, "X","Y",1,"Z")
-        );
+                () -> repo.updateMemberAddress(guestId, "X", "Y", 1, "Z"));
 
         // non–existent user
         assertThrows(OurRuntime.class,
-            () -> repo.updateMemberAddress(9999, "X","Y",1,"Z")
-        );
+                () -> repo.updateMemberAddress(9999, "X", "Y", 1, "Z"));
     }
-
 
     @Test
     void testRemoveRole_successAndFailure() {
         // create and accept a role
-        repo.addMember("temp","pw","t@t","p","a");
-        int tid = repo.isUsernameAndPasswordValid("temp","pw");
+        repo.addMember("temp", "pw", "t@t", "p", "a");
+        int tid = repo.isUsernameAndPasswordValid("temp", "pw");
         Role r = new Role(tid, 77, null);
         repo.addRoleToPending(tid, r);
         repo.acceptRole(tid, r);
@@ -393,14 +375,12 @@ public class UserRepositoryTests {
         // remove it
         repo.removeRole(tid, 77);
         assertThrows(OurRuntime.class,
-            () -> repo.getRole(tid, 77),
-            "after removal getRole should fail"
-        );
+                () -> repo.getRole(tid, 77),
+                "after removal getRole should fail");
 
         // removing again fails
         assertThrows(OurRuntime.class,
-            () -> repo.removeRole(tid, 77)
-        );
+                () -> repo.removeRole(tid, 77));
     }
 
     @Test
@@ -416,7 +396,7 @@ public class UserRepositoryTests {
         repo.addRoleToPending(memberId, ownerR);
         repo.acceptRole(memberId, ownerR);
 
-        assertTrue(repo.getOwners(123).stream().anyMatch(m -> m.getMemberId()==memberId));
+        assertTrue(repo.getOwners(123).stream().anyMatch(m -> m.getMemberId() == memberId));
         assertTrue(repo.isOwner(memberId, 123));
         assertFalse(repo.isFounder(memberId, 123));
 
@@ -438,18 +418,15 @@ public class UserRepositoryTests {
         // decline it
         repo.declineRole(memberId, r);
         assertTrue(repo.getPendingRoles(memberId).isEmpty(),
-            "after decline, pending list should be empty"
-        );
+                "after decline, pending list should be empty");
 
         // asking for it fails
         assertThrows(OurRuntime.class,
-            () -> repo.getPendingRole(memberId, 55)
-        );
+                () -> repo.getPendingRole(memberId, 55));
 
         // unknown user
         assertThrows(OurRuntime.class,
-            () -> repo.getPendingRoles(9999)
-        );
+                () -> repo.getPendingRoles(9999));
     }
 
     @Test
@@ -460,8 +437,7 @@ public class UserRepositoryTests {
 
         // non-existent
         assertThrows(OurRuntime.class,
-            () -> repo.getShoppingCartById(9999)
-        );
+                () -> repo.getShoppingCartById(9999));
     }
 
     // ─── addRoleToPending null & invalid-user branches ───────────────────────
@@ -469,14 +445,14 @@ public class UserRepositoryTests {
     void testAddRoleToPending_NullAndInvalidUser() {
         // null role
         assertThrows(OurRuntime.class,
-            () -> repo.addRoleToPending(memberId, null),
-            "adding null role should throw");
+                () -> repo.addRoleToPending(memberId, null),
+                "adding null role should throw");
 
         // invalid user
         Role dummy = new Role(memberId, 1, null);
         assertThrows(OurRuntime.class,
-            () -> repo.addRoleToPending(9999, dummy),
-            "unknown user should throw");
+                () -> repo.addRoleToPending(9999, dummy),
+                "unknown user should throw");
     }
 
     // ─── addItemToShoppingCart & updateItemQuantityInShoppingCart failure ────
@@ -484,15 +460,15 @@ public class UserRepositoryTests {
     void testShoppingCartFailures() {
         // invalid user
         assertThrows(OurRuntime.class,
-            () -> repo.addItemToShoppingCart(9999, 1, 1, 1));
+                () -> repo.addItemToShoppingCart(9999, 1, 1, 1));
         assertThrows(OurRuntime.class,
-            () -> repo.updateItemQuantityInShoppingCart(9999, 1, 1, 1));
+                () -> repo.updateItemQuantityInShoppingCart(9999, 1, 1, 1));
 
         // zero or negative quantity
         assertThrows(OurRuntime.class,
-            () -> repo.addItemToShoppingCart(memberId, 1, 1, 0));
+                () -> repo.addItemToShoppingCart(memberId, 1, 1, 0));
         assertThrows(OurRuntime.class,
-            () -> repo.updateItemQuantityInShoppingCart(memberId, 1, 1, -5));
+                () -> repo.updateItemQuantityInShoppingCart(memberId, 1, 1, -5));
     }
 
     // ─── notification & clear failure ───────────────────────────────────────
@@ -500,11 +476,11 @@ public class UserRepositoryTests {
     void testNotificationFailures() {
         // invalid user for addNotification
         assertThrows(OurRuntime.class,
-            () -> repo.addNotification(9999, "T", "M"));
+                () -> repo.addNotification(9999, "T", "M"));
 
         // invalid user for getNotificationsAndClear
         assertThrows(OurRuntime.class,
-            () -> repo.getNotificationsAndClear(9999));
+                () -> repo.getNotificationsAndClear(9999));
     }
 
     // ─── setPaymentMethod & pay/refund failure ──────────────────────────────
@@ -513,17 +489,15 @@ public class UserRepositoryTests {
         // non-existent user
         PaymentMethod pm = new WSEPPay();
         assertThrows(OurRuntime.class,
-            () -> repo.setPaymentMethod(9999, 0, pm));
+                () -> repo.setPaymentMethod(9999, 0, pm));
         assertThrows(OurRuntime.class,
-            () -> repo.pay(9999, 1.0, "1234567890123456", "123", "12", "2025", "John Doe", "123 Main St", "12345"));
+                () -> repo.pay(9999, 1.0, "1234567890123456", "123", "12", "2025", "John Doe", "123 Main St", "12345"));
         assertThrows(OurRuntime.class,
-            () -> repo.refund(9999, 0));
+                () -> repo.refund(9999, 0));
 
         // user exists but no payment method set
         assertThrows(OurRuntime.class,
-            () -> repo.pay(memberId, 1.0, "1234567890123456", "123", "12", "2025", "John Doe", "123 Main St", "12345"));
-        assertThrows(OurRuntime.class,
-            () -> repo.refund(memberId, 0));
+                () -> repo.refund(memberId, 0));
     }
 
     // ─── updateMemberUsername/email/password/phone failure ────────────────
@@ -531,17 +505,17 @@ public class UserRepositoryTests {
     void testUpdateMemberFields_Failures() {
         // guest is not a member
         assertThrows(OurRuntime.class,
-            () -> repo.updateMemberUsername(guestId, "x"));
+                () -> repo.updateMemberUsername(guestId, "x"));
         assertThrows(OurRuntime.class,
-            () -> repo.updateMemberPassword(guestId, "x"));
+                () -> repo.updateMemberPassword(guestId, "x"));
         assertThrows(OurRuntime.class,
-            () -> repo.updateMemberEmail(guestId, "e@e"));
+                () -> repo.updateMemberEmail(guestId, "e@e"));
         assertThrows(OurRuntime.class,
-            () -> repo.updateMemberPhoneNumber(guestId, "123"));
+                () -> repo.updateMemberPhoneNumber(guestId, "123"));
 
         // non-existent user
         assertThrows(OurRuntime.class,
-            () -> repo.updateMemberUsername(9999, "x"));
+                () -> repo.updateMemberUsername(9999, "x"));
     }
 
     // ─── isSuspended & setSuspended failure & false branch ─────────────────
@@ -549,22 +523,22 @@ public class UserRepositoryTests {
     void testSuspensionBranches() {
         // non-existent user in setSuspended
         assertThrows(OurRuntime.class,
-            () -> repo.setSuspended(9999, LocalDateTime.now()));
+                () -> repo.setSuspended(9999, LocalDateTime.now()));
 
         // non-suspended existing user
         assertFalse(repo.isSuspended(memberId),
-            "new member should not be suspended yet");
+                "new member should not be suspended yet");
 
         // invalid for isSuspended
         assertFalse(repo.isSuspended(9999),
-            "unknown user should return false");
+                "unknown user should return false");
     }
 
     // ─── getPendingRoles happy path ─────────────────────────────────────────
     @Test
     void testGetPendingRoles_HappyPath() {
-        repo.addMember("pend","pw","p@e","ph","ad");
-        int pid = repo.isUsernameAndPasswordValid("pend","pw");
+        repo.addMember("pend", "pw", "p@e", "ph", "ad");
+        int pid = repo.isUsernameAndPasswordValid("pend", "pw");
         Role r = new Role(pid, 99, null);
         repo.addRoleToPending(pid, r);
         List<Role> pending = repo.getPendingRoles(pid);
@@ -577,16 +551,16 @@ public class UserRepositoryTests {
     void testAcceptDeclineRole_Failures() {
         // null role
         assertThrows(OurRuntime.class,
-            () -> repo.acceptRole(memberId, null));
+                () -> repo.acceptRole(memberId, null));
         assertThrows(OurRuntime.class,
-            () -> repo.declineRole(memberId, null));
+                () -> repo.declineRole(memberId, null));
 
         // invalid user
         Role r = new Role(memberId, 1, null);
         assertThrows(OurRuntime.class,
-            () -> repo.acceptRole(9999, r));
+                () -> repo.acceptRole(9999, r));
         assertThrows(OurRuntime.class,
-            () -> repo.declineRole(9999, r));
+                () -> repo.declineRole(9999, r));
     }
 
     // ─── addPermission/removePermission failure branches ────────────────────
@@ -594,13 +568,13 @@ public class UserRepositoryTests {
     void testPermissionMgmt_Failures() {
         // no role bound
         assertThrows(OurRuntime.class,
-            () -> repo.addPermission(memberId, PermissionsEnum.manageItems, 123));
+                () -> repo.addPermission(memberId, PermissionsEnum.manageItems, 123));
         assertThrows(OurRuntime.class,
-            () -> repo.removePermission(memberId, PermissionsEnum.manageItems, 123));
+                () -> repo.removePermission(memberId, PermissionsEnum.manageItems, 123));
 
         // invalid user
         assertThrows(OurRuntime.class,
-            () -> repo.addPermission(9999, PermissionsEnum.manageItems, 1));
+                () -> repo.addPermission(9999, PermissionsEnum.manageItems, 1));
     }
 
 }
