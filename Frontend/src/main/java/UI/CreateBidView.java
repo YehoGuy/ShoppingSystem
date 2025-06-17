@@ -14,7 +14,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
-import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H2;
@@ -48,11 +47,9 @@ public class CreateBidView extends VerticalLayout implements BeforeEnterObserver
 
     private final RestTemplate rest = new RestTemplate();
 
-    @Value("${url.api}/shops")
-    private String SHOP_API_URL;
-
-    @Value("${url.api}/purchases/bids")
-    private String CREATE_BID_URL;
+    private final String shopApiBase;
+    
+    private final String createBidUrl;
 
     // For each item, we store a NumberField so we can read its numeric quantity
     // later
@@ -64,7 +61,10 @@ public class CreateBidView extends VerticalLayout implements BeforeEnterObserver
     // Button to post the bid
     private final Button createBidButton = new Button("Create Bid");
 
-    public CreateBidView() {
+    public CreateBidView(@Value("${url.api}") String apiBase) {
+        this.shopApiBase   = apiBase + "/shops";
+        this.createBidUrl  = apiBase + "/purchases/bids";
+
         setPadding(true);
         setSpacing(true);
     }
@@ -103,7 +103,7 @@ public class CreateBidView extends VerticalLayout implements BeforeEnterObserver
             return;
         }
 
-        String url = SHOP_API_URL + "/" + shopId + "?token=" + token;
+        String url = shopApiBase + "/" + shopId + "?token=" + token;
         try {
             ResponseEntity<ShopDTO> resp = rest.getForEntity(url, ShopDTO.class);
             if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
@@ -231,10 +231,10 @@ public class CreateBidView extends VerticalLayout implements BeforeEnterObserver
         }
 
         // 4) Build the POST URL
-        String url = CREATE_BID_URL
-                + "?authToken=" + authToken
-                + "&storeId=" + shopId // string form of shopId
-                + "&initialPrice=" + initialPrice;
+        String url = createBidUrl
+            + "?authToken="   + authToken
+            + "&storeId="     + shopId
+            + "&initialPrice="+ initialPrice;
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

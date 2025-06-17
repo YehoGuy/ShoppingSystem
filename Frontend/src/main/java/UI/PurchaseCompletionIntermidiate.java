@@ -14,6 +14,7 @@ import com.vaadin.flow.component.textfield.TextField;
 
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
@@ -26,6 +27,8 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 
 public class PurchaseCompletionIntermidiate extends VerticalLayout implements BeforeEnterObserver {
+
+    private final String api;
 
     private ComboBox<String> shippingTypeCombo;
     private TextField countryField;
@@ -57,7 +60,9 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
         return null; // Return null if userId is not available
     }
 
-    public PurchaseCompletionIntermidiate(ShoppingCartDTO cart) {
+    public PurchaseCompletionIntermidiate(@Value("${url.api}") String api, ShoppingCartDTO cart) {
+        this.api = api;
+
         setAllItems();
 
         this.cartDto = cart;
@@ -126,8 +131,15 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
     }
 
     private void completePurchase(AddressDTO address) {
-        PaymenPageView paymentPage = new PaymenPageView(totalPrice, address.getCountry(), address.getCity(),
-                address.getStreet(), address.getHouseNumber(), address.getZipCode());
+        PaymenPageView paymentPage = new PaymenPageView(
+            api,
+            totalPrice,
+            address.getCountry(),
+            address.getCity(),
+            address.getStreet(),
+            address.getHouseNumber(),
+            address.getZipCode());
+
         Dialog paymentDialog = new Dialog(paymentPage);
         paymentDialog.setWidth("400px");
         paymentDialog.setHeight("300px");
@@ -169,7 +181,8 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/" + userId + "/isSuspended?token=" + token;
+        String url = api + "/users/" + userId + "/isSuspended?token=" + token;
+        
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {

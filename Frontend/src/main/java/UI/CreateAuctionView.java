@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -23,10 +22,8 @@ import com.vaadin.flow.component.datetimepicker.DateTimePicker;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.NotFoundException;
@@ -49,11 +46,9 @@ public class CreateAuctionView extends VerticalLayout implements BeforeEnterObse
 
     private final RestTemplate rest = new RestTemplate();
 
-    @Value("${url.api}/shops")
-    private String SHOP_API_URL;
-
-    @Value("${url.api}/purchases/auctions")
-    private String CREATE_AUCTION_URL;
+    private final String shopApiBase;
+    
+    private final String createAuctionUrl;
 
     // For each item, we store a NumberField so we can read its numeric quantity
     // later
@@ -68,7 +63,10 @@ public class CreateAuctionView extends VerticalLayout implements BeforeEnterObse
     // Button to post the auction
     private final Button createAuctionButton = new Button("Create Auction");
 
-    public CreateAuctionView() {
+    public CreateAuctionView(@Value("${url.api}") String apiBase) {
+        this.shopApiBase      = apiBase + "/shops";
+        this.createAuctionUrl = apiBase + "/purchases/auctions";
+
         setPadding(true);
         setSpacing(true);
     }
@@ -107,7 +105,7 @@ public class CreateAuctionView extends VerticalLayout implements BeforeEnterObse
             return;
         }
 
-        String url = SHOP_API_URL + "/" + shopId + "?token=" + token;
+        String url = shopApiBase + "/" + shopId + "?token=" + token;
         try {
             ResponseEntity<ShopDTO> resp = rest.getForEntity(url, ShopDTO.class);
             if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
@@ -222,11 +220,11 @@ private void onCreateAuctionClick(ComboBox<ItemDTO> itemSelect) {
     }
 
     // 5) Build URL & POST body
-    String url = CREATE_AUCTION_URL
-      + "?authToken="      + token
-      + "&storeId="        + shopId
-      + "&initialPrice="   + initialPrice
-      + "&auctionEndTime=" + end;
+    String url = createAuctionUrl
+        + "?authToken="      + token
+        + "&storeId="        + shopId
+        + "&initialPrice="   + initialPrice
+        + "&auctionEndTime=" + end;
 
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);

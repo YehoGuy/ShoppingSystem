@@ -41,15 +41,22 @@ import DTOs.ShopReviewDTO;
 
 public class ShopView extends VerticalLayout implements HasUrlParameter<String>, BeforeEnterObserver {
 
-    @Value("${url.api}/shops")
-    private String SHOP_API_URL;
-
-    @Value("${url.api}/purchases/shops")
-    private String PURCHASE_HISTORY_URL;
+    private final String api;
+    private final String shopApiUrl;
+    private final String purchaseHistoryUrl;
 
     private final RestTemplate restTemplate = new RestTemplate();
     private ShopDTO shop;
     private Map<ItemDTO, Double> prices;
+
+    public ShopView(@Value("${url.api}") String api) {
+        this.api                  = api;
+        this.shopApiUrl           = api + "/shops";
+        this.purchaseHistoryUrl   = api + "/purchases/shops";
+    
+        setPadding(true);
+        setSpacing(true);
+    }
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
@@ -77,7 +84,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         }
 
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-        String url = SHOP_API_URL + "/" + shopId + "?token=" + token;
+        String url = shopApiUrl + "/" + shopId + "?token=" + token;
         try {
             ResponseEntity<ShopDTO> resp = restTemplate.getForEntity(url, ShopDTO.class);
             if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
@@ -113,7 +120,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
             // Therefore we must call:
             // GET /api/purchases/shops/{shopId}/bids?authToken=<token>
             //
-            String url = PURCHASE_HISTORY_URL + "/" + shop.getShopId() + "/bids?authToken=" + authToken;
+            String url = purchaseHistoryUrl + "/" + shop.getShopId() + "/bids?authToken=" + authToken;
 
             // 3. Prepare headers (JSON)
             HttpHeaders headers = new HttpHeaders();

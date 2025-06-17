@@ -3,9 +3,6 @@ package UI;
 import DTOs.ItemDTO;
 import DTOs.MemberDTO;
 import DTOs.ShopDTO;
-import Domain.ItemCategory;
-
-import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.JsModule;
@@ -18,18 +15,11 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
-import org.springframework.core.ParameterizedTypeReference;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.textfield.NumberField;
-import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.component.UI;
-import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.NumberField;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -37,7 +27,6 @@ import java.time.format.FormatStyle;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 
 @Route(value = "admin", layout = AppLayoutBasic.class)
 
@@ -50,7 +39,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
     private Grid<ShopGridRow> shopGrid;
     private Grid<ItemGridRow> itemGrid;
     private final RestTemplate restTemplate = new RestTemplate();
-    private final String BASE_URL = "http://localhost:8080";
+    private final String BASE_URL;
 
     public static class UserGridRow {
         private int id;
@@ -155,7 +144,8 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
         return null; // Return null if userId is not available
     }
 
-    public AdminView() {
+    public AdminView(@Value("${url.api}") String baseUrl) {
+        this.BASE_URL = baseUrl;
         // removeAll();
         setSizeFull();
         setPadding(true);
@@ -263,7 +253,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             String token = getToken();
             HttpHeaders headers = getHeaders(token);
             HttpEntity<Void> request = new HttpEntity<>(headers);
-            String url = BASE_URL + "/api/users/allmembers" + "?token=" + token;
+            String url = BASE_URL + "/users/allmembers?token=" + token;
 
             ResponseEntity<MemberDTO[]> response = restTemplate.exchange(
                     url, HttpMethod.GET, request, MemberDTO[].class);
@@ -294,7 +284,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             String token = getToken();
             HttpHeaders headers = getHeaders(token);
             HttpEntity<Void> request = new HttpEntity<>(headers);
-            String url = BASE_URL + "/api/shops/all" + "?token=" + token;
+            String url = BASE_URL + "/shops/all?token=" + token;
 
             ResponseEntity<ShopDTO[]> response = restTemplate.exchange(
                     url, HttpMethod.GET, request, ShopDTO[].class);
@@ -317,7 +307,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             String token = getToken();
             HttpHeaders headers = getHeaders(token);
             HttpEntity<Void> request = new HttpEntity<>(headers);
-            String url = BASE_URL + "/api/items/all" + "?token=" + token;
+            String url = BASE_URL + "/items/all?token=" + token;
 
             ResponseEntity<ItemDTO[]> response = restTemplate.exchange(
                     url, HttpMethod.GET, request, ItemDTO[].class);
@@ -340,7 +330,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             String token = getToken();
             HttpHeaders headers = getHeaders(token);
             HttpEntity<Void> request = new HttpEntity<>(headers);
-            String url = BASE_URL + "/api/users/" + userId + "/admin" + "?token=" + token;
+            String url = BASE_URL + "/users/" + userId + "/admin?token=" + token;
 
             restTemplate.postForEntity(url, request, Void.class);
             Notification.show("User " + userId + " promoted to admin");
@@ -355,8 +345,8 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             HttpHeaders headers = getHeaders(token);
             HttpEntity<Void> request = new HttpEntity<>(headers);
 
-            String url = BASE_URL + "/api/users/" + userId + "/suspension"
-                    + "?token=" + token + "&until=" + time;
+            String url = BASE_URL + "/users/" + userId + "/suspension"
+                + "?token=" + token + "&until=" + time;
 
             restTemplate.postForEntity(url, request, Void.class);
             loadUsers();
@@ -373,8 +363,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             String token = getToken();
             HttpHeaders headers = getHeaders(token);
             HttpEntity<Void> request = new HttpEntity<>(headers);
-            String url = BASE_URL + "/api/users/" + userId + "/unsuspension"
-                    + "?token=" + token;
+            String url = BASE_URL + "/users/" + userId + "/unsuspension?token=" + token;
 
             restTemplate.postForEntity(url, request, Void.class);
             Notification.show("User " + userId + " unsuspended");
@@ -389,8 +378,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             String token = getToken();
             HttpHeaders headers = getHeaders(token);
             HttpEntity<Void> request = new HttpEntity<>(headers);
-            String url = BASE_URL + "/api/users/" + userId + "/ban"
-                    + "?token=" + token;
+            String url = BASE_URL + "/users/" + userId + "/ban?token=" + token;
 
             restTemplate.postForEntity(url, request, Void.class);
             Notification.show("User " + userId + " banned");
@@ -467,7 +455,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             String token = getToken();
             HttpHeaders headers = getHeaders(token);
             HttpEntity<Void> request = new HttpEntity<>(headers);
-            String url = BASE_URL + "/api/shops/" + shopId + "?token=" + token;
+            String url = BASE_URL + "/shops/" + shopId + "?token=" + token;
 
             restTemplate.exchange(url, HttpMethod.DELETE, request, Void.class);
             Notification.show("Shop " + shopId + " removed");
@@ -482,7 +470,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             String token = getToken();
             HttpHeaders headers = getHeaders(token);
             HttpEntity<Void> request = new HttpEntity<>(headers);
-            String url = BASE_URL + "/api/items/" + itemId + "?token=" + token;
+            String url = BASE_URL + "/items/" + itemId + "?token=" + token;
 
             restTemplate.exchange(url, HttpMethod.DELETE, request, Void.class);
             Notification.show("Item " + itemId + " removed");

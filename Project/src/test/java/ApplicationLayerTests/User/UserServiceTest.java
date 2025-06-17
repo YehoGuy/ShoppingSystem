@@ -34,6 +34,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.support.AbstractMessageChannel;
@@ -84,10 +85,15 @@ public class UserServiceTest {
     SimpMessagingTemplate messagingTemplate;
 
     @BeforeEach
-    void setUp() {
+    void setUp(@Value("${admin.username:admin}") String adminUsername,
+        @Value("${admin.password:admin}") String adminPlainPassword,
+        @Value("${admin.email:admin@mail.com}") String adminEmail,
+        @Value("${admin.phoneNumber:0}") String adminPhoneNumber,
+        @Value("${admin.address:admin st.}") String adminAddress) {
+
         authTokenRepository = new AuthTokenRepository(); // Your real repo
         authTokenService = new AuthTokenService(authTokenRepository); // Real service
-        userRepository = new UserRepository();
+        userRepository = new UserRepository(adminUsername, adminPlainPassword, adminEmail, adminPhoneNumber, adminAddress);
         messagingTemplate = Mockito.mock(SimpMessagingTemplate.class);
         doNothing().when(messagingTemplate).convertAndSend(anyString(), any(Object.class));
         notificationService = mock(NotificationService.class);
@@ -1439,9 +1445,8 @@ public class UserServiceTest {
 
     @Test
     void testAddMember_InvalidDetails() {
-        UserRepository repo = new UserRepository();
         AuthTokenService auth = new AuthTokenService(null);
-        UserService svc = new UserService(repo, auth, notificationService);
+        UserService svc = new UserService(userRepository, auth, notificationService);
         notificationService.setService(svc);
 
         assertThrows(com.example.app.ApplicationLayer.OurRuntime.class,

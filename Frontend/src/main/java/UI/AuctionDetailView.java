@@ -26,7 +26,6 @@ import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.component.button.Button;
 
 import DTOs.BidRecieptDTO;
-import jakarta.annotation.PostConstruct;
 
 /**
  * Detailed auction view: shows details and post-auction dialog.
@@ -40,10 +39,9 @@ public class AuctionDetailView extends VerticalLayout implements BeforeEnterObse
 
     private final RestTemplate rest = new RestTemplate();
 
-    @Value("${url.api}")
-    private String apiBase;
+    private final String apiBase;
 
-    private String AUCTION_API_URL;
+    private final String AUCTION_API_URL;
 
     // Read‐only fields for auction details
     private final TextField storeNameField = new TextField("Store Name");
@@ -56,12 +54,9 @@ public class AuctionDetailView extends VerticalLayout implements BeforeEnterObse
     private final IntegerField newBidAmount = new IntegerField("Your Bid Amount");
     private final Button placeBidButton = new Button("Place Auction-Bid");
 
-    @PostConstruct
-    private void init() {
-        AUCTION_API_URL = apiBase + "/purchases/auctions";
-    }
-
-    public AuctionDetailView() {
+    public AuctionDetailView(@Value("${url.api}") String apiBase) {
+        this.apiBase = apiBase;
+        this.AUCTION_API_URL = apiBase + "/purchases/auctions";
         getUserId(); // Ensure userId is set in session
         setPadding(true);
         setSpacing(true);

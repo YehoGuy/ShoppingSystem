@@ -36,6 +36,10 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.QueryParameters;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
+
+
 
 import DTOs.BidRecieptDTO;
 import DTOs.CartEntryDTO;
@@ -120,7 +124,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             buyButton.setVisible(false);
         }
         buyButton.addClickListener(event -> {
-            PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(cart);
+            PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(baseUrl, cart);
             this.removeAll();
             this.add(purchaseCompletion);
         });
@@ -160,7 +164,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 shopCart.setShopItems(Map.of(shopID, itemIDs));
                 shopCart.setShopItemPrices(Map.of(shopID, itemPricesMap));
                 shopCart.setShopItemQuantities(Map.of(shopID, itemQuantitiesMap));
-                PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(shopCart);
+                PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(baseUrl, shopCart);
                 this.removeAll();
                 this.add(purchaseCompletion);
             });

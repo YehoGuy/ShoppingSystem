@@ -29,7 +29,6 @@ import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 
 import DTOs.BidRecieptDTO;
-import jakarta.annotation.PostConstruct;
 
 /**
  * List all auctions with current status.
@@ -38,16 +37,17 @@ import jakarta.annotation.PostConstruct;
 @AnonymousAllowed
 public class AuctionListView extends VerticalLayout {
     
-    @Value("${url.api}/purchases/auctions")
-    private String BASE_URL;
+    private final String apiBase;
 
-    @Value("${url.api}")
-    private String apiBase;
+    private final String auctionsBaseUrl;
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final Grid<BidRecieptDTO> auctionGrid = new Grid<>(BidRecieptDTO.class, false);
 
-    public AuctionListView() {
+    public AuctionListView(@Value("${url.api}") String apiBase) {
+        this.apiBase = apiBase;
+        this.auctionsBaseUrl = apiBase + "/purchases/auctions";
+
         getUserId(); // Ensure userId is set in session
         setPadding(true);
         setSpacing(true);
@@ -126,6 +126,8 @@ public class AuctionListView extends VerticalLayout {
         }))
         .setHeader("Time Left")
         .setAutoWidth(true);
+
+        fetchAllAuctions();
     }
 
     public Integer getUserId() {
@@ -134,11 +136,6 @@ public class AuctionListView extends VerticalLayout {
         }
         UI.getCurrent().navigate(""); // Redirect to login if userId is not set
         return null; // Return null if userId is not available
-    }
-
-    @PostConstruct
-    private void init() {
-        fetchAllAuctions();
     }
 
     private void fetchAllAuctions() {
@@ -150,7 +147,7 @@ public class AuctionListView extends VerticalLayout {
             }
 
             // Call GET /api/purchases/auctions?authToken=<token>
-            String urlWithToken = BASE_URL + "?authToken=" + authToken;
+            String urlWithToken = auctionsBaseUrl + "?authToken=" + authToken;
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Void> entity = new HttpEntity<>(headers);

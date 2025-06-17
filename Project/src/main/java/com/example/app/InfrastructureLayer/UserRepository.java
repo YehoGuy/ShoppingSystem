@@ -26,7 +26,6 @@ import com.example.app.DomainLayer.Purchase.BidReciept;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
 
-import jakarta.annotation.PostConstruct;
 
 import com.example.app.DomainLayer.ShoppingCart;
 import com.example.app.DomainLayer.User;
@@ -43,47 +42,34 @@ public class UserRepository implements IUserRepository {
     private PasswordEncoderUtil passwordEncoderUtil;
     AtomicInteger userIdCounter;
 
-    @Value("${admin.username}")
-    private String adminUsername;
+    
+    private final String adminUsername;
+    private final String adminPlainPassword;
+    private final String adminEmail;
+    private final String adminPhoneNumber;
+    private final String adminAddress;
 
-    @Value("${admin.password}")
-    private String adminPlainPassword;
+    public UserRepository( @Value("${admin.username:admin}") String adminUsername,
+        @Value("${admin.password:admin}") String adminPlainPassword,
+        @Value("${admin.email:admin@mail.com}") String adminEmail,
+        @Value("${admin.phoneNumber:0}") String adminPhoneNumber,
+        @Value("${admin.address:admin st.}") String adminAddress) {
 
-    @Value("${admin.email}")
-    private String adminEmail;
+        this.adminUsername       = adminUsername;
+        this.adminPlainPassword  = adminPlainPassword;
+        this.adminEmail          = adminEmail;
+        this.adminPhoneNumber    = adminPhoneNumber;
+        this.adminAddress        = adminAddress;
 
-    @Value("${admin.phoneNumber}")
-    private String adminPhoneNumber;
-
-    @Value("${admin.address}")
-    private String adminAddress;
-
-    public UserRepository() {
         this.userMapping = new ConcurrentHashMap<>();
         this.userIdCounter = new AtomicInteger(0); // Initialize the user ID counter
         this.managers = new CopyOnWriteArrayList<>(); // Initialize the managers list
         this.passwordEncoderUtil = new PasswordEncoderUtil();
-        // TODO: V should be removed when adding database
+
+        initAdmin();
     }
 
-    @PostConstruct
-    public void initAdmin() {
-        if (adminUsername == null || adminUsername.isBlank()) {
-            adminUsername = "admin";
-        }
-        if (adminPlainPassword == null || adminPlainPassword.isBlank()) {
-            adminPlainPassword = "admin";
-        }
-        if (adminEmail == null || adminEmail.isBlank()) {
-            adminEmail = "admin@mail.com";
-        }
-        if (adminPhoneNumber == null || adminPhoneNumber.isBlank()) {
-            adminPhoneNumber = "0";
-        }
-        if (adminAddress == null || adminAddress.isBlank()) {
-            adminAddress = "admin st.";
-        }
-
+    private void initAdmin() {
         String passwordToStore = adminPlainPassword;
         int adminId = addMember(adminUsername, passwordToStore, adminEmail, adminPhoneNumber, adminAddress);
 

@@ -14,6 +14,7 @@ import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
@@ -29,8 +30,9 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
     private double totalAmount = 0.0;
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${url.api}")
-    private String BASE_URL;
+    private final String api;
+    private final String paymentMethodUrl;
+    private final String checkoutUrl;
 
     private String country;
     private String city;
@@ -56,8 +58,12 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         return null; // Return null if userId is not available
     }
 
-    public PaymenPageView(double totalAmount, String country, String city, String street, String houseNumber,
+    public PaymenPageView(@Value("${url.api}") String api, double totalAmount, String country, String city, String street, String houseNumber,
             String zipCode) {
+
+        this.api               = api;
+        this.paymentMethodUrl  = api + "/payment-method";
+        this.checkoutUrl       = api + "/checkout";
 
         paymentMethod = getUserPaymentMethod();
 
@@ -73,7 +79,7 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
 
     private PaymentMethodDTO getUserPaymentMethod() {
         String token = getToken();
-        String url = BASE_URL + "/payment-method?authToken=" + token;
+        String url = paymentMethodUrl + "?authToken=" + token;
 
         ResponseEntity<PaymentMethodDTO> response = restTemplate.getForEntity(url, PaymentMethodDTO.class);
         if (response.getStatusCode().is2xxSuccessful()) {
@@ -127,12 +133,12 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
     private void processPayment(PaymentMethodDTO method) {
         try {
             String token = getToken();
-            String url = BASE_URL + "/checkout" +
-                    "?authToken=" + token +
-                    "&country=" + country +
-                    "&city=" + city +
-                    "&street=" + street +
-                    "&houseNumber=" + houseNumber;
+            String url = checkoutUrl
+                + "?authToken=" + token
+                + "&country=" + country
+                + "&city=" + city
+                + "&street=" + street
+                + "&houseNumber=" + houseNumber;
 
             ResponseEntity<String> response = restTemplate.postForEntity(url, null, String.class);
 
@@ -159,7 +165,8 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/" + userId + "/isSuspended?token=" + token;
+        String url = api + "/users/"
+           + userId + "/isSuspended?token=" + token;
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {

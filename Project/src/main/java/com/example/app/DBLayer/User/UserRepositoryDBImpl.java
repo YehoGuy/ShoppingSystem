@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
@@ -42,12 +43,30 @@ public class UserRepositoryDBImpl implements IUserRepository {
 
     private AtomicInteger idCounter = new AtomicInteger(0);
 
+    private final String adminUsername;
+    private final String adminPlainPassword;
+    private final String adminEmail;
+    private final String adminPhoneNumber;
+    private final String adminAddress;
+
+
     @PersistenceContext
     private EntityManager entityManager;
 
     private final ConcurrentHashMap<Integer, Guest> guests;
 
-    public UserRepositoryDBImpl(@Lazy @Autowired UserRepositoryDB jpaRepo) {
+    public UserRepositoryDBImpl( @Value("${admin.username:admin}") String adminUsername,
+        @Value("${admin.password:admin}") String adminPlainPassword,
+        @Value("${admin.email:admin@mail.com}") String adminEmail,
+        @Value("${admin.phoneNumber:0}") String adminPhoneNumber,
+        @Value("${admin.address:admin st.}") String adminAddress,
+        @Lazy @Autowired UserRepositoryDB jpaRepo) {
+
+        this.adminUsername       = adminUsername;
+        this.adminPlainPassword  = adminPlainPassword;
+        this.adminEmail          = adminEmail;
+        this.adminPhoneNumber    = adminPhoneNumber;
+        this.adminAddress        = adminAddress;
         this.jpaRepo = jpaRepo;
         this.guests = new ConcurrentHashMap<>();
     }    
@@ -65,10 +84,10 @@ public class UserRepositoryDBImpl implements IUserRepository {
                         if (!adminExists) {
                             // Create admin using the default constructor to let ID be auto-generated
                             Member admin = new Member();
-                            admin.setUsername("admin");
-                            admin.setPassword(passwordEncoderUtil.encode("admin"));
-                            admin.setEmail("admin@mail.com");
-                            admin.setPhoneNumber("1234567890");
+                            admin.setUsername(adminUsername);
+                            admin.setPassword(passwordEncoderUtil.encode(adminPlainPassword));
+                            admin.setEmail(adminEmail);
+                            admin.setPhoneNumber(adminPhoneNumber);
                             admin.setAdmin(true);
                             
                             admin = jpaRepo.save(admin); // Save and get the admin with generated ID

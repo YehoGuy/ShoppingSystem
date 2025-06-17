@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Value;
 
 import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
@@ -38,9 +39,13 @@ public class UserRepositoryTests {
     private int memberId;
 
     @BeforeEach
-    public void setup() {
-        repo = new UserRepository();  
-        repo.initAdmin(); 
+    public void setup(@Value("${admin.username:admin}") String adminUsername,
+        @Value("${admin.password:admin}") String adminPlainPassword,
+        @Value("${admin.email:admin@mail.com}") String adminEmail,
+        @Value("${admin.phoneNumber:0}") String adminPhoneNumber,
+        @Value("${admin.address:admin st.}") String adminAddress) {
+
+        repo = new UserRepository(adminUsername, adminPlainPassword, adminEmail, adminPhoneNumber, adminAddress);  
         repo.setEncoderToTest(true); // Set the encoder to test mode
         guestId = repo.addGuest();  
         guest = repo.getUserById(guestId);

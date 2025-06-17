@@ -29,8 +29,8 @@ import DTOs.ShopDTO;
 
 public class ShopSearchView extends VerticalLayout implements BeforeEnterObserver {
 
-    @Value("${url.api}/shops/all")
-    private String shopsApiUrl;
+    private final String api;
+    private final String shopsApiUrl;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -60,7 +60,10 @@ public class ShopSearchView extends VerticalLayout implements BeforeEnterObserve
         return null; // Return null if userId is not available
     }
 
-    public ShopSearchView() {
+    public ShopSearchView(@Value("${url.api}") String api) {
+        this.api          = api;
+        this.shopsApiUrl  = api + "/shops/all";
+
         setSizeFull();
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.START);
@@ -146,7 +149,7 @@ public class ShopSearchView extends VerticalLayout implements BeforeEnterObserve
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/" + userId + "/isSuspended?token=" + token;
+        String url = api + "/users/" + userId + "/isSuspended?token=" + token;
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {

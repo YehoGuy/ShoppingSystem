@@ -39,12 +39,12 @@ import DTOs.rolesDTO;
 
 public class MessageView extends VerticalLayout implements BeforeEnterObserver {
 
-    private String BASE_URL;
-    private String MSG_BASE_URL;
-    private String NOTIFICATIONS_URL;
-    private String PENDING_ROLES_URL;
-    private String GET_BY_RECIVER;
-    private String ROLES_URL;
+    private final String BASE_URL;
+    private final String MSG_BASE_URL;
+    private final String NOTIFICATIONS_URL;
+    private final String PENDING_ROLES_URL;
+    private final String GET_BY_RECIVER;
+    private final String ROLES_URL;
 
     private final RestTemplate rest = new RestTemplate();
     private final VerticalLayout threadContainer = new VerticalLayout();
@@ -70,8 +70,8 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
         this.GET_BY_RECIVER = this.MSG_BASE_URL + "/receiver?authToken=";
 
         this.token = getToken();
-        ResponseEntity<MemberDTO[]> allmem = rest
-                .getForEntity("http://localhost:8080/api/users/allmembers?token=" + token, MemberDTO[].class);
+        ResponseEntity<MemberDTO[]> allmem = rest.getForEntity(
+            BASE_URL + "/users/allmembers?token=" + token, MemberDTO[].class);
 
         ResponseEntity<MessageDTO[]> allmessagesRe = rest.getForEntity(
                 GET_BY_RECIVER + token,
@@ -345,7 +345,9 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/" + userId + "/isSuspended?token=" + token;
+        String url = BASE_URL + "/users/" 
+            + userId + "/isSuspended?token=" + token;
+
         ResponseEntity<Boolean> response = rest.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
