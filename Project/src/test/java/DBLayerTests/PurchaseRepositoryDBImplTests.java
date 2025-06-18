@@ -19,7 +19,7 @@ import com.example.app.DomainLayer.Purchase.Address;
 import jakarta.transaction.Transactional;
 
 @SpringBootTest(classes = SimpleHttpServerApplication.class)
-@ActiveProfiles({ "test" })
+@ActiveProfiles({ "db-test" })
 @Transactional
 public class PurchaseRepositoryDBImplTests {
 
