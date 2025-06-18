@@ -24,6 +24,8 @@ import com.example.app.DomainLayer.Roles.Role;
 import com.example.app.DomainLayer.User;
 import com.example.app.InfrastructureLayer.PasswordEncoderUtil;
 
+import jakarta.validation.constraints.Min;
+
 @Service
 public class UserService {
 
@@ -1490,7 +1492,7 @@ public class UserService {
          * 
          * // Regex for required rules
          * String pattern =
-         * "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$";
+         * "^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$";
          * 
          * return password.matches(pattern);
          */
@@ -1508,7 +1510,7 @@ public class UserService {
         // (-\d+)? → optional single dash followed by digits
         // $ → end of string
         // Full length between 9 to 15 characters including dash/+ if present
-        String pattern = "^\\+?\\d+(-\\d+)?$";
+        String pattern = "^\\+?\\d+(-\\d+)?$";   //// 2 \ or 1 \ ??
 
         if (!phoneNumber.trim().matches(pattern)) {
             return false;
@@ -1528,7 +1530,7 @@ public class UserService {
         }
 
         // Regex for a standard email format
-        String pattern = "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
+        String pattern = "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"; //// 2 \ or 1 \ ??
 
         return email.trim().matches(pattern);
     }
@@ -2111,6 +2113,24 @@ public class UserService {
         } catch (Exception e) {
             LoggerService.logError("addAuctionWinBidToUserShoppingCart", e, winnerId, bid);
             throw new OurRuntime("addAuctionWinBidToUserShoppingCart: " + e.getMessage(), e);
+        }
+    }
+
+    public int getShopOwner(int shopId) {
+        try {
+            LoggerService.logMethodExecution("getShopOwner", shopId);
+            int shopOwner = userRepository.getShopOwner(shopId);
+            LoggerService.logMethodExecutionEnd("getShopOwner", shopOwner);
+            return shopOwner;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getShopOwner", e);
+            throw new OurRuntime("getShopOwner: " + e.getMessage(), e);
+        } catch (OurArg e) {
+                LoggerService.logDebug("getShopOwner", e);
+                throw new OurArg("getShopOwner: " + e.getMessage(), e);
+        } catch (Exception e) {
+                    LoggerService.logError("getShopOwner", e, shopId);
+                    throw new OurRuntime("getShopOwner: " + e.getMessage(), e);
         }
     }
 }

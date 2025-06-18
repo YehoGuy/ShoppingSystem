@@ -119,7 +119,7 @@ class PurchaseRepositoryTests {
 
         List<Reciept> receipts = repo.getStorePurchases(sid);
         assertEquals(2, receipts.size());
-        assertTrue(receipts.stream().allMatch(r -> r.getStoreId() == sid));
+        assertTrue(receipts.stream().allMatch(r -> r.getShopId() == sid));
     }
 
     @Test
@@ -133,7 +133,7 @@ class PurchaseRepositoryTests {
 
         List<Reciept> receipts = repo.getUserStorePurchases(uid, sid);
         assertEquals(2, receipts.size());
-        assertTrue(receipts.stream().allMatch(r -> r.getUserId() == uid && r.getStoreId() == sid));
+        assertTrue(receipts.stream().allMatch(r -> r.getUserId() == uid && r.getShopId() == sid));
     }
 
     /* ───────────────────── concurrency – unique IDs ───────────────────── */

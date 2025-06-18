@@ -158,4 +158,6 @@ public interface IUserRepository {
 
     void addAuctionWinBidToShoppingCart(int winnerId, Bid bid);
 
+    int getShopOwner(int shopId);
+
 }

@@ -18,8 +18,10 @@ import org.springframework.web.client.RestTemplate;
 
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
@@ -63,6 +65,58 @@ public class BidsListView extends VerticalLayout {
                 .setHeader("Completed");
 
         add(bidGrid);
+        // ————— Place New Bid button —————
+        bidGrid.addComponentColumn(dto -> {
+            Button placeBid = new Button("Place New Bid");
+            // only allow non‐owners to bid, and only if the auction is still open
+            boolean isOwner    = getUserId() != null && getUserId().equals(dto.getStoreId());
+            boolean isComplete = dto.isCompleted();
+            placeBid.setEnabled(!isOwner && !isComplete);
+            placeBid.addClickListener(e ->
+            UI.getCurrent().navigate(
+                "bid/" + dto.getPurchaseId()
+                )
+            );
+            return placeBid;
+        })
+        .setHeader("Place New Bid")
+        .setAutoWidth(true);
+
+        // ————— Finalize Bid button —————
+        bidGrid.addComponentColumn(dto -> {
+            Button finalize = new Button("Finalize Bid");
+            boolean amOwner    = getUserId() != null && getUserId().equals(dto.getStoreId());
+            boolean alreadyDone = dto.isCompleted(); // or whatever your DTO calls it
+
+            // only show to the owner while it’s still open
+            finalize.setVisible(amOwner && !alreadyDone);
+
+            finalize.addClickListener(e -> {
+                String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+                if (token == null) {
+                    Notification.show("You must be logged in to finalize.", 2000, Notification.Position.MIDDLE);
+                    return;
+                }
+                // make sure this matches your @PostMapping path in PurchaseController
+                String url = bidsBaseUrl + "/" + dto.getPurchaseId() + "/finalize?token=" + token;
+                try {
+                    ResponseEntity<Integer> resp = restTemplate.postForEntity(url, null, Integer.class);
+                    if (resp.getStatusCode().is2xxSuccessful()) {
+                        Notification.show("Auction closed! Winner: user " + resp.getBody(),
+                                        2500, Notification.Position.MIDDLE);
+                        fetchAllBids();  // your method that reloads the grid
+                    } else {
+                        Notification.show("Could not finalize: " + resp.getStatusCode(),
+                                        3000, Notification.Position.MIDDLE);
+                    }
+                } catch (Exception ex) {
+                    Notification.show("Error: " + ex.getMessage(), 4000, Notification.Position.MIDDLE);
+                }
+            });
+            return finalize;
+        })
+        .setHeader("Finalize")
+        .setAutoWidth(true);
 
         // Add a listener so that when a row is clicked, we navigate to
         // /bid/{purchaseId}

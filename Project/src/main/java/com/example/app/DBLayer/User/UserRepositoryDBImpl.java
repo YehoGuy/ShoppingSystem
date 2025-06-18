@@ -943,4 +943,11 @@ public class UserRepositoryDBImpl implements IUserRepository {
             cart.addBid(shopId, items);
         }
     }
+
+    @Override
+    public int getShopOwner(int shopId)
+    {
+        //TODO
+        return -1;
+    }
 }

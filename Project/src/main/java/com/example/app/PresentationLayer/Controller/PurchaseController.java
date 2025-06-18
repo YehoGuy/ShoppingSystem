@@ -198,7 +198,6 @@ public class PurchaseController {
 
         try {
             // Parse the payment details JSON
-            
             int winnerId = purchaseService.finalizeBid(authToken, bidId);
             // success → 200 OK, return the winner's user‑id
             return ResponseEntity.ok(winnerId);

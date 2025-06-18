@@ -190,6 +190,14 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
             Span priceSpan = new Span("💲 " + prices.getOrDefault(item, 0.0));
             Span stock = new Span("📊 In Stock: " + available);
 
+            Button bidButton = new Button("Create Bid", click -> {
+            // navigates to your CreateBidView for this shop
+            UI.getCurrent().navigate("shop/" + shop.getShopId() + "/create-bid");
+            });
+
+            row.add(name, priceSpan, stock, bidButton /* plus your other controls if any */);
+            itemsLayout.add(row);
+
             // IntegerField to choose quantity
             IntegerField qtyField = new IntegerField();
             qtyField.setLabel("Quantity");

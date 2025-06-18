@@ -752,4 +752,24 @@ public class UserRepository implements IUserRepository {
         user.addAuctionWin(bidReciept); // Assuming Member has a method to add an auction win to the shopping cart
     }
 
+
+    @Override
+    public int getShopOwner(int shopId) {
+        // 1) try to find the founder
+        for (Member member : getMembersList()) {
+            if (member.getRoles().stream()
+                    .anyMatch(r -> r.isFounder() && r.getShopId() == shopId)) {
+                return member.getMemberId();
+            }
+        }
+        // 2) fallback to any owner
+        for (Member member : getMembersList()) {
+            if (member.getRoles().stream()
+                    .anyMatch(r -> r.isOwner() && r.getShopId() == shopId)) {
+                return member.getMemberId();
+            }
+        }
+        throw new OurRuntime("No owner found for shop " + shopId);
+    }
+
 }

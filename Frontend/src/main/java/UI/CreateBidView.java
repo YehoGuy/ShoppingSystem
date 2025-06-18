@@ -50,6 +50,8 @@ public class CreateBidView extends VerticalLayout implements BeforeEnterObserver
     private final String shopApiBase;
     
     private final String createBidUrl;
+    
+    private final String userApiBase;
 
     // For each item, we store a NumberField so we can read its numeric quantity
     // later
@@ -64,6 +66,7 @@ public class CreateBidView extends VerticalLayout implements BeforeEnterObserver
     public CreateBidView(@Value("${url.api}") String apiBase) {
         this.shopApiBase   = apiBase + "/shops";
         this.createBidUrl  = apiBase + "/purchases/bids";
+        this.userApiBase   = apiBase + "/users";
 
         setPadding(true);
         setSpacing(true);
@@ -71,17 +74,63 @@ public class CreateBidView extends VerticalLayout implements BeforeEnterObserver
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
-        getUserId(); // Ensure userId is set in session
-        // 1) Extract the shopId path parameter
+        // 0) Ensure we have a userId (redirects to login if not)
+        Integer currentUserId = getUserId();
+        if (currentUserId == null) {
+            return;
+        }
+
+        // 1) Extract shopId
         shopId = event.getRouteParameters().get("shopId").orElse(null);
-        if (shopId == null || shopId.trim().isEmpty()) {
+        if (shopId == null || shopId.isBlank()) {
             event.rerouteToError(NotFoundException.class);
             return;
         }
 
-        // 2) Load the ShopDTO (with items & prices)
+        // 2) Load shop details
         loadShop();
-        // 3) Build the UI once we have shop data
+        if (shop == null) {
+            buildPage();  // Will show error header
+            return;
+        }
+
+        // 3) Call your UserController to get the ownerId
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        String ownerUrl = userApiBase
+                        + "/shops/" + shopId
+                        + "/owner?token=" + token;
+        try {
+            ResponseEntity<Integer> ownerResp =
+                rest.getForEntity(ownerUrl, Integer.class);
+
+            if (ownerResp.getStatusCode().is2xxSuccessful() && ownerResp.getBody() != null) {
+                Integer ownerId = ownerResp.getBody();
+                if (ownerId.equals(currentUserId)) {
+                    Notification.show(
+                        "❌ You cannot place a bid on your own shop.",
+                        3000, Notification.Position.MIDDLE
+                    );
+                    UI.getCurrent().navigate("shop/" + shopId);
+                    return;
+                }
+            } else {
+                Notification.show(
+                    "⚠️ Could not verify shop owner. Please try again.",
+                    3000, Notification.Position.MIDDLE
+                );
+                UI.getCurrent().navigate("");
+                return;
+            }
+        } catch (Exception e) {
+            Notification.show(
+                "❗ Error checking shop owner.",
+                3000, Notification.Position.MIDDLE
+            );
+            UI.getCurrent().navigate("");
+            return;
+        }
+
+        // 4) Safe to build the bid UI
         buildPage();
     }
 

@@ -159,7 +159,7 @@ public class Reciept {
      *
      * @return the store ID.
      */
-    public int getStoreId() {
+    public int getShopId() {
         return storeId;
     }
 
