@@ -285,7 +285,7 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
     private void loadShops() {
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
         try {
-            System.out.println("url: " + getShopsUrl + "?workerId=" + getUserId() + "&token=" + token);
+            
             ResponseEntity<ShopDTO[]> resp = restTemplate
                 .getForEntity(getShopsUrl + "?workerId=" + getUserId() + "&token=" + token,
                   ShopDTO[].class);

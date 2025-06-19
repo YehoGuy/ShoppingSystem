@@ -752,4 +752,10 @@ public class UserRepository implements IUserRepository {
         user.addAuctionWin(bidReciept); // Assuming Member has a method to add an auction win to the shopping cart
     }
 
+    @Override
+    public void updateUserInDB(Member member) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'updateUserInDB'");
+    }
+
 }

@@ -943,4 +943,26 @@ public class UserRepositoryDBImpl implements IUserRepository {
             cart.addBid(shopId, items);
         }
     }
+
+    @Override
+    public void updateUserInDB(Member member) {
+        if (member == null) {
+            throw new IllegalArgumentException("Member cannot be null.");
+        }
+        
+        // Ensure the member exists in the database
+        Member existingMember = jpaRepo.findById(member.getMemberId())
+                .orElseThrow(() -> new OurRuntime("Member not found: " + member.getMemberId()));
+        
+        // Update the existing member with the new values
+        existingMember.setUsername(member.getUsername());
+        existingMember.setPassword(member.getPassword());
+        existingMember.setEmail(member.getEmail());
+        existingMember.setPhoneNumber(member.getPhoneNumber());
+        existingMember.setAddress(member.getAddress());
+        
+        // Save the updated member back to the database
+        jpaRepo.save(existingMember);
+        
+    }
 }
