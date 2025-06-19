@@ -954,15 +954,10 @@ public class UserRepositoryDBImpl implements IUserRepository {
         Member existingMember = jpaRepo.findById(member.getMemberId())
                 .orElseThrow(() -> new OurRuntime("Member not found: " + member.getMemberId()));
         
-        // Update the existing member with the new values
-        existingMember.setUsername(member.getUsername());
-        existingMember.setPassword(member.getPassword());
-        existingMember.setEmail(member.getEmail());
-        existingMember.setPhoneNumber(member.getPhoneNumber());
-        existingMember.setAddress(member.getAddress());
+ 
         
         // Save the updated member back to the database
-        jpaRepo.save(existingMember);
+        jpaRepo.save(member);
         
     }
 }

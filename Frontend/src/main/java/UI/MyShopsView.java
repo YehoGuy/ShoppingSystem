@@ -20,8 +20,6 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
-import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
@@ -296,7 +294,7 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
                 Notification.show("⚠️ Failed to load shops");
             }
         } catch (Exception ex) {
-            Notification.show("❗ Error loading shops");
+            Notification.show("❗ Error loading shop: " + ex.getMessage());
         }
     }
 

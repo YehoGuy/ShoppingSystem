@@ -7,6 +7,8 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import com.example.app.DomainLayer.Purchase.Address;
 import com.example.app.DomainLayer.Purchase.Bid;
 import com.example.app.DomainLayer.Purchase.BidReciept;
@@ -135,7 +137,7 @@ public class Member extends User {
     public String getUsername() {
         return username; // Return the username
     }
-
+    @Transactional
     public String getPassword() {
         return password; // Return the password
     }
@@ -155,11 +157,11 @@ public class Member extends User {
     public Boolean isSuspended() {
         return suspended.isAfter(LocalDateTime.now()); // Check if the user is suspended
     }
-
+    @Transactional
     public void setSuspended(LocalDateTime suspended) {
         this.suspended = suspended; // Set the suspension status
     }
-
+    @Transactional
     public void setUnSuspended() {
         this.suspended = LocalDateTime.now(); // Set the suspension status to now (unsuspended)
     }
@@ -167,23 +169,23 @@ public class Member extends User {
     public boolean isAdmin() {
         return isAdmin; // Return the admin status
     }
-
+    @Transactional
     public synchronized void setAdmin(boolean isAdmin) {
         this.isAdmin = isAdmin; // Set the admin status
     }
-
+    @Transactional
     public synchronized void setUsername(String username) {
         this.username = username; // Set the username
     }
-
+    @Transactional
     public synchronized void setPassword(String password) {
         this.password = password; // Set the password
     }
-
+    @Transactional
     public synchronized void setEmail(String email) {
         this.email = email; // Set the email address
     }
-
+    @Transactional
     public synchronized void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber; // Set the phone number
     }
@@ -193,7 +195,7 @@ public class Member extends User {
             return new CopyOnWriteArrayList<>(orderHistory);
         } // Return a copy of the order history
     }
-
+    @Transactional
     public void addOrderToHistory(int orderId) {
         synchronized (orderHistoryLock) {
             orderHistory.add(orderId);
@@ -205,19 +207,20 @@ public class Member extends User {
             return new CopyOnWriteArrayList<>(roles);
         } // Return a copy of the roles
     }
-
+    @Transactional
     public void addRoleToPending(Role role) {
         synchronized (pendingRolesLock) {
             pending_roles.add(role);
         } // Add a role to the list of pending roles
     }
 
+    @Transactional
     public void addRole(Role role) {
         synchronized (rolesLock) {
             roles.add(role);
         } // Add a role to the list of roles
     }
-
+    @Transactional
     public void removeRole(Role role) {
         synchronized (rolesLock) {
             roles.remove(role);
@@ -239,6 +242,7 @@ public class Member extends User {
         return memberId == member.memberId; // Compare member IDs
     }
 
+    @Transactional
     public void acceptRole(Role role) {
         synchronized (pendingRolesLock) {
             if (pending_roles.contains(role)) {
@@ -251,7 +255,7 @@ public class Member extends User {
             }
         }
     }
-
+    @Transactional
     public void declineRole(Role role) {
         synchronized (pendingRolesLock) {
             if (pending_roles.contains(role)) {
@@ -261,7 +265,7 @@ public class Member extends User {
             }
         }
     }
-
+    @Transactional
     public void addPermission(int shopId, PermissionsEnum permission) {
         synchronized (rolesLock) {
             for (Role role : roles) {
@@ -303,28 +307,28 @@ public class Member extends User {
             return new CopyOnWriteArrayList<>(pending_roles);
         } // Return a copy of the pending roles
     }
-
+    @Transactional
     public void setPendingRoles(List<Role> newPendingRoles) {
         synchronized (pendingRolesLock) {
             this.pending_roles.clear();
             this.pending_roles.addAll(newPendingRoles);
         }
     }
-
+    @Transactional
     public void setRoles(List<Role> newRoles) {
         synchronized (rolesLock) {
             this.roles.clear();
             this.roles.addAll(newRoles);
         }
     }
-
+    @Transactional
     public void setOrderHistory(List<Integer> newOrderHistory) {
         synchronized (orderHistoryLock) {
             this.orderHistory.clear();
             this.orderHistory.addAll(newOrderHistory);
         }
     }
-
+    @Transactional
     public void addNotification(Notification notification) {
         synchronized (notificationsLock) {
             notifications.add(notification);
@@ -354,13 +358,13 @@ public class Member extends User {
             return auctionsWins;
         } // Return a copy of the auctions won
     }
-
+    @Transactional
     public void addAuctionWin(BidReciept bid) {
         synchronized (notificationsLock) {
             auctionsWins.add(bid);
         } // Add a bid to the list of auctions won
     }
-
+    @Transactional
     public void setConnected(boolean isConnected) {
         this.isConnected = isConnected; // Set the connection status
     }
