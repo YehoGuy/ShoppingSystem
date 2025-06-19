@@ -754,8 +754,7 @@ public class UserRepository implements IUserRepository {
 
     @Override
     public void updateUserInDB(Member member) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'updateUserInDB'");
+        return;
     }
 
 }
