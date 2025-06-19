@@ -15,6 +15,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.Notification.Position;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
@@ -48,6 +49,8 @@ public class BidDetailView extends VerticalLayout implements BeforeEnterObserver
     private final String apiBase;
 
     private final String BID_API_URL;
+
+    private Integer shopOwnerId;
 
     // Read‐only fields for bid details
     private final TextField purchaseIdField = new TextField("Bid ID");
@@ -140,6 +143,25 @@ public class BidDetailView extends VerticalLayout implements BeforeEnterObserver
             Notification.show("❗ Error loading bid",
                     3000, Notification.Position.MIDDLE);
         }
+
+        // 2) NOW fetch the shop owner using your UserController endpoint:
+        try {
+            String ownerUrl = apiBase      // same apiBase you inject
+                            + "/users/shops/" 
+                            + bid.getStoreId() 
+                            + "/owner?token=" 
+                            + token;
+
+            ResponseEntity<Integer> ownerResp =
+                rest.exchange(ownerUrl, HttpMethod.GET, null, Integer.class);
+
+            this.shopOwnerId = ownerResp.getBody();
+        } catch (Exception ex) {
+            Notification.show("Could not fetch shop owner: " + ex.getMessage(),
+                              3000, Position.MIDDLE);
+            this.shopOwnerId = null;
+        }
+        
     }
 
     private void buildPage() {
@@ -175,8 +197,8 @@ public class BidDetailView extends VerticalLayout implements BeforeEnterObserver
 
         Integer currentUserId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
         if (bid.getUserId() != currentUserId) {
-            finalizeBidButton.setEnabled(false);
-            finalizeBidButton.setVisible(false);
+            finalizeBidButton.setEnabled(true);
+            finalizeBidButton.setVisible(true);
         } else {
             finalizeBidButton.setText("Finalize Bid");
             finalizeBidButton.addClickListener(listener -> onFinalizeBid());
@@ -203,10 +225,13 @@ public class BidDetailView extends VerticalLayout implements BeforeEnterObserver
             return;
         }
 
-        // 5) Otherwise, add NumberField + Button for placing new bid
+        finalizeBidButton.setText("Finalize Bid");
+        finalizeBidButton.addClickListener(e -> onFinalizeBid());
+        add(finalizeBidButton);
+
+        
         newBidAmount.setMin(1);
-        newBidAmount.setPlaceholder("Enter your amount");
-        newBidAmount.setWidth("120px");
+        newBidAmount.setPlaceholder("Enter your bid");
         placeBidButton.addClickListener(e -> onPlaceBid());
         add(newBidAmount, placeBidButton);
     }
@@ -269,11 +294,11 @@ public class BidDetailView extends VerticalLayout implements BeforeEnterObserver
         String finalizeUrl = BID_API_URL
                 + "/" + bidId + "/finalize?authToken=" + token;
         try {
-            ResponseEntity<Void> resp = rest.exchange(
+            ResponseEntity<Integer> resp = rest.exchange(
                     finalizeUrl,
                     HttpMethod.POST,
                     new HttpEntity<>(new HttpHeaders()),
-                    Void.class);
+                    Integer.class);
             if (resp.getStatusCode().is2xxSuccessful()) {
                 Notification.show("Bid finalized!", 2000, Notification.Position.MIDDLE);
                 // Re‐load the bid from the server to reflect that completed = true
@@ -288,45 +313,4 @@ public class BidDetailView extends VerticalLayout implements BeforeEnterObserver
                     3000, Notification.Position.MIDDLE);
         }
     }
-
-    /*
-     * private void onFinalizeBid() {
-     * String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-     * if (token == null || token.isBlank()) {
-     * Notification.show("You must be logged in to finalize a bid.",
-     * 3000, Notification.Position.MIDDLE);
-     * return;
-     * }
-     * 
-     * String finalizeUrl = BID_API_URL + "/" + bidId + "/finalize?authToken=" +
-     * token;
-     * 
-     * try {
-     * HttpHeaders headers = new HttpHeaders();
-     * headers.setContentType(MediaType.APPLICATION_JSON);
-     * HttpEntity<Void> entity = new HttpEntity<>(headers);
-     * 
-     * ResponseEntity<Void> resp = rest.exchange(
-     * finalizeUrl,
-     * HttpMethod.POST,
-     * entity,
-     * Void.class
-     * );
-     * if (resp.getStatusCode().is2xxSuccessful()) {
-     * Notification.show("Bid finalized successfully!",
-     * 2000, Notification.Position.MIDDLE);
-     * // Re‐load bid and rebuild UI to show it as completed
-     * loadBid();
-     * buildPage();
-     * } else {
-     * Notification.show("Failed to finalize bid: " + resp.getStatusCode(),
-     * 3000, Notification.Position.MIDDLE);
-     * }
-     * } catch (Exception ex) {
-     * ex.printStackTrace();
-     * Notification.show("Error finalizing bid: " + ex.getMessage(),
-     * 4000, Notification.Position.MIDDLE);
-     * }
-     * }
-     */
 }

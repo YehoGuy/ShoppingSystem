@@ -85,13 +85,15 @@ public class Bid extends Purchase {
      */
     public synchronized void addBidding(int userId, int bidAmount) {
         LocalDateTime now = LocalDateTime.now();
-        if (now.isBefore(auctionStartTime)) {
-            throw new IllegalStateException(
-                    "Auction has not started yet. Current time: " + now + ", Auction start time: " + auctionStartTime);
-        }
-        if (now.isAfter(auctionEndTime) && isCompleted) {
-            throw new IllegalStateException("Auction has already ended or is completed. Current time: " + now
-                    + ", Auction end time: " + auctionEndTime);
+        if(auctionStartTime != null) {
+            if (now.isBefore(auctionStartTime)) {
+                throw new IllegalStateException(
+                        "Auction has not started yet. Current time: " + now + ", Auction start time: " + auctionStartTime);
+            }
+            if (now.isAfter(auctionEndTime) && isCompleted) {
+                throw new IllegalStateException("Auction has already ended or is completed. Current time: " + now
+                        + ", Auction end time: " + auctionEndTime);
+            }
         }
         if (bidAmount > highestBid) {
             if (!isCompleted) {

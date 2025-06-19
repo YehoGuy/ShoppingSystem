@@ -91,7 +91,7 @@ public class AuctionListView extends VerticalLayout {
                 Position.MIDDLE
                 );
             } else {
-                UI.getCurrent().navigate("auctions");
+                UI.getCurrent().navigate("auction/" + dto.getPurchaseId());
             }
         });
         return addOffer;

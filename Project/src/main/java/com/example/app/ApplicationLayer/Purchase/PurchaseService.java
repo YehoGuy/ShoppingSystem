@@ -1,5 +1,6 @@
 package com.example.app.ApplicationLayer.Purchase;
 
+import java.lang.reflect.Member;
 import java.sql.Date;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -27,6 +28,8 @@ import com.example.app.DomainLayer.Purchase.IPurchaseRepository;
 import com.example.app.DomainLayer.Purchase.Purchase;
 import com.example.app.DomainLayer.Purchase.Reciept;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
+
+import jakarta.validation.constraints.Min;
 
 @Service
 public class PurchaseService {
@@ -183,10 +186,6 @@ public class PurchaseService {
             if (!(purchase instanceof Bid)) {
                 throw new OurRuntime("Purchase " + purchaseId + " is not a bid");
             }
-            if (purchase.getUserId() == userId) {
-                throw new OurRuntime(
-                        "User " + userId + " is the owner of the bid " + purchaseId + " and cannot bid on it");
-            }
             ((Bid) purchase).addBidding(userId, bidAmount);
             LoggerService.logMethodExecutionEndVoid("postBidding");
         } catch (OurArg e) {
@@ -204,7 +203,6 @@ public class PurchaseService {
     public int finalizeBid(String authToken, int purchaseId) {
         int initiatingUserId = -1;
         boolean payed = false;
-        int highestBidderId = -1;
         int finalPrice = -1;
         int shopId = -1;
         try {
@@ -214,8 +212,8 @@ public class PurchaseService {
                 throw new OurRuntime("Purchase " + purchaseId + " is not a bid");
             }
             initiatingUserId = authTokenService.ValidateToken(authToken);
-            if (initiatingUserId != purchase.getUserId()) {
-                throw new OurRuntime("User " + initiatingUserId + " is not the owner of the bid " + purchaseId);
+            if (initiatingUserId == purchase.getUserId()) {
+                throw new OurRuntime("You need to be shop's owner to finalize bid");
             }
             shopId = purchase.getStoreId();
             int ownerId = userService.getShopOwner(shopId);
@@ -225,11 +223,7 @@ public class PurchaseService {
                     " is not the owner of shop " + shopId
                 );
             }
-            highestBidderId = ((Bid) purchase).getHighestBidderId();
             finalPrice = ((Bid) purchase).getMaxBidding();
-            if (highestBidderId == -1) {
-                throw new OurRuntime("No bids were placed on purchase " + purchaseId);
-            }
             if (finalPrice == -1) {
                 throw new OurRuntime("No final price was set for purchase " + purchaseId);
             }
@@ -237,16 +231,16 @@ public class PurchaseService {
                 throw new OurRuntime("No shop ID was set for purchase " + purchaseId);
             }
             Map<Integer, Integer> items = purchase.getItems();
-            userService.addBidToUserShoppingCart(highestBidderId, shopId, items);
+            userService.addBidToUserShoppingCart(initiatingUserId, shopId, items);
             Reciept receipt = purchase.generateReciept();
             String msg = "The bid is finalized #" 
                     + purchaseId 
                     + ".\nIt has been added to your bids list.\n\n" 
                     + receipt;
-            notificationService.sendToUser(highestBidderId, authToken, msg);
+            notificationService.sendToUser(initiatingUserId, authToken, msg);
             purchase.completePurchase();
-            LoggerService.logMethodExecutionEnd("finalizeBid", highestBidderId);
-            return highestBidderId;
+            LoggerService.logMethodExecutionEnd("finalizeBid", initiatingUserId);
+            return initiatingUserId;
         } catch (OurArg e) {
             LoggerService.logDebug("finalizeBid", e);
             throw new OurArg("finalizeBid: " + e.getMessage(), e);
@@ -255,7 +249,7 @@ public class PurchaseService {
             throw new OurRuntime("finalizeBid: " + e.getMessage(), e);
         } catch (Exception e) {
             if (payed) {
-                userService.refundPaymentByStoreEmployee(authToken, highestBidderId, shopId, finalPrice);
+                userService.refundPaymentByStoreEmployee(authToken, initiatingUserId, shopId, finalPrice);
             }
             LoggerService.logError("finalizeBid", e, authToken, purchaseId);
             throw new OurRuntime("Error finalizing bid " + purchaseId + ": " + e.getMessage(), e);
@@ -483,6 +477,33 @@ public class PurchaseService {
             LoggerService.logDebug("finalizeAuction", e);
             throw new OurRuntime("finalizeAuction: " + e.getMessage(), e);
         } 
+    }
+
+    public void acceptBid(String authToken, int bidId) {
+        try{
+            LoggerService.logMethodExecution("acceptBid", bidId);
+            Bid bid = (Bid) purchaseRepository.getPurchaseById(bidId);
+            if (bid == null) {
+                throw new OurRuntime("Bid " + bidId + " does not exist");
+            }
+            int userId;
+            try {
+                userId = authTokenService.ValidateToken(authToken);
+            } catch (Exception e) {
+                LoggerService.logError("acceptBid", e, authToken, bidId);
+                throw new OurRuntime("acceptBid: " + e.getMessage(), e);
+            }
+            int shopOwnerId = userService.getShopOwner(userId);
+            String msg = "User " + ((Member)userService.getUserById(userId)).getName() + " accepted bid with price " + bid.getHighestBid();
+            notificationService.sendToUser(shopOwnerId, authToken, msg);
+            finalizeBid(authToken, bidId); //do it automatically
+        } catch(OurArg e){
+            LoggerService.logDebug("acceptBid", e);
+            throw new OurArg("acceptBid: " + e.getMessage(), e);
+        } catch(OurRuntime e){
+            LoggerService.logDebug("acceptBid", e);
+            throw new OurRuntime("acceptBid: " + e.getMessage(), e);
+        }
     }
  
    

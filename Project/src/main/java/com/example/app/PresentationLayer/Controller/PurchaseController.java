@@ -298,6 +298,18 @@ public class PurchaseController {
         }
     }
 
+    @PostMapping("/bids/{bidId}/accept")
+    public ResponseEntity<Void> acceptBid(
+            @PathVariable @Min(1) int bidId,
+            @RequestParam String authToken) {
+        try {
+            purchaseService.acceptBid(authToken, bidId);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+        }
+    }
+
     // ────────────────────────── GET PURCHASES ────────────────────────── */
     @GetMapping("/users/{userId}")
     public ResponseEntity<?> getUserPurchases(

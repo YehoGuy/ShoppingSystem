@@ -21,8 +21,11 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.Notification.Position;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
@@ -83,39 +86,66 @@ public class BidsListView extends VerticalLayout {
         .setAutoWidth(true);
 
         // ————— Finalize Bid button —————
-        bidGrid.addComponentColumn(dto -> {
-            Button finalize = new Button("Finalize Bid");
-            boolean amOwner    = getUserId() != null && getUserId().equals(dto.getStoreId());
-            boolean alreadyDone = dto.isCompleted(); // or whatever your DTO calls it
+        bidGrid.addColumn(new ComponentRenderer<>(dto -> {
+            Integer currentUserId = (Integer) VaadinSession.getCurrent()
+                                            .getAttribute("userId");
+            // Only shop owner sees “Finalize”
+            if (dto.getStoreId() != currentUserId || dto.isCompleted()) {
+                return new Span();  // empty placeholder
+            }
 
-            // only show to the owner while it’s still open
-            finalize.setVisible(amOwner && !alreadyDone);
-
-            finalize.addClickListener(e -> {
-                String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-                if (token == null) {
-                    Notification.show("You must be logged in to finalize.", 2000, Notification.Position.MIDDLE);
-                    return;
-                }
-                // make sure this matches your @PostMapping path in PurchaseController
-                String url = bidsBaseUrl + "/" + dto.getPurchaseId() + "/finalize?token=" + token;
+            Button finalize = new Button("Finalize", evt -> {
+                String token = (String) VaadinSession.getCurrent()
+                                    .getAttribute("authToken");
+                String url = bidsBaseUrl 
+                        + "/" + dto.getPurchaseId() 
+                        + "/finalize?token=" + token;
                 try {
                     ResponseEntity<Integer> resp = restTemplate.postForEntity(url, null, Integer.class);
                     if (resp.getStatusCode().is2xxSuccessful()) {
                         Notification.show("Auction closed! Winner: user " + resp.getBody(),
-                                        2500, Notification.Position.MIDDLE);
-                        fetchAllBids();  // your method that reloads the grid
+                                        2500, Position.MIDDLE);
+                        fetchAllBids();
                     } else {
                         Notification.show("Could not finalize: " + resp.getStatusCode(),
-                                        3000, Notification.Position.MIDDLE);
+                                        3000, Position.MIDDLE);
                     }
                 } catch (Exception ex) {
-                    Notification.show("Error: " + ex.getMessage(), 4000, Notification.Position.MIDDLE);
+                    Notification.show("Error: " + ex.getMessage(), 4000, Position.MIDDLE);
                 }
             });
             return finalize;
-        })
+        }))
         .setHeader("Finalize")
+        .setAutoWidth(true);
+
+        // ————— Accept Bid button —————
+        bidGrid.addComponentColumn(dto -> {
+            Integer currentUserId = getUserId();
+            // only show to the winner, once the auction is completed
+            if (!dto.isCompleted() || !currentUserId.equals(dto.getHighestBidderId())) {
+                return new Span();
+            }
+
+            Button accept = new Button("Accept Bid");
+            accept.addClickListener(evt -> {
+                String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+                String url = bidsBaseUrl 
+                        + "/" + dto.getPurchaseId() 
+                        + "/accept?authToken=" + token;
+                try {
+                    restTemplate.postForEntity(url, null, Void.class);
+                    Notification.show("You accepted the bid! The shop owner has been notified.",
+                                    3000, Position.MIDDLE);
+                    fetchAllBids(); // refresh the table
+                } catch (Exception ex) {
+                    Notification.show("Error accepting bid: " + ex.getMessage(),
+                                    5000, Position.MIDDLE);
+                }
+            });
+            return accept;
+        })
+        .setHeader("Accept Bid")
         .setAutoWidth(true);
 
         // Add a listener so that when a row is clicked, we navigate to
