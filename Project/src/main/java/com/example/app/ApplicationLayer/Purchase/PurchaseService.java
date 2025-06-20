@@ -82,7 +82,9 @@ public class PurchaseService {
         int userId = -1;
         try {
             userId = authTokenService.ValidateToken(authToken);
+            System.out.println("4444444");
             HashMap<Integer, HashMap<Integer, Integer>> cart = userService.getUserShoppingCartItems(userId);
+            System.out.println("5555555");
             cartBackup = cart;
             for (Integer shopId : cart.keySet()) {
                 double totalPrice = shopService.purchaseItems(cart.get(shopId), shopId, authToken);
@@ -96,14 +98,17 @@ public class PurchaseService {
                         shippingAddress);
                 purchaseIds.put(pid, shopId);
             }
+            System.out.println("6666666");
             userService.clearUserShoppingCart(userId);
             for (Integer purchaseId : purchaseIds.keySet()) {
                 shopService.shipPurchase(authToken, purchaseId, purchaseIds.get(purchaseId),
                         shippingAddress.getCountry(),
                         shippingAddress.getCity(), shippingAddress.getStreet(), shippingAddress.getZipCode());
             }
+            System.out.println("7777777");
             LoggerService.logMethodExecutionEnd("checkoutCart", purchaseIds);
             userService.purchaseNotification(cart);
+            System.out.println("8888888");
             return purchaseIds.keySet().stream().toList();
         // } catch (OurArg e) {
         //     LoggerService.logDebug("checkoutCart", e);

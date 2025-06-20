@@ -75,10 +75,8 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
 
         this.api = api;
         this.paymentMethodUrl = api + "/payment-method";
-        this.checkoutUrl = api + "/checkout";
-
-        paymentMethod = getUserPaymentMethod();
-
+        this.checkoutUrl = api + "/purchase/checkout";
+        //paymentMethod = getUserPaymentMethod();
         this.totalAmount = totalAmount;
         this.country = country;
         this.city = city;
