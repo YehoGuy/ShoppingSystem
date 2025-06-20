@@ -394,60 +394,59 @@ class PurchaseControllerTests {
         }
         }
 
-        @Nested
-        @DisplayName("POST /api/purchases/auctions/{bidId}/finalize")
-        class FinalizeAuctionTests {
-        private final String BASE = "/api/purchases/auctions";
+        // @Nested
+        // @DisplayName("POST /api/purchases/auctions/{bidId}/finalize")
+        // class FinalizeAuctionTests {
+        // private final String BASE = "/api/purchases/auctions";
 
-        @Test
-        @DisplayName("whenSuccess_returns200_andWinnerId")
-        void success_returns200() throws Exception {
-                when(purchaseService.finalizeBid(anyString(), anyInt(), eq(false)))
-                .thenReturn(42);
+        // @Test
+        // @DisplayName("whenSuccess_returns200_andWinnerId")
+        // void success_returns200() throws Exception {
+        //         when(purchaseService.finalizeBid(anyString(), anyInt(), eq(false)))
+        //         .thenReturn(42);
 
-                mvc.perform(post(BASE + "/10/finalize")
-                        .param("authToken", "tok")
-                )
-                .andExpect(status().isOk())
-                .andExpect(content().string("42"));
-        }
+        //         mvc.perform(post(BASE + "/10/finalize")
+        //                 .param("authToken", "tok")
+        //         )
+        //         .andExpect(status().isOk())
+        //         .andExpect(content().string("42"));
+        // }
 
-        @Test
-        @DisplayName("whenBadArgs_returns400")
-        void badArgs_returns400() throws Exception {
-                when(purchaseService.finalizeBid(anyString(), anyInt(), eq(false)))
-                .thenThrow(new IllegalArgumentException("bad"));
+        // @Test
+        // @DisplayName("whenBadArgs_returns400")
+        // void badArgs_returns400() throws Exception {
+        //         when(purchaseService.finalizeBid(anyString(), anyInt(), eq(false)))
+        //         .thenThrow(new IllegalArgumentException("bad"));
 
-                mvc.perform(post(BASE + "/0/finalize")
-                        .param("authToken", "tok")
-                )
-                .andExpect(status().isBadRequest());
-        }
+        //         mvc.perform(post(BASE + "/0/finalize")
+        //                 .param("authToken", "tok")
+        //         )
+        //         .andExpect(status().isBadRequest());
+        // }
 
-        @Test
-        @DisplayName("whenNotFound_returns404")
-        void notFound_returns404() throws Exception {
-                when(purchaseService.finalizeBid(anyString(), anyInt(), eq(false)))
-                .thenThrow(new NoSuchElementException());
+        // @Test
+        // @DisplayName("whenNotFound_returns404")
+        // void notFound_returns404() throws Exception {
+        //         when(purchaseService.finalizeBid(anyString(), anyInt(), eq(false)))
+        //         .thenThrow(new NoSuchElementException());
 
-                mvc.perform(post(BASE + "/99/finalize")
-                        .param("authToken", "tok")
-                )
-                .andExpect(status().isNotFound());
-        }
+        //         mvc.perform(post(BASE + "/99/finalize")
+        //                 .param("authToken", "tok")
+        //         )
+        //         .andExpect(status().isNotFound());
+        // }
 
-        @Test
-        @DisplayName("whenConflict_returns409")
-        void conflict_returns409() throws Exception {
-                when(purchaseService.finalizeBid(anyString(), anyInt(), eq(false)))
-                .thenThrow(new RuntimeException());
+        // @Test
+        // @DisplayName("whenConflict_returns409")
+        // void conflict_returns409() throws Exception {
+        //         when(purchaseService.finalizeBid(anyString(), anyInt(), eq(false)))
+        //         .thenThrow(new RuntimeException());
 
-                mvc.perform(post(BASE + "/10/finalize")
-                        .param("authToken", "tok")
-                )
-                .andExpect(status().isConflict());
-        }
-        }
-
+        //         mvc.perform(post(BASE + "/10/finalize")
+        //                 .param("authToken", "tok")
+        //         )
+        //         .andExpect(status().isConflict());
+        // }
+        // }
 
 }

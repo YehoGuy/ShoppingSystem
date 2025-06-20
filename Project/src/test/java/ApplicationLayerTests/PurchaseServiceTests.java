@@ -706,8 +706,14 @@ class PurchaseServiceTests {
 
             assertEquals(auctionId, result);
             verify(shops).purchaseItems(itemsMap, storeId, token);
+            // ← here: all args must be matchers
             verify(repo).addBid(
-                userId, storeId, itemsMap, initPrice, any(LocalDateTime.class), eq(endTime)
+                eq(userId),
+                eq(storeId),
+                eq(itemsMap),
+                eq(initPrice),
+                any(LocalDateTime.class),
+                eq(endTime)
             );
             verify(taskscheduler).schedule(any(Runnable.class), any(Date.class));
         }
