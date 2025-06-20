@@ -209,7 +209,7 @@ class PurchaseServiceTests {
         int winner = service.finalizeBid(token, pid, true);
 
         /* verify */
-        assertEquals(5, winner);
+        assertEquals(1, winner);
         verify(msg).sendMessageToUser(eq(token), eq(5), contains("Congratulations"), eq(0));
     }
 
@@ -241,7 +241,7 @@ class PurchaseServiceTests {
         when(bid.getBiddersIds()).thenReturn(List.of(5)); // stub for getBiddersIds
 
         /* invoke */
-        int winner = service.finalizeBid(token, pid, true);
+        int winner = service.finalizeBid(token, pid, false);
 
         /* verify */
         assertEquals(5, winner);

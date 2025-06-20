@@ -238,7 +238,6 @@ public class PurchaseService {
             }
             Map<Integer, Integer> items = purchase.getItems();
             userService.addBidToUserShoppingCart(initiatingUserId, shopId, items);
-            // Reciept receipt = purchase.generateReciept();
             String msg = "The bid is finalized #" 
                     + purchaseId 
                     + ".\nIt has been added to your bids list.\n\n"; 
