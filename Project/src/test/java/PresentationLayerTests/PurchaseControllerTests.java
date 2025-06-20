@@ -203,39 +203,39 @@ class PurchaseControllerTests {
                 }
         }
 
-        // @Nested
-        // @DisplayName("3. POST BID OFFER")
-        // class PostBidOfferTests {
-        //         @Test
-        //         void success_returns202() throws Exception {
-        //                 doNothing().when(purchaseService).postBidding(eq("tok"), eq(10), eq(75));
+        @Nested
+        @DisplayName("3. POST BID OFFER")
+        class PostBidOfferTests {
+                @Test
+                void success_returns202() throws Exception {
+                        doNothing().when(purchaseService).postBidding(eq("tok"), eq(10), eq(75));
 
-        //                 mvc.perform(post("/api/purchases/bids/10/offers")
-        //                                 .param("authToken", "tok")
-        //                                 .param("bidAmount", "75"))
-        //                                 .andExpect(status().isAccepted());
-        //         }
+                        mvc.perform(post("/api/purchases/bids/10/offers")
+                                        .param("authToken", "tok")
+                                        .param("bidPrice", "75"))
+                                        .andExpect(status().isAccepted());
+                }
 
-        //         @Test
-        //         void badRequest_returns400() throws Exception {
-        //                 doNothing().when(purchaseService).postBidding(eq("tok"), eq(10), eq(75));
-        //                 // invalid bidAmount param missing / negative
-        //                 mvc.perform(post("/api/purchases/bids/10/offers")
-        //                                 .param("authToken", "tok"))
-        //                                 .andExpect(status().isBadRequest());
-        //         }
+                @Test
+                void badRequest_returns400() throws Exception {
+                        doNothing().when(purchaseService).postBidding(eq("tok"), eq(10), eq(75));
+                        // invalid bidAmount param missing / negative
+                        mvc.perform(post("/api/purchases/bids/10/offers")
+                                        .param("authToken", "tok"))
+                                        .andExpect(status().isBadRequest());
+                }
 
-        //         @Test
-        //         void conflict_returns409() throws Exception {
-        //                 doNothing().when(purchaseService).postBidding(anyString(), anyInt(), anyInt());
-        //                 doThrow(new RuntimeException()).when(purchaseService).postBidding(eq("tok"), eq(10), eq(75));
+                @Test
+                void conflict_returns409() throws Exception {
+                        doNothing().when(purchaseService).postBidding(anyString(), anyInt(), anyInt());
+                        doThrow(new RuntimeException()).when(purchaseService).postBidding(eq("tok"), eq(10), eq(75));
 
-        //                 mvc.perform(post("/api/purchases/bids/10/offers")
-        //                                 .param("authToken", "tok")
-        //                                 .param("bidAmount", "75"))
-        //                                 .andExpect(status().isConflict());
-        //         }
-        // }
+                        mvc.perform(post("/api/purchases/bids/10/offers")
+                                        .param("authToken", "tok")
+                                        .param("bidPrice", "75"))
+                                        .andExpect(status().isConflict());
+                }
+        }
 
         @Nested
         @DisplayName("4. FINALIZE BID")

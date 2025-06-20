@@ -214,50 +214,58 @@ class PurchaseServiceTests {
         );
     }
 
-    // @Test
-    // @DisplayName("finalizeBid_checkAddedToCart_whenBidIsCompleted_shouldAddToCart")
-    // void finalizeBid_checkAddedToCart() throws Exception {
-    //     String token = "tok";
-    //     int owner = 1, shop = 8, pid = 22;
+    @Test
+    @DisplayName("finalizeBid_checkAddedToCart_whenBidIsCompleted_shouldAddToCart")
+    void finalizeBid_checkAddedToCart_whenBidIsCompleted_shouldAddToCart() throws Exception {
+        // given
+        String token = "tok";
+        int initiatingUserId = 1;
+        int purchaseId       = 22;
+        int shopId           = 8;
+        Map<Integer, Integer> items = Map.of(1, 1);
 
-    //     // Spy on an *un-completed* bid
-    //     Bid bid = spy(new Bid(pid, owner, shop, Map.of(1, 1), 100));
+        // mock a Bid (Mockito mocks still pass instanceof Bid checks)
+        Bid bid = mock(Bid.class);
 
-    //     /* fabricate receipt object the service expects after completion */
-    //     BidReciept rec = mock(BidReciept.class);
-    //     when(bid.completePurchase()).thenReturn(rec); // stub out real behaviour
-    //     when(bid.getMaxBidding()).thenReturn(150);
-    //     when(bid.getBiddersIds()).thenReturn(List.of(5));
+        // 1. repository returns our bid
+        when(repo.getPurchaseById(purchaseId)).thenReturn(bid);
 
-    //     /* infrastructure stubs */
-    //     when(repo.getPurchaseById(pid)).thenReturn(bid);
-    //     when(auth.ValidateToken(token)).thenReturn(owner);
+        // 2. valid token → initiating user
+        when(auth.ValidateToken(token)).thenReturn(initiatingUserId);
 
-    //     when(users.addBidToUserShoppingCart(eq(5), eq(shop), any()))
-    //             .thenReturn(true); // simulate successful addition to cart
+        // 3. bid metadata stubs
+        when(bid.getStoreId()).thenReturn(shopId);
+        when(users.getShopOwner(shopId)).thenReturn(999); // value ignored when fromAcceptBid = true
+        when(bid.getMaxBidding()).thenReturn(150);
+        when(bid.getItems()).thenReturn(items);
 
-    //     when(bid.getHighestBidderId()).thenReturn(5); // stub for getHighestBidderId
-    //     when(bid.getItems()).thenReturn(Map.of(1, 1)); // stub for getItems
-    //     when(bid.getMaxBidding()).thenReturn(150); // stub for getMaxBidding
-    //     when(bid.getBiddersIds()).thenReturn(List.of(5)); // stub for getBiddersIds
+        // 4. simulate cart addition always succeeds
+        when(users.addBidToUserShoppingCart(eq(initiatingUserId), eq(shopId), eq(items)))
+            .thenReturn(true);
 
-    //     /* invoke */
-    //     int result = service.finalizeBid(token, pid, true);
+        // no need to stub bid.completePurchase(); default mock → no‐op
 
-    //     /* verify */
-    //     // code returns the initiatingUserId (owner), and adds that user twice to cart
-    //     assertEquals(owner, result);
-    //     verify(users, times(2)).addBidToUserShoppingCart(
-    //         eq(owner),
-    //         eq(shop),
-    //         eq(Map.of(1, 1))
-    //     );
-    //     verify(nots).sendToUser(
-    //         eq(owner),
-    //         eq("The bid is over "),
-    //         contains("The bid is finalized #" + pid)
-    //     );
-    // }
+        // when
+        int result = service.finalizeBid(token, purchaseId, /*fromAcceptBid*/ true);
+
+        // then
+        assertEquals(initiatingUserId, result, "should return the initiating user ID");
+
+        // should add to cart twice for the initiating user
+        verify(users, times(2))
+            .addBidToUserShoppingCart(initiatingUserId, shopId, items);
+
+        // should notify once with the exact message
+        String expectedMsg =
+            "The bid is finalized #"
+            + purchaseId
+            + ".\nIt has been added to your bids list.\n\n";
+        verify(nots)
+            .sendToUser(eq(initiatingUserId), eq("The bid is over "), eq(expectedMsg));
+
+        // and mark the bid as completed
+        verify(bid).completePurchase();
+    }
 
     /*
      * ══════════════════════════════════════════════════════════════
