@@ -140,8 +140,6 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
                 // Add your component to the dialog
                 dialog.add(purchaseCompletion);
-                // Add your component to the dialog
-                dialog.add(purchaseCompletion);
 
                 // Optional: add a close button in the footer
                 Button closeButton = new Button("Close", e -> dialog.close());
@@ -577,12 +575,12 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
         ResponseEntity<List<BidRecieptDTO>> resp = restTemplate.exchange(
-            URLPurchases + "/bids/finished?authToken=" + token,
-            HttpMethod.GET,
-            entity,
-            new ParameterizedTypeReference<List<BidRecieptDTO>>() {},
-            token
-        );
+                URLPurchases + "/bids/finished?authToken=" + token,
+                HttpMethod.GET,
+                entity,
+                new ParameterizedTypeReference<List<BidRecieptDTO>>() {
+                },
+                token);
         List<BidRecieptDTO> finished = resp.getBody();
 
         if (finished == null || finished.isEmpty()) {
@@ -596,32 +594,30 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
         // 1) Store Name — now correctly fetched from your shops API:
         grid.addColumn(dto -> fetchShopName(dto.getStoreId()))
-            .setHeader("Store Name")
-            .setAutoWidth(true);
+                .setHeader("Store Name")
+                .setAutoWidth(true);
 
         // 2) Item Name — likewise from your shop’s items endpoint:
         grid.addColumn(this::fetchItemName)
-            .setHeader("Item Name")
-            .setAutoWidth(true);
+                .setHeader("Item Name")
+                .setAutoWidth(true);
 
         // 3) Your bid amount
         grid.addColumn(BidRecieptDTO::getHighestBid)
-            .setHeader("Your Bid")
-            .setAutoWidth(true);
+                .setHeader("Your Bid")
+                .setAutoWidth(true);
 
         // 4) “Pay Now”
         grid.addComponentColumn(dto -> {
             Button payNow = new Button("Pay Now");
             payNow.addClickListener(e -> UI.getCurrent().navigate("payment",
-                QueryParameters.simple(Map.of(
-                    "auctionId", String.valueOf(dto.getPurchaseId()),
-                    "price",     String.valueOf(dto.getHighestBid())
-                ))
-            ));
+                    QueryParameters.simple(Map.of(
+                            "auctionId", String.valueOf(dto.getPurchaseId()),
+                            "price", String.valueOf(dto.getHighestBid())))));
             return payNow;
         })
-        .setHeader("For Payment")
-        .setAutoWidth(true);
+                .setHeader("For Payment")
+                .setAutoWidth(true);
 
         grid.setItems(finished);
         add(grid);
@@ -631,14 +627,13 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         try {
             String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
             ResponseEntity<ShopDTO> resp = restTemplate.exchange(
-                URLShop + "/" + shopId + "?token=" + token,
-                HttpMethod.GET,
-                new HttpEntity<>(new HttpHeaders()),
-                ShopDTO.class
-            );
+                    URLShop + "/" + shopId + "?token=" + token,
+                    HttpMethod.GET,
+                    new HttpEntity<>(new HttpHeaders()),
+                    ShopDTO.class);
             return resp.getBody() != null
-                ? resp.getBody().getName()
-                : "Unknown Shop";
+                    ? resp.getBody().getName()
+                    : "Unknown Shop";
         } catch (Exception e) {
             log.warn("Error fetching shop name for id {}", shopId, e);
             return "Unknown Shop";
@@ -649,11 +644,11 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         try {
             String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
             ResponseEntity<List<ItemDTO>> resp = restTemplate.exchange(
-                URLShop + "/" + dto.getStoreId() + "/items?token=" + token,
-                HttpMethod.GET,
-                new HttpEntity<>(new HttpHeaders()),
-                new ParameterizedTypeReference<List<ItemDTO>>() {}
-            );
+                    URLShop + "/" + dto.getStoreId() + "/items?token=" + token,
+                    HttpMethod.GET,
+                    new HttpEntity<>(new HttpHeaders()),
+                    new ParameterizedTypeReference<List<ItemDTO>>() {
+                    });
             List<ItemDTO> items = resp.getBody();
             if (items != null) {
                 for (ItemDTO item : items) {
