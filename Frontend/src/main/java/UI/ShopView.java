@@ -192,7 +192,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
 
             Button bidButton = new Button("Create Bid", click -> {
             // navigates to your CreateBidView for this shop
-            UI.getCurrent().navigate("shop/" + shop.getShopId() + "/create-bid");
+            UI.getCurrent().navigate("shop/" + shop.getShopId() + "/create-bid/" + item.getId());
             });
 
             row.add(name, priceSpan, stock, bidButton /* plus your other controls if any */);

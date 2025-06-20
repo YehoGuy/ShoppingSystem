@@ -222,7 +222,7 @@ class PurchaseServiceTests {
         when(bid.getBiddersIds()).thenReturn(List.of(5)); // stub for getBiddersIds
 
         /* invoke */
-        int winner = service.finalizeBid(token, pid);
+        int winner = service.finalizeBid(token, pid, false);
 
         /* verify */
         assertEquals(5, winner);
@@ -257,7 +257,7 @@ class PurchaseServiceTests {
         when(bid.getBiddersIds()).thenReturn(List.of(5)); // stub for getBiddersIds
 
         /* invoke */
-        int winner = service.finalizeBid(token, pid);
+        int winner = service.finalizeBid(token, pid, false);
 
         /* verify */
         assertEquals(5, winner);
@@ -580,7 +580,7 @@ class PurchaseServiceTests {
 
         when(repo.getPurchaseById(pid)).thenReturn(notBid);
 
-        OurRuntime ex = assertThrows(OurRuntime.class, () -> service.finalizeBid(token, pid));
+        OurRuntime ex = assertThrows(OurRuntime.class, () -> service.finalizeBid(token, pid, false));
         assertTrue(ex.getMessage().contains("finalizeBid:"));
     }
 
@@ -594,7 +594,7 @@ class PurchaseServiceTests {
         when(repo.getPurchaseById(pid)).thenReturn(bid);
         when(auth.ValidateToken(token)).thenThrow(new OurArg("no auth"));
 
-        OurArg ex = assertThrows(OurArg.class, () -> service.finalizeBid(token, pid));
+        OurArg ex = assertThrows(OurArg.class, () -> service.finalizeBid(token, pid, false));
         assertTrue(ex.getMessage().contains("finalizeBid:"));
     }
 
@@ -644,7 +644,7 @@ class PurchaseServiceTests {
         List<BidReciept> bids = List.of(mock(BidReciept.class));
         when(auth.ValidateToken(token)).thenReturn(uid);
         when(repo.getAllBids()).thenReturn(bids);
-        List<BidReciept> out = service.getAllBids(token);
+        List<BidReciept> out = service.getAllBids(token, true);
         assertSame(bids, out);
         verify(repo).getAllBids();
     }

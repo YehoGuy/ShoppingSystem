@@ -69,7 +69,7 @@ public class AuctionListView extends VerticalLayout {
                    .setAutoWidth(true);
 
         auctionGrid.addColumn(dto -> dto.getPrice())
-                .setHeader("Current Price")
+                .setHeader("Initial Price")
                 .setAutoWidth(true);
         auctionGrid.addColumn(dto -> dto.getHighestBid())
                 .setHeader("Highest Bid")
@@ -193,7 +193,8 @@ public class AuctionListView extends VerticalLayout {
         String url = apiBase + "/users/" + userId + "?token=" + token;
         try {
             ResponseEntity<JsonNode> r = restTemplate.exchange(
-                url, HttpMethod.GET,
+                url, 
+                HttpMethod.GET,
                 new HttpEntity<>(new HttpHeaders()),
                 JsonNode.class
             );

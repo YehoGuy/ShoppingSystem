@@ -6,6 +6,7 @@
 package UI;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -14,8 +15,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -36,12 +39,14 @@ import DTOs.BidRecieptDTO;
 @AnonymousAllowed
 public class BidsListView extends VerticalLayout {
 
+    private final String apiBase;
     private final String bidsBaseUrl;
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final Grid<BidRecieptDTO> bidGrid = new Grid<>(BidRecieptDTO.class, false);
 
     public BidsListView(@Value("${url.api}") String apiBase) {
+        this.apiBase = apiBase;
         this.bidsBaseUrl = apiBase + "/purchases/bids";
 
         getUserId(); // Ensure userId is set in session
@@ -52,14 +57,22 @@ public class BidsListView extends VerticalLayout {
         add(header);
 
         // Configure the columns you want to show
-        bidGrid.addColumn(BidRecieptDTO::getPurchaseId)
-                .setHeader("Bid ID")
-                .setAutoWidth(true);
-        bidGrid.addColumn(BidRecieptDTO::getStoreId)
-                .setHeader("Store ID")
+        // Store Name
+        bidGrid.addColumn(dto -> fetchShopName(dto.getStoreId()))
+            .setHeader("Store Name")
+            .setAutoWidth(true);
+
+        // Item Name
+        bidGrid.addColumn(dto -> fetchItemName(dto))
+            .setHeader("Item Name")
+            .setAutoWidth(true);
+
+        // Owner Bid Name (the user who placed the highest/current bid)
+        bidGrid.addColumn(dto -> fetchUserName(dto.getUserId()))
+                .setHeader("Owner Bid Name")
                 .setAutoWidth(true);
         bidGrid.addColumn(dto -> dto.getPrice())
-                .setHeader("Current Price")
+                .setHeader("Initial Price")
                 .setAutoWidth(true);
         bidGrid.addColumn(dto -> dto.getHighestBid())
                 .setHeader("Highest Bid")
@@ -86,44 +99,61 @@ public class BidsListView extends VerticalLayout {
         .setAutoWidth(true);
 
         // ————— Finalize Bid button —————
-        bidGrid.addColumn(new ComponentRenderer<>(dto -> {
-            Integer currentUserId = (Integer) VaadinSession.getCurrent()
-                                            .getAttribute("userId");
-            // Only shop owner sees “Finalize”
-            if (dto.getStoreId() != currentUserId || dto.isCompleted()) {
-                return new Span();  // empty placeholder
-            }
+        bidGrid.addComponentColumn(dto -> {
+            Button btn = new Button("Finalize Bid");
+            Integer me = getUserId();
+            boolean isComplete = dto.isCompleted();
 
-            Button finalize = new Button("Finalize", evt -> {
-                String token = (String) VaadinSession.getCurrent()
-                                    .getAttribute("authToken");
-                String url = bidsBaseUrl 
-                        + "/" + dto.getPurchaseId() 
-                        + "/finalize?token=" + token;
-                try {
-                    ResponseEntity<Integer> resp = restTemplate.postForEntity(url, null, Integer.class);
-                    if (resp.getStatusCode().is2xxSuccessful()) {
-                        Notification.show("Auction closed! Winner: user " + resp.getBody(),
-                                        2500, Position.MIDDLE);
-                        fetchAllBids();
-                    } else {
-                        Notification.show("Could not finalize: " + resp.getStatusCode(),
-                                        3000, Position.MIDDLE);
-                    }
-                } catch (Exception ex) {
-                    Notification.show("Error: " + ex.getMessage(), 4000, Position.MIDDLE);
+            // fetch shop owner
+            boolean amOwner = false;
+            try {
+                String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+                String ownerUrl = apiBase
+                                + "/users/shops/"
+                                + dto.getStoreId()
+                                + "/owner?token=" + token;
+                ResponseEntity<Integer> ownerResp =
+                    restTemplate.exchange(ownerUrl, HttpMethod.GET, null, Integer.class);
+                if (ownerResp.getStatusCode().is2xxSuccessful()) {
+                    Integer shopOwnerId = ownerResp.getBody();
+                    amOwner = Objects.equals(me, shopOwnerId);
                 }
-            });
-            return finalize;
-        }))
-        .setHeader("Finalize")
+            } catch (Exception ex) {
+                // ignore or log
+            }
+            if (me != null && !(amOwner)) {
+                return new Span();
+            }
+            btn.setEnabled(amOwner && !isComplete);
+            btn.addClickListener(e -> finalizeBid(dto.getPurchaseId()));
+            return btn;
+        })
+        .setHeader("Finalize Bid")
         .setAutoWidth(true);
 
         // ————— Accept Bid button —————
         bidGrid.addComponentColumn(dto -> {
             Integer currentUserId = getUserId();
-            // only show to the winner, once the auction is completed
-            if (!dto.isCompleted() || !currentUserId.equals(dto.getHighestBidderId())) {
+            Integer thisBidderId = dto.getThisBidderId();
+            // fetch shop owner
+            boolean amOwner = false;
+            try {
+                String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+                String ownerUrl = apiBase
+                                + "/users/shops/"
+                                + dto.getStoreId()
+                                + "/owner?token=" + token;
+                ResponseEntity<Integer> ownerResp =
+                    restTemplate.exchange(ownerUrl, HttpMethod.GET, null, Integer.class);
+                if (ownerResp.getStatusCode().is2xxSuccessful()) {
+                    Integer shopOwnerId = ownerResp.getBody();
+                    amOwner = Objects.equals(currentUserId, shopOwnerId);
+                }
+            } catch (Exception ex) {
+                // ignore or log
+            }
+
+            if (currentUserId != null && thisBidderId != null && amOwner) {
                 return new Span();
             }
 
@@ -138,9 +168,11 @@ public class BidsListView extends VerticalLayout {
                     Notification.show("You accepted the bid! The shop owner has been notified.",
                                     3000, Position.MIDDLE);
                     fetchAllBids(); // refresh the table
+                } catch (HttpStatusCodeException ex) {
+                    String errorBody = ex.getResponseBodyAsString();
+                    Notification.show("Error accepting bid: " + errorBody,5000, Position.MIDDLE);
                 } catch (Exception ex) {
-                    Notification.show("Error accepting bid: " + ex.getMessage(),
-                                    5000, Position.MIDDLE);
+                    Notification.show("Error accepting bid: " + ex.getMessage(),5000, Position.MIDDLE);
                 }
             });
             return accept;
@@ -200,4 +232,88 @@ public class BidsListView extends VerticalLayout {
             add(new Text("Error fetching bids"));
         }
     }
+
+    private void finalizeBid(int purchaseId) {
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        String url = bidsBaseUrl + "/" + purchaseId + "/finalize?authToken=" + token;
+
+        try {
+            // mirror your BidDetailView logic:
+            ResponseEntity<Integer> resp = restTemplate.exchange(
+                url,
+                HttpMethod.POST,
+                new HttpEntity<>(new HttpHeaders()),
+                Integer.class);
+
+            if (resp.getStatusCode().is2xxSuccessful()) {
+                Notification.show("Bid finalized!", 2000, Position.MIDDLE);
+                fetchAllBids();
+            } else {
+                Notification.show("Could not finalize: " + resp.getStatusCode(),
+                                  3000, Position.MIDDLE);
+            }
+        } catch (Exception ex) {
+            Notification.show("Error finalizing bid: " + ex.getMessage(),
+                              4000, Position.MIDDLE);
+        }
+    }
+
+    private String fetchShopName(int shopId) {
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        String url = bidsBaseUrl.replace("/purchases/bids", "/shops/" + shopId) 
+                + "?token=" + token;
+        try {
+            ResponseEntity<JsonNode> r = restTemplate.exchange(
+                url, HttpMethod.GET,
+                new HttpEntity<>(new HttpHeaders()),
+                JsonNode.class
+            );
+            if (r.getStatusCode().is2xxSuccessful() && r.getBody() != null) {
+                return r.getBody().path("name").asText("");
+            }
+        } catch (Exception e) { /* log if you like */ }
+        return "";
+    }
+
+    private String fetchUserName(int userId) {
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) return "";
+        String url = apiBase + "/users/" + userId + "?token=" + token;
+        try {
+            ResponseEntity<JsonNode> r = restTemplate.exchange(
+                url, 
+                HttpMethod.GET,
+                new HttpEntity<>(new HttpHeaders()),
+                JsonNode.class
+            );
+            if (r.getStatusCode().is2xxSuccessful() && r.getBody() != null) {
+                return r.getBody().path("username").asText("");
+            }
+        } catch (Exception e) { /* ignore or log */ }
+        return "";
+    }
+
+    private String fetchItemName(BidRecieptDTO dto) {
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        String url = bidsBaseUrl.replace("/purchases/bids", 
+                    "/shops/" + dto.getStoreId() + "/items")
+                + "?token=" + token;
+        try {
+            ResponseEntity<JsonNode> r = restTemplate.exchange(
+                url, HttpMethod.GET,
+                new HttpEntity<>(new HttpHeaders()),
+                JsonNode.class
+            );
+            if (r.getStatusCode().is2xxSuccessful() && r.getBody() != null) {
+                for (JsonNode item : r.getBody()) {
+                    int id = item.path("id").asInt(-1);
+                    if (dto.getItems().containsKey(id)) {
+                        return item.path("name").asText("");
+                    }
+                }
+            }
+        } catch (Exception e) { /* ignore */ }
+        return "";
+    }
+
 }

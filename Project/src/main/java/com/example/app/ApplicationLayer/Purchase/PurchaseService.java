@@ -1,12 +1,12 @@
 package com.example.app.ApplicationLayer.Purchase;
 
-import java.lang.reflect.Member;
 import java.sql.Date;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.time.ZoneId;
 
 import org.springframework.scheduling.TaskScheduler;
@@ -21,6 +21,7 @@ import com.example.app.ApplicationLayer.OurArg;
 import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Shop.ShopService;
 import com.example.app.ApplicationLayer.User.UserService;
+import com.example.app.DomainLayer.Member;
 import com.example.app.DomainLayer.Purchase.Address;
 import com.example.app.DomainLayer.Purchase.Bid;
 import com.example.app.DomainLayer.Purchase.BidReciept;
@@ -178,15 +179,16 @@ public class PurchaseService {
         }
     }
 
-    public void postBidding(String authToken, int purchaseId, int bidAmount) {
-        LoggerService.logMethodExecution("postBidding", authToken, purchaseId, bidAmount);
+    public void postBidding(String authToken, int purchaseId, int bidPrice) {
+        LoggerService.logMethodExecution("postBidding", authToken, purchaseId, bidPrice);
         try {
             int userId = authTokenService.ValidateToken(authToken);
             Purchase purchase = purchaseRepository.getPurchaseById(purchaseId);
             if (!(purchase instanceof Bid)) {
                 throw new OurRuntime("Purchase " + purchaseId + " is not a bid");
             }
-            ((Bid) purchase).addBidding(userId, bidAmount);
+            
+            ((Bid) purchase).addBidding(userId, bidPrice);
             LoggerService.logMethodExecutionEndVoid("postBidding");
         } catch (OurArg e) {
             LoggerService.logDebug("postBidding", e);
@@ -195,12 +197,12 @@ public class PurchaseService {
             LoggerService.logDebug("postBidding", e);
             throw new OurRuntime("postBidding: " + e.getMessage(), e);
         } catch (Exception e) {
-            LoggerService.logError("postBidding", e, authToken, purchaseId, bidAmount);
+            LoggerService.logError("postBidding", e, authToken, purchaseId, bidPrice);
             throw new OurRuntime("postBidding: " + e.getMessage(), e);
         }
     }
 
-    public int finalizeBid(String authToken, int purchaseId) {
+    public int finalizeBid(String authToken, int purchaseId, boolean fromAcceptBid) {
         int initiatingUserId = -1;
         boolean payed = false;
         int finalPrice = -1;
@@ -212,16 +214,20 @@ public class PurchaseService {
                 throw new OurRuntime("Purchase " + purchaseId + " is not a bid");
             }
             initiatingUserId = authTokenService.ValidateToken(authToken);
-            if (initiatingUserId == purchase.getUserId()) {
-                throw new OurRuntime("You need to be shop's owner to finalize bid");
+            if (!fromAcceptBid) {
+                if (initiatingUserId == purchase.getUserId()) {
+                    throw new OurRuntime("You need to be shop's owner to finalize bid");
+                }
             }
             shopId = purchase.getStoreId();
             int ownerId = userService.getShopOwner(shopId);
-            if (initiatingUserId != ownerId) {
-                throw new OurRuntime(
-                    "User " + initiatingUserId +
-                    " is not the owner of shop " + shopId
-                );
+            if(!fromAcceptBid){
+                if (initiatingUserId != ownerId) {
+                    throw new OurRuntime(
+                        "User " + initiatingUserId +
+                        " is not the owner of shop " + shopId
+                    );
+                }
             }
             finalPrice = ((Bid) purchase).getMaxBidding();
             if (finalPrice == -1) {
@@ -232,13 +238,13 @@ public class PurchaseService {
             }
             Map<Integer, Integer> items = purchase.getItems();
             userService.addBidToUserShoppingCart(initiatingUserId, shopId, items);
-            Reciept receipt = purchase.generateReciept();
+            // Reciept receipt = purchase.generateReciept();
             String msg = "The bid is finalized #" 
                     + purchaseId 
-                    + ".\nIt has been added to your bids list.\n\n" 
-                    + receipt;
-            notificationService.sendToUser(initiatingUserId, authToken, msg);
+                    + ".\nIt has been added to your bids list.\n\n"; 
+            notificationService.sendToUser(initiatingUserId, "The bid is over ", msg);
             purchase.completePurchase();
+            userService.addBidToUserShoppingCart(initiatingUserId, shopId, items);
             LoggerService.logMethodExecutionEnd("finalizeBid", initiatingUserId);
             return initiatingUserId;
         } catch (OurArg e) {
@@ -344,12 +350,42 @@ public class PurchaseService {
         }
     }
 
-    public List<BidReciept> getAllBids(String authToken){
+    public List<BidReciept> getAllBids(String authToken, boolean fromBid){
         try {
             LoggerService.logMethodExecution("getAllBids", authToken);
-            authTokenService.ValidateToken(authToken);
+            int userId = authTokenService.ValidateToken(authToken);
+            // 1. fetch everything...
             List<BidReciept> bids = purchaseRepository.getAllBids();
-            LoggerService.logMethodExecutionEnd("getAllBids", bids);
+
+            if(fromBid){
+                //find shop owner of each bid - for owner only has to see all bids of his shops
+                for (BidReciept bid : bids) {
+                    int shopId = bid.getShopId();
+                    int shopOwnerId = userService.getShopOwner(shopId);
+                    if(shopOwnerId != userId) {
+                        // 2. filter out other users’ bids
+                        bids = bids.stream()
+                                .filter(b -> b.getUserId() == userId)
+                                .collect(Collectors.toList());
+
+                        // 3.Distinguish between the bids of the user to auctions he has participated in - present only the bids he has made
+                        bids = bids.stream().filter(b ->
+                                b.getUserId() == userId
+                                && b.getEndTime() == null).collect(Collectors.toList());
+                        
+                        LoggerService.logMethodExecutionEnd("getAllBids", bids);
+                    } else{
+                        // 3.Distinguish between the bids of the user to auctions he has participated in - present only the bids he has made
+                        bids = bids.stream().filter(b ->
+                                b.getEndTime() == null).collect(Collectors.toList());
+                    }
+                }
+            } else{
+                bids = bids.stream().filter(b ->
+                                b.getEndTime() != null).collect(Collectors.toList());
+                        
+                LoggerService.logMethodExecutionEnd("getAllBids", bids);
+            }
             return bids;
         } catch (OurArg e) {
             LoggerService.logDebug("getAllBids", e);
@@ -409,7 +445,7 @@ public class PurchaseService {
     }
 
 
-    public void postBiddingAuction(String authToken, int auctionId, int bidAmount) {
+    public void postBiddingAuction(String authToken, int auctionId, int bidPrice) {
         LoggerService.logMethodExecution("postBiddingAuction", authToken, auctionId);
         try {
             int userId = authTokenService.ValidateToken(authToken);
@@ -421,9 +457,7 @@ public class PurchaseService {
                 throw new OurRuntime(
                         "User " + userId + " is the owner of the bid " + auctionId + " and cannot bid on it");
             }
-            ((Bid) purchase).addBidding(userId,bidAmount);
-            
-            postBidding(authToken, auctionId, bidAmount); ///?
+            ((Bid) purchase).addBidding(userId,bidPrice);
             LoggerService.logMethodExecutionEndVoid("postBiddingAuction");
         } catch (OurArg e) {
             LoggerService.logDebug("postBiddingAuction", e);
@@ -492,11 +526,11 @@ public class PurchaseService {
             } catch (Exception e) {
                 LoggerService.logError("acceptBid", e, authToken, bidId);
                 throw new OurRuntime("acceptBid: " + e.getMessage(), e);
-            }
-            int shopOwnerId = userService.getShopOwner(userId);
-            String msg = "User " + ((Member)userService.getUserById(userId)).getName() + " accepted bid with price " + bid.getHighestBid();
+            }            
+            int shopOwnerId = userService.getShopOwner(bid.getStoreId());
+            String msg = "User " + ((Member)userService.getUserById(userId)).getUsername() + " accepted bid with price " + bid.getHighestBid();
             notificationService.sendToUser(shopOwnerId, authToken, msg);
-            finalizeBid(authToken, bidId); //do it automatically
+            finalizeBid(authToken, bidId, true); //do it automatically
         } catch(OurArg e){
             LoggerService.logDebug("acceptBid", e);
             throw new OurArg("acceptBid: " + e.getMessage(), e);
@@ -504,6 +538,25 @@ public class PurchaseService {
             LoggerService.logDebug("acceptBid", e);
             throw new OurRuntime("acceptBid: " + e.getMessage(), e);
         }
+    }
+
+    public List<BidReciept> getFinishedBidsList(String authToken) {
+        List<BidReciept> allBidsOfUser = getAllBids(authToken, true);
+        int userId;
+        try {
+            userId = authTokenService.ValidateToken(authToken);
+        } catch (Exception e) {
+            LoggerService.logError("getFinishedBidsList", e, authToken);
+            throw new OurRuntime("getFinishedBidsList: " + e.getMessage(), e);
+        }
+        //Sort the list so it will return only the bids that were finished
+        List<BidReciept> finishedBids = new ArrayList<>();
+        for (BidReciept bid : allBidsOfUser) {
+            if (bid.isCompleted() == true && bid.getUserId() == userId) {
+                finishedBids.add(bid);
+            }
+        }
+        return finishedBids;
     }
  
    

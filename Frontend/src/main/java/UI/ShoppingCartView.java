@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 
@@ -75,6 +76,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         handleSuspence();
 
         getWonAuctionsSection();
+        getFinishedBidsSection();
     }
 
     public Integer getUserId() {
@@ -559,10 +561,110 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                             "price", String.valueOf(dto.getHighestBid())))));
             return payNow;
         })
-                .setHeader("Auction")
+                .setHeader("For Payment")
                 .setAutoWidth(true);
 
         grid.setItems(won);
         add(grid);
+    }
+
+    private void getFinishedBidsSection() {
+        add(new H2("Finished Bids"));
+
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<List<BidRecieptDTO>> resp = restTemplate.exchange(
+            URLPurchases + "/bids/finished?authToken=" + token,
+            HttpMethod.GET,
+            entity,
+            new ParameterizedTypeReference<List<BidRecieptDTO>>() {},
+            token
+        );
+        List<BidRecieptDTO> finished = resp.getBody();
+
+        if (finished == null || finished.isEmpty()) {
+            H3 empty = new H3("You have no finished bids.");
+            empty.getStyle().set("color", "var(--lumo-secondary-text-color)");
+            add(empty);
+            return;
+        }
+
+        Grid<BidRecieptDTO> grid = new Grid<>(BidRecieptDTO.class, false);
+
+        // 1) Store Name — now correctly fetched from your shops API:
+        grid.addColumn(dto -> fetchShopName(dto.getStoreId()))
+            .setHeader("Store Name")
+            .setAutoWidth(true);
+
+        // 2) Item Name — likewise from your shop’s items endpoint:
+        grid.addColumn(this::fetchItemName)
+            .setHeader("Item Name")
+            .setAutoWidth(true);
+
+        // 3) Your bid amount
+        grid.addColumn(BidRecieptDTO::getHighestBid)
+            .setHeader("Your Bid")
+            .setAutoWidth(true);
+
+        // 4) “Pay Now”
+        grid.addComponentColumn(dto -> {
+            Button payNow = new Button("Pay Now");
+            payNow.addClickListener(e -> UI.getCurrent().navigate("payment",
+                QueryParameters.simple(Map.of(
+                    "auctionId", String.valueOf(dto.getPurchaseId()),
+                    "price",     String.valueOf(dto.getHighestBid())
+                ))
+            ));
+            return payNow;
+        })
+        .setHeader("For Payment")
+        .setAutoWidth(true);
+
+        grid.setItems(finished);
+        add(grid);
+    }
+
+    private String fetchShopName(int shopId) {
+        try {
+            String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+            ResponseEntity<ShopDTO> resp = restTemplate.exchange(
+                URLShop + "/" + shopId + "?token=" + token,
+                HttpMethod.GET,
+                new HttpEntity<>(new HttpHeaders()),
+                ShopDTO.class
+            );
+            return resp.getBody() != null
+                ? resp.getBody().getName()
+                : "Unknown Shop";
+        } catch (Exception e) {
+            log.warn("Error fetching shop name for id {}", shopId, e);
+            return "Unknown Shop";
+        }
+    }
+
+    private String fetchItemName(BidRecieptDTO dto) {
+        try {
+            String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+            ResponseEntity<List<ItemDTO>> resp = restTemplate.exchange(
+                URLShop + "/" + dto.getStoreId() + "/items?token=" + token,
+                HttpMethod.GET,
+                new HttpEntity<>(new HttpHeaders()),
+                new ParameterizedTypeReference<List<ItemDTO>>() {}
+            );
+            List<ItemDTO> items = resp.getBody();
+            if (items != null) {
+                for (ItemDTO item : items) {
+                    if (dto.getItems().containsKey(item.getId())) {
+                        return item.getName();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Error fetching items for store {}", dto.getStoreId(), e);
+        }
+        return "Unknown Item";
     }
 }

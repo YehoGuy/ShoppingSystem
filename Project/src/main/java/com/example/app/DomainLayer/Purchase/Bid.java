@@ -83,7 +83,7 @@ public class Bid extends Purchase {
      * @param userId    the ID of the bidder;
      * @param bidAmount the amount of the bid.
      */
-    public synchronized void addBidding(int userId, int bidAmount) {
+    public synchronized void addBidding(int userId, int bidPrice) {
         LocalDateTime now = LocalDateTime.now();
         if(auctionStartTime != null) {
             if (now.isBefore(auctionStartTime)) {
@@ -95,12 +95,15 @@ public class Bid extends Purchase {
                         + ", Auction end time: " + auctionEndTime);
             }
         }
-        if (bidAmount > highestBid) {
+        if (bidPrice > highestBid) {
             if (!isCompleted) {
-                highestBid = bidAmount;
+                highestBid = bidPrice;
                 highestBidderId = userId;
                 biddersIds.put(userId, Boolean.TRUE); // ← ALWAYS non-null, thread-safe marker
             }
+        }
+        else{
+            throw new IllegalStateException("Bid price is lower than the current highest bid");
         }
     }
 

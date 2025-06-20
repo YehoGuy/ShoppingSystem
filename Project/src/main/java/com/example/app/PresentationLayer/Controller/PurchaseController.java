@@ -163,10 +163,10 @@ public class PurchaseController {
     public ResponseEntity<String> postBidOffer(
             @PathVariable @Min(1) int bidId,
             @RequestParam String authToken,
-            @RequestParam @Min(1) int bidAmount) {
+            @RequestParam @Min(1) int bidPrice) {
 
         try {
-            purchaseService.postBidding(authToken, bidId, bidAmount);
+            purchaseService.postBidding(authToken, bidId, bidPrice);
             // Success: 202 Accepted, no body needed
             return ResponseEntity.accepted().build();
 
@@ -198,7 +198,7 @@ public class PurchaseController {
 
         try {
             // Parse the payment details JSON
-            int winnerId = purchaseService.finalizeBid(authToken, bidId);
+            int winnerId = purchaseService.finalizeBid(authToken, bidId, false);
             // success → 200 OK, return the winner's user‑id
             return ResponseEntity.ok(winnerId);
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
@@ -220,12 +220,12 @@ public class PurchaseController {
         }
     }
 
-     @GetMapping("/bids")
+    @GetMapping("/bids")
     public ResponseEntity<?> getAllBids(
             @RequestParam String authToken) {
 
         try {
-            List<BidReciept> bids = purchaseService.getAllBids(authToken);
+            List<BidReciept> bids = purchaseService.getAllBids(authToken, true);
             List<BidRecieptDTO> bidDTOs = bids.stream()
                     .map(BidRecieptDTO::fromDomain) // convert to DTO
                     .toList();
@@ -245,6 +245,25 @@ public class PurchaseController {
                     .body("Internal server error"); // 500
         }
     }
+
+    @GetMapping("/bids/finished")
+    public ResponseEntity<List<BidRecieptDTO>> getFinishedBidsSection(
+            @RequestParam String authToken) {
+        try {
+            List<BidReciept> finishedBids = purchaseService.getFinishedBidsList(authToken);
+            // map domain‐model receipts → DTOs
+            List<BidRecieptDTO> dtos = finishedBids.stream()
+                .map(BidRecieptDTO::fromDomain)  
+                .toList();
+            return ResponseEntity.ok(dtos);
+        } catch (IllegalArgumentException ex) {
+            // token invalid
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
 
     @GetMapping("/shops/{shopId}/bids")
     public ResponseEntity<?> getStoreBids(
@@ -299,14 +318,14 @@ public class PurchaseController {
     }
 
     @PostMapping("/bids/{bidId}/accept")
-    public ResponseEntity<Void> acceptBid(
+    public ResponseEntity<String> acceptBid(
             @PathVariable @Min(1) int bidId,
             @RequestParam String authToken) {
         try {
             purchaseService.acceptBid(authToken, bidId);
             return ResponseEntity.noContent().build();
         } catch (RuntimeException ex) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
         }
     }
 
@@ -450,7 +469,7 @@ public class PurchaseController {
         try {
             // Parse the payment details JSON
             
-            int winnerId = purchaseService.finalizeBid(authToken, bidId);
+            int winnerId = purchaseService.finalizeBid(authToken, bidId, false);
             // success → 200 OK, return the winner's user‑id
             return ResponseEntity.ok(winnerId);
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
@@ -476,7 +495,7 @@ public class PurchaseController {
     public ResponseEntity<List<BidRecieptDTO>> listAuctions(
             @RequestParam String authToken) {
         try {
-            List<BidReciept> domain = purchaseService.getAllBids(authToken);
+            List<BidReciept> domain = purchaseService.getAllBids(authToken, false);
             List<BidRecieptDTO> dtos = domain.stream()
                 .map(BidRecieptDTO::fromDomain)
                 .toList();
@@ -513,6 +532,8 @@ public class PurchaseController {
                     .body(null); // 500
         }
     }
+
+    
 
     
 
