@@ -196,7 +196,6 @@ class PurchaseServiceTests {
         when(bid.completePurchase()).thenReturn(rec);
 
         // only stub what's actually used:
-        when(bid.getHighestBidderId()).thenReturn(5);
         when(bid.getItems()).thenReturn(Map.of(1, 1));
 
         // infrastructure stubs
