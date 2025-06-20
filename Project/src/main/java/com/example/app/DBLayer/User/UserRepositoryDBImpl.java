@@ -950,4 +950,14 @@ public class UserRepositoryDBImpl implements IUserRepository {
         //TODO
         return -1;
     }
+    
+    @Override
+    public void updateUserInDB(Member member) {
+        if (member == null) {
+            throw new IllegalArgumentException("Member cannot be null.");
+        }
+        
+        
+        jpaRepo.save(member);
+    }
 }

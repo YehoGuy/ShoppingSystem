@@ -752,7 +752,6 @@ public class UserRepository implements IUserRepository {
         user.addAuctionWin(bidReciept); // Assuming Member has a method to add an auction win to the shopping cart
     }
 
-
     @Override
     public int getShopOwner(int shopId) {
         // 1) try to find the founder
@@ -770,6 +769,11 @@ public class UserRepository implements IUserRepository {
             }
         }
         throw new OurRuntime("No owner found for shop " + shopId);
+    }
+  
+    @Override
+    public void updateUserInDB(Member member) {
+        return;
     }
 
 }

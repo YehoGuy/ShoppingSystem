@@ -22,8 +22,8 @@ import com.example.app.DomainLayer.Purchase.Reciept;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
+// @Profile("!no-db & !test")
 @Repository
-@Profile("!no-db & !test")
 public class PurchaseRepositoryDBImpl implements IPurchaseRepository {
 
     private AtomicInteger purchaseIdCounter = new AtomicInteger(1);
