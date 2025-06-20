@@ -28,7 +28,7 @@ public record BidRecieptDTO(
         return new BidRecieptDTO(
                 b.getPurchaseId(),
                 b.getUserId(),
-                b.getStoreId(),
+                b.getShopId(),
                 new AddressDTO(
                     "xxx","xxx", "xxx", "xxx", "xxx", "xxx" // Placeholder, replace with actual address fields
                 ),

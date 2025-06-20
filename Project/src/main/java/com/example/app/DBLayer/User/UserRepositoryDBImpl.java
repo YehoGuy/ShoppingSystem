@@ -945,6 +945,13 @@ public class UserRepositoryDBImpl implements IUserRepository {
     }
 
     @Override
+    public int getShopOwner(int shopId)
+    {
+        //TODO
+        return -1;
+    }
+    
+    @Override
     public void updateUserInDB(Member member) {
         if (member == null) {
             throw new IllegalArgumentException("Member cannot be null.");
@@ -952,6 +959,5 @@ public class UserRepositoryDBImpl implements IUserRepository {
         
         
         jpaRepo.save(member);
-        
     }
 }

@@ -813,12 +813,8 @@ public class ShopService {
                 throw new OurRuntime("No permission to set policy for shop " + shopId);
             }
             // convert DTO → domain Policy
-            // print the policy for debugging
-            System.out.print("setDiscountPolicy Mapping policy for shop " + shopId + ": " + dto);
             Policy policy = mapPolicyDTO(shopId, dto);
-            System.out.println(" policyfsdfsdfsd" + policy.toString());
             shopRepository.setDiscountPolicy(shopId, policy);
-            System.out.println(" setDiscountPolicy completed for shop " + shopId);
             LoggerService.logMethodExecutionEndVoid("setDiscountPolicy");
         } catch (OurArg e) {
             LoggerService.logDebug("setDiscountPolicy", e);

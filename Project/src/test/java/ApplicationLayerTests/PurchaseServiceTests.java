@@ -1,6 +1,7 @@
 package ApplicationLayerTests;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -27,18 +28,23 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.Mock;
+
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.scheduling.TaskScheduler;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
 import com.example.app.ApplicationLayer.NotificationService;
@@ -82,6 +88,9 @@ class PurchaseServiceTests {
     MessageService msg;
     @Mock
     NotificationService nots;
+    @Mock 
+    TaskScheduler taskscheduler;
+
     PurchaseService service;
 
     Address addr = new Address().withCountry("IL").withCity("TLV")
@@ -92,7 +101,7 @@ class PurchaseServiceTests {
 
     @BeforeEach
     void setUp() {
-        service = new PurchaseService(repo, auth, users, shops, items, msg, nots, null);
+        service = new PurchaseService(repo, auth, users, shops, items, msg, nots, taskscheduler);
     }
     /*
      * ══════════════════════════════════════════════════════════════
@@ -171,22 +180,6 @@ class PurchaseServiceTests {
         verify(bid).addBidding(bidder, 60);
     }
 
-    @Test
-    @DisplayName("postBidding_whenUserIsOwner_shouldThrowAndNotCallAddBidding")
-    void postBidding_ownerCannotBid() throws Exception {
-        String token = "t";
-        int owner = 3, pid = 11;
-        Bid bid = spy(new Bid(pid, owner, 9, Map.of(), 10));
-
-        when(auth.ValidateToken(token)).thenReturn(owner);
-        when(repo.getPurchaseById(pid)).thenReturn(bid);
-
-        RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> service.postBidding(token, pid, 20));
-
-        assertTrue(ex.getMessage().contains("owner"));
-        verify(bid, never()).addBidding(anyInt(), anyInt());
-    }
 
     /*
      * ══════════════════════════════════════════════════════════════
@@ -208,62 +201,65 @@ class PurchaseServiceTests {
 
         /* fabricate receipt object the service expects after completion */
         BidReciept rec = mock(BidReciept.class);
-        when(bid.completePurchase()).thenReturn(rec); // stub out real behaviour
-        when(bid.getMaxBidding()).thenReturn(150);
-        when(bid.getBiddersIds()).thenReturn(List.of(5));
+        when(bid.completePurchase()).thenReturn(rec);
 
-        /* infrastructure stubs */
+        // only stub what's actually used:
+        when(bid.getItems()).thenReturn(Map.of(1, 1));
+
+        // infrastructure stubs
         when(repo.getPurchaseById(pid)).thenReturn(bid);
         when(auth.ValidateToken(token)).thenReturn(owner);
 
-        when(bid.getHighestBidderId()).thenReturn(5); // stub for getHighestBidderId
-        when(bid.getItems()).thenReturn(Map.of(1, 1)); // stub for getItems
-        when(bid.getMaxBidding()).thenReturn(150); // stub for getMaxBidding
-        when(bid.getBiddersIds()).thenReturn(List.of(5)); // stub for getBiddersIds
-
         /* invoke */
-        int winner = service.finalizeBid(token, pid);
+        int winner = service.finalizeBid(token, pid, true);
 
         /* verify */
-        assertEquals(5, winner);
-        verify(msg).sendMessageToUser(eq(token), eq(5), contains("Congratulations"), eq(0));
+        assertEquals(1, winner);
+        verify(nots).sendToUser(
+            eq(owner),
+            eq("The bid is over "),
+            contains("#" + pid)
+        );
     }
 
     @Test
     @DisplayName("finalizeBid_checkAddedToCart_whenBidIsCompleted_shouldAddToCart")
-    void finalizeBid_checkAddedToCart() throws Exception {
+    void finalizeBid_checkAddedToCart_whenBidIsCompleted_shouldAddToCart() throws Exception {
         String token = "tok";
-        int owner = 1, shop = 8, pid = 22;
+        int initiatingUserId = 1;
+        int purchaseId       = 22;
+        int shopId           = 8;
+        Map<Integer, Integer> items = Map.of(1, 1);
 
-        // Spy on an *un-completed* bid
-        Bid bid = spy(new Bid(pid, owner, shop, Map.of(1, 1), 100));
+        Bid bid = mock(Bid.class);
 
-        /* fabricate receipt object the service expects after completion */
-        BidReciept rec = mock(BidReciept.class);
-        when(bid.completePurchase()).thenReturn(rec); // stub out real behaviour
+        when(repo.getPurchaseById(purchaseId)).thenReturn(bid);
+
+        when(auth.ValidateToken(token)).thenReturn(initiatingUserId);
+
+        when(bid.getStoreId()).thenReturn(shopId);
+        when(users.getShopOwner(shopId)).thenReturn(999); 
         when(bid.getMaxBidding()).thenReturn(150);
-        when(bid.getBiddersIds()).thenReturn(List.of(5));
+        when(bid.getItems()).thenReturn(items);
 
-        /* infrastructure stubs */
-        when(repo.getPurchaseById(pid)).thenReturn(bid);
-        when(auth.ValidateToken(token)).thenReturn(owner);
+        when(users.addBidToUserShoppingCart(eq(initiatingUserId), eq(shopId), eq(items)))
+            .thenReturn(true);
 
-        when(users.addBidToUserShoppingCart(eq(5), eq(shop), any()))
-                .thenReturn(true); // simulate successful addition to cart
+        int result = service.finalizeBid(token, purchaseId, true);
 
-        when(bid.getHighestBidderId()).thenReturn(5); // stub for getHighestBidderId
-        when(bid.getItems()).thenReturn(Map.of(1, 1)); // stub for getItems
-        when(bid.getMaxBidding()).thenReturn(150); // stub for getMaxBidding
-        when(bid.getBiddersIds()).thenReturn(List.of(5)); // stub for getBiddersIds
+        assertEquals(initiatingUserId, result, "should return the initiating user ID");
 
-        /* invoke */
-        int winner = service.finalizeBid(token, pid);
+        verify(users, times(2))
+            .addBidToUserShoppingCart(initiatingUserId, shopId, items);
 
-        /* verify */
-        assertEquals(5, winner);
-        verify(users).addBidToUserShoppingCart(eq(5), eq(shop), eq(Map.of(1, 1)));
-        verify(users).addBidToUserShoppingCart(eq(5), eq(shop), any());
-        verify(msg).sendMessageToUser(eq(token), eq(5), contains("Congratulations"), eq(0));
+        String expectedMsg =
+            "The bid is finalized #"
+            + purchaseId
+            + ".\nIt has been added to your bids list.\n\n";
+        verify(nots)
+            .sendToUser(eq(initiatingUserId), eq("The bid is over "), eq(expectedMsg));
+
+        verify(bid).completePurchase();
     }
 
     /*
@@ -580,7 +576,7 @@ class PurchaseServiceTests {
 
         when(repo.getPurchaseById(pid)).thenReturn(notBid);
 
-        OurRuntime ex = assertThrows(OurRuntime.class, () -> service.finalizeBid(token, pid));
+        OurRuntime ex = assertThrows(OurRuntime.class, () -> service.finalizeBid(token, pid, false));
         assertTrue(ex.getMessage().contains("finalizeBid:"));
     }
 
@@ -594,7 +590,7 @@ class PurchaseServiceTests {
         when(repo.getPurchaseById(pid)).thenReturn(bid);
         when(auth.ValidateToken(token)).thenThrow(new OurArg("no auth"));
 
-        OurArg ex = assertThrows(OurArg.class, () -> service.finalizeBid(token, pid));
+        OurArg ex = assertThrows(OurArg.class, () -> service.finalizeBid(token, pid, false));
         assertTrue(ex.getMessage().contains("finalizeBid:"));
     }
 
@@ -641,10 +637,10 @@ class PurchaseServiceTests {
     void getAllBids_happyPath() throws Exception {
         String token = "tok";
         int uid = 9;
-        List<BidReciept> bids = List.of(mock(BidReciept.class));
+        List<BidReciept> bids = List.of();
         when(auth.ValidateToken(token)).thenReturn(uid);
         when(repo.getAllBids()).thenReturn(bids);
-        List<BidReciept> out = service.getAllBids(token);
+        List<BidReciept> out = service.getAllBids(token, true);
         assertSame(bids, out);
         verify(repo).getAllBids();
     }
@@ -681,5 +677,112 @@ class PurchaseServiceTests {
         when(auth.ValidateToken(token)).thenThrow(new OurArg("bad token"));
 
         assertThrows(OurArg.class, () -> service.postBidding(token, pid, 99));
+    }
+
+    // ───────────────────── auction tests ─────────────────────
+
+    @Nested
+    @DisplayName("startAuction")
+    class StartAuctionServiceTests {
+        @Test
+        @DisplayName("whenValid_callsServices_andReturnsId")
+        void validStartAuction() throws Exception {
+            String token = "tok";
+            int userId = 7, storeId = 3;
+            Map<Integer,Integer> itemsMap = Map.of(1, 2);
+            int initPrice = 100;
+            LocalDateTime endTime = LocalDateTime.now().plusHours(2);
+            int auctionId = 123;
+
+            when(auth.ValidateToken(token)).thenReturn(userId);
+            when(shops.purchaseItems(itemsMap, storeId, token))
+                .thenReturn(0.0);
+            when(repo.addBid(
+                    eq(userId), eq(storeId), eq(itemsMap), eq(initPrice),
+                    any(LocalDateTime.class), eq(endTime)
+            )).thenReturn(auctionId);
+
+            int result = service.startAuction(token, storeId, itemsMap, initPrice, endTime);
+
+            assertEquals(auctionId, result);
+            verify(shops).purchaseItems(itemsMap, storeId, token);
+            // ← here: all args must be matchers
+            verify(repo).addBid(
+                eq(userId),
+                eq(storeId),
+                eq(itemsMap),
+                eq(initPrice),
+                any(LocalDateTime.class),
+                eq(endTime)
+            );
+            verify(taskscheduler).schedule(any(Runnable.class), any(Date.class));
+        }
+
+        @Test
+        @DisplayName("whenTokenInvalid_throwsOurArg")
+        void invalidToken_throws() throws Exception {
+            when(auth.ValidateToken("bad")).thenThrow(new OurArg("nope"));
+            assertThrows(OurArg.class, () ->
+                service.startAuction("bad", 1, Map.of(), 0, LocalDateTime.now())
+            );
+        }
+
+        @Test
+        @DisplayName("whenRepoThrows_rollsBack_andThrowsOurRuntime")
+        void repoError_rollsBack() throws Exception {
+            String token = "tok";
+            int userId = 7, storeId = 3;
+            Map<Integer,Integer> itemsMap = Map.of(1, 2);
+
+            when(auth.ValidateToken(token)).thenReturn(userId);
+            when(shops.purchaseItems(itemsMap, storeId, token))
+                .thenReturn(0.0);
+            when(repo.addBid(
+                    anyInt(), anyInt(), anyMap(),
+                    anyInt(), any(LocalDateTime.class), any(LocalDateTime.class)
+            )).thenThrow(new RuntimeException("db failure"));
+
+            OurRuntime ex = assertThrows(OurRuntime.class, () ->
+                service.startAuction(token, storeId, itemsMap, 50, LocalDateTime.now().plusHours(1))
+            );
+            verify(shops).rollBackPurchase(itemsMap, storeId);
+        }
+    }
+
+    @Nested
+    @DisplayName("postBiddingAuction")
+    class PostBiddingAuctionTests {
+
+        @Test
+        @DisplayName("whenNonOwner_addsBid")
+        void nonOwner_addsBid() throws Exception {
+            String token = "tok";
+            int owner = 1, bidder = 2, auctionId = 10, bidPrice = 60;
+            Bid bid = mock(Bid.class);
+
+            when(auth.ValidateToken(token)).thenReturn(bidder);
+            when(repo.getPurchaseById(auctionId)).thenReturn(bid);
+            when(bid.getUserId()).thenReturn(owner);
+
+            service.postBiddingAuction(token, auctionId, bidPrice);
+
+            verify(bid).addBidding(bidder, bidPrice);
+        }
+
+        @Test
+        @DisplayName("whenOwner_throwsOurRuntime")
+        void ownerCannotBid_throws() throws Exception {
+            String token = "tok";
+            int owner = 1, auctionId = 10;
+            Bid bid = mock(Bid.class);
+
+            when(auth.ValidateToken(token)).thenReturn(owner);
+            when(repo.getPurchaseById(auctionId)).thenReturn(bid);
+            when(bid.getUserId()).thenReturn(owner);
+
+            assertThrows(OurRuntime.class,
+                () -> service.postBiddingAuction(token, auctionId, 60)
+            );
+        }
     }
 }

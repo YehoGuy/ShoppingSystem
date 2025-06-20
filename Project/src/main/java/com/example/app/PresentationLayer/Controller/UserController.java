@@ -554,6 +554,27 @@ public class UserController {
         }
     }
 
+    @GetMapping("/shops/{shopId}/owner")
+    public ResponseEntity<Integer> getShopOwner(
+            @PathVariable @Min(1) int shopId,
+            @RequestParam("token") String token) {
+        try {
+            // only authenticated callers
+            authService.ValidateToken(token);
+            // delegate to your service layer
+            int ownerId = userService.getShopOwner(shopId);
+            return ResponseEntity.ok(ownerId);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().build();
+        } catch (NoSuchElementException ex) {
+            // shop not found
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+
     @DeleteMapping("/shops/{shopId}/assignee/{assigneeId}/all")
     public ResponseEntity<Void> removeAllAssigned(
             @PathVariable @Min(1) int shopId,
@@ -969,5 +990,4 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-
 }

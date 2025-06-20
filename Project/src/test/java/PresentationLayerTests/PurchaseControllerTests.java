@@ -1,6 +1,8 @@
 package PresentationLayerTests;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -212,7 +214,7 @@ class PurchaseControllerTests {
 
                         mvc.perform(post("/api/purchases/bids/10/offers")
                                         .param("authToken", "tok")
-                                        .param("bidAmount", "75"))
+                                        .param("bidPrice", "75"))
                                         .andExpect(status().isAccepted());
                 }
 
@@ -232,7 +234,7 @@ class PurchaseControllerTests {
 
                         mvc.perform(post("/api/purchases/bids/10/offers")
                                         .param("authToken", "tok")
-                                        .param("bidAmount", "75"))
+                                        .param("bidPrice", "75"))
                                         .andExpect(status().isConflict());
                 }
         }
@@ -242,7 +244,7 @@ class PurchaseControllerTests {
         class FinalizeBidTests {
                 @Test
                 void success_returns200() throws Exception {
-                        when(purchaseService.finalizeBid(eq("tok"), eq(10))).thenReturn(999);
+                        when(purchaseService.finalizeBid(eq("tok"), eq(10), eq(false))).thenReturn(999);
 
                         String paymentJson = "{\"currency\":\"USD\",\"cardNumber\":\"1234567890123456\",\"expirationDateMonth\":\"12\",\"expirationDateYear\":\"25\",\"cardHolderName\":\"John Doe\",\"cvv\":\"123\",\"id\":\"tok\"}";
 
@@ -254,7 +256,7 @@ class PurchaseControllerTests {
 
                 @Test
                 void badRequest_returns400() throws Exception {
-                        when(purchaseService.finalizeBid(anyString(), anyInt()))
+                        when(purchaseService.finalizeBid(anyString(), anyInt(), eq(false)))
                                         .thenThrow(new IllegalArgumentException());
 
                         mvc.perform(post("/api/purchases/bids/10/finalize")
@@ -264,7 +266,7 @@ class PurchaseControllerTests {
 
                 @Test
                 void notFound_returns404() throws Exception {
-                        when(purchaseService.finalizeBid(anyString(), anyInt()))
+                        when(purchaseService.finalizeBid(anyString(), anyInt(), eq(false)))
                                         .thenThrow(new NoSuchElementException());
 
                         mvc.perform(post("/api/purchases/bids/10/finalize")
@@ -274,7 +276,7 @@ class PurchaseControllerTests {
 
                 @Test
                 void conflict_returns409() throws Exception {
-                        when(purchaseService.finalizeBid(anyString(), anyInt()))
+                        when(purchaseService.finalizeBid(anyString(), anyInt(), eq(false)))
                                         .thenThrow(new RuntimeException());
 
                         mvc.perform(post("/api/purchases/bids/10/finalize")
@@ -308,6 +310,143 @@ class PurchaseControllerTests {
                                         .param("authToken", "tok"))
                                         .andExpect(status().isBadRequest());
                 }
+        }
+
+        @Nested
+        @DisplayName("POST /api/purchases/auctions")
+        class StartAuctionTests {
+        private final String BASE = "/api/purchases/auctions";
+        private final ObjectMapper objectMapper = new ObjectMapper();
+
+        @Test
+        @DisplayName("whenValid_returns201_andAuctionId")
+        void validStartAuction_returns201() throws Exception {
+                Map<Integer,Integer> items = Map.of(1, 2);
+                when(purchaseService.startAuction(
+                        anyString(), anyInt(), anyMap(), anyInt(), any(LocalDateTime.class))
+                ).thenReturn(77);
+
+                String json = objectMapper.writeValueAsString(items);
+                mvc.perform(post(BASE)
+                        .param("authToken",    "tok")
+                        .param("storeId",      "5")
+                        .param("initialPrice", "100")
+                        .param("auctionEndTime","2025-06-21T12:00:00")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json)
+                )
+                .andExpect(status().isCreated())
+                .andExpect(content().string("77"));
+        }
+
+        @Test
+        @DisplayName("whenBadArgs_returns400")
+        void badArgs_returns400() throws Exception {
+                when(purchaseService.startAuction(
+                        anyString(), anyInt(), anyMap(), anyInt(), any(LocalDateTime.class))
+                ).thenThrow(new IllegalArgumentException());
+
+                mvc.perform(post(BASE)
+                        .param("authToken","tok")
+                        .param("storeId","-1")
+                        .param("initialPrice","100")
+                        .param("auctionEndTime","2025-06-21T12:00:00")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}")
+                )
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("whenStoreNotFound_returns404")
+        void storeNotFound_returns404() throws Exception {
+                when(purchaseService.startAuction(
+                        anyString(), anyInt(), anyMap(), anyInt(), any(LocalDateTime.class))
+                ).thenThrow(new NoSuchElementException());
+
+                mvc.perform(post(BASE)
+                        .param("authToken","tok")
+                        .param("storeId","999")
+                        .param("initialPrice","100")
+                        .param("auctionEndTime","2025-06-21T12:00:00")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}")
+                )
+                .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("whenConflict_returns409")
+        void conflict_returns409() throws Exception {
+                when(purchaseService.startAuction(
+                        anyString(), anyInt(), anyMap(), anyInt(), any(LocalDateTime.class))
+                ).thenThrow(new RuntimeException());
+
+                mvc.perform(post(BASE)
+                        .param("authToken","tok")
+                        .param("storeId","5")
+                        .param("initialPrice","100")
+                        .param("auctionEndTime","2025-06-21T12:00:00")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}")
+                )
+                .andExpect(status().isConflict());
+        }
+        }
+
+        @Nested
+        @DisplayName("POST /api/purchases/auctions/{auctionId}/finalize")
+        class FinalizeAuctionTests {
+        private final String BASE = "/api/purchases/auctions";
+
+        @Test
+        @DisplayName("whenSuccess_returns200_andWinnerId")
+        void success_returns200() throws Exception {
+                when(purchaseService.finalizeBid(anyString(), anyInt(), eq(false)))
+                .thenReturn(42);
+
+                mvc.perform(post(BASE + "/10/finalize")
+                        .param("authToken", "tok")
+                )
+                .andExpect(status().isOk())
+                .andExpect(content().string("42"));
+        }
+
+        @Test
+        @DisplayName("whenBadArgs_returns400")
+        void badArgs_returns400() throws Exception {
+                when(purchaseService.finalizeBid(anyString(), anyInt(), eq(false)))
+                .thenThrow(new IllegalArgumentException("bad"));
+
+                mvc.perform(post(BASE + "/0/finalize")
+                        .param("authToken", "tok")
+                )
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("whenNotFound_returns404")
+        void notFound_returns404() throws Exception {
+                when(purchaseService.finalizeBid(anyString(), anyInt(), eq(false)))
+                .thenThrow(new NoSuchElementException());
+
+                mvc.perform(post(BASE + "/99/finalize")
+                        .param("authToken", "tok")
+                )
+                .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("whenConflict_returns409")
+        void conflict_returns409() throws Exception {
+                when(purchaseService.finalizeBid(anyString(), anyInt(), eq(false)))
+                .thenThrow(new RuntimeException());
+
+                mvc.perform(post(BASE + "/10/finalize")
+                        .param("authToken", "tok")
+                )
+                .andExpect(status().isConflict());
+        }
         }
 
 }

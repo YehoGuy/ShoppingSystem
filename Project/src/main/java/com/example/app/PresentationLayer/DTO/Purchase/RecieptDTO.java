@@ -26,7 +26,7 @@ import jakarta.validation.constraints.Positive;
         return new RecieptDTO(
             r.getPurchaseId(),
             r.getUserId(),
-            r.getStoreId(),
+            r.getShopId(),
             AddressDTO.fromDomain(r.getShippingAddress()),
             r.getItems(),
             r.isCompleted(),
