@@ -101,7 +101,7 @@ class PurchaseServiceTests {
 
     @BeforeEach
     void setUp() {
-        service = new PurchaseService(repo, auth, users, shops, items, msg, nots, null);
+        service = new PurchaseService(repo, auth, users, shops, items, msg, nots, taskscheduler);
     }
     /*
      * ══════════════════════════════════════════════════════════════

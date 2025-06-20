@@ -395,7 +395,7 @@ class PurchaseControllerTests {
         }
 
         @Nested
-        @DisplayName("POST /api/purchases/auctions/{auctionId}/finalize")
+        @DisplayName("POST /api/purchases/auctions/{bidId}/finalize")
         class FinalizeAuctionTests {
         private final String BASE = "/api/purchases/auctions";
 
