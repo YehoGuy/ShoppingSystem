@@ -193,16 +193,15 @@ class PurchaseServiceTests {
 
         /* fabricate receipt object the service expects after completion */
         BidReciept rec = mock(BidReciept.class);
-        when(bid.completePurchase()).thenReturn(rec); // stub out real behaviour
-        when(bid.getMaxBidding()).thenReturn(150);
-        when(bid.getBiddersIds()).thenReturn(List.of(5));
+        when(bid.completePurchase()).thenReturn(rec);
 
-        /* infrastructure stubs */
+        // only stub what's actually used:
+        when(bid.getHighestBidderId()).thenReturn(5);
+        when(bid.getItems()).thenReturn(Map.of(1, 1));
+
+        // infrastructure stubs
         when(repo.getPurchaseById(pid)).thenReturn(bid);
         when(auth.ValidateToken(token)).thenReturn(owner);
-
-        when(bid.getHighestBidderId()).thenReturn(5); // stub for getHighestBidderId
-        when(bid.getItems()).thenReturn(Map.of(1, 1)); // stub for getItems
 
         /* invoke */
         int winner = service.finalizeBid(token, pid, true);
