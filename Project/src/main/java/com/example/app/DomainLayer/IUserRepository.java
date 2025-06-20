@@ -158,4 +158,6 @@ public interface IUserRepository {
 
     void addAuctionWinBidToShoppingCart(int winnerId, Bid bid);
 
+    void updateUserInDB(Member member);
+
 }

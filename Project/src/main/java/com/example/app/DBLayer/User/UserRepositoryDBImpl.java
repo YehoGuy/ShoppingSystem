@@ -943,4 +943,15 @@ public class UserRepositoryDBImpl implements IUserRepository {
             cart.addBid(shopId, items);
         }
     }
+
+    @Override
+    public void updateUserInDB(Member member) {
+        if (member == null) {
+            throw new IllegalArgumentException("Member cannot be null.");
+        }
+        
+        
+        jpaRepo.save(member);
+        
+    }
 }
