@@ -695,7 +695,8 @@ class PurchaseServiceTests {
             int auctionId = 123;
 
             when(auth.ValidateToken(token)).thenReturn(userId);
-            doNothing().when(shops).purchaseItems(itemsMap, storeId, token);
+            when(shops.purchaseItems(itemsMap, storeId, token))
+                .thenReturn(0.0);
             when(repo.addBid(
                     eq(userId), eq(storeId), eq(itemsMap), eq(initPrice),
                     any(LocalDateTime.class), eq(endTime)
@@ -728,7 +729,8 @@ class PurchaseServiceTests {
             Map<Integer,Integer> itemsMap = Map.of(1, 2);
 
             when(auth.ValidateToken(token)).thenReturn(userId);
-            doNothing().when(shops).purchaseItems(itemsMap, storeId, token);
+            when(shops.purchaseItems(itemsMap, storeId, token))
+                .thenReturn(0.0);
             when(repo.addBid(
                     anyInt(), anyInt(), anyMap(),
                     anyInt(), any(LocalDateTime.class), any(LocalDateTime.class)
