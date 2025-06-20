@@ -211,7 +211,11 @@ class PurchaseServiceTests {
 
         /* verify */
         assertEquals(1, winner);
-        verify(msg).sendMessageToUser(eq(token), eq(5), contains("Congratulations"), eq(0));
+        verify(nots).sendToUser(
+            eq(owner),
+            eq("The bid is over "),
+            contains("#" + pid)
+        );
     }
 
     @Test
@@ -242,7 +246,7 @@ class PurchaseServiceTests {
         when(bid.getBiddersIds()).thenReturn(List.of(5)); // stub for getBiddersIds
 
         /* invoke */
-        int result = service.finalizeBid(token, pid, false);
+        int result = service.finalizeBid(token, pid, true);
 
         // /* verify */
         // assertEquals(5, winner);
