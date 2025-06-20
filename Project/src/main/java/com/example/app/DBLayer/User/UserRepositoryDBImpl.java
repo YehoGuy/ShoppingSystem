@@ -950,13 +950,7 @@ public class UserRepositoryDBImpl implements IUserRepository {
             throw new IllegalArgumentException("Member cannot be null.");
         }
         
-        // Ensure the member exists in the database
-        Member existingMember = jpaRepo.findById(member.getMemberId())
-                .orElseThrow(() -> new OurRuntime("Member not found: " + member.getMemberId()));
         
- 
-        
-        // Save the updated member back to the database
         jpaRepo.save(member);
         
     }
