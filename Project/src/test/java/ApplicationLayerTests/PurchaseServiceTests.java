@@ -1,6 +1,7 @@
 package ApplicationLayerTests;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -27,9 +28,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.Mock;
+
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -40,6 +44,7 @@ import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.scheduling.TaskScheduler;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
 import com.example.app.ApplicationLayer.NotificationService;
@@ -83,6 +88,9 @@ class PurchaseServiceTests {
     MessageService msg;
     @Mock
     NotificationService nots;
+    @Mock 
+    TaskScheduler taskscheduler;
+
     PurchaseService service;
 
     Address addr = new Address().withCountry("IL").withCity("TLV")
@@ -217,45 +225,33 @@ class PurchaseServiceTests {
     @Test
     @DisplayName("finalizeBid_checkAddedToCart_whenBidIsCompleted_shouldAddToCart")
     void finalizeBid_checkAddedToCart_whenBidIsCompleted_shouldAddToCart() throws Exception {
-        // given
         String token = "tok";
         int initiatingUserId = 1;
         int purchaseId       = 22;
         int shopId           = 8;
         Map<Integer, Integer> items = Map.of(1, 1);
 
-        // mock a Bid (Mockito mocks still pass instanceof Bid checks)
         Bid bid = mock(Bid.class);
 
-        // 1. repository returns our bid
         when(repo.getPurchaseById(purchaseId)).thenReturn(bid);
 
-        // 2. valid token → initiating user
         when(auth.ValidateToken(token)).thenReturn(initiatingUserId);
 
-        // 3. bid metadata stubs
         when(bid.getStoreId()).thenReturn(shopId);
-        when(users.getShopOwner(shopId)).thenReturn(999); // value ignored when fromAcceptBid = true
+        when(users.getShopOwner(shopId)).thenReturn(999); 
         when(bid.getMaxBidding()).thenReturn(150);
         when(bid.getItems()).thenReturn(items);
 
-        // 4. simulate cart addition always succeeds
         when(users.addBidToUserShoppingCart(eq(initiatingUserId), eq(shopId), eq(items)))
             .thenReturn(true);
 
-        // no need to stub bid.completePurchase(); default mock → no‐op
+        int result = service.finalizeBid(token, purchaseId, true);
 
-        // when
-        int result = service.finalizeBid(token, purchaseId, /*fromAcceptBid*/ true);
-
-        // then
         assertEquals(initiatingUserId, result, "should return the initiating user ID");
 
-        // should add to cart twice for the initiating user
         verify(users, times(2))
             .addBidToUserShoppingCart(initiatingUserId, shopId, items);
 
-        // should notify once with the exact message
         String expectedMsg =
             "The bid is finalized #"
             + purchaseId
@@ -263,7 +259,6 @@ class PurchaseServiceTests {
         verify(nots)
             .sendToUser(eq(initiatingUserId), eq("The bid is over "), eq(expectedMsg));
 
-        // and mark the bid as completed
         verify(bid).completePurchase();
     }
 
@@ -682,5 +677,104 @@ class PurchaseServiceTests {
         when(auth.ValidateToken(token)).thenThrow(new OurArg("bad token"));
 
         assertThrows(OurArg.class, () -> service.postBidding(token, pid, 99));
+    }
+
+    // ───────────────────── auction tests ─────────────────────
+
+    @Nested
+    @DisplayName("startAuction")
+    class StartAuctionServiceTests {
+        @Test
+        @DisplayName("whenValid_callsServices_andReturnsId")
+        void validStartAuction() throws Exception {
+            String token = "tok";
+            int userId = 7, storeId = 3;
+            Map<Integer,Integer> itemsMap = Map.of(1, 2);
+            int initPrice = 100;
+            LocalDateTime endTime = LocalDateTime.now().plusHours(2);
+            int auctionId = 123;
+
+            when(auth.ValidateToken(token)).thenReturn(userId);
+            doNothing().when(shops).purchaseItems(itemsMap, storeId, token);
+            when(repo.addBid(
+                    eq(userId), eq(storeId), eq(itemsMap), eq(initPrice),
+                    any(LocalDateTime.class), eq(endTime)
+            )).thenReturn(auctionId);
+
+            int result = service.startAuction(token, storeId, itemsMap, initPrice, endTime);
+
+            assertEquals(auctionId, result);
+            verify(shops).purchaseItems(itemsMap, storeId, token);
+            verify(repo).addBid(
+                userId, storeId, itemsMap, initPrice, any(LocalDateTime.class), eq(endTime)
+            );
+            verify(taskscheduler).schedule(any(Runnable.class), any(Date.class));
+        }
+
+        @Test
+        @DisplayName("whenTokenInvalid_throwsOurArg")
+        void invalidToken_throws() throws Exception {
+            when(auth.ValidateToken("bad")).thenThrow(new OurArg("nope"));
+            assertThrows(OurArg.class, () ->
+                service.startAuction("bad", 1, Map.of(), 0, LocalDateTime.now())
+            );
+        }
+
+        @Test
+        @DisplayName("whenRepoThrows_rollsBack_andThrowsOurRuntime")
+        void repoError_rollsBack() throws Exception {
+            String token = "tok";
+            int userId = 7, storeId = 3;
+            Map<Integer,Integer> itemsMap = Map.of(1, 2);
+
+            when(auth.ValidateToken(token)).thenReturn(userId);
+            doNothing().when(shops).purchaseItems(itemsMap, storeId, token);
+            when(repo.addBid(
+                    anyInt(), anyInt(), anyMap(),
+                    anyInt(), any(LocalDateTime.class), any(LocalDateTime.class)
+            )).thenThrow(new RuntimeException("db failure"));
+
+            OurRuntime ex = assertThrows(OurRuntime.class, () ->
+                service.startAuction(token, storeId, itemsMap, 50, LocalDateTime.now().plusHours(1))
+            );
+            verify(shops).rollBackPurchase(itemsMap, storeId);
+        }
+    }
+
+    @Nested
+    @DisplayName("postBiddingAuction")
+    class PostBiddingAuctionTests {
+
+        @Test
+        @DisplayName("whenNonOwner_addsBid")
+        void nonOwner_addsBid() throws Exception {
+            String token = "tok";
+            int owner = 1, bidder = 2, auctionId = 10, bidPrice = 60;
+            Bid bid = mock(Bid.class);
+
+            when(auth.ValidateToken(token)).thenReturn(bidder);
+            when(repo.getPurchaseById(auctionId)).thenReturn(bid);
+            when(bid.getUserId()).thenReturn(owner);
+
+            service.postBiddingAuction(token, auctionId, bidPrice);
+
+            verify(bid).addBidding(bidder, bidPrice);
+        }
+
+        @Test
+        @DisplayName("whenOwner_throwsOurRuntime")
+        void ownerCannotBid_throws() throws Exception {
+            String token = "tok";
+            int owner = 1, auctionId = 10;
+            Bid bid = mock(Bid.class);
+
+            when(auth.ValidateToken(token)).thenReturn(owner);
+            when(repo.getPurchaseById(auctionId)).thenReturn(bid);
+            when(bid.getUserId()).thenReturn(owner);
+
+            assertThrows(OurRuntime.class,
+                () -> service.postBiddingAuction(token, auctionId, 60)
+            );
+        }
     }
 }
