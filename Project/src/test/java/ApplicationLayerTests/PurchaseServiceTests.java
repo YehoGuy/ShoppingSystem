@@ -242,7 +242,7 @@ class PurchaseServiceTests {
         when(bid.getBiddersIds()).thenReturn(List.of(5)); // stub for getBiddersIds
 
         /* invoke */
-        int result = service.finalizeBid(token, pid, true);
+        int result = service.finalizeBid(token, pid, false);
 
         // /* verify */
         // assertEquals(5, winner);
