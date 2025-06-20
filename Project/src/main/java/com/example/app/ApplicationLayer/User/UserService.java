@@ -919,6 +919,7 @@ public class UserService {
                 throw new OurRuntime("Member ID " + memberId + " does not exist.");
             }
             member.addRole(role); // Add the role to the member
+            userRepository.updateUserInDB(member); 
             LoggerService.logMethodExecutionEnd("addFounderRole", true);
             return true;
         } catch (OurRuntime e) {

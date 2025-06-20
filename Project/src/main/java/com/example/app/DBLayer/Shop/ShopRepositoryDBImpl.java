@@ -1,5 +1,6 @@
 package com.example.app.DBLayer.Shop;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Purchase.ShippingMethod;
@@ -62,73 +64,88 @@ public class ShopRepositoryDBImpl implements IShopRepository {
 
     @Override
     public void updatePurchasePolicy(int shopId, PurchasePolicy newPolicy) {
+        return;
     }
 
     @Override
+    @Transactional
     public void setGlobalDiscount(int shopId, int discount, boolean isDouble) {
         try {
             Shop shop = getShop(shopId);
             shop.setGlobalDiscount(discount, isDouble);
+            updateShop(shop);
         } catch (RuntimeException e) {
             throw e;
         }
     }
 
     @Override
+    @Transactional
     public void removeGlobalDiscount(int shopId) {
         try {
             Shop shop = getShop(shopId);
             shop.removeGlobalDiscount();
+            updateShop(shop);
         } catch (RuntimeException e) {
             throw e;
         }
     }
 
     @Override
+    @Transactional
     public void setDiscountForItem(int shopId, int itemId, int discount, boolean isDouble) {
         try {
             Shop shop = getShop(shopId);
             shop.setDiscountForItem(itemId, discount, isDouble);
+            updateShop(shop);
         } catch (RuntimeException e) {
             throw e;
         }
     }
 
     @Override
+    @Transactional
     public void setCategoryDiscount(int shopId, ItemCategory category, int percentage, boolean isDouble) {
         try {
             Shop shop = getShop(shopId);
             shop.setCategoryDiscount(category, percentage, isDouble);
+            updateShop(shop);
         } catch (RuntimeException e) {
             throw e;
         }
     }
 
     @Override
+    @Transactional
     public void removeCategoryDiscount(int shopId, ItemCategory category) {
         try {
             Shop shop = getShop(shopId);
             shop.removeCategoryDiscount(category);
+            updateShop(shop);
         } catch (RuntimeException e) {
             throw e;
         }
     }
 
     @Override
+    @Transactional
     public void removeDiscountForItem(int shopId, int itemId) {
         try {
             Shop shop = getShop(shopId);
             shop.removeDiscountForItem(itemId);
+            updateShop(shop);
         } catch (RuntimeException e) {
             throw e;
         }
     }
 
     @Override
+    @Transactional
     public void addReviewToShop(int shopId, int userId, int rating, String reviewText) {
         try {
             Shop shop = getShop(shopId);
             shop.addReview(userId, rating, reviewText);
+            updateShop(shop);
         } catch (RuntimeException e) {
             throw e;
         }
@@ -145,41 +162,51 @@ public class ShopRepositoryDBImpl implements IShopRepository {
     }
 
     @Override
+    @Transactional
     public void addItemToShop(int shopId, int itemId, int quantity, int price) {
         try {
             Shop shop = getShop(shopId);
             shop.addItem(itemId, quantity);
             shop.updateItemPrice(itemId, price);
+            updateShop(shop);
         } catch (RuntimeException e) {
             throw e;
         }
     }
 
+    
+
     @Override
+    @Transactional
     public void addSupplyToItem(int shopId, int itemId, int quantity) {
         try {
             Shop shop = getShop(shopId);
             shop.addItem(itemId, quantity);
+            updateShop(shop);
         } catch (RuntimeException e) {
             throw e;
         }
     }
 
     @Override
+    @Transactional
     public void updateItemPriceInShop(int shopId, int itemId, int price) {
         try {
             Shop shop = getShop(shopId);
             shop.updateItemPrice(itemId, price);
+            updateShop(shop);
         } catch (RuntimeException e) {
             throw e;
         }
     }
 
     @Override
+    @Transactional
     public void removeItemFromShop(int shopId, int itemId) {
         try {
             Shop shop = getShop(shopId);
             shop.removeItemFromShop(itemId);
+            updateShop(shop);
         } catch (RuntimeException e) {
             throw e;
         }
@@ -196,10 +223,12 @@ public class ShopRepositoryDBImpl implements IShopRepository {
     }
 
     @Override
+    @Transactional
     public void closeShop(Integer shopId) {
         try {
             Shop shop = getShop(shopId);
             shop.setClosed(true);
+            updateShop(shop);
         } catch (RuntimeException e) {
             throw e;
         }
@@ -216,6 +245,7 @@ public class ShopRepositoryDBImpl implements IShopRepository {
     }
 
     @Override
+    
     public boolean checkSupplyAvailabilityAndAqcuire(Integer shopId, Integer itemId, Integer supply) {
         try {
             Shop shop = getShop(shopId);
@@ -230,6 +260,7 @@ public class ShopRepositoryDBImpl implements IShopRepository {
     }
 
     @Override
+    @Transactional
     public void removeSupply(Integer shopId, Integer itemId, Integer supply) {
         try {
             Shop shop = getShop(shopId);
@@ -238,6 +269,7 @@ public class ShopRepositoryDBImpl implements IShopRepository {
                 throw new OurRuntime("Not enough supply to remove: " + supply + " from item: " + itemId);
             }
             shop.removeItemQuantity(itemId, currentSupply);
+            updateShop(shop);
         } catch (RuntimeException e) {
             throw e;
         }
@@ -245,8 +277,7 @@ public class ShopRepositoryDBImpl implements IShopRepository {
 
     @Override
     public boolean checkPolicy(HashMap<Integer, HashMap<Integer, Integer>> cart, String token) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'checkPolicy'");
+        return true; // Placeholder for policy check logic
     }
 
     @Override
@@ -273,31 +304,38 @@ public class ShopRepositoryDBImpl implements IShopRepository {
     }
 
     @Override
+    @Transactional
     public void addSupply(Integer shopId, Integer itemId, Integer supply) {
         try {
             Shop shop = getShop(shopId);
             shop.addItem(itemId, supply);
+            updateShop(shop);
         } catch (RuntimeException e) {
             throw e;
         }
     }
 
     @Override
+    @Transactional
     public double purchaseItems(Map<Integer, Integer> purchaseLists, Map<Integer, ItemCategory> itemsCategory,
             Integer shopdId) {
         try {
             Shop shop = getShop(shopdId);
-            return shop.purchaseItems(purchaseLists, itemsCategory);
+            double ret =shop.purchaseItems(purchaseLists, itemsCategory);
+            updateShop(shop);
+            return ret;
         } catch (RuntimeException e) {
             throw e;
         }
     }
 
     @Override
+    @Transactional
     public void rollBackPurchase(Map<Integer, Integer> purchaseLists, Integer shopId) {
         try {
             Shop shop = getShop(shopId);
             shop.rollBackPurchase(purchaseLists);
+            updateShop(shop);
         } catch (RuntimeException e) {
             throw e;
         }
@@ -308,13 +346,16 @@ public class ShopRepositoryDBImpl implements IShopRepository {
             String postalCode) {
         try {
             Shop shop = getShop(shopId);
-            return shop.getShippingMethod().processShipping(name, street, city, country, postalCode) != -1;
+            boolean ret = shop.getShippingMethod().processShipping(name, street, city, country, postalCode) != -1;
+            updateShop(shop);
+            return ret;
         } catch (RuntimeException e) {
             throw e;
         }
     }
 
     @Override
+    @Transactional
     public List<Discount> getDiscounts(int shopId) {
         try {
             Shop shop = getShop(shopId);
@@ -325,10 +366,12 @@ public class ShopRepositoryDBImpl implements IShopRepository {
     }
 
     @Override
+    @Transactional
     public void setDiscountPolicy(int shopId, Policy policy) {
         try {
             Shop shop = getShop(shopId);
             shop.setDiscountPolicy(policy);
+            updateShop(shop);
         } catch (RuntimeException e) {
             throw e;
         }
@@ -351,5 +394,17 @@ public class ShopRepositoryDBImpl implements IShopRepository {
             throw new OurRuntime("Failed to delete all shops", e);
         }
     }
+
+    private void updateShop(Shop updatedShop) {
+        if (updatedShop == null) {
+            throw new IllegalArgumentException("Shop cannot be null.");
+        }
+
+        updatedShop.prePersist();
+        jpaRepo.save(updatedShop);
+        
+
+    }
+
 
 }

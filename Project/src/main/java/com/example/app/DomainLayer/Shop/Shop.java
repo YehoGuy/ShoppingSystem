@@ -24,6 +24,7 @@ import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -35,6 +36,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
+import jakarta.transaction.Transactional;
 
 /**
  * The Shop class representing a shop entity in your system.
@@ -219,6 +221,7 @@ public class Shop {
      * @param itemId   the item identifier.
      * @param quantity the quantity to add.
      */
+    @Transactional
     public void addItem(int itemId, int quantity) {
         if (quantity <= 0) {
             throw new IllegalArgumentException("Quantity must be positive");
@@ -630,7 +633,7 @@ public class Shop {
 
     @PrePersist
     @PreUpdate
-    private void prePersist() {
+    public void prePersist() {
         // Sync items to persistedItems
         persistedItems.clear();
         for (Map.Entry<Integer, AtomicInteger> entry : items.entrySet()) {
