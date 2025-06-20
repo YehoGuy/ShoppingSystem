@@ -129,12 +129,6 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
                 } else {
 
                     displayReciepts();
-
-                    // for (RecieptDTO r : reciepts) {
-                    // System.out.println("000000000000000");
-                    // addReceiptCard(r);
-                    // System.out.println("aaaaaaaaaaaaaaaaa");
-                    // }
                 }
                 // receiptsLayout.removeAll();
             }

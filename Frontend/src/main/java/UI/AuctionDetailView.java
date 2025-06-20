@@ -160,8 +160,6 @@ public class AuctionDetailView extends VerticalLayout implements BeforeEnterObse
         String userName = getUserName(userId);
         userNameField.setValue(String.valueOf(userName));
 
-        System.out.println("Highest bid: " + bid.getHighestBidderId());
-
         highestBidField.setReadOnly(true);
         highestBidField.setValue(String.valueOf(bid.getHighestBid()));
 

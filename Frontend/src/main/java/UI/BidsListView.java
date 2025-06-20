@@ -133,53 +133,42 @@ public class BidsListView extends VerticalLayout {
 
         // ————— Accept Bid button —————
         bidGrid.addComponentColumn(dto -> {
-            Integer currentUserId = getUserId();
-            Integer thisBidderId = dto.getThisBidderId();
-            // fetch shop owner
-            boolean amOwner = false;
-            try {
-                String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-                String ownerUrl = apiBase
-                                + "/users/shops/"
-                                + dto.getStoreId()
-                                + "/owner?token=" + token;
-                ResponseEntity<Integer> ownerResp =
-                    restTemplate.exchange(ownerUrl, HttpMethod.GET, null, Integer.class);
-                if (ownerResp.getStatusCode().is2xxSuccessful()) {
-                    Integer shopOwnerId = ownerResp.getBody();
-                    amOwner = Objects.equals(currentUserId, shopOwnerId);
-                }
-            } catch (Exception ex) {
-                // ignore or log
-            }
+            Integer me = getUserId();
+            Integer originalBidder = dto.getUserId();          // the buyer who made this bid
+            Double initialPrice   = dto.getPrice();
+            Double ownerCounter   = Double.valueOf(dto.getHighestBid());      // null or same as initialPrice if no counter yet
 
-            if (currentUserId != null && thisBidderId != null && amOwner) {
-                return new Span();
+            // 1) only show to the original bidder
+            boolean isBidder     = Objects.equals(me, originalBidder);
+            // 2) only show once ownerCounter > initialPrice
+            boolean hasCounter   = ownerCounter != null && ownerCounter > initialPrice;
+            // 3) only when the bid isn’t already completed
+            boolean notFinished  = !dto.isCompleted();
+
+            if (!(isBidder && hasCounter && notFinished)) {
+                return new Span();   // empty placeholder
             }
 
             Button accept = new Button("Accept Bid");
             accept.addClickListener(evt -> {
                 String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-                String url = bidsBaseUrl 
-                        + "/" + dto.getPurchaseId() 
-                        + "/accept?authToken=" + token;
+                String url = bidsBaseUrl
+                            + "/" + dto.getPurchaseId()
+                            + "/accept?authToken=" + token;
                 try {
-                    restTemplate.postForEntity(url, null, Void.class);
-                    Notification.show("You accepted the bid! The shop owner has been notified.",
-                                    3000, Position.MIDDLE);
-                    fetchAllBids(); // refresh the table
+                restTemplate.postForEntity(url, null, Void.class);
+                Notification.show("You accepted the counter-offer!", 3000, Position.MIDDLE);
+                fetchAllBids();
                 } catch (HttpStatusCodeException ex) {
-                    String errorBody = ex.getResponseBodyAsString();
-                    Notification.show("Error accepting bid: " + errorBody,5000, Position.MIDDLE);
+                Notification.show("Error: " + ex.getResponseBodyAsString(), 5000, Position.MIDDLE);
                 } catch (Exception ex) {
-                    Notification.show("Error accepting bid: " + ex.getMessage(),5000, Position.MIDDLE);
+                Notification.show("Error: " + ex.getMessage(), 5000, Position.MIDDLE);
                 }
             });
             return accept;
         })
         .setHeader("Accept Bid")
         .setAutoWidth(true);
-
         // Add a listener so that when a row is clicked, we navigate to
         // /bid/{purchaseId}
         bidGrid.asSingleSelect().addValueChangeListener(event -> {

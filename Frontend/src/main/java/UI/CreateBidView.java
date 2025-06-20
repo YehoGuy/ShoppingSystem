@@ -182,7 +182,6 @@ public class CreateBidView extends VerticalLayout implements BeforeEnterObserver
             qtyField.setStep(1);
             qtyField.setWidth("100px");
             // qtyField.setValue(1.0);
-            qtyField.addValueChangeListener(ev -> updateMinPrice());
             qtyFields.put(item, qtyField);
             row.add(nameSpan, priceSpan, qtyField);
             add(row);
@@ -192,24 +191,10 @@ public class CreateBidView extends VerticalLayout implements BeforeEnterObserver
         initialPriceField.setMin(0.0);
         initialPriceField.setStep(1);
         initialPriceField.setValue(0.0);
-        initialPriceField.addValueChangeListener(ev -> {
-            double min = initialPriceField.getMin();
-            initialPriceField.setInvalid(ev.getValue() < min);
-        });
         add(initialPriceField);
 
         createBidButton.addClickListener(e -> onCreateBidClick());
         add(createBidButton);
-    }
-
-    private void updateMinPrice() {
-        double totalMin = qtyFields.entrySet().stream()
-            .mapToDouble(en -> en.getValue().getValue() * prices.getOrDefault(en.getKey(), 0.0))
-            .sum();
-        initialPriceField.setMin(totalMin);
-        if (initialPriceField.getValue() < totalMin) {
-            initialPriceField.setValue(totalMin);
-        }
     }
 
     private void onCreateBidClick() {
@@ -228,11 +213,11 @@ public class CreateBidView extends VerticalLayout implements BeforeEnterObserver
             Notification.show("Select at least one item with quantity > 0.", 3000, Position.MIDDLE);
             return;
         }
-        double minPrice = initialPriceField.getMin();
         Double entered = initialPriceField.getValue();
-        if (entered == null || entered < minPrice) {
-            Notification.show("Initial price must be ≥ " + String.format("%.2f", minPrice),
-                              3000, Position.MIDDLE);
+        if (entered == null || entered <= 0) {
+            Notification.show(
+                "Please enter a bid price greater > 0.",
+                3000, Position.MIDDLE);
             return;
         }
         String url = createBidUrl + "?authToken=" + token
