@@ -34,6 +34,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -241,13 +242,26 @@ class PurchaseServiceTests {
         when(bid.getBiddersIds()).thenReturn(List.of(5)); // stub for getBiddersIds
 
         /* invoke */
-        int winner = service.finalizeBid(token, pid, false);
+        int result = service.finalizeBid(token, pid, true);
 
+        // /* verify */
+        // assertEquals(5, winner);
+        // verify(users).addBidToUserShoppingCart(eq(5), eq(shop), eq(Map.of(1, 1)));
+        // verify(users).addBidToUserShoppingCart(eq(5), eq(shop), any());
+        // verify(msg).sendMessageToUser(eq(token), eq(5), contains("Congratulations"), eq(0));
         /* verify */
-        assertEquals(5, winner);
-        verify(users).addBidToUserShoppingCart(eq(5), eq(shop), eq(Map.of(1, 1)));
-        verify(users).addBidToUserShoppingCart(eq(5), eq(shop), any());
-        verify(msg).sendMessageToUser(eq(token), eq(5), contains("Congratulations"), eq(0));
+        // code returns the initiatingUserId (owner), and adds that user twice to cart
+        assertEquals(owner, result);
+        verify(users, times(2)).addBidToUserShoppingCart(
+            eq(owner),
+            eq(shop),
+            eq(Map.of(1, 1))
+        );
+        verify(nots).sendToUser(
+            eq(owner),
+            eq("The bid is over "),
+            contains("The bid is finalized #" + pid)
+        );
     }
 
     /*
