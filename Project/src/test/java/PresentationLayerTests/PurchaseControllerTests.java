@@ -242,7 +242,7 @@ class PurchaseControllerTests {
         class FinalizeBidTests {
                 @Test
                 void success_returns200() throws Exception {
-                        when(purchaseService.finalizeBid(eq("tok"), eq(10), true)).thenReturn(999);
+                        when(purchaseService.finalizeBid(eq("tok"), eq(10), eq(false))).thenReturn(999);
 
                         String paymentJson = "{\"currency\":\"USD\",\"cardNumber\":\"1234567890123456\",\"expirationDateMonth\":\"12\",\"expirationDateYear\":\"25\",\"cardHolderName\":\"John Doe\",\"cvv\":\"123\",\"id\":\"tok\"}";
 
@@ -254,7 +254,7 @@ class PurchaseControllerTests {
 
                 @Test
                 void badRequest_returns400() throws Exception {
-                        when(purchaseService.finalizeBid(anyString(), anyInt(), true))
+                        when(purchaseService.finalizeBid(anyString(), anyInt(), eq(false)))
                                         .thenThrow(new IllegalArgumentException());
 
                         mvc.perform(post("/api/purchases/bids/10/finalize")
@@ -264,7 +264,7 @@ class PurchaseControllerTests {
 
                 @Test
                 void notFound_returns404() throws Exception {
-                        when(purchaseService.finalizeBid(anyString(), anyInt(), true))
+                        when(purchaseService.finalizeBid(anyString(), anyInt(), eq(false)))
                                         .thenThrow(new NoSuchElementException());
 
                         mvc.perform(post("/api/purchases/bids/10/finalize")
@@ -274,7 +274,7 @@ class PurchaseControllerTests {
 
                 @Test
                 void conflict_returns409() throws Exception {
-                        when(purchaseService.finalizeBid(anyString(), anyInt(), true))
+                        when(purchaseService.finalizeBid(anyString(), anyInt(), eq(false)))
                                         .thenThrow(new RuntimeException());
 
                         mvc.perform(post("/api/purchases/bids/10/finalize")
