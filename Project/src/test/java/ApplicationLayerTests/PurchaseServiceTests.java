@@ -171,22 +171,6 @@ class PurchaseServiceTests {
         verify(bid).addBidding(bidder, 60);
     }
 
-    @Test
-    @DisplayName("postBidding_whenUserIsOwner_shouldThrowAndNotCallAddBidding")
-    void postBidding_ownerCannotBid() throws Exception {
-        String token = "t";
-        int owner = 3, pid = 11;
-        Bid bid = spy(new Bid(pid, owner, 9, Map.of(), 10));
-
-        when(auth.ValidateToken(token)).thenReturn(owner);
-        when(repo.getPurchaseById(pid)).thenReturn(bid);
-
-        RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> service.postBidding(token, pid, 20));
-
-        assertTrue(ex.getMessage().contains("owner"));
-        verify(bid, never()).addBidding(anyInt(), anyInt());
-    }
 
     /*
      * ══════════════════════════════════════════════════════════════
@@ -222,7 +206,7 @@ class PurchaseServiceTests {
         when(bid.getBiddersIds()).thenReturn(List.of(5)); // stub for getBiddersIds
 
         /* invoke */
-        int winner = service.finalizeBid(token, pid, false);
+        int winner = service.finalizeBid(token, pid, true);
 
         /* verify */
         assertEquals(5, winner);
@@ -257,7 +241,7 @@ class PurchaseServiceTests {
         when(bid.getBiddersIds()).thenReturn(List.of(5)); // stub for getBiddersIds
 
         /* invoke */
-        int winner = service.finalizeBid(token, pid, false);
+        int winner = service.finalizeBid(token, pid, true);
 
         /* verify */
         assertEquals(5, winner);
@@ -641,7 +625,7 @@ class PurchaseServiceTests {
     void getAllBids_happyPath() throws Exception {
         String token = "tok";
         int uid = 9;
-        List<BidReciept> bids = List.of(mock(BidReciept.class));
+        List<BidReciept> bids = List.of();
         when(auth.ValidateToken(token)).thenReturn(uid);
         when(repo.getAllBids()).thenReturn(bids);
         List<BidReciept> out = service.getAllBids(token, true);

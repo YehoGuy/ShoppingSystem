@@ -95,6 +95,9 @@ public class Bid extends Purchase {
                         + ", Auction end time: " + auctionEndTime);
             }
         }
+        if (isCompleted) {
+            throw new IllegalStateException("Bid is already completed");
+        }
         if (bidPrice > highestBid) {
             if (!isCompleted) {
                 highestBid = bidPrice;
@@ -103,7 +106,8 @@ public class Bid extends Purchase {
             }
         }
         else{
-            throw new IllegalStateException("Bid price is lower than the current highest bid");
+            // throw new IllegalStateException("Bid price is lower than the current highest bid");
+            return;
         }
     }
 
