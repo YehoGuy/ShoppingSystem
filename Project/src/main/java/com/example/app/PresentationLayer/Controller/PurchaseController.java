@@ -463,13 +463,13 @@ public class PurchaseController {
 
     @PostMapping("/auctions/{auctionId}/finalize")
     public ResponseEntity<?> finalizeAuctionInternal(
-            @PathVariable @Min(1) int bidId,
+            @PathVariable("auctionId") @Min(1) int auctionId,
             @RequestParam String authToken) {
 
         try {
             // Parse the payment details JSON
             
-            int winnerId = purchaseService.finalizeBid(authToken, bidId, false);
+            int winnerId = purchaseService.finalizeBid(authToken, auctionId, false);
             // success → 200 OK, return the winner's user‑id
             return ResponseEntity.ok(winnerId);
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
