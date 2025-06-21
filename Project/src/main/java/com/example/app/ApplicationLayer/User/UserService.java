@@ -1226,6 +1226,24 @@ public class UserService {
         }
     }
 
+    public void clearUserShoppingCartByShopId(int userId, int shopId) {
+        try {
+            LoggerService.logMethodExecution("clearUserShoppingCartByShopId", userId);
+            userRepository.getShoppingCartById(userId).removeBasket(shopId);
+            LoggerService.logMethodExecutionEndVoid("clearUserShoppingCartByShopId");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("clearUserShoppingCartByShopId", e);
+            throw new OurRuntime("clearUserShoppingCartByShopId: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("clearUserShoppingCartByShopId", e);
+            throw new OurArg("clearUserShoppingCartByShopId: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("clearUserShoppingCartByShopId", e, userId);
+            throw new OurRuntime("clearUserShoppingCartByShopId: " + e.getMessage(), e);
+        }
+    }
+
+
     /**
      * Restores the shopping cart for a user by their ID.
      * 
@@ -1254,6 +1272,29 @@ public class UserService {
             throw new OurRuntime("restoreUserShoppingCart: " + e.getMessage(), e);
         }
     }
+
+
+    public void restoreUserShoppingCartByShopId(int userId, HashMap<Integer, HashMap<Integer, Integer>> items, int shopId) {
+        try {
+            LoggerService.logMethodExecution("restoreUserShoppingCartByShopId", userId, items, shopId);
+
+            HashMap<Integer, HashMap<Integer, Integer>> itemsOfShopId = new HashMap<>();
+            itemsOfShopId.put(shopId, items.get(shopId));
+            
+            userRepository.getShoppingCartById(userId).restoreCart(itemsOfShopId);
+            LoggerService.logMethodExecutionEndVoid("restoreUserShoppingCartByShopId");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("restoreUserShoppingCartByShopId", e);
+            throw new OurRuntime("restoreUserShoppingCartByShopId: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("restoreUserShoppingCartByShopId", e);
+            throw new OurArg("restoreUserShoppingCartByShopId: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("restoreUserShoppingCartByShopId", e, userId, items);
+            throw new OurRuntime("restoreUserShoppingCartByShopId: " + e.getMessage(), e);
+        }
+    }
+
 
     /**
      * Retrieves the payment method for a user by their ID.

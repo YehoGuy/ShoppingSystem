@@ -21,6 +21,7 @@ public class ShoppingCart {
     public void clearCart() {
         items.clear();
     }
+    
 
     public void addBasket(int shopId) {
         items.putIfAbsent(shopId, new ConcurrentHashMap<>());

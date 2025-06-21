@@ -1,8 +1,11 @@
 package DTOs;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.Collections;
 
 public class ShoppingCartDTO {
 
@@ -87,37 +90,57 @@ public class ShoppingCartDTO {
     }
 
     public ShoppingCartDTO getShoppingCartDTOofShop(int shopId) {
-        Map<Integer, List<Integer>> filteredShopItems = shopItems.entrySet().stream()
-                .filter(entry -> entry.getKey().equals(shopId))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        // 1. Fetch (or empty) the raw data for this shop:
+        List<Integer> itemIds    = shopItems.getOrDefault(shopId, Collections.emptyList());
+        Map<Integer, Double> prices     = shopItemPrices
+                                            .getOrDefault(shopId, Collections.emptyMap());
+        Map<Integer, Integer> quantities = shopItemQuantities
+                                            .getOrDefault(shopId, Collections.emptyMap());
 
-        Map<Integer, Map<Integer, Double>> filteredShopItemPrices = shopItemPrices.entrySet().stream()
-                .filter(entry -> entry.getKey().equals(shopId))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        Map<Integer, Map<Integer, Integer>> filteredShopItemQuantities = shopItemQuantities.entrySet().stream()
-                .filter(entry -> entry.getKey().equals(shopId))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        
+        // 2. Build the list of ItemDTOs that belong in this shop-cart:
         List<ItemDTO> filteredItems = items.stream()
-                .filter(item -> filteredShopItems.containsKey(shopId) && 
-                                filteredShopItems.get(shopId).contains(item.getId()))
-                .collect(Collectors.toList());
-        
-        Double totalPrice = 0.0;
-        for (Map.Entry<Integer, Double> entry : filteredShopItemPrices.get(shopId).entrySet()) {
-            Integer itemId = entry.getKey();
-            Double price = entry.getValue();
-            Integer quantity = filteredShopItemQuantities.get(shopId).get(itemId);
-            totalPrice += price * quantity;
+            .filter(item -> itemIds.contains(item.getId()))
+            .collect(Collectors.toList());
+
+        // 3. Compute totalPrice—only for those itemIds, only when both price & qty exist:
+        double totalPrice = 0.0;
+        for (Integer itemId : itemIds) {
+            Double price = prices.get(itemId);
+            Integer qty  = quantities.get(itemId);
+            if (price != null && qty != null) {
+                totalPrice += price * qty;
+            }
         }
-            
-        ShoppingCartDTO cart = new ShoppingCartDTO(
-                filteredShopItems,
-                filteredShopItemPrices,
-                filteredShopItemQuantities,
-                totalPrice,
-                filteredItems
+
+        // 4. (If your DTO really needs maps keyed by shopId:) wrap them up again:
+        Map<Integer, List<Integer>>        filteredShopItemsMap       =
+                Collections.singletonMap(shopId, new ArrayList<>(itemIds));
+        Map<Integer, Map<Integer, Double>> filteredPriceMap           =
+                Collections.singletonMap(shopId, new HashMap<>(prices));
+        Map<Integer, Map<Integer, Integer>> filteredQuantityMap       =
+                Collections.singletonMap(shopId, new HashMap<>(quantities));
+
+        System.out.println(totalPrice);
+        for (Map.Entry<Integer, Map<Integer, Double>> entry : filteredPriceMap.entrySet()) {
+            System.out.println("Shop ID: " + entry.getKey() + ", Prices: " + entry.getValue());
+        }
+
+        System.out.println("=== Shopping Cart for shopId=" + shopId + " ===");
+        System.out.println("Items IDs:       " + itemIds);
+        System.out.println("Prices map:      " + prices);
+        System.out.println("Quantities map:  " + quantities);
+        System.out.println("Filtered Items:  " + filteredItems);
+        System.out.println("Total Price:     " + totalPrice);
+        System.out.println("========================================");
+        
+        // 5. Return it:
+        return new ShoppingCartDTO(
+            filteredShopItemsMap,
+            filteredPriceMap,
+            filteredQuantityMap,
+            totalPrice,
+            filteredItems
         );
-        return cart;
+        
     }
 }                       

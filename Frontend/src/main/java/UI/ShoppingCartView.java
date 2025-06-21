@@ -136,7 +136,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 dialog.setHeaderTitle("Purchase Summary");
 
                 PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(baseUrl, cart,
-                        dialog);
+                        dialog, -1);
 
                 // Add your component to the dialog
                 dialog.add(purchaseCompletion);
@@ -190,7 +190,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 dialog.setHeaderTitle("Purchase Summary");
 
                 PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(
-                        baseUrl, cart.getShoppingCartDTOofShop(shopID), dialog);
+                        baseUrl, cart.getShoppingCartDTOofShop(shopID), dialog, shopID);
 
                 // Add your component to the dialog
                 dialog.add(purchaseCompletion);
