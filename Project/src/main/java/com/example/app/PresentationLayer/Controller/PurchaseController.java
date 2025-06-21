@@ -93,7 +93,6 @@ public class PurchaseController {
             @RequestBody PaymentDetailsDTO paymentDetails) {
 
         try {
-            System.out.println("3333333");
             // compose Address inline
             com.example.app.DomainLayer.Purchase.Address shipping = new com.example.app.DomainLayer.Purchase.Address()
                     .withCity(city)

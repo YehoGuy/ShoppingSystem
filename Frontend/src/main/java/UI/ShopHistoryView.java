@@ -107,6 +107,7 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
             refreshButton.setVisible(false);
         }
+        add(refreshButton);
 
         // H3 title = new H3("Purchase History for Shop ID: " + shopId);
         // title.getStyle().set("margin-bottom", "var(--lumo-space-m)");
@@ -123,14 +124,18 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         try {
             ResponseEntity<RecieptDTO[]> resp = rest.getForEntity(url, RecieptDTO[].class);
             if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
-                RecieptDTO[] receipts = resp.getBody();
-                if (reciepts == null || receipts.length == 0) {
+                RecieptDTO[] recieptsBodyDtos = resp.getBody();
+                reciepts = List.of(recieptsBodyDtos);
+                
+                if (reciepts == null || reciepts.size() == 0) {
                     receiptsLayout.add(new H3("No purchase history for this shop."));
                 } else {
-
                     displayReciepts();
                 }
                 // receiptsLayout.removeAll();
+            }
+            else {
+                Notification.show("Failed to load purchase history");
             }
 
         } catch (Exception e) {
@@ -138,27 +143,6 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
             Notification.show("Error loading purchase history");
             return;
         }
-
-        // String url = PURCHASE_HISTORY_URL + "/" + shopId + "?authToken="
-        // + VaadinSession.getCurrent().getAttribute("authToken");
-        // try {
-        // ResponseEntity<RecieptDTO[]> resp = rest.getForEntity(url,
-        // RecieptDTO[].class);
-        // if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
-        // RecieptDTO[] receipts = resp.getBody();
-        // if (receipts.length == 0) {
-        // receiptsLayout.add(new H3("No purchase history for this shop."));
-        // } else {
-        // for (RecieptDTO r : receipts) {
-        // addReceiptCard(r);
-        // }
-        // }
-        // } else {
-        // receiptsLayout.add(new H3("Failed to load history"));
-        // }
-        // } catch (Exception ex) {
-        // receiptsLayout.add(new H3("Error loading history"));
-        // }
 
     }
 
