@@ -52,18 +52,32 @@ public class ShoppingCartDTO {
     }
 
     public Double getTotalPrice() {
-        double totalPrice = 0.0;
-        for (Map<Integer, Double> itemPrices : shopItemPrices.values()) {
-            for (Double price : itemPrices.values()) {
-                int quantity = shopItemQuantities.values().stream()
-                        .flatMap(map -> map.values().stream())
-                        .findFirst().orElse(1);
-                totalPrice += price *quantity;
+        double total = 0.0;
+
+        // For each shop…
+        for (Map.Entry<Integer, Map<Integer, Double>> shopEntry : shopItemPrices.entrySet()) {
+            Integer shopId = shopEntry.getKey();
+            Map<Integer, Double> prices     = shopEntry.getValue();
+            Map<Integer, Integer> quantities = shopItemQuantities.get(shopId);
+
+            if (quantities == null) continue; // no quantities for this shop
+
+            // For each item in the price-map…
+            for (Map.Entry<Integer, Double> itemEntry : prices.entrySet()) {
+                Integer itemId   = itemEntry.getKey();
+                Double  price    = itemEntry.getValue();
+                Integer quantity = quantities.get(itemId);
+
+                if (price != null && quantity != null) {
+                    total += price * quantity;
+                }
             }
         }
-        return totalPrice;
+
+        return total;
     }
 
+    
     public List<ItemDTO> getItems() {
         return items;
     }
