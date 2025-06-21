@@ -949,7 +949,7 @@ public class UserRepositoryDBImpl implements IUserRepository {
     {
         //TODO
         return -1;
-    }
+    } 
     
     @Override
     public void updateUserInDB(Member member) {
