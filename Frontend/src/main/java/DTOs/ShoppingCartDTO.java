@@ -120,19 +120,7 @@ public class ShoppingCartDTO {
         Map<Integer, Map<Integer, Integer>> filteredQuantityMap       =
                 Collections.singletonMap(shopId, new HashMap<>(quantities));
 
-        System.out.println(totalPrice);
-        for (Map.Entry<Integer, Map<Integer, Double>> entry : filteredPriceMap.entrySet()) {
-            System.out.println("Shop ID: " + entry.getKey() + ", Prices: " + entry.getValue());
-        }
 
-        System.out.println("=== Shopping Cart for shopId=" + shopId + " ===");
-        System.out.println("Items IDs:       " + itemIds);
-        System.out.println("Prices map:      " + prices);
-        System.out.println("Quantities map:  " + quantities);
-        System.out.println("Filtered Items:  " + filteredItems);
-        System.out.println("Total Price:     " + totalPrice);
-        System.out.println("========================================");
-        
         // 5. Return it:
         return new ShoppingCartDTO(
             filteredShopItemsMap,

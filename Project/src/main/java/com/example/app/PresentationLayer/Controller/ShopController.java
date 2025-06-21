@@ -714,9 +714,9 @@ public class ShopController {
             @RequestParam String token) {
         try {
             // print the policy DTO for debugging
-            System.out.println("Setting discount policy for shop " + shopId + ": " + policyDto);
+            //System.out.println("Setting discount policy for shop " + shopId + ": " + policyDto);
             shopService.setDiscountPolicy(shopId, policyDto, token);
-            System.out.println("Policy set successfully for shop " + shopId);
+            //System.out.println("Policy set successfully for shop " + shopId);
             return ResponseEntity.noContent().build();
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
@@ -763,7 +763,7 @@ public class ShopController {
                 s += " " + p.toString();
             }
 
-            System.out.println("policiesaflisdjgjghslf: " + s);
+            //System.out.println("policiesaflisdjgjghslf: " + s);
 
             // Map (Policy → item's itemId/itemCategory → frontend policiesDTO)
             List<PoliciesDTO> responseList = domainPolicies.stream()

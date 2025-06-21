@@ -176,13 +176,15 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
     }
 
     private void displayReciepts() {
-        List<String> foritems = new ArrayList<>();
+        
 
         for (RecieptDTO reciept : reciepts) {
+            List<String> foritems = new ArrayList<>();
             VerticalLayout singleReciept = new VerticalLayout();
-            for(int itemId : reciept.getItems().keySet()) 
+            Map<Integer, Integer> items = reciept.getItems();
+            for(int itemId : items.keySet()) 
             {
-                foritems.add(matchItemName(itemId) + ":" + reciept.getItems().get(itemId));
+                foritems.add(matchItemName(itemId) + ":" + items.get(itemId));
             }
             singleReciept.add(
                     new Span("PurchaseId: " + reciept.getPurchaseId()),

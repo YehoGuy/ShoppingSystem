@@ -711,7 +711,6 @@ public class UserRepository implements IUserRepository {
             throw new OurRuntime("Item with ID " + itemID + " not found in the shopping cart.");
         }
         int quantity = basket.get(itemID);
-        System.out.println("Current quantity: " + quantity);
         if (b) {
             basket.put(itemID, quantity + 1);
         } else {
@@ -721,7 +720,6 @@ public class UserRepository implements IUserRepository {
                 shoppingCart.removeItem(shopID, itemID);
             }
         }
-        System.out.println("Updated quantity: " + basket.get(itemID));
     }
 
     public void removeShoppingCartItem(int userId, int shopID, int itemID) {

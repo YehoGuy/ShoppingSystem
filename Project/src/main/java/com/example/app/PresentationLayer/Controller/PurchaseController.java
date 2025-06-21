@@ -493,16 +493,16 @@ public class PurchaseController {
             purchaseService.postBiddingAuction(authToken, auctionId, bidAmount);
             return ResponseEntity.accepted().build();
         } catch (IllegalArgumentException | ConstraintViolationException ex) {
-            System.out.println("Invalid parameters (400): " + ex.getMessage());
+            //System.out.println("Invalid parameters (400): " + ex.getMessage());
             return ResponseEntity.badRequest().body(null); // 400
         } catch (NoSuchElementException ex) {
-            System.out.println("Invalid parameters (404): " + ex.getMessage());
+            //System.out.println("Invalid parameters (404): " + ex.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); // 404
         } catch (RuntimeException ex) {
-            System.out.println("Invalid parameters (409): " + ex.getMessage());
+            //System.out.println("Invalid parameters (409): " + ex.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(null); // 409
         } catch (Exception ex) {
-            System.out.println("Invalid parameters (500): " + ex.getMessage());
+            //System.out.println("Invalid parameters (500): " + ex.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(null); // 500
         }

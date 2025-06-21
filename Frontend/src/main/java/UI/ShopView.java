@@ -1,6 +1,7 @@
 package UI;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,7 @@ import com.vaadin.flow.server.VaadinSession;
 import DTOs.BidRecieptDTO; // for Map.Entry
 import DTOs.ItemDTO; // if you use List elsewhere
 import DTOs.ItemReviewDTO;
+import DTOs.MemberDTO;
 import DTOs.ShopDTO;
 import DTOs.ShopReviewDTO;
 
@@ -53,14 +55,18 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
     private final String api;
     private final String shopApiUrl;
     private final String purchaseHistoryUrl;
+    private final String usersUrl;
 
     private final RestTemplate restTemplate = new RestTemplate();
     private ShopDTO shop;
     private Map<ItemDTO, Double> prices;
+    private List<MemberDTO> memberDTOs = new ArrayList<>();
+
 
     public ShopView(@Value("${url.api}") String api) {
         this.api = api;
         this.shopApiUrl = api + "/shops";
+        this.usersUrl = api + "/users";
         this.purchaseHistoryUrl = api + "/purchases/shops";
 
         setPadding(true);
@@ -162,6 +168,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
      */
     private void buildPage() {
         removeAll();
+        loadUsers(); // Load users to match usernames in reviews
         setPadding(true);
         setSpacing(true);
 
@@ -297,7 +304,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
                 .orElse(0.0);
         add(new Paragraph("⭐ Average Rating: " + String.format("%.1f", avg) + "/5"));
         for (ShopReviewDTO rev : shop.getReviews()) {
-            add(new Paragraph("👤 " + rev.getUserId() + ": "
+            add(new Paragraph("👤 " + matchUserName(rev.getUserId()) + ": " 
                     + rev.getReviewText() + " (" + rev.getRating() + ")"));
         }
 
@@ -439,6 +446,37 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         headers.set("Authorization", "Bearer " + token);
         return headers;
     }
+
+    private void loadUsers() {
+        try {
+            String token = getToken();
+            HttpHeaders headers = getHeaders(token);
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+            String url = usersUrl + "/allmembers?token=" + token;
+
+            ResponseEntity<MemberDTO[]> response = restTemplate.exchange(
+                    url, HttpMethod.GET, request, MemberDTO[].class);
+
+            memberDTOs = response.getBody() != null ? Arrays.asList(response.getBody())
+                    : Collections.emptyList();
+
+            
+
+        } catch (Exception e) {
+            Notification.show("Failed to load users");
+        }
+    }
+
+    private String matchUserName(int userId) {
+        for (MemberDTO member : memberDTOs) {
+            if (member.getMemberId() == userId) {
+                return member.getUsername(); 
+            }
+        }
+        return "Unknown Item";
+    }
+
+
 
     private void handleSuspence() {
         Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");

@@ -109,7 +109,6 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
 
     @ClientCallable
     public void showNotificationFromJS(String message) {
-        System.out.println("Notification from JS: " + message);
         Notification.show(message, 5000, Notification.Position.TOP_CENTER);
     }
 
@@ -196,7 +195,6 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             closeShopButton = new Button("Close Shop", e -> {
                 String token = getToken();
                 String url = shopsBaseUrl + "/" + shop.getShopId() + "?token=" + token;
-                System.out.println("Request URL: " + url);
                 ResponseEntity<Void> response = restTemplate.exchange(url, HttpMethod.DELETE, null, Void.class);
                 if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
                     Notification.show("Shop closed successfully");
@@ -1226,7 +1224,6 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                     + "/price?price=" + newPriceField.getValue().intValue()
                     + "&token="       + token;
 
-                System.out.println("Request URL: " + url);
                 ResponseEntity<Void> priceResponse = restTemplate.postForEntity(url, null, Void.class);
                 if (priceResponse.getStatusCode().is2xxSuccessful()) {
                     Notification.show("Price updated successfully");

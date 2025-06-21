@@ -34,14 +34,11 @@ public class NotificationService {
 
     public void sendToUser(Integer userId, String title, String message) {
         List<String> sessionIds = registry.getSessionsForUser(userId);
-        System.out.println("sendToUser: userId=" + userId + ", title=" + title + ", message=" + message);
         if (!((Member) userService.getUserById(userId)).isConnected()) {
             userService.addNotification(userId, title, message);
             return;
         }
-        System.out.println("Sending to user: " + userId + ", sessionIds=" + sessionIds);
         for (String sessionId : sessionIds) {
-            System.out.println("Sending to sessionId=" + sessionId);
             messagingTemplate.convertAndSendToUser(
                     userId.toString(),
                     "/notifications",
