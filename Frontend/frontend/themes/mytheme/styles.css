@@ -1,78 +1,89 @@
-/* File: frontend/themes/mytheme/styles.css */
+/* frontend/styles/styles.css */
 
-/* Color Palette */
-:root {
-  --app-primary-color: #6200EE;
-  --app-secondary-color: #03DAC6;
-  --app-bg-color: #F5F5F5;
-  --app-text-color: #333333;
-  --app-gradient-start: #e0c3fc;
-  --app-gradient-end: #8ec5fc;
-  --card-bg: rgba(255, 255, 255, 0.8);
-  --card-shadow: 0 4px 12px rgba(0,0,0,0.1);
+/* Ocean vibe */
+html, body, vaadin-app-layout {
+  background: linear-gradient(120deg, 
+    #89f7fe 0%, 
+    #66a6ff 100%);
+  min-height: 100vh;
 }
 
-/* Global Styles */
-body, vaadin-app-layout {
-  background: linear-gradient(135deg, var(--app-gradient-start), var(--app-gradient-end));
-  color: var(--app-text-color);
-  font-family: 'Segoe UI', sans-serif;
-}
-
-/* Header Styling */
-vaadin-app-layout::part(header) {
-  background: var(--app-primary-color);
+/* Header container */
+.view-header {
+  background: linear-gradient(135deg, #7789d9 0%, #9166bd 100%);
+  padding: 3rem;
+  border-radius: 1.5rem;
   color: white;
-  padding: 1rem 2rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 2rem;
 }
 
-/* Content Area */
-vaadin-app-layout::part(content) {
-  padding: 2rem;
+/* Subtitle */
+.header-subtitle {
+  font-size: 1rem;
+  font-weight: 600;
+  opacity: 0.9;
+  margin-top: 0.5rem;
 }
 
-/* View container */
-:host([theme~="mytheme"]) [router-outlet] {
-  background: var(--card-bg);
-  box-shadow: var(--card-shadow);
-  border-radius: 12px;
-  padding: 1rem;
-  margin: 1rem;
-  animation: fade-in 0.5s ease-in-out;
+/* Title row (icons + H1) */
+.header-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
 }
 
-/* Buttons */
-vaadin-button {
-  background-color: var(--app-primary-color);
+.header-title-row span {
+  font-size: 2.5rem;
+  animation: bounce 2s ease-in-out infinite;
+}
+
+.header-title {
+  font-size: 2.75rem;
+  font-weight: 900;
+  text-shadow: 0 3px 10px rgba(0,0,0,0.4);
+  letter-spacing: 0.1rem;
+}
+
+/* Bounce animation for icons */
+@keyframes bounce {
+  0%,20%,50%,80%,100% { transform: translateY(0); }
+  40% { transform: translateY(-10px); }
+  60% { transform: translateY(-5px); }
+}
+
+/* Utility: gradient buttons */
+.gradient-button {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
   color: white;
-  border-radius: 8px;
-  padding: 0.6em 1.2em;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  box-shadow: 0 8px 25px rgba(240,147,251,0.4);
+  transition: all 0.3s ease;
   cursor: pointer;
 }
-vaadin-button:hover,
-vaadin-button:focus {
-  background-color: var(--app-secondary-color);
+.gradient-button:hover {
   transform: translateY(-2px);
+  box-shadow: 0 12px 35px rgba(240,147,251,0.6);
 }
 
-/* Links and icons */
-vaadin-icon, a {
-  cursor: pointer;
-  transition: color 0.2s ease;
+/* Utility: card container */
+.view-card {
+  background: white;
+  border-radius: 1.25rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s ease;
+}
+.view-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
 }
 
-/* Card-like components */
-vaadin-card, .card {
-  background: var(--card-bg);
-  box-shadow: var(--card-shadow);
-  border-radius: 12px;
-  padding: 1rem;
-}
-
-/* Fade-in animation */
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
