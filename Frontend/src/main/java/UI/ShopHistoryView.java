@@ -1,8 +1,11 @@
 package UI;
 
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.atmosphere.interceptor.AtmosphereResourceStateRecovery.B;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,10 +35,24 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 
 import DTOs.ItemDTO;
+import DTOs.MemberDTO;
 import DTOs.RecieptDTO;
+import DTOs.ShopDTO;
 import DTOs.ShopReviewDTO;
+import UI.AdminView.ItemGridRow;
+import UI.AdminView.ShopGridRow;
+import UI.AdminView.UserGridRow;
 
 import org.springframework.http.*;
+
+
+
+
+import java.util.Arrays;
+
+
+
+
 
 @Route(value = "history", layout = AppLayoutBasic.class)
 
@@ -43,6 +60,9 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
 
     private final String api;
     private final String purchaseHistoryUrl;
+    private final String usersUrl;
+    private final String itemsUrl;
+
 
     private final RestTemplate rest = new RestTemplate();
     private final VerticalLayout receiptsLayout = new VerticalLayout();
@@ -50,9 +70,16 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
     private String token;
     private int shopId;
 
+    private List<MemberDTO> memberDTOs = new ArrayList<>();
+    private List<ItemDTO> itemDTOs = new ArrayList<>();
+    
+
     public ShopHistoryView(@Value("${url.api}") String api) {
         this.api = api;
         this.purchaseHistoryUrl = api + "/purchases/shops";
+        this.usersUrl = api + "/users";
+        this.itemsUrl = api + "/items";
+        
 
         setSizeFull();
         setAlignItems(Alignment.CENTER);
@@ -107,10 +134,13 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
             refreshButton.setVisible(false);
         }
+        add(refreshButton);
 
         // H3 title = new H3("Purchase History for Shop ID: " + shopId);
         // title.getStyle().set("margin-bottom", "var(--lumo-space-m)");
         // receiptsLayout.add(title);
+        loadUsers();
+        loadItems();
         loadReceipts();
     }
 
@@ -123,14 +153,18 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         try {
             ResponseEntity<RecieptDTO[]> resp = rest.getForEntity(url, RecieptDTO[].class);
             if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
-                RecieptDTO[] receipts = resp.getBody();
-                if (reciepts == null || receipts.length == 0) {
+                RecieptDTO[] recieptsBodyDtos = resp.getBody();
+                reciepts = List.of(recieptsBodyDtos);
+                
+                if (reciepts == null || reciepts.size() == 0) {
                     receiptsLayout.add(new H3("No purchase history for this shop."));
                 } else {
-
                     displayReciepts();
                 }
                 // receiptsLayout.removeAll();
+            }
+            else {
+                Notification.show("Failed to load purchase history");
             }
 
         } catch (Exception e) {
@@ -139,36 +173,23 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
             return;
         }
 
-        // String url = PURCHASE_HISTORY_URL + "/" + shopId + "?authToken="
-        // + VaadinSession.getCurrent().getAttribute("authToken");
-        // try {
-        // ResponseEntity<RecieptDTO[]> resp = rest.getForEntity(url,
-        // RecieptDTO[].class);
-        // if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
-        // RecieptDTO[] receipts = resp.getBody();
-        // if (receipts.length == 0) {
-        // receiptsLayout.add(new H3("No purchase history for this shop."));
-        // } else {
-        // for (RecieptDTO r : receipts) {
-        // addReceiptCard(r);
-        // }
-        // }
-        // } else {
-        // receiptsLayout.add(new H3("Failed to load history"));
-        // }
-        // } catch (Exception ex) {
-        // receiptsLayout.add(new H3("Error loading history"));
-        // }
-
     }
 
     private void displayReciepts() {
+        
+
         for (RecieptDTO reciept : reciepts) {
+            List<String> foritems = new ArrayList<>();
             VerticalLayout singleReciept = new VerticalLayout();
+            Map<Integer, Integer> items = reciept.getItems();
+            for(int itemId : items.keySet()) 
+            {
+                foritems.add(matchItemName(itemId) + ":" + items.get(itemId));
+            }
             singleReciept.add(
                     new Span("PurchaseId: " + reciept.getPurchaseId()),
-                    new Span("UserId: " + reciept.getUserId()),
-                    new Span("Items: " + reciept.getItems()),
+                    new Span("UserName: " + matchUserName(reciept.getUserId())), //!!!!
+                    new Span(foritems.toString()),
                     new Span("Shipping Address: " + reciept.getAddress()),
                     new Span("Price: $" + reciept.getPrice()));
             singleReciept.getStyle().set("border", "1px solid #ccc");
@@ -179,6 +200,67 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         add(receiptsLayout);
 
     }
+
+    private String matchUserName(int userId) {
+        for (MemberDTO member : memberDTOs) {
+            if (member.getMemberId() == userId) {
+                return member.getUsername(); 
+            }
+        }
+        return "Unknown Item";
+    }
+
+
+    private String matchItemName(int itemId) {
+        for (ItemDTO item : itemDTOs) {
+            if (item.getId() == itemId) {
+                return item.getName(); // Assuming ItemDTO has a getName() method
+            }
+        }
+        return "Unknown Item"; // Return a default value if no match is found
+    }
+
+
+    private void loadUsers() {
+        try {
+            String token = getToken();
+            HttpHeaders headers = getHeaders(token);
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+            String url = usersUrl + "/allmembers?token=" + token;
+
+            ResponseEntity<MemberDTO[]> response = rest.exchange(
+                    url, HttpMethod.GET, request, MemberDTO[].class);
+
+            memberDTOs = response.getBody() != null ? Arrays.asList(response.getBody())
+                    : Collections.emptyList();
+
+            
+
+        } catch (Exception e) {
+            Notification.show("Failed to load users");
+        }
+    }
+
+
+    private void loadItems() {
+        try {
+            String token = getToken();
+            HttpHeaders headers = getHeaders(token);
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+            String url = itemsUrl + "/all?token=" + token;
+
+            ResponseEntity<ItemDTO[]> response = rest.exchange(
+                    url, HttpMethod.GET, request, ItemDTO[].class);
+
+            itemDTOs = response.getBody() != null ? Arrays.asList(response.getBody())
+                    : Collections.emptyList();
+
+        } catch (Exception e) {
+            Notification.show("Failed to load items");
+        }
+    }
+
+
 
     private void addReceiptCard(RecieptDTO r) {
         // card container

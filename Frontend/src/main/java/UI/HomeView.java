@@ -36,7 +36,6 @@ public class HomeView extends VerticalLayout implements BeforeEnterObserver {
 
     @ClientCallable
     public void showNotificationFromJS(String message) {
-        System.out.println("Notification from JS: " + message);
         Notification.show(message, 5000, Notification.Position.TOP_CENTER);
     }
 

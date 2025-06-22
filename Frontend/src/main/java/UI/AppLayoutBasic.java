@@ -64,7 +64,6 @@ public class AppLayoutBasic extends AppLayout implements RouterLayout {
 
     @ClientCallable
     public void showNotificationFromJS(String message) {
-        System.out.println("Notification from JS: " + message);
         Notification.show(message, 5000, Notification.Position.TOP_CENTER);
     }
 

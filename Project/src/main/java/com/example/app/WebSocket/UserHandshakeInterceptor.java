@@ -14,13 +14,13 @@ public class UserHandshakeInterceptor implements HandshakeInterceptor {
             WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
         try {
             String query = request.getURI().getQuery(); // e.g., "userId=123"
-            System.out.println("Handshake query: " + query);
+            //System.out.println("Handshake query: " + query);
 
             if (query != null && query.startsWith("userId=")) {
                 String userId = query.split("=")[1];
                 StompPrincipal principal = new StompPrincipal(userId);
                 attributes.put("user", principal);
-                System.out.println("Added StompPrincipal to attributes: " + principal.getName());
+                //System.out.println("Added StompPrincipal to attributes: " + principal.getName());
             }
         } catch (Exception e) {
             e.printStackTrace(); // fallback if parsing fails

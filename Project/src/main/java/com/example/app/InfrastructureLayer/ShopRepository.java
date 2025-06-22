@@ -249,7 +249,6 @@ public class ShopRepository implements IShopRepository {
 
             Shop removed = shops.remove(shopId);
             // print the removed shop for debugging purposes
-            System.out.println("Closing shop: " + removed);
             if (removed == null) {
                 throw new IllegalArgumentException("Shop not found: " + shopId);
             }
