@@ -297,11 +297,10 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 .setAutoWidth(true);
         wonGrid.addComponentColumn(dto -> {
             Button payNow = new Button("Pay Now");
-            payNow.addClickListener(e -> {
-                UI.getCurrent().navigate("payment",
-                        QueryParameters.simple(Map.of(
-                                "auctionId", String.valueOf(dto.getPurchaseId()),
-                                "price", String.valueOf(dto.getHighestBid()))));
+            payNow.addClickListener(e -> { 
+                
+                payForBid(dto);
+              
             });
             return payNow;
         })
@@ -553,10 +552,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         // <-- THIS is the important change:
         grid.addComponentColumn(dto -> {
             Button payNow = new Button("Pay Now");
-            payNow.addClickListener(e -> UI.getCurrent().navigate("payment",
-                    QueryParameters.simple(Map.of(
-                            "auctionId", String.valueOf(dto.getPurchaseId()),
-                            "price", String.valueOf(dto.getHighestBid())))));
+            payNow.addClickListener(e -> {payForBid(dto);});
             return payNow;
         })
                 .setHeader("For Payment")
@@ -610,10 +606,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         // 4) “Pay Now”
         grid.addComponentColumn(dto -> {
             Button payNow = new Button("Pay Now");
-            payNow.addClickListener(e -> UI.getCurrent().navigate("payment",
-                    QueryParameters.simple(Map.of(
-                            "auctionId", String.valueOf(dto.getPurchaseId()),
-                            "price", String.valueOf(dto.getHighestBid())))));
+            payNow.addClickListener(e -> {payForBid(dto);});
             return payNow;
         })
                 .setHeader("For Payment")
@@ -661,5 +654,26 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             log.warn("Error fetching items for store {}", dto.getStoreId(), e);
         }
         return "Unknown Item";
+    }
+
+    private void payForBid(BidRecieptDTO dto) {
+        Dialog dialog = new Dialog();
+                dialog.setHeaderTitle("Purchase Summary");
+                ShoppingCartDTO cartDto = dto.toShopingCartDTO(baseUrl);
+                PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(baseUrl, cartDto , 
+                        dialog);
+                
+                
+                // Add your component to the dialog
+                dialog.add(purchaseCompletion);
+                // Add your component to the dialog
+                dialog.add(purchaseCompletion);
+
+                // Optional: add a close button in the footer
+                Button closeButton = new Button("Close", ev -> dialog.close());
+                dialog.getFooter().add(closeButton);
+
+                dialog.open(); // Show the dialog
+                buildView(); // Refresh the view after purchase
     }
 }

@@ -5,6 +5,7 @@
 package DTOs;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -16,6 +17,7 @@ public class BidRecieptDTO {
     private int userId;
     private int storeId;
     private AddressDTO shippingAddress;
+    // id -> quantity
     private Map<Integer, Integer> items;
     private boolean completed;
     private LocalDateTime timeOfCompletion;
@@ -31,32 +33,6 @@ public class BidRecieptDTO {
     // Default no-args constructor (for Jackson)
     public BidRecieptDTO() { }
 
-    // All-args constructor (optional)
-    // public BidRecieptDTO(int purchaseId,
-    //                      int userId,
-    //                      int storeId,
-    //                      AddressDTO shippingAddress,
-    //                      Map<Integer, Integer> items,
-    //                      boolean completed,
-    //                      LocalDateTime timeOfCompletion,
-    //                      double price,
-    //                      int thisBidderId,
-    //                      int initialPrice,
-    //                      int highestBid,
-    //                      int highestBidderId) {
-    //     this.purchaseId = purchaseId;
-    //     this.userId = userId;
-    //     this.storeId = storeId;
-    //     this.shippingAddress = shippingAddress;
-    //     this.items = items;
-    //     this.completed = completed;
-    //     this.timeOfCompletion = timeOfCompletion;
-    //     this.price = price;
-    //     this.thisBidderId = thisBidderId;
-    //     this.initialPrice = initialPrice;
-    //     this.highestBid = highestBid;
-    //     this.highestBidderId = highestBidderId;
-    // }
 
     public BidRecieptDTO(int purchaseId,
                          int userId,
@@ -75,6 +51,9 @@ public class BidRecieptDTO {
         this.userId = userId;
         this.storeId = storeId;
         this.shippingAddress = shippingAddress;
+        if(items.keySet().size() !=1) {
+            throw new IllegalArgumentException("BidRecieptDTO should only contain one store's items");
+        }
         this.items = items;
         this.completed = completed;
         this.timeOfCompletion = timeOfCompletion;
@@ -178,5 +157,42 @@ public class BidRecieptDTO {
 
     public void setEndTime(LocalDateTime endTime) {
         this.endTime = endTime;
+    }
+
+    public ShoppingCartDTO toShopingCartDTO(String api) {
+        Map<Integer, List<Integer>> shopItems = new java.util.HashMap<>();
+        shopItems.put(storeId, items.keySet().stream().toList());
+    
+        Map<Integer, Map<Integer, Double>> shopItemPrices = new java.util.HashMap<>();
+        Map<Integer, Double> itemPriceMap = new java.util.HashMap<>();
+        Integer itemId = items.keySet().stream().findFirst().orElseThrow();
+        itemPriceMap.put(itemId, (double) this.highestBid);
+        shopItemPrices.put(storeId, itemPriceMap);
+        Map<Integer, Map<Integer, Integer>> shopItemQuantities = new java.util.HashMap<>();
+        double totalPrice = this.highestBid;
+
+        List<ItemDTO> itemsList = List.of(getItemById(itemId, api)); // Placeholder, implement as needed
+        
+        return new ShoppingCartDTO(
+                shopItems,
+                shopItemPrices,
+                shopItemQuantities,
+                totalPrice,
+                itemsList
+        );
+    }
+
+
+
+   private ItemDTO getItemById(int id, String api) {
+    
+    org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+    String url = api + "/items/" + id;
+    try {
+        return restTemplate.getForObject(url, ItemDTO.class);
+    } catch (Exception e) {
+        throw new RuntimeException("Failed to fetch item with id " + id, e);
+    }
+        
     }
 }
