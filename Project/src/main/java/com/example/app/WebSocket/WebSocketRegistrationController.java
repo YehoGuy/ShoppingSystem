@@ -15,6 +15,6 @@ public class WebSocketRegistrationController {
     @MessageMapping("/register")
     public void registerUser(@Header("simpSessionId") String sessionId, Integer userId) {
         registry.register(sessionId, userId);
-        System.out.println("Registered userId=" + userId + " with sessionId=" + sessionId);
+        //System.out.println("Registered userId=" + userId + " with sessionId=" + sessionId);
     }
 }

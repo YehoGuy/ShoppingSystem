@@ -15,9 +15,9 @@ public class CustomHandshakeHandler extends DefaultHandshakeHandler {
 
         Principal principal = (Principal) attributes.get("user");
         if (principal != null) {
-            System.out.println("HandshakeHandler - Principal determined: " + principal.getName());
+            //System.out.println("HandshakeHandler - Principal determined: " + principal.getName());
         } else {
-            System.out.println("HandshakeHandler - No Principal found in attributes");
+            //System.out.println("HandshakeHandler - No Principal found in attributes");
         }
         return principal;
     }

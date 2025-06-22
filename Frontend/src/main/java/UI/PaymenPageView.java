@@ -1,6 +1,7 @@
 package UI;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
@@ -36,6 +37,7 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
     private final String api;
     private final String paymentMethodUrl;
     private final String checkoutUrl;
+    private final String partialCheckoutUrl;
     private String currency;
     private String cardNumber;
     private String expirationDateMonth;
@@ -50,6 +52,9 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
     private String houseNumber;
     private String zipCode;
     private Dialog addressDialog;
+
+    private int partialCart = -1;
+
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
@@ -71,14 +76,12 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
 
     public PaymenPageView(@Value("${url.api}") String api, double totalAmount, String country, String city,
             String street, String houseNumber,
-            String zipCode, Dialog addressDialog) {
+            String zipCode, Dialog addressDialog, int partialCart) {
 
         this.api = api;
         this.paymentMethodUrl = api + "/payment-method";
-        this.checkoutUrl = api + "/checkout";
-
-        paymentMethod = getUserPaymentMethod();
-
+        this.checkoutUrl = api + "/purchases/checkout";
+        this.partialCheckoutUrl = api + "/purchases/partial-checkout";
         this.totalAmount = totalAmount;
         this.country = country;
         this.city = city;
@@ -86,6 +89,8 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         this.houseNumber = houseNumber;
         this.zipCode = zipCode;
         this.addressDialog = addressDialog;
+
+        this.partialCart = partialCart;
 
         setUpLayout();
     }
@@ -140,7 +145,13 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         // Hook the button click to your processPayment() method
         payButton.addClickListener(event -> {
             if (isPaymentDetailsValid()) {
-                processPayment();
+                if (partialCart != -1) {
+                    processPartialPayment();
+                }
+                else{
+                    processPayment();
+
+                }
             } else {
                 Notification.show("Please fill in all payment details correctly.");
             }
@@ -165,7 +176,6 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         try {
             this.paymentMethod = new PaymentMethodDTO(currency, cardNumber, expirationDateMonth,
                     expirationDateYear, cardHolderName, cvv, id);
-
             String token = getToken();
             String url = checkoutUrl
                     + "?authToken=" + token
@@ -174,7 +184,9 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
                     + "&street=" + street
                     + "&houseNumber=" + houseNumber
                     + "&zipCode=" + zipCode;
-            ResponseEntity<String> response = restTemplate.postForEntity(url, paymentMethod, String.class);
+            System.err.println(url);
+            HttpEntity<PaymentMethodDTO> entity = new HttpEntity<PaymentMethodDTO>(paymentMethod);
+            ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
 
             if (response.getStatusCode() == HttpStatus.CREATED) {
                 Notification.show("Payment successful");
@@ -187,6 +199,38 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
             Notification.show("Payment error");
         }
     }
+
+
+    private void processPartialPayment() {
+        try {
+            this.paymentMethod = new PaymentMethodDTO(currency, cardNumber, expirationDateMonth,
+                    expirationDateYear, cardHolderName, cvv, id);
+            String token = getToken();
+            String url = partialCheckoutUrl
+                    + "?authToken=" + token
+                    + "&country=" + country
+                    + "&city=" + city
+                    + "&street=" + street
+                    + "&houseNumber=" + houseNumber
+                    + "&zipCode=" + zipCode
+                    + "&shopId=" + partialCart;
+
+            System.err.println(url);
+            HttpEntity<PaymentMethodDTO> entity = new HttpEntity<PaymentMethodDTO>(paymentMethod);
+            ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
+
+            if (response.getStatusCode() == HttpStatus.CREATED) {
+                Notification.show("Payment successful");
+                addressDialog.close(); // Close the dialog if payment is successful
+
+            } else {
+                Notification.show("Payment failed");
+            }
+        } catch (Exception e) {
+            Notification.show("Payment error");
+        }
+    }
+
 
     private boolean isPaymentDetailsValid() {
         return currency != null && !currency.isEmpty() &&

@@ -265,18 +265,15 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
             ResponseEntity<rolesDTO[]> resp = rest.getForEntity(
                     PENDING_ROLES_URL + "?authToken=" + token,
                     rolesDTO[].class);
-            System.out.println("Pending roles URL: " + PENDING_ROLES_URL + "?authToken=" + token);
             if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 rolesDTO[] roles = resp.getBody();
 
                 if (roles.length > 0) {
                     for (rolesDTO dto : roles) {
                         int shopId = dto.getShopId();
-                        System.out.println("Shop ID: " + shopId);
                         DTOs.ShopDTO shop = rest.getForObject(
                                 BASE_URL + "/shops/" + shopId + "?token=" + token,
                                 DTOs.ShopDTO.class);
-                        System.out.println("Shop");
                         String shopName = shop.getName();
                         String desc = dto.getRoleName() + " @ " + shopName;
 

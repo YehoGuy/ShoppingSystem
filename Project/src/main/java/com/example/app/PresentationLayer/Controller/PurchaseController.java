@@ -89,11 +89,10 @@ public class PurchaseController {
             @RequestParam String city,
             @RequestParam String street,
             @RequestParam String houseNumber,
-            @RequestParam(required = false) String zipCode,
+            @RequestParam String zipCode,
             @RequestBody PaymentDetailsDTO paymentDetails) {
 
         try {
-            
             // compose Address inline
             com.example.app.DomainLayer.Purchase.Address shipping = new com.example.app.DomainLayer.Purchase.Address()
                     .withCity(city)
@@ -127,6 +126,54 @@ public class PurchaseController {
         }
     }
 
+    
+    @PostMapping("/partial-checkout")
+    public ResponseEntity<?> partialheckout(
+            @RequestParam String authToken,
+            @RequestParam String country,
+            @RequestParam String city,
+            @RequestParam String street,
+            @RequestParam String houseNumber,
+            @RequestParam String zipCode,
+            @RequestParam int shopId,
+            @RequestBody PaymentDetailsDTO paymentDetails) {
+
+        try {
+            // compose Address inline
+            com.example.app.DomainLayer.Purchase.Address shipping = new com.example.app.DomainLayer.Purchase.Address()
+                    .withCity(city)
+                    .withCountry(country)
+                    .withStreet(street)
+                    .withHouseNumber(houseNumber)
+                    .withZipCode(zipCode);
+
+            List<Integer> ids = purchaseService.partialCheckoutCart(authToken, shipping, paymentDetails.getCurrency(),
+                    paymentDetails.getCardNumber(), paymentDetails.getExpirationDateMonth(),
+                    paymentDetails.getExpirationDateYear(), paymentDetails.getCardHolderName(),
+                    paymentDetails.getCvv(), paymentDetails.getId(), shopId);
+            return ResponseEntity.status(HttpStatus.CREATED).body(ids); // 201 Created
+
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            // bad parameters (e.g., empty city or invalid token format)
+            return ResponseEntity.badRequest().body(ex.getMessage()); // 400
+
+        } catch (NoSuchElementException ex) {
+            // guest/member or cart not found
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage()); // 404
+
+        } catch (RuntimeException ex) {
+            // business conflict (e.g., inventory unavailable)
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
+
+        } catch (Exception ex) {
+            // anything unexpected
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Internal server error"); // 500
+        }
+    }
+
+
+    
     /* ─────────────────────────── BIDS ────────────────────────── */
 
     @PostMapping("/bids")
@@ -446,16 +493,16 @@ public class PurchaseController {
             purchaseService.postBiddingAuction(authToken, auctionId, bidAmount);
             return ResponseEntity.accepted().build();
         } catch (IllegalArgumentException | ConstraintViolationException ex) {
-            System.out.println("Invalid parameters (400): " + ex.getMessage());
+            //System.out.println("Invalid parameters (400): " + ex.getMessage());
             return ResponseEntity.badRequest().body(null); // 400
         } catch (NoSuchElementException ex) {
-            System.out.println("Invalid parameters (404): " + ex.getMessage());
+            //System.out.println("Invalid parameters (404): " + ex.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); // 404
         } catch (RuntimeException ex) {
-            System.out.println("Invalid parameters (409): " + ex.getMessage());
+            //System.out.println("Invalid parameters (409): " + ex.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(null); // 409
         } catch (Exception ex) {
-            System.out.println("Invalid parameters (500): " + ex.getMessage());
+            //System.out.println("Invalid parameters (500): " + ex.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(null); // 500
         }

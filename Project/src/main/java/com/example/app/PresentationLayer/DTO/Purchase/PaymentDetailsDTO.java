@@ -78,4 +78,12 @@ public class PaymentDetailsDTO {
     public void setId(String id) {
         this.id = id;
     }
+
+    @Override
+    public String toString() {
+        return String.format(
+            "{ \"currency\": \"%s\", \"cardNumber\": \"%s\", \"expirationDateMonth\": \"%s\", \"expirationDateYear\": \"%s\", \"cardHolderName\": \"%s\", \"cvv\": \"%s\", \"id\": \"%s\" }",
+            currency, cardNumber, expirationDateMonth, expirationDateYear, cardHolderName, cvv, id
+        );
+    }
 }
