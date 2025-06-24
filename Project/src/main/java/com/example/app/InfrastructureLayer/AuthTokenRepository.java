@@ -12,9 +12,10 @@ import com.example.app.DomainLayer.AuthToken;
 import com.example.app.DomainLayer.IAuthTokenRepository;
 
 @Repository
-@Profile("no-db | test")
+@Profile({ "no-db | test", "!no-db & !test" })
 public class AuthTokenRepository implements IAuthTokenRepository {
-    private Map<Integer, com.example.app.DomainLayer.AuthToken> authTokenMap; // Maps user IDs to their authentication tokens
+    private Map<Integer, com.example.app.DomainLayer.AuthToken> authTokenMap; // Maps user IDs to their authentication
+                                                                              // tokens
 
     public AuthTokenRepository() {
         authTokenMap = new ConcurrentHashMap<>();
@@ -22,10 +23,10 @@ public class AuthTokenRepository implements IAuthTokenRepository {
 
     public AuthToken getAuthToken(int userId) {
         AuthToken token = authTokenMap.get(userId);
-        if(token == null) {
+        if (token == null) {
             return null; // Token not found
         }
-        if(token.isExpired()){
+        if (token.isExpired()) {
             removeAuthToken(userId);
             return null;
         }
@@ -39,7 +40,7 @@ public class AuthTokenRepository implements IAuthTokenRepository {
         if (userId <= 0) {
             throw new OurArg("User ID must be positive");
         }
-        if(token.getExpirationTime().after(new Date()))
+        if (token.getExpirationTime().after(new Date()))
             authTokenMap.put(userId, token);
         else
             throw new OurArg("Token has expired");
@@ -60,5 +61,5 @@ public class AuthTokenRepository implements IAuthTokenRepository {
         }
         return -1; // Token not found
     }
-    
+
 }
