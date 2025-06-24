@@ -661,7 +661,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 dialog.setHeaderTitle("Purchase Summary");
                 ShoppingCartDTO cartDto = dto.toShopingCartDTO(baseUrl);
                 PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(baseUrl, cartDto , 
-                        dialog);
+                        dialog, dto.getStoreId());
                 
                 
                 // Add your component to the dialog
