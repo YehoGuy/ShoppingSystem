@@ -294,7 +294,7 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
                 Notification.show("⚠️ Failed to load shops");
             }
         } catch (Exception ex) {
-            Notification.show("❗ Error loading shop");
+            Notification.show("❗ Error loading shop" + ex.getMessage());
         }
     }
 
