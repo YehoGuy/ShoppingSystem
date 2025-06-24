@@ -12,19 +12,27 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.RouterLayout;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
 @JsModule("./notification-client.js")
-public class AppLayoutBasic extends AppLayout implements RouterLayout {
-
+@CssImport("./themes/mytheme/styles.css")
+public class AppLayoutBasic extends AppLayout
+    implements RouterLayout, BeforeEnterObserver {
     public AppLayoutBasic() {
-        UI.getCurrent().getPage().executeJs("window.connectWebSocket($0);", getUserId());
+        // addClassName("home-layout");  
+
+        // WebSocket hookup
+        UI.getCurrent()
+          .getPage()
+          .executeJs("window.connectWebSocket($0);", getUserId());
+
+        // Drawer toggle + nav
         DrawerToggle toggle = new DrawerToggle();
-
-        SideNav nav = getSideNav();
-
+        SideNav nav = buildSideNav();
         Scroller scroller = new Scroller(nav);
         scroller.setClassName(LumoUtility.Padding.SMALL);
 
@@ -32,41 +40,51 @@ public class AppLayoutBasic extends AppLayout implements RouterLayout {
         addToNavbar(toggle);
     }
 
-    private Integer getUserId() {
-        if (VaadinSession.getCurrent().getAttribute("userId") != null) {
-            return Integer.parseInt(VaadinSession.getCurrent().getAttribute("userId").toString());
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        // If we’re heading to /home, mark this layout so the CSS clears its gradient
+        boolean isHome = "home".equals(event.getLocation().getFirstSegment());
+        if (isHome) {
+            addClassName("home-layout");
+        } else {
+            removeClassName("home-layout");
         }
-        UI.getCurrent().navigate(""); // Redirect to login if userId is not set
-        return null; // Return null if userId is not available
     }
 
-    private SideNav getSideNav() {
-        SideNav sideNav = new SideNav();
-        sideNav.addItem(
-                new SideNavItem("Home", "/home", VaadinIcon.HOME.create()),
-                new SideNavItem("Profile", "/profile", VaadinIcon.USER.create()),
-                new SideNavItem("Shopping Cart", "/cart", VaadinIcon.CART.create()),
-                new SideNavItem("Search Item", "/items", VaadinIcon.SEARCH.create()),
-                new SideNavItem("Search Shop", "/shops", VaadinIcon.SHOP.create()),
-                new SideNavItem("Bids", "/bids", VaadinIcon.MONEY.create()),
-                new SideNavItem("Auctions", "/auctions", VaadinIcon.GAVEL.create()),
-                new SideNavItem("My Shops", "/myshops", VaadinIcon.LIST_UL.create()),
-                new SideNavItem("My Messages", "/messages", VaadinIcon.ENVELOPE.create()));
+    private Integer getUserId() {
+        Object uid = VaadinSession.getCurrent().getAttribute("userId");
+        if (uid != null) {
+            return Integer.parseInt(uid.toString());
+        }
+        UI.getCurrent().navigate(""); // redirect if not logged in
+        return null;
+    }
 
-        // only for admins
+    private SideNav buildSideNav() {
+        SideNav nav = new SideNav();
+        nav.addItem(
+            new SideNavItem("Home",        "/home",     VaadinIcon.HOME.create()),
+            new SideNavItem("Profile",     "/profile",  VaadinIcon.USER.create()),
+            new SideNavItem("Shopping Cart","/cart",    VaadinIcon.CART.create()),
+            new SideNavItem("Search Item", "/items",    VaadinIcon.SEARCH.create()),
+            new SideNavItem("Search Shop", "/shops",    VaadinIcon.SHOP.create()),
+            new SideNavItem("Bids",        "/bids",     VaadinIcon.MONEY.create()),
+            new SideNavItem("Auctions",    "/auctions", VaadinIcon.GAVEL.create()),
+            new SideNavItem("My Shops",    "/myshops",  VaadinIcon.LIST_UL.create()),
+            new SideNavItem("Messages",    "/messages", VaadinIcon.ENVELOPE.create())
+        );
         Boolean isAdmin = (Boolean) VaadinSession.getCurrent().getAttribute("isAdmin");
         if (Boolean.TRUE.equals(isAdmin)) {
-            sideNav.addItem(new SideNavItem("Admin Panel", "/admin", VaadinIcon.SHIELD.create()));
+            nav.addItem(new SideNavItem("Admin Panel",
+                "/admin", VaadinIcon.SHIELD.create()));
         }
-
-        sideNav.addItem(new SideNavItem("Logout", "/logout", VaadinIcon.SIGN_OUT.create()));
-        return sideNav;
+        nav.addItem(new SideNavItem("Logout", "/logout",
+            VaadinIcon.SIGN_OUT.create()));
+        return nav;
     }
 
     @ClientCallable
     public void showNotificationFromJS(String message) {
-        System.out.println("Notification from JS: " + message);
         Notification.show(message, 5000, Notification.Position.TOP_CENTER);
     }
-
 }
