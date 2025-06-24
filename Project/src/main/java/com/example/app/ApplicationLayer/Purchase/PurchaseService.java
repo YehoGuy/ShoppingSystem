@@ -122,7 +122,6 @@ public class PurchaseService {
         //     throw new OurRuntime("checkoutCart: " + e.getMessage(), e);
         } catch (Exception e) {
             for (Integer shopId : aqcuired.keySet()) {
-                System.out.println(aqcuired.keySet());
                 shopService.rollBackPurchase(aqcuired.get(shopId), shopId);
             }
             if (cartBackup != null) {
@@ -135,6 +134,73 @@ public class PurchaseService {
             throw new OurRuntime("checkoutCart: " + e.getMessage(), e);
         }
     }
+
+    public List<Integer> partialCheckoutCart(String authToken, Address shippingAddress, String currency, String cardNumber, String expirationDateMonth, String expirationDateYear, String cardHolderName, String cvv, String id, int shopIdToBuy) {
+        LoggerService.logMethodExecution("partialCheckoutCart", authToken, shippingAddress);
+        HashMap<Integer, HashMap<Integer, Integer>> aqcuired = new HashMap<>();
+        HashMap<Integer, HashMap<Integer, Integer>> cartBackup = null;
+        HashMap<Integer, Double> totalPrices = new HashMap<>();
+        HashMap<Integer, Integer> purchaseIds = new HashMap<>();
+        List<Integer> paymentIds = new ArrayList<>();
+        int userId = -1;
+        try {
+            userId = authTokenService.ValidateToken(authToken);
+            HashMap<Integer, HashMap<Integer, Integer>> cart = userService.getUserShoppingCartItems(userId);
+            cartBackup = cart;
+            for (Integer shopId : cart.keySet()) {
+                if(shopId != shopIdToBuy) {
+                    continue; // Skip shops that are not the one we want to buy from
+                }
+                double totalPrice = shopService.purchaseItems(cart.get(shopId), shopId, authToken);
+                totalPrices.put(shopId, totalPrice);
+                aqcuired.put(shopId, cart.get(shopId));
+
+                int payid = userService.pay(authToken, shopId, totalPrice, currency, cardNumber,
+                        expirationDateMonth, expirationDateYear, cardHolderName, cvv, id);
+                paymentIds.add(payid);
+                int pid = purchaseRepository.addPurchase(userId, shopId, aqcuired.get(shopId), totalPrice,
+                        shippingAddress);
+                purchaseIds.put(pid, shopId);
+            }
+            userService.clearUserShoppingCartByShopId(userId, shopIdToBuy);
+            for (Integer purchaseId : purchaseIds.keySet()) {
+                shopService.shipPurchase(authToken, purchaseId, purchaseIds.get(purchaseId),
+                        shippingAddress.getCountry(),
+                        shippingAddress.getCity(), shippingAddress.getStreet(), shippingAddress.getZipCode());
+            }
+            LoggerService.logMethodExecutionEnd("partialCheckoutCart", purchaseIds);
+            userService.purchaseNotification(cart);
+            return purchaseIds.keySet().stream().toList();
+        // } catch (OurArg e) {
+        //     LoggerService.logDebug("checkoutCart", e);
+        //     throw new OurArg("checkoutCart: " + e.getMessage(), e);
+        // } catch (OurRuntime e) {
+        //     for (Integer shopId : aqcuired.keySet()) {
+        //         shopService.rollBackPurchase(aqcuired.get(shopId), shopId);
+        //     }
+        //     if (cartBackup != null) {
+        //         userService.restoreUserShoppingCart(userId, cartBackup);
+        //     }
+        //     for (Integer pid : paymentIds) {
+        //         userService.refundPaymentAuto(authToken, pid);
+        //     }
+        //     LoggerService.logError("checkoutCart", e, authToken, shippingAddress);
+        //     throw new OurRuntime("checkoutCart: " + e.getMessage(), e);
+        } catch (Exception e) {
+            for (Integer shopId : aqcuired.keySet()) {
+                shopService.rollBackPurchase(aqcuired.get(shopId), shopId);
+            }
+            if (cartBackup != null) {
+                userService.restoreUserShoppingCartByShopId(userId, cartBackup, shopIdToBuy);
+            }
+            for (Integer pid : paymentIds) {
+                userService.refundPaymentAuto(authToken, pid);
+            }
+            LoggerService.logError("partialCheckoutCart", e, authToken, shippingAddress);
+            throw new OurRuntime("partialCheckoutCart: " + e.getMessage(), e);
+        }
+    }
+
 
     public int createBid(String authToken, int storeId, Map<Integer, Integer> items, int initialPrice) {
         LoggerService.logMethodExecution("createBid", authToken, storeId, items);

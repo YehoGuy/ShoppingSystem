@@ -908,9 +908,9 @@ public class ShopService {
             // println("getPolicies called for shop " + shopId);
             for (Policy p : shopRepository.getPolicies(shopId)) {
                 if (p == null) {
-                    System.out.println("sdlkcsl;dkcsdkcsdds;k");
+                    //System.out.println("sdlkcsl;dkcsdkcsdds;k");
                 } else {
-                    System.out.println("Policy4672829: " + p);
+                    //System.out.println("Policy4672829: " + p);
 
                 }
             }

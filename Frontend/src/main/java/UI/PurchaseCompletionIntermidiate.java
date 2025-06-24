@@ -41,6 +41,7 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
     private ShoppingCartDTO cartDto;
     private Map<ItemDTO, Integer> items;
     private double totalPrice = 0;
+    private int partialCart = -1;
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
@@ -60,11 +61,13 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
         return null; // Return null if userId is not available
     }
 
-    public PurchaseCompletionIntermidiate(@Value("${url.api}") String api, ShoppingCartDTO cart, Dialog addressDialog) {
+    public PurchaseCompletionIntermidiate(@Value("${url.api}") String api, ShoppingCartDTO cart, Dialog addressDialog, int partialCart) {
         this.api = api;
 
         this.cartDto = cart;
         this.totalPrice = cart.getTotalPrice();
+
+        this.partialCart = partialCart;
 
         setAllItems();
         setSizeFull();
@@ -158,7 +161,8 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
                 address.getStreet(),
                 address.getHouseNumber(),
                 address.getZipCode(),
-                addressDialog);
+                addressDialog,  
+                partialCart);
 
         Dialog paymentDialog = new Dialog(paymentPage);
         paymentDialog.setWidth("400px");
