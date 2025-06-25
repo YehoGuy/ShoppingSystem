@@ -658,14 +658,6 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
             panel.add(noCategoryDiscounts);
         }
 
-        // If no global or category discounts
-        if (globalDiscounts.isEmpty() && categoryDiscounts.isEmpty()) {
-            Span noDiscounts = new Span("ℹ️ No global or category discounts available");
-            noDiscounts.getStyle().set("font-style", "italic");
-            noDiscounts.getStyle().set("color", "#666");
-            panel.add(noDiscounts);
-        }
-
         return panel;
     }
 

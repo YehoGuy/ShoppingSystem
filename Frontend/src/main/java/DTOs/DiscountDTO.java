@@ -1,5 +1,7 @@
 package DTOs;
 
+import com.vaadin.flow.component.notification.Notification;
+
 import Domain.ItemCategory;
 
 public class DiscountDTO {
@@ -20,9 +22,16 @@ public class DiscountDTO {
     }
 
     public Integer getPercentage()    { return percentage; }
+    public void setPercentage(Integer percentage) { this.percentage = percentage; }
+    
     public boolean isDouble()         { return isDouble; }
+    public void setDouble(boolean isDouble) { this.isDouble = isDouble; }
+    
     public ItemCategory getItemCategory() { return itemCategory; }
+    public void setItemCategory(ItemCategory itemCategory) { this.itemCategory = itemCategory; }
+    
     public Integer getItemId()        { return itemId; }
+    public void setItemId(Integer itemId) { this.itemId = itemId; }
 
     public CompositePolicyDTO getPolicy()      { return policy; }
     public void setPolicy(CompositePolicyDTO policy) { this.policy = policy; }
@@ -38,9 +47,9 @@ public class DiscountDTO {
             base = "Discount of " + percentage + "% on the entire shop";
         }
         if (isDouble) {
-            base += " (double discount)";
+            base += " (double discount) ";
         } else {
-            base += " (single discount)";
+            base += " (single discount) ";
         }
         // ← INCLUDE policy text if present
         return base + (policy != null ? " | policy: " + policy.toString() : "");
