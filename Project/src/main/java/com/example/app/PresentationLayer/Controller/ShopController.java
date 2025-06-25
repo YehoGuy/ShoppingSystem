@@ -739,9 +739,6 @@ public class ShopController {
             List<DiscountDTO> discountDTOs = discounts.stream()
                     .map(DiscountDTO::fromDomain)
                     .collect(Collectors.toList());
-            for (DiscountDTO dto : discountDTOs) {
-                System.out.println(dto.isDouble() + "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
-            }
             return ResponseEntity.ok(discountDTOs);
 
         } catch (NoSuchElementException ex) {
