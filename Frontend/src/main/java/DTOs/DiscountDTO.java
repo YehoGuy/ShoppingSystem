@@ -37,6 +37,11 @@ public class DiscountDTO {
         } else {
             base = "Discount of " + percentage + "% on the entire shop";
         }
+        if (isDouble) {
+            base += " (double discount)";
+        } else {
+            base += " (single discount)";
+        }
         // ← INCLUDE policy text if present
         return base + (policy != null ? " | policy: " + policy.toString() : "");
     }

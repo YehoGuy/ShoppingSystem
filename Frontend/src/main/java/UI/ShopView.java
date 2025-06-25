@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -16,7 +17,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
-import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.JsModule;
@@ -40,8 +40,8 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 
 import DTOs.BidRecieptDTO; // for Map.Entry
+import DTOs.DiscountDTO;
 import DTOs.ItemDTO; // if you use List elsewhere
-import DTOs.ItemReviewDTO;
 import DTOs.MemberDTO;
 import DTOs.ShopDTO;
 import DTOs.ShopReviewDTO;
@@ -61,6 +61,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
     private ShopDTO shop;
     private Map<ItemDTO, Double> prices;
     private List<MemberDTO> memberDTOs = new ArrayList<>();
+    private List<DiscountDTO> discounts = new ArrayList<>();
 
 
     public ShopView(@Value("${url.api}") String api) {
@@ -169,6 +170,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
     private void buildPage() {
         removeAll();
         loadUsers(); // Load users to match usernames in reviews
+        loadDiscounts(); // Load discounts for the shop
         setPadding(true);
         setSpacing(true);
 
@@ -176,8 +178,25 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         H1 header = new H1("🛍️ Welcome to " + shop.getName());
         add(header);
 
+        // Create main layout with content and side panel
+        HorizontalLayout mainLayout = new HorizontalLayout();
+        mainLayout.setWidthFull();
+        mainLayout.setSpacing(true);
+
+        // Left side - main content
+        VerticalLayout contentLayout = new VerticalLayout();
+        contentLayout.setWidth("70%");
+        contentLayout.setSpacing(true);
+
+        // Right side - discount panel
+        VerticalLayout discountPanel = createDiscountPanel();
+        discountPanel.setWidth("30%");
+
+        mainLayout.add(contentLayout, discountPanel);
+        add(mainLayout);
+
         // Items section
-        add(new H2("📦 Items"));
+        contentLayout.add(new H2("📦 Items"));
         VerticalLayout itemsLayout = new VerticalLayout();
         itemsLayout.setWidthFull();
 
@@ -202,8 +221,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
             UI.getCurrent().navigate("shop/" + shop.getShopId() + "/create-bid/" + item.getId());
             });
 
-            row.add(name, priceSpan, stock, bidButton /* plus your other controls if any */);
-            itemsLayout.add(row);
+            row.add(name, priceSpan, stock, bidButton);
 
             // IntegerField to choose quantity
             IntegerField qtyField = new IntegerField();
@@ -264,15 +282,55 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
                 }
             });
 
-            row.add(name, priceSpan, stock, qtyField, addBtn);
-            itemsLayout.add(row);
+            // Create a spacer span that will push buttons to the right
+            Span spacer = new Span();
+            spacer.getStyle().set("flex-grow", "1");
+            
+            row.add(name, priceSpan, stock, qtyField, spacer, addBtn, bidButton);
+
+            // Create item container with discount info
+            VerticalLayout itemContainer = new VerticalLayout();
+            itemContainer.setSpacing(false);
+            itemContainer.setPadding(false);
+            itemContainer.getStyle().set("margin-bottom", "16px");
+            itemContainer.getStyle().set("padding", "12px");
+            itemContainer.getStyle().set("border", "1px solid #e0e0e0");
+            itemContainer.getStyle().set("border-radius", "8px");
+            
+            itemContainer.add(row);
+
+            // Add item-specific discounts if any
+            List<DiscountDTO> itemDiscounts = getItemDiscounts(item.getId());
+            if (!itemDiscounts.isEmpty()) {
+                VerticalLayout discountLayout = new VerticalLayout();
+                discountLayout.setSpacing(false);
+                discountLayout.setPadding(false);
+                discountLayout.getStyle().set("margin-top", "8px");
+                
+                for (DiscountDTO discount : itemDiscounts) {
+                    Span discountInfo = new Span("🏷️ " + discount.toString());
+                    discountInfo.getStyle().set("color", "#d32f2f");
+                    discountInfo.getStyle().set("font-weight", "bold");
+                    discountInfo.getStyle().set("font-size", "0.9em");
+                    discountInfo.getStyle().set("background-color", "#ffebee");
+                    discountInfo.getStyle().set("padding", "4px 8px");
+                    discountInfo.getStyle().set("border-radius", "4px");
+                    discountInfo.getStyle().set("display", "inline-block");
+                    discountInfo.getStyle().set("margin-bottom", "4px");
+                    discountLayout.add(discountInfo);
+                }
+                
+                itemContainer.add(discountLayout);
+            }
+
+            itemsLayout.add(itemContainer);
         }
 
-        add(itemsLayout);
+        contentLayout.add(itemsLayout);
 
         // Bids section
         H2 bidsHeader = new H2("📢 Bids for This Shop");
-        add(bidsHeader);
+        contentLayout.add(bidsHeader);
         Grid<BidRecieptDTO> shopBidsGrid = new Grid<>(BidRecieptDTO.class, false);
         shopBidsGrid.addColumn(BidRecieptDTO::getPurchaseId)
                 .setHeader("Bid ID")
@@ -294,17 +352,18 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
             }
         });
 
-        add(shopBidsGrid);
+        contentLayout.add(shopBidsGrid);
+        fetchStoreBids(shopBidsGrid);
 
         // Reviews section
-        add(new H2("📝 Reviews"));
+        contentLayout.add(new H2("📝 Reviews"));
         double avg = shop.getReviews().stream()
                 .mapToInt(ShopReviewDTO::getRating)
                 .average()
                 .orElse(0.0);
-        add(new Paragraph("⭐ Average Rating: " + String.format("%.1f", avg) + "/5"));
+        contentLayout.add(new Paragraph("⭐ Average Rating: " + String.format("%.1f", avg) + "/5"));
         for (ShopReviewDTO rev : shop.getReviews()) {
-            add(new Paragraph("👤 " + matchUserName(rev.getUserId()) + ": " 
+            contentLayout.add(new Paragraph("👤 " + matchUserName(rev.getUserId()) + ": " 
                     + rev.getReviewText() + " (" + rev.getRating() + ")"));
         }
 
@@ -314,8 +373,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
             addReviewButton.setVisible(false);
         }
 
-        add(addReviewButton);
-        displayReviews(); // Call to display reviews
+        contentLayout.add(addReviewButton);
 
         // reviewContainer = new VerticalLayout(); // <--- set reference
         // reviewContainer.setWidth("80%");
@@ -467,6 +525,36 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         }
     }
 
+    private void loadDiscounts() {
+        try {
+            String token = getToken();
+            if (token == null) {
+                discounts = Collections.emptyList();
+                return;
+            }
+            
+            String url = shopApiUrl + "/" + shop.getShopId() + "/discounts?token=" + token;
+            
+            ResponseEntity<DiscountDTO[]> response = restTemplate.getForEntity(url, DiscountDTO[].class);
+            
+            for (DiscountDTO discount : response.getBody()) {
+                if (discount.getItemCategory() == null && discount.getItemId() == null) {
+                    Notification.show(
+                            "Global");
+                }
+            }
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                discounts = Arrays.asList(response.getBody());
+            } else {
+                discounts = Collections.emptyList();
+            }
+        } catch (Exception e) {
+            discounts = Collections.emptyList();
+            // Silently fail - discounts are optional
+        }
+    }
+
     private String matchUserName(int userId) {
         for (MemberDTO member : memberDTOs) {
             if (member.getMemberId() == userId) {
@@ -496,6 +584,96 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
             Notification.show(
                     "Failed to check admin status");
         }
+    }
+
+    private List<DiscountDTO> getItemDiscounts(int itemId) {
+        return discounts.stream()
+                .filter(discount -> discount.getItemId() != null && discount.getItemId().equals(itemId))
+                .collect(Collectors.toList());
+    }
+
+    private List<DiscountDTO> getGlobalDiscounts() {
+        return discounts.stream()
+                .filter(discount -> discount.getItemId() == null && discount.getItemCategory() == null)
+                .collect(Collectors.toList());
+    }
+
+    private List<DiscountDTO> getCategoryDiscounts() {
+        return discounts.stream()
+                .filter(discount -> discount.getItemCategory() != null)
+                .collect(Collectors.toList());
+    }
+
+    private VerticalLayout createDiscountPanel() {
+        VerticalLayout panel = new VerticalLayout();
+        panel.setSpacing(true);
+        panel.setPadding(true);
+        panel.getStyle().set("background-color", "#f5f5f5");
+        panel.getStyle().set("border-radius", "8px");
+        panel.getStyle().set("border", "1px solid #ddd");
+
+        H2 panelTitle = new H2("💸 Active Discounts");
+        panel.add(panelTitle);
+
+        // Global discounts section
+        List<DiscountDTO> globalDiscounts = getGlobalDiscounts();
+        if (!globalDiscounts.isEmpty()) {
+            H2 globalHeader = new H2("🌍 Shop-wide Discounts");
+            globalHeader.getStyle().set("font-size", "1.2em");
+            globalHeader.getStyle().set("color", "#2e7d32");
+            panel.add(globalHeader);
+            
+            for (DiscountDTO discount : globalDiscounts) {
+                Span discountSpan = new Span("🏷️ " + discount.toString());
+                discountSpan.getStyle().set("display", "block");
+                discountSpan.getStyle().set("margin-bottom", "8px");
+                discountSpan.getStyle().set("padding", "8px");
+                discountSpan.getStyle().set("background-color", "#e8f5e8");
+                discountSpan.getStyle().set("border-radius", "4px");
+                panel.add(discountSpan);
+            }
+        }
+        else {
+            Span noGlobalDiscounts = new Span("ℹ️ No global discounts available");
+            noGlobalDiscounts.getStyle().set("font-style", "italic");
+            noGlobalDiscounts.getStyle().set("color", "#666");
+            panel.add(noGlobalDiscounts);
+        }
+
+        // Category discounts section
+        List<DiscountDTO> categoryDiscounts = getCategoryDiscounts();
+        if (!categoryDiscounts.isEmpty()) {
+            H2 categoryHeader = new H2("📂 Category Discounts");
+            categoryHeader.getStyle().set("font-size", "1.2em");
+            categoryHeader.getStyle().set("color", "#1976d2");
+            panel.add(categoryHeader);
+            
+            for (DiscountDTO discount : categoryDiscounts) {
+                Span discountSpan = new Span("🏷️ " + discount.toString());
+                discountSpan.getStyle().set("display", "block");
+                discountSpan.getStyle().set("margin-bottom", "8px");
+                discountSpan.getStyle().set("padding", "8px");
+                discountSpan.getStyle().set("background-color", "#e3f2fd");
+                discountSpan.getStyle().set("border-radius", "4px");
+                panel.add(discountSpan);
+            }
+        }
+        else {
+            Span noCategoryDiscounts = new Span("ℹ️ No category discounts available");
+            noCategoryDiscounts.getStyle().set("font-style", "italic");
+            noCategoryDiscounts.getStyle().set("color", "#666");
+            panel.add(noCategoryDiscounts);
+        }
+
+        // If no global or category discounts
+        if (globalDiscounts.isEmpty() && categoryDiscounts.isEmpty()) {
+            Span noDiscounts = new Span("ℹ️ No global or category discounts available");
+            noDiscounts.getStyle().set("font-style", "italic");
+            noDiscounts.getStyle().set("color", "#666");
+            panel.add(noDiscounts);
+        }
+
+        return panel;
     }
 
 }

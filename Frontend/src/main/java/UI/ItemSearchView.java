@@ -18,9 +18,9 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -30,7 +30,6 @@ import com.vaadin.flow.server.VaadinSession;
 
 import DTOs.ItemDTO;
 import DTOs.ItemReviewDTO;
-import jakarta.annotation.PostConstruct;
 
 @Route(value = "items", layout = AppLayoutBasic.class)
 @JsModule("@vaadin/dialog/vaadin-dialog.js")
@@ -114,16 +113,7 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
                 allItems.addAll(items);
                 filteredItems.addAll(allItems);
             } else {
-                // add mock items for demo purposes
-                ItemDTO item1 = new ItemDTO();
-                item1.setId(1);
-                item1.setName("Demo Item 1");
-                item1.setDescription("This is a demo item.");
-                item1.setCategory("GROCERY");
-                item1.setAverageRating(4.5);
-                item1.setReviews(new ArrayList<>());
-                allItems.add(item1);
-                filteredItems.add(item1);
+                Notification.show("No items found.");
             }
         } else {
             Notification.show("Failed to fetch items");
