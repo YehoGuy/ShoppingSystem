@@ -51,16 +51,14 @@ public class AppLayoutBasic extends AppLayout implements RouterLayout {
                 new SideNavItem("Shopping Cart", "/cart", VaadinIcon.CART.create()),
                 new SideNavItem("Search Item", "/items", VaadinIcon.SEARCH.create()),
                 new SideNavItem("Search Shop", "/shops", VaadinIcon.SHOP.create()),
-                // new SideNavItem("Bids", "/bids", VaadinIcon.MONEY.create()),
-                // new SideNavItem("Auctions", "/auctions", VaadinIcon.GAVEL.create()),
+                new SideNavItem("Bids", "/bids", VaadinIcon.MONEY.create()),
+                new SideNavItem("Auctions", "/auctions", VaadinIcon.GAVEL.create()),
                 new SideNavItem("My Shops", "/myshops", VaadinIcon.LIST_UL.create()),
                 new SideNavItem("My Messages", "/messages", VaadinIcon.ENVELOPE.create()));
 
         // only for admins
         Boolean isAdmin = (Boolean) VaadinSession.getCurrent().getAttribute("isAdmin");
         if (Boolean.TRUE.equals(isAdmin)) {
-            sideNav.addItem(new SideNavItem("Bids", "/bids", VaadinIcon.MONEY.create()));
-            sideNav.addItem(new SideNavItem("Auctions", "/auctions",  VaadinIcon.GAVEL.create()));
             sideNav.addItem(new SideNavItem("Admin Panel", "/admin", VaadinIcon.SHIELD.create()));
         }
 
