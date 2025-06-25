@@ -536,13 +536,6 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
             String url = shopApiUrl + "/" + shop.getShopId() + "/discounts?token=" + token;
             
             ResponseEntity<DiscountDTO[]> response = restTemplate.getForEntity(url, DiscountDTO[].class);
-            
-            for (DiscountDTO discount : response.getBody()) {
-                if (discount.getItemCategory() == null && discount.getItemId() == null) {
-                    Notification.show(
-                            "Global");
-                }
-            }
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 discounts = Arrays.asList(response.getBody());
@@ -594,7 +587,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
 
     private List<DiscountDTO> getGlobalDiscounts() {
         return discounts.stream()
-                .filter(discount -> discount.getItemId() == null && discount.getItemCategory() == null)
+                .filter(discount -> discount.getItemId() == 0 && discount.getItemCategory() == null)
                 .collect(Collectors.toList());
     }
 
