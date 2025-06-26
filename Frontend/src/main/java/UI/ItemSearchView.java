@@ -23,13 +23,8 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
-<<<<<<< 491-add-discounts-to-shopview-and-2-small-fixes
-import DTOs.ItemDTO;
-import DTOs.ItemReviewDTO;
-=======
 import java.util.ArrayList;
 import java.util.List;
->>>>>>> V3
 
 @Route(value = "items", layout = AppLayoutBasic.class)
 @JsModule("@vaadin/dialog/vaadin-dialog.js")
@@ -106,18 +101,7 @@ public class ItemSearchView extends BaseView implements BeforeEnterObserver {
         );
         if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
             allItems.clear();
-<<<<<<< 491-add-discounts-to-shopview-and-2-small-fixes
-            if (items != null && !items.isEmpty()) {
-                allItems.addAll(items);
-                filteredItems.addAll(allItems);
-            } else {
-                Notification.show("No items found.");
-            }
-        } else {
-            Notification.show("Failed to fetch items");
-=======
             allItems.addAll(resp.getBody());
->>>>>>> V3
         }
     }
 
