@@ -1,5 +1,6 @@
 package UI;
 
+<<<<<<< 491-add-discounts-to-shopview-and-2-small-fixes
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -17,45 +18,53 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+=======
+import DTOs.*;
+import com.fasterxml.jackson.databind.JsonNode;
+>>>>>>> V3
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.html.H1;
-import com.vaadin.flow.component.html.H2;
-import com.vaadin.flow.component.html.Paragraph;
-import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.notification.Notification.Position;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.IntegerField;
-import com.vaadin.flow.component.textfield.NumberField;
-import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.router.BeforeEnterEvent;
-import com.vaadin.flow.router.BeforeEnterObserver;
-import com.vaadin.flow.router.HasUrlParameter;
-import com.vaadin.flow.router.OptionalParameter;
-import com.vaadin.flow.router.Route;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.textfield.*;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
+import com.vaadin.flow.router.*;
 import com.vaadin.flow.server.VaadinSession;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.*;
+import org.springframework.web.client.RestTemplate;
 
+<<<<<<< 491-add-discounts-to-shopview-and-2-small-fixes
 import DTOs.BidRecieptDTO; // for Map.Entry
 import DTOs.DiscountDTO;
 import DTOs.ItemDTO; // if you use List elsewhere
 import DTOs.MemberDTO;
 import DTOs.ShopDTO;
 import DTOs.ShopReviewDTO;
+=======
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+>>>>>>> V3
 
 @Route(value = "shop", layout = AppLayoutBasic.class)
 @JsModule("@vaadin/dialog/vaadin-dialog.js")
-// ⬇️ Add this line so NumberField appears in the client
 @JsModule("@vaadin/number-field/vaadin-number-field.js")
-public class ShopView extends VerticalLayout implements HasUrlParameter<String>, BeforeEnterObserver {
+public class ShopView extends BaseView
+    implements HasUrlParameter<String>, BeforeEnterObserver {
 
     private final String api;
     private final String shopApiUrl;
-    private final String purchaseHistoryUrl;
     private final String usersUrl;
+    private final String purchaseHistoryUrl;
 
     private final RestTemplate restTemplate = new RestTemplate();
     private ShopDTO shop;
@@ -63,49 +72,42 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
     private List<MemberDTO> memberDTOs = new ArrayList<>();
     private List<DiscountDTO> discounts = new ArrayList<>();
 
-
     public ShopView(@Value("${url.api}") String api) {
-        this.api = api;
-        this.shopApiUrl = api + "/shops";
-        this.usersUrl = api + "/users";
-        this.purchaseHistoryUrl = api + "/purchases/shops";
-
+        super("Shop Details", "Your storefront", "🏬", "➡️");
+        this.api                 = api;
+        this.shopApiUrl          = api + "/shops";
+        this.usersUrl            = api + "/users";
+        this.purchaseHistoryUrl  = api + "/purchases/shops";
+        setSizeFull();
         setPadding(true);
         setSpacing(true);
     }
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
-        getUserId(); // Ensure userId is set in session
+        getUserId(); // ensure userId
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("login");
+            return;
         }
-
         handleSuspence();
     }
 
-    public Integer getUserId() {
-        if (VaadinSession.getCurrent().getAttribute("userId") != null) {
-            return Integer.parseInt(VaadinSession.getCurrent().getAttribute("userId").toString());
-        }
-        UI.getCurrent().navigate(""); // Redirect to login if userId is not set
-        return null; // Return null if userId is not available
-    }
-
     @Override
-    public void setParameter(com.vaadin.flow.router.BeforeEvent event, @OptionalParameter String shopId) {
+    public void setParameter(BeforeEvent event, @OptionalParameter String shopId) {
         if (shopId == null || shopId.isEmpty()) {
             add(new Span("❌ No shop ID provided."));
             return;
         }
-
-        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        String token = getToken();
         String url = shopApiUrl + "/" + shopId + "?token=" + token;
         try {
             ResponseEntity<ShopDTO> resp = restTemplate.getForEntity(url, ShopDTO.class);
             if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 shop = resp.getBody();
-                prices = ShopDTO.itemPricesToMapConverter(shop.getItems(), shop.getItemPrices());
+                prices = ShopDTO.itemPricesToMapConverter(
+                    shop.getItems(), shop.getItemPrices()
+                );
                 buildPage();
             } else {
                 Notification.show("⚠️ Failed to load shop");
@@ -115,68 +117,32 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         }
     }
 
-    private void fetchStoreBids(Grid<BidRecieptDTO> shopBidsGrid) {
-        try {
-            // 1. Read the authToken from VaadinSession
-            String authToken = (String) VaadinSession.getCurrent().getAttribute("authToken");
-            if (authToken == null || authToken.isBlank()) {
-                // If there's no token, do not call the endpoint; just show an empty grid
-                shopBidsGrid.setItems(Collections.emptyList());
-                return;
-            }
-
-            // 2. Build the full URL including the required query param "authToken"
-            //
-            // EXACTLY matches the backend mapping:
-            // @GetMapping("/shops/{shopId}/bids")
-            // public ResponseEntity<List<BidRecieptDTO>> getBidsForShop(
-            // @PathVariable int shopId,
-            // @RequestParam String authToken)
-            //
-            // Therefore we must call:
-            // GET /api/purchases/shops/{shopId}/bids?authToken=<token>
-            //
-            String url = purchaseHistoryUrl + "/" + shop.getShopId() + "/bids?authToken=" + authToken;
-
-            // 3. Prepare headers (JSON)
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<Void> entity = new HttpEntity<>(headers);
-
-            // 4. Make the GET call
-            ResponseEntity<List<BidRecieptDTO>> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    entity,
-                    new ParameterizedTypeReference<>() {
-                    });
-
-            // 5. If 200 OK, bind the response body (List<BidRecieptDTO>) to the grid
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                shopBidsGrid.setItems(response.getBody());
-            } else {
-                // If we get a 4xx or 5xx, show an error header
-                add(new H2("Failed to load shop’s bids"));
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            add(new H2("Error fetching shop’s bids"));
-        }
-    }
-
-    /**
-     * Renders the shop page with header, items, and reviews.
-     */
     private void buildPage() {
         removeAll();
+<<<<<<< 491-add-discounts-to-shopview-and-2-small-fixes
         loadUsers(); // Load users to match usernames in reviews
         loadDiscounts(); // Load discounts for the shop
         setPadding(true);
         setSpacing(true);
 
         // Header with emoji
+=======
+        loadUsers();
+
+        // wrap everything in a styled card
+        VerticalLayout card = new VerticalLayout();
+        card.addClassName("view-card");
+        card.setSizeFull();
+        card.setPadding(true);
+        card.setSpacing(true);
+        card.getStyle()
+            .set("background", "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)")
+            .set("box-shadow", "0 8px 32px rgba(0,0,0,0.1)");
+
+        // Header
+>>>>>>> V3
         H1 header = new H1("🛍️ Welcome to " + shop.getName());
-        add(header);
+        card.add(header);
 
         // Create main layout with content and side panel
         HorizontalLayout mainLayout = new HorizontalLayout();
@@ -196,34 +162,36 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         add(mainLayout);
 
         // Items section
+<<<<<<< 491-add-discounts-to-shopview-and-2-small-fixes
         contentLayout.add(new H2("📦 Items"));
+=======
+        card.add(new H2("📦 Items"));
+>>>>>>> V3
         VerticalLayout itemsLayout = new VerticalLayout();
         itemsLayout.setWidthFull();
-
-        for (Map.Entry<ItemDTO, Integer> e : ShopDTO.itemQuantitiesToMapConverter(
-                shop.getItems(),
-                shop.getItemQuantities()).entrySet()) {
-
-            ItemDTO item = e.getKey();
-            int available = e.getValue();
-
+        ShopDTO.itemQuantitiesToMapConverter(
+            shop.getItems(), shop.getItemQuantities()
+        ).forEach((item, available) -> {
             HorizontalLayout row = new HorizontalLayout();
             row.setWidthFull();
-            row.setSpacing(true);
             row.getStyle().set("align-items", "center");
 
-            Span name = new Span("🍽️ " + item.getName());
-            Span priceSpan = new Span("💲 " + prices.getOrDefault(item, 0.0));
-            Span stock = new Span("📊 In Stock: " + available);
+            Span name       = new Span("🍽️ " + item.getName());
+            Span priceSpan  = new Span("💲 " + prices.getOrDefault(item, 0.0));
+            Span stock      = new Span("📊 In Stock: " + available);
 
-            Button bidButton = new Button("Create Bid", click -> {
-            // navigates to your CreateBidView for this shop
-            UI.getCurrent().navigate("shop/" + shop.getShopId() + "/create-bid/" + item.getId());
-            });
+            Button bidButton = new Button("Create Bid", ev ->
+                UI.getCurrent().navigate(
+                    "shop/" + shop.getShopId() + "/create-bid/" + item.getId()
+                )
+            );
 
+<<<<<<< 491-add-discounts-to-shopview-and-2-small-fixes
             row.add(name, priceSpan, stock, bidButton);
 
             // IntegerField to choose quantity
+=======
+>>>>>>> V3
             IntegerField qtyField = new IntegerField();
             qtyField.setLabel("Quantity");
             qtyField.setValue(1);
@@ -232,46 +200,25 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
             qtyField.setStepButtonsVisible(true);
             qtyField.setWidth("80px");
 
-            // “Add to Cart” button with chosen quantity
-            Button addBtn = new Button("🛒 Add to Cart", evt -> {
-                // Read chosen quantity (default to 1 if null or invalid)
-                Integer chosenQty = qtyField.getValue();
-                int qty = (chosenQty != null && chosenQty > 0) ? chosenQty : 1;
-
-                // Ensure it does not exceed available stock
+            Button addBtn = new Button("🛒 Add to Cart", ev -> {
+                int qty = qtyField.getValue() != null ? qtyField.getValue() : 1;
                 if (qty > available) {
                     Notification.show("❌ Only " + available + " in stock");
                     return;
                 }
-
-                // Check for auth token in VaadinSession
-                String authToken = (String) VaadinSession.getCurrent().getAttribute("authToken");
-                if (authToken == null || authToken.isBlank()) {
-                    Notification.show("❌ Please log in first");
-                    return;
-                }
-
-                // Build URL: POST
-                // http://localhost:8080/shops/{shopId}/cart/add?itemId={itemId}&quantity={qty}&token={authToken}
-                String url = "http://localhost:8080/api/users/"
-                        + "/shoppingCart/"
-                        + shop.getShopId()
-                        + "/"
-                        + item.getId()
-                        + "?quantity=" + qty
-                        + "&token=" + authToken;
-
+                String cartUrl = api
+                    + "/users/shoppingCart/"
+                    + shop.getShopId()
+                    + "/" + item.getId()
+                    + "?quantity=" + qty
+                    + "&token=" + getToken();
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);
-                HttpEntity<Void> request = new HttpEntity<>(headers);
-
+                HttpEntity<Void> req = new HttpEntity<>(headers);
                 try {
                     ResponseEntity<Void> resp = restTemplate.exchange(
-                            url,
-                            HttpMethod.POST,
-                            request,
-                            Void.class);
-
+                        cartUrl, HttpMethod.POST, req, Void.class
+                    );
                     if (resp.getStatusCode() == HttpStatus.NO_CONTENT) {
                         Notification.show("🚀 Added “" + item.getName() + "” x" + qty + " to cart");
                     } else {
@@ -282,6 +229,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
                 }
             });
 
+<<<<<<< 491-add-discounts-to-shopview-and-2-small-fixes
             // Create a spacer span that will push buttons to the right
             Span spacer = new Span();
             spacer.getStyle().set("flex-grow", "1");
@@ -331,27 +279,88 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         // Bids section
         H2 bidsHeader = new H2("📢 Bids for This Shop");
         contentLayout.add(bidsHeader);
-        Grid<BidRecieptDTO> shopBidsGrid = new Grid<>(BidRecieptDTO.class, false);
-        shopBidsGrid.addColumn(BidRecieptDTO::getPurchaseId)
-                .setHeader("Bid ID")
-                .setAutoWidth(true);
-        shopBidsGrid.addColumn(dto -> dto.getInitialPrice())
-                .setHeader("Initial Price")
-                .setAutoWidth(true);
-        shopBidsGrid.addColumn(dto -> dto.getHighestBid())
-                .setHeader("Highest Bid")
-                .setAutoWidth(true);
-        shopBidsGrid.addColumn(dto -> dto.isCompleted() ? "Yes" : "No")
-                .setHeader("Completed");
+=======
+            row.add(name, priceSpan, stock, bidButton, qtyField, addBtn);
+            itemsLayout.add(row);
+        });
+        card.add(itemsLayout);
 
-        // When the user clicks a bid row, navigate to /bid/{purchaseId}
-        shopBidsGrid.asSingleSelect().addValueChangeListener(event -> {
-            BidRecieptDTO selected = event.getValue();
-            if (selected != null) {
-                UI.getCurrent().navigate("bid/" + selected.getPurchaseId());
+        // Bids section
+        card.add(new H2("📢 Bids for This Shop"));
+        Map<Integer,String> itemNames = shop.getItems().stream()
+            .collect(Collectors.toMap(ItemDTO::getId, ItemDTO::getName));
+
+>>>>>>> V3
+        Grid<BidRecieptDTO> shopBidsGrid = new Grid<>(BidRecieptDTO.class, false);
+        shopBidsGrid.addColumn(dto ->
+            itemNames.getOrDefault(
+                dto.getItems().keySet().stream().findFirst().orElse(-1), "")
+        ).setHeader("Item Name").setAutoWidth(true);
+
+        shopBidsGrid.addColumn(dto -> matchUserName(dto.getUserId()))
+            .setHeader("Owner Bid Name").setAutoWidth(true);
+        shopBidsGrid.addColumn(BidRecieptDTO::getInitialPrice)
+            .setHeader("Initial Price").setAutoWidth(true);
+        shopBidsGrid.addColumn(BidRecieptDTO::getHighestBid)
+            .setHeader("Highest Bid").setAutoWidth(true);
+        shopBidsGrid.addColumn(dto -> dto.isCompleted() ? "Yes" : "No")
+            .setHeader("Completed").setAutoWidth(true);
+
+        shopBidsGrid.addColumn(new ComponentRenderer<>(dto -> {
+            Span timer = new Span();
+            Runnable update = () -> {
+                LocalDateTime now = LocalDateTime.now();
+                LocalDateTime end = dto.getEndTime();
+                if (end == null) {
+                    timer.setText("—");
+                } else if (end.isBefore(now)) {
+                    timer.setText("Ended");
+                } else {
+                    Duration d = Duration.between(now, end);
+                    timer.setText(String.format(
+                        "%02d:%02d:%02d",
+                        d.toHours(),
+                        d.toMinutesPart(),
+                        d.toSecondsPart()
+                    ));
+                }
+            };
+            update.run();
+            UI ui = UI.getCurrent();
+            ui.setPollInterval(1000);
+            ui.addPollListener(e -> update.run());
+            return timer;
+        })).setHeader("Time Left").setAutoWidth(true);
+
+        shopBidsGrid.addColumn(new ComponentRenderer<>(dto -> {
+            if (dto.getEndTime() != null) {
+                Button btn = new Button("Add Offer", e -> {
+                    Integer me = getUserId();
+                    if (me != null && me.equals(dto.getUserId())) {
+                        Notification.show(
+                            "You cannot place a bid on your own auction",
+                            3000, Position.MIDDLE
+                        );
+                    } else {
+                        UI.getCurrent().navigate("auction/" + dto.getPurchaseId());
+                    }
+                });
+                return btn;
+            } else {
+                return new Span();
+            }
+        })).setHeader("Auction").setAutoWidth(true);
+
+        shopBidsGrid.setAllRowsVisible(true);
+        fetchStoreBids(shopBidsGrid);
+        shopBidsGrid.asSingleSelect().addValueChangeListener(ev -> {
+            BidRecieptDTO sel = ev.getValue();
+            if (sel != null) {
+                UI.getCurrent().navigate("bid/" + sel.getPurchaseId());
             }
         });
 
+<<<<<<< 491-add-discounts-to-shopview-and-2-small-fixes
         contentLayout.add(shopBidsGrid);
         fetchStoreBids(shopBidsGrid);
 
@@ -365,14 +374,40 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         for (ShopReviewDTO rev : shop.getReviews()) {
             contentLayout.add(new Paragraph("👤 " + matchUserName(rev.getUserId()) + ": " 
                     + rev.getReviewText() + " (" + rev.getRating() + ")"));
+=======
+        card.add(shopBidsGrid);
+        card.expand(shopBidsGrid);
+        add(card);
+        expand(card);
+
+        // Reviews section
+        card.add(new H2("📝 Reviews"));
+        double avg = shop.getReviews().stream()
+                        .mapToInt(ShopReviewDTO::getRating)
+                        .average().orElse(0.0);
+        card.add(new Paragraph("⭐ Average Rating: " +
+            String.format("%.1f", avg) + "/5"));
+
+        for (ShopReviewDTO rev : shop.getReviews()) {
+            card.add(new Paragraph(
+                matchUserName(rev.getUserId())
+                + ": " + rev.getReviewText()
+                + " (" + rev.getRating() + ")"
+            ));
+>>>>>>> V3
         }
 
-        Button addReviewButton = new Button("Add Review");
-        addReviewButton.addClickListener(event -> addReview(shop.getShopId()));
-        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+        Button addReviewButton = new Button("Add Review", e ->
+            addReview(shop.getShopId())
+        );
+        if (Boolean.TRUE.equals(
+            VaadinSession.getCurrent().getAttribute("isSuspended")))
+        {
             addReviewButton.setVisible(false);
         }
+        card.add(addReviewButton);
 
+<<<<<<< 491-add-discounts-to-shopview-and-2-small-fixes
         contentLayout.add(addReviewButton);
 
         // reviewContainer = new VerticalLayout(); // <--- set reference
@@ -384,115 +419,120 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         // content.setFlexGrow(1, reviewContainer);
         // add(content);
         // displayReviews();
+=======
+        // add and expand the card
+        add(card);
+        expand(card);
+>>>>>>> V3
     }
 
-    private void displayReviews() {
+    private void fetchStoreBids(Grid<BidRecieptDTO> shopBidsGrid) {
+        try {
+            String authToken = (String) VaadinSession.getCurrent().getAttribute("authToken");
+            if (authToken == null || authToken.isBlank()) {
+                shopBidsGrid.setItems(Collections.emptyList());
+                return;
+            }
+            String url = purchaseHistoryUrl
+                + "/" + shop.getShopId() + "/bids?authToken=" + authToken;
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-        VerticalLayout reviewsLayout = new VerticalLayout();
-
-        for (ShopReviewDTO review : shop.getReviews()) {
-            VerticalLayout singleReview = new VerticalLayout();
-            singleReview.add(
-                    new Span("Rating: " + review.getRating()),
-                    new Span("Comment: " + review.getReviewText()));
-            singleReview.getStyle().set("border", "1px solid #ccc");
-            singleReview.getStyle().set("padding", "10px");
-            singleReview.getStyle().set("margin-bottom", "10px");
-            reviewsLayout.add(singleReview);
+            ResponseEntity<List<BidRecieptDTO>> response = restTemplate.exchange(
+                url, HttpMethod.GET, entity,
+                new ParameterizedTypeReference<>() {}
+            );
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                shopBidsGrid.setItems(response.getBody());
+            } else {
+                add(new H2("Failed to load shop’s bids"));
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            add(new H2("Error fetching shop’s bids"));
         }
-        add(reviewsLayout);
     }
 
-    private void getShopReviews() {
-        // This method is a placeholder for fetching shop reviews.
-        // You can implement it to fetch reviews from the backend or any other source.
-        // Currently, it does nothing.
+    private void loadUsers() {
+        try {
+            String token = getToken();
+            HttpEntity<Void> req = new HttpEntity<>(getHeaders(token));
+            String url = usersUrl + "/allmembers?token=" + token;
+            ResponseEntity<MemberDTO[]> resp = restTemplate.exchange(
+                url, HttpMethod.GET, req, MemberDTO[].class
+            );
+            memberDTOs = resp.getBody() != null
+                ? Arrays.asList(resp.getBody())
+                : Collections.emptyList();
+        } catch (Exception e) {
+            Notification.show("Failed to load users");
+        }
+    }
+
+    private String matchUserName(int userId) {
+        return memberDTOs.stream()
+            .filter(m -> m.getMemberId() == userId)
+            .map(MemberDTO::getUsername)
+            .findFirst()
+            .orElse("Unknown User");
     }
 
     private void addReview(int shopId) {
         Dialog dialog = new Dialog();
-
-        String shopName = (shop != null) ? shop.getName() : ("ID " + shopId);
-        H1 dialogTitle = new H1("Add Review to " + shopName);
-        dialog.add(dialogTitle);
-        VerticalLayout formLayout = new VerticalLayout();
-        formLayout.setSpacing(true);
+        dialog.add(new H1("Add Review to " + shop.getName()));
 
         NumberField ratingField = new NumberField("Rating (1-5)");
-        // Alternatively, use a Slider for rating selection:
         ratingField.setMin(1);
         ratingField.setMax(5);
         ratingField.setStep(1);
-        ratingField.setWidthFull();
-        // ratingField.getStyle().set("border", "2px solid red");
-        ratingField.setVisible(true);
-        // ratingField.setHeight("50px"); // just to see it
 
-        TextField reviewTextField = new TextField("Your Review");
-        reviewTextField.setWidthFull();
+        TextField reviewText = new TextField("Your Review");
+        reviewText.setWidthFull();
 
-        Button submitButton = new Button("Submit Review");
-        submitButton
-                .addClickListener(e -> sendReview(shopId, reviewTextField.getValue(), ratingField.getValue(), dialog));
+        Button submit = new Button("Submit Review", ev ->
+            sendReview(shopId, reviewText.getValue(), ratingField.getValue(), dialog)
+        );
+        Button close = new Button("Close", ev -> dialog.close());
 
-        Button closeButton = new Button("Close", event -> dialog.close());
-
-        formLayout.add(ratingField, reviewTextField, submitButton, closeButton);
-        dialog.add(formLayout);
-
-        // UI.getCurrent().add(dialog);
+        dialog.add(new VerticalLayout(ratingField, reviewText, submit, close));
         dialog.open();
-
     }
 
-    private void sendReview(int shopId, String reviewText, double double_rating, Dialog dialog) {
-        try {
-            if (reviewText == null || reviewText.trim().isEmpty()) {
-                Notification.show("Please enter your review text.");
-                return;
-            }
-
-            if (double_rating != 1.0 && double_rating != 2.0 && double_rating != 3.0 && double_rating != 4.0
-                    && double_rating != 5.0) {
-                Notification.show("Please enter a valid rating between 1 and 5.");
-                return;
-            }
-
-            int rating = ((int) double_rating); // Convert double to int
-
-            String token = getToken();
-            HttpHeaders headers = getHeaders(token);
-            HttpEntity<Void> request = new HttpEntity<>(headers);
-            String url = "http://localhost:8080" + "/api/shops/" + shopId + "/reviews"
-                    + "?token=" + token + "&rating=" + rating + "&reviewText=" + reviewText + "&shopId=" + shopId;
-
-            restTemplate.postForEntity(url, request, Void.class);
-            Notification.show("review added successfully");
-
-            getShopRefresh(shopId); // Refresh the displayed items
-
-            dialog.close();
-
-        } catch (Exception e) {
-            Notification.show("something failed");
+    private void sendReview(int shopId, String text, Double dblRating, Dialog dialog) {
+        if (text == null || text.trim().isEmpty()) {
+            Notification.show("Please enter your review text.");
+            return;
         }
-    }
-
-    private void getShopRefresh(int shopId) {
+        if (dblRating == null || dblRating < 1 || dblRating > 5) {
+            Notification.show("Please enter a valid rating between 1 and 5.");
+            return;
+        }
+        int rating = dblRating.intValue();
         String token = getToken();
-        String url = shopApiUrl + "/" + shopId + "?token=" + token;
+        HttpHeaders headers = getHeaders(token);
+        HttpEntity<Void> req = new HttpEntity<>(headers);
+        String url = shopApiUrl + "/" + shop.getShopId() + "/reviews"
+                   + "?token=" + token
+                   + "&rating=" + rating
+                   + "&reviewText=" + text;
         try {
-            ResponseEntity<ShopDTO> resp = restTemplate.getForEntity(url, ShopDTO.class);
-            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
-                shop = resp.getBody();
-                prices = ShopDTO.itemPricesToMapConverter(shop.getItems(), shop.getItemPrices());
-                buildPage();
-            } else {
-                Notification.show("⚠️ Failed to load shop");
-            }
+            restTemplate.postForEntity(url, req, Void.class);
+            Notification.show("Review added successfully");
+            dialog.close();
+            setParameter(null, String.valueOf(shop.getShopId()));
         } catch (Exception e) {
-            Notification.show("❗ Error loading shop");
+            Notification.show("Error adding review: " + e.getMessage());
         }
+    }
+
+    private Integer getUserId() {
+        Object uid = VaadinSession.getCurrent().getAttribute("userId");
+        if (uid != null) {
+            return Integer.parseInt(uid.toString());
+        }
+        UI.getCurrent().navigate("");
+        return null;
     }
 
     private String getToken() {
@@ -505,22 +545,19 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         return headers;
     }
 
-    private void loadUsers() {
+    private void handleSuspence() {
+        Integer userId = getUserId();
+        String token = getToken();
+        if (userId == null || token == null) return;
+
+        String url = api + "/users/" + userId + "/isSuspended?token=" + token;
         try {
-            String token = getToken();
-            HttpHeaders headers = getHeaders(token);
-            HttpEntity<Void> request = new HttpEntity<>(headers);
-            String url = usersUrl + "/allmembers?token=" + token;
-
-            ResponseEntity<MemberDTO[]> response = restTemplate.exchange(
-                    url, HttpMethod.GET, request, MemberDTO[].class);
-
-            memberDTOs = response.getBody() != null ? Arrays.asList(response.getBody())
-                    : Collections.emptyList();
-
-            
-
+            ResponseEntity<Boolean> resp = restTemplate.getForEntity(url, Boolean.class);
+            VaadinSession.getCurrent()
+                .setAttribute("isSuspended",
+                              resp.getStatusCode().is2xxSuccessful() && Boolean.TRUE.equals(resp.getBody()));
         } catch (Exception e) {
+<<<<<<< 491-add-discounts-to-shopview-and-2-small-fixes
             Notification.show("Failed to load users");
         }
     }
@@ -661,4 +698,9 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<String>,
         return panel;
     }
 
+=======
+            Notification.show("Failed to check suspension status");
+        }
+    }
+>>>>>>> V3
 }

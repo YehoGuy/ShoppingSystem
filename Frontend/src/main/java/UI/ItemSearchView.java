@@ -1,16 +1,7 @@
 package UI;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
-
+import DTOs.ItemDTO;
+import DTOs.ItemReviewDTO;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.JsModule;
@@ -27,88 +18,95 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.*;
+import org.springframework.web.client.RestTemplate;
 
+<<<<<<< 491-add-discounts-to-shopview-and-2-small-fixes
 import DTOs.ItemDTO;
 import DTOs.ItemReviewDTO;
+=======
+import java.util.ArrayList;
+import java.util.List;
+>>>>>>> V3
 
 @Route(value = "items", layout = AppLayoutBasic.class)
 @JsModule("@vaadin/dialog/vaadin-dialog.js")
-// ⬇️ Add this line so NumberField appears in the client
 @JsModule("@vaadin/number-field/vaadin-number-field.js")
-public class ItemSearchView extends VerticalLayout implements BeforeEnterObserver {
-    private List<ItemDTO> allItems = new ArrayList<>();
-    private List<ItemDTO> filteredItems = new ArrayList<>();
-    private VerticalLayout itemsContainer; // <--- FIELD REFERENCE
+public class ItemSearchView extends BaseView implements BeforeEnterObserver {
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate rest = new RestTemplate();
+    private final List<ItemDTO> allItems      = new ArrayList<>();
+    private final List<ItemDTO> filteredItems = new ArrayList<>();
+    private final VerticalLayout itemsContainer = new VerticalLayout();
+    private final String apiBase;
 
-    private final String api;
+    public ItemSearchView(@Value("${url.api}") String api) {
+        // Animated header: icon + title + arrow
+        super("Items", "Discover products", "🛍️", "🔎");
+        this.apiBase = api;
+
+        setSizeFull();
+        setPadding(true);
+        setSpacing(true);
+
+        // 1) Fetch everything up‐front
+        fetchAllItems();
+
+        // 2) Build search bar
+        TextField search = new TextField();
+        search.setPlaceholder("Search items…");
+        search.setWidth("300px");
+        search.addValueChangeListener(e -> filterAndDisplay(e.getValue()));
+
+        // 3) Prepare the container for item cards
+        itemsContainer.setSizeFull();
+        itemsContainer.getStyle()
+            .set("overflow", "auto")
+            .set("padding", "1rem");
+
+        // 4) Wrap both in a styled “card”
+        VerticalLayout card = new VerticalLayout(search, itemsContainer);
+        card.addClassName("view-card");
+        card.setSizeFull();
+        card.setMaxWidth("1000px");
+        card.getStyle()
+            .set("background", "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)")
+            .set("box-shadow", "0 8px 32px rgba(0,0,0,0.1)")
+            .set("padding", "1.5rem");
+
+        // Let the itemsContainer take all leftover space below the search bar
+        card.expand(itemsContainer);
+
+        // 5) Add & expand into the view
+        add(card);
+        expand(card);
+
+        // 6) Initial display
+        filterAndDisplay("");
+    }
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
-        getUserId(); // Ensure userId is set in session
+        // redirect if not logged in
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("");
         }
-
+        // hide “add review” if suspended
         handleSuspence();
     }
 
-    public Integer getUserId() {
-        if (VaadinSession.getCurrent().getAttribute("userId") != null) {
-            return Integer.parseInt(VaadinSession.getCurrent().getAttribute("userId").toString());
-        }
-        UI.getCurrent().navigate(""); // Redirect to login if userId is not set
-        return null; // Return null if userId is not available
-    }
-
-    public ItemSearchView(@Value("${url.api}") String api) {
-        this.api = api;
-
-        setSizeFull();
-        setAlignItems(Alignment.CENTER);
-        setJustifyContentMode(JustifyContentMode.START);
-        setSpacing(true);
-        setPadding(true);
-
-        getItems();
-
-        H1 title = new H1("Available Items");
-        title.getStyle().set("margin-bottom", "10px");
-        add(title);
-
-        TextField searchField = new TextField();
-        searchField.setPlaceholder("Search items...");
-        searchField.addValueChangeListener(e -> searchItems(e.getValue()));
-        searchField.setWidth("300px");
-        add(searchField);
-
-        itemsContainer = new VerticalLayout(); // <--- set reference
-        itemsContainer.setWidth("80%");
-        itemsContainer.setHeight("70vh");
-        itemsContainer.getStyle().set("overflow", "auto");
-
-        HorizontalLayout content = new HorizontalLayout(itemsContainer);
-        content.setWidthFull();
-        content.setHeightFull();
-        content.setFlexGrow(1, itemsContainer);
-        add(content);
-
-        displayItems(filteredItems);
-    }
-
-    private void getItems() {
-        String url = api + "/items/all?token=" + VaadinSession.getCurrent().getAttribute("authToken");
-        ResponseEntity<List<ItemDTO>> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                null,
-                new ParameterizedTypeReference<List<ItemDTO>>() {
-                });
-
-        if (response.getStatusCode().is2xxSuccessful()) {
-            List<ItemDTO> items = response.getBody();
+    private void fetchAllItems() {
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        String url = apiBase + "/items/all?token=" + token;
+        ResponseEntity<List<ItemDTO>> resp = rest.exchange(
+            url, HttpMethod.GET, null,
+            new ParameterizedTypeReference<>() {}
+        );
+        if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
             allItems.clear();
+<<<<<<< 491-add-discounts-to-shopview-and-2-small-fixes
             if (items != null && !items.isEmpty()) {
                 allItems.addAll(items);
                 filteredItems.addAll(allItems);
@@ -117,194 +115,129 @@ public class ItemSearchView extends VerticalLayout implements BeforeEnterObserve
             }
         } else {
             Notification.show("Failed to fetch items");
+=======
+            allItems.addAll(resp.getBody());
+>>>>>>> V3
         }
-
     }
 
-    // search by name
-    private void searchItems(String query) {
+    private void filterAndDisplay(String q) {
         filteredItems.clear();
-        for (ItemDTO item : allItems) {
-            if (item.getName().toLowerCase().contains(query.toLowerCase())) {
-                filteredItems.add(item);
-            }
-        }
-        displayItems(filteredItems);
+        String lower = q == null ? "" : q.toLowerCase();
+        allItems.stream()
+                .filter(i -> i.getName().toLowerCase().contains(lower))
+                .forEach(filteredItems::add);
+        renderCards();
     }
 
-    private void displayItems(List<ItemDTO> items) {
+    private void renderCards() {
         itemsContainer.removeAll();
-
-        if (items.isEmpty()) {
-            Span noItems = new Span("No items found.");
-            noItems.getStyle().set("color", "red").set("font-size", "18px").set("font-weight", "bold");
-            itemsContainer.add(noItems);
+        if (filteredItems.isEmpty()) {
+            Span none = new Span("No items found.");
+            none.getStyle().set("color", "#c00").set("font-size", "1.2rem");
+            itemsContainer.add(none);
             return;
         }
+        for (ItemDTO item : filteredItems) {
+            VerticalLayout card = new VerticalLayout();
+            card.setWidth("100%");
+            card.getStyle()
+                .set("border-radius", "0.75rem")
+                .set("box-shadow", "0 4px 16px rgba(0,0,0,0.08)")
+                .set("padding", "1rem")
+                .set("margin-bottom", "1rem")
+                .set("background", "#fff");
 
-        for (ItemDTO item : items) {
-            VerticalLayout itemCard = new VerticalLayout();
-            itemCard.setWidth("100%");
-            itemCard.getStyle()
-                    .set("border", "1px solid #ccc")
-                    .set("border-radius", "8px")
-                    .set("padding", "10px")
-                    .set("box-shadow", "0 2px 5px rgba(0,0,0,0.05)")
-                    .set("margin-bottom", "10px")
-                    .set("background-color", "#f9f9f9");
+            card.add(
+                new Span("🛒 " + item.getName()),
+                new Span(item.getDescription()),
+                new Span("📦 Category: " + item.getCategory()),
+                new Span("⭐ Rating: " + item.getAverageRating())
+            );
 
-            Span name = new Span("🛒 " + item.getName());
-            name.getStyle().set("font-size", "18px").set("font-weight", "600");
+            // Reviews panel
+            VerticalLayout reviews = new VerticalLayout();
+            reviews.setVisible(false);
+            reviews.getStyle().set("padding", "0.5rem");
 
-            Span description = new Span(item.getDescription());
-            Span category = new Span("📦 Category: " + item.getCategory());
-            Span averageRating = new Span("⭐ Average Rating: " + item.getAverageRating());
-
-            VerticalLayout reviewsLayout = new VerticalLayout();
-            reviewsLayout.setVisible(false); // hidden by default
-
-            // Add reviews to the layout
-            for (ItemReviewDTO review : item.getReviews()) {
-                VerticalLayout singleReview = new VerticalLayout();
-                singleReview.add(
-                        new Span("Rating: " + review.getRating()),
-                        new Span("Comment: " + review.getReviewText()));
-                singleReview.getStyle().set("border", "1px solid #ccc");
-                singleReview.getStyle().set("padding", "10px");
-                singleReview.getStyle().set("margin-bottom", "10px");
-                reviewsLayout.add(singleReview);
+            for (ItemReviewDTO r : item.getReviews()) {
+                Span line = new Span("• [" + r.getRating() + "] " + r.getReviewText());
+                reviews.add(line);
             }
 
-            // Show more button
-            Button showMoreButton = new Button("Show Reviews");
-            showMoreButton.addClickListener(event -> {
-                boolean currentlyVisible = reviewsLayout.isVisible();
-                reviewsLayout.setVisible(!currentlyVisible);
-                showMoreButton.setText(currentlyVisible ? "Show Reviews" : "Hide Reviews");
+            Button toggle = new Button("Show Reviews");
+            toggle.addClickListener(ev -> {
+                boolean vis = reviews.isVisible();
+                reviews.setVisible(!vis);
+                toggle.setText(vis ? "Show Reviews" : "Hide Reviews");
             });
 
-            // add review button
-            Button addReviewButton = new Button("Add Review");
-            addReviewButton.addClickListener(event -> addReview(item.getId()));
-            if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
-                addReviewButton.setVisible(false);
+            Button addRev = new Button("Add Review", ev -> openReviewDialog(item.getId(), item.getName()));
+            if (Boolean.TRUE.equals((Boolean)VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+                addRev.setVisible(false);
             }
 
-            itemCard.add(
-                    name,
-                    description,
-                    category,
-                    averageRating,
-                    reviewsLayout,
-                    showMoreButton,
-                    addReviewButton);
-            itemsContainer.add(itemCard);
+            card.add(toggle, addRev, reviews);
+            itemsContainer.add(card);
         }
     }
 
-    private void addReview(int itemId) {
-        Dialog dialog = new Dialog();
-        ItemDTO item = allItems.stream()
-                .filter(i -> i.getId() == itemId)
-                .findFirst()
-                .orElse(null);
+    private void openReviewDialog(int itemId, String itemName) {
+        Dialog dlg = new Dialog();
+        dlg.setWidth("400px");
 
-        String itemName = (item != null) ? item.getName() : ("ID " + itemId);
-        H1 dialogTitle = new H1("Add Review to " + itemName);
-        dialog.add(dialogTitle);
-        VerticalLayout formLayout = new VerticalLayout();
-        formLayout.setSpacing(true);
+        VerticalLayout form = new VerticalLayout();
+        form.add(new H1("Review “" + itemName + "”"));
 
-        NumberField ratingField = new NumberField("Rating (1-5)");
-        // Alternatively, use a Slider for rating selection:
-        ratingField.setMin(1);
-        ratingField.setMax(5);
-        ratingField.setStep(1);
-        ratingField.setWidthFull();
-        // ratingField.getStyle().set("border", "2px solid red");
-        ratingField.setVisible(true);
-        // ratingField.setHeight("50px"); // just to see it
+        NumberField rating = new NumberField("Rating (1–5)");
+        rating.setMin(1);
+        rating.setMax(5);
+        rating.setStep(1);
+        rating.setWidthFull();
 
-        TextField reviewTextField = new TextField("Your Review");
-        reviewTextField.setWidthFull();
+        TextField text = new TextField("Your Review");
+        text.setWidthFull();
 
-        Button submitButton = new Button("Submit Review");
-        submitButton
-                .addClickListener(e -> sendReview(itemId, reviewTextField.getValue(), ratingField.getValue(), dialog));
+        Button submit = new Button("Submit", ev -> {
+            sendReview(itemId, rating.getValue(), text.getValue(), dlg);
+        });
+        Button cancel = new Button("Cancel", ev -> dlg.close());
 
-        Button closeButton = new Button("Close", event -> dialog.close());
-
-        formLayout.add(ratingField, reviewTextField, submitButton, closeButton);
-        dialog.add(formLayout);
-
-        // UI.getCurrent().add(dialog);
-        dialog.open();
-
+        form.add(rating, text, new HorizontalLayout(submit, cancel));
+        dlg.add(form);
+        dlg.open();
     }
 
-    private void sendReview(int itemId, String reviewText, double double_rating, Dialog dialog) {
-        try {
-            if (reviewText == null || reviewText.trim().isEmpty()) {
-                Notification.show("Please enter your review text.");
-                return;
-            }
-
-            if (double_rating != 1.0 && double_rating != 2.0 && double_rating != 3.0 && double_rating != 4.0
-                    && double_rating != 5.0) {
-                Notification.show("Please enter a valid rating between 1 and 5.");
-                return;
-            }
-
-            int rating = ((int) double_rating); // Convert double to int
-
-            String token = getToken();
-            HttpHeaders headers = getHeaders(token);
-            HttpEntity<Void> request = new HttpEntity<>(headers);
-            String url = "http://localhost:8080" + "/api/items/" + itemId + "/reviews"
-                    + "?token=" + token + "&rating=" + rating + "&reviewText=" + reviewText;
-
-            restTemplate.postForEntity(url, request, Void.class);
-            Notification.show("review added successfully");
-
-            filteredItems.clear();
-            getItems(); // Refresh the user grid
-            displayItems(filteredItems); // Refresh the displayed items
-
-            dialog.close();
-
-        } catch (Exception e) {
-            Notification.show("something failed");
+    private void sendReview(int itemId, Double rating, String review, Dialog dlg) {
+        if (rating == null || rating < 1 || rating > 5) {
+            Notification.show("Rating must be 1–5"); return;
         }
+        if (review == null || review.isBlank()) {
+            Notification.show("Please enter text"); return;
+        }
+        String token = (String)VaadinSession.getCurrent().getAttribute("authToken");
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + token);
+
+        String url = apiBase
+                   + "/items/" + itemId + "/reviews"
+                   + "?token=" + token
+                   + "&rating=" + rating.intValue()
+                   + "&reviewText=" + review;
+
+        rest.postForEntity(url, new HttpEntity<>(headers), Void.class);
+        Notification.show("Review added!");
+        dlg.close();
+        fetchAllItems();
+        filterAndDisplay("");
     }
 
     private void handleSuspence() {
-        Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
-        if (userId == null) {
-            return;
-        }
-        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-        if (token == null) {
-            return;
-        }
-        String url = "http://localhost:8080/api/users" + "/" + userId + "/isSuspended?token=" + token;
-        ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
-
-        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-            VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
-        } else {
-            Notification.show(
-                    "Failed to check admin status");
-        }
+        Integer u = (Integer)VaadinSession.getCurrent().getAttribute("userId");
+        if (u == null) return;
+        String token = (String)VaadinSession.getCurrent().getAttribute("authToken");
+        String url = apiBase + "/users/" + u + "/isSuspended?token=" + token;
+        Boolean suspended = rest.getForObject(url, Boolean.class);
+        VaadinSession.getCurrent().setAttribute("isSuspended", suspended);
     }
-
-    private String getToken() {
-        return (String) VaadinSession.getCurrent().getAttribute("authToken");
-    }
-
-    private HttpHeaders getHeaders(String token) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + token);
-        return headers;
-    }
-
 }

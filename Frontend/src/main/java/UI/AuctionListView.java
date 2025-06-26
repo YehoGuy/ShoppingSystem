@@ -1,61 +1,77 @@
 package UI;
 
-import java.time.LocalDateTime;
-import java.time.Duration;
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
-
+import DTOs.BidRecieptDTO;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
-import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.VaadinSession;
-import com.vaadin.flow.server.auth.AnonymousAllowed;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
+import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.auth.AnonymousAllowed;
+import com.vaadin.flow.server.VaadinSession;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.*;
+import org.springframework.web.client.RestTemplate;
 
-import DTOs.BidRecieptDTO;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.List;
 
-/**
- * List all auctions with current status.
- */
 @Route(value = "auctions", layout = AppLayoutBasic.class)
 @AnonymousAllowed
-public class AuctionListView extends VerticalLayout {
-    
-    private final String apiBase;
+@JsModule("./notification-client.js")
+public class AuctionListView extends BaseView {
 
-    private final String auctionsBaseUrl;
-
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate rest = new RestTemplate();
     private final Grid<BidRecieptDTO> auctionGrid = new Grid<>(BidRecieptDTO.class, false);
+    private final String apiBase;
+    private final String auctionsEndpoint;
 
     public AuctionListView(@Value("${url.api}") String apiBase) {
-        this.apiBase = apiBase;
-        this.auctionsBaseUrl = apiBase + "/purchases/auctions";
+        super("Auctions", "Browse and bid", "🔨", "➡️");
+        this.apiBase         = apiBase;
+        this.auctionsEndpoint = apiBase + "/purchases/auctions";
 
-        getUserId(); // Ensure userId is set in session
-        setPadding(true);
-        setSpacing(true);
+        // Make this view fill the browser
+        setSizeFull();
 
-        H2 header = new H2("Available Auctions");
-        add(header);
+        // ---- wrap your grid in a card ----
+        H2 title = new H2("Available Auctions");
+        title.getStyle().set("margin-bottom", "1rem");
 
-        // Configure the columns you want to show
+        auctionGrid.setWidthFull();
+
+        VerticalLayout card = new VerticalLayout(title, auctionGrid);
+        card.addClassName("view-card");
+        card.setSizeFull();              // card now has 100% height of its parent
+        card.setPadding(true);
+        card.setSpacing(true);
+        card.getStyle()
+            .set("background", "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)")
+            .set("box-shadow", "0 8px 32px rgba(0,0,0,0.1)");
+
+        // tell the card “give all remaining height to the grid”
+        card.expand(auctionGrid);
+
+        // ---- add & expand the card itself ----
+        add(card);
+        expand(card);
+
+        // configure columns & load data
+        configureGrid();
+        fetchAllAuctions();
+    }
+
+
+    private void configureGrid() {
         auctionGrid.addColumn(dto -> getShopName(dto.getStoreId()))
                    .setHeader("Store Name")
                    .setAutoWidth(true);
@@ -65,57 +81,56 @@ public class AuctionListView extends VerticalLayout {
                    .setAutoWidth(true);
 
         auctionGrid.addColumn(dto -> getUserName(dto.getUserId()))
-                   .setHeader("Owner Auction Name")
+                   .setHeader("Owner")
                    .setAutoWidth(true);
 
-        auctionGrid.addColumn(dto -> dto.getPrice())
-                .setHeader("Initial Price")
-                .setAutoWidth(true);
-        auctionGrid.addColumn(dto -> dto.getHighestBid())
-                .setHeader("Highest Bid")
-                .setAutoWidth(true);
+        auctionGrid.addColumn(BidRecieptDTO::getPrice)
+                   .setHeader("Initial Price")
+                   .setAutoWidth(true);
+
+        auctionGrid.addColumn(BidRecieptDTO::getHighestBid)
+                   .setHeader("Highest Bid")
+                   .setAutoWidth(true);
+
         auctionGrid.addColumn(dto -> dto.isCompleted() ? "Yes" : "No")
-                .setHeader("Completed");
+                   .setHeader("Completed")
+                   .setAutoWidth(true);
 
-        add(auctionGrid);
-
-        // add a button to add offer to auction
-        auctionGrid.addColumn(new ComponentRenderer<>(dto -> {
-        Button addOffer = new Button("Add Offer");
-        addOffer.addClickListener(evt -> {
-            Integer me = getUserId();
-            if (me != null && me.equals(dto.getUserId())) {
-                Notification.show(
-                "You cannot place a bid on your own auction",
-                3000,
-                Position.MIDDLE
-                );
-            } else {
-                UI.getCurrent().navigate("auction/" + dto.getPurchaseId());
-            }
-        });
-        return addOffer;
+        // “Add Offer” button column
+        auctionGrid.addColumn(new ComponentRenderer<Button, BidRecieptDTO>(dto -> {
+            Button btn = new Button("Add Offer");
+            btn.addClickListener(e -> {
+                Integer me = getUserId();
+                if (me != null && me.equals(dto.getUserId())) {
+                    Notification.show("You cannot place a bid on your own auction", 3000, Position.MIDDLE);
+                } else {
+                    UI.getCurrent().navigate("auction/" + dto.getPurchaseId());
+                }
+            });
+            return btn;
         }))
-        .setHeader("Auctions")
+        .setHeader("Auction")
         .setAutoWidth(true);
         
-        // ─── Time left column ───────────────────────────────────────────────
+
+        // “Time Left” column with 1s polling
         auctionGrid.addColumn(new ComponentRenderer<>(dto -> {
             Span timer = new Span();
             Runnable update = () -> {
                 LocalDateTime now = LocalDateTime.now();
                 LocalDateTime end = dto.getEndTime();
                 if (end == null) {
-                    timer.setText("—");           // no data
+                    timer.setText("—");
                 } else if (end.isBefore(now)) {
                     timer.setText("Ended");
                 } else {
                     Duration d = Duration.between(now, end);
                     timer.setText(String.format(
                         "%02d:%02d:%02d",
-                        d.toHours(),
-                        d.toMinutesPart(),
-                        d.toSecondsPart()));
+                        d.toHours(), 
+                        d.toMinutesPart(), 
+                        d.toSecondsPart()
+                    ));
                 }
             };
             update.run();
@@ -123,107 +138,85 @@ public class AuctionListView extends VerticalLayout {
             ui.setPollInterval(1000);
             ui.addPollListener(e -> update.run());
             return timer;
-        }))
-        .setHeader("Time Left")
-        .setAutoWidth(true);
-
-        fetchAllAuctions();
-    }
-
-    public Integer getUserId() {
-        if (VaadinSession.getCurrent().getAttribute("userId") != null) {
-            return Integer.parseInt(VaadinSession.getCurrent().getAttribute("userId").toString());
-        }
-        UI.getCurrent().navigate(""); // Redirect to login if userId is not set
-        return null; // Return null if userId is not available
+        })).setHeader("Time Left")
+          .setAutoWidth(true);
     }
 
     private void fetchAllAuctions() {
-        try {
-            String authToken = (String) VaadinSession.getCurrent().getAttribute("authToken");
-            if (authToken == null || authToken.isBlank()) {
-                add(new Text("You must log in to view auctions."));
-                return;
-            }
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null || token.isBlank()) {
+            add(new Text("You must log in to view auctions."));
+            return;
+        }
+        String url = auctionsEndpoint + "?authToken=" + token;
 
-            // Call GET /api/purchases/auctions?authToken=<token>
-            String urlWithToken = auctionsBaseUrl + "?authToken=" + authToken;
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<Void> entity = new HttpEntity<>(headers);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        ResponseEntity<List<BidRecieptDTO>> resp = rest.exchange(
+            url,
+            HttpMethod.GET,
+            new HttpEntity<>(headers),
+            new ParameterizedTypeReference<>() {}
+        );
 
-            ResponseEntity<List<BidRecieptDTO>> response = restTemplate.exchange(
-                    urlWithToken,
-                    HttpMethod.GET,
-                    entity,
-                    new ParameterizedTypeReference<>() {
-                    });
-
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                auctionGrid.setItems(response.getBody());
-            } else {
-                add(new Text("Failed to load auctions"));
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            add(new Text("Error fetching auctions"));
+        if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
+            auctionGrid.setItems(resp.getBody());
+        } else {
+            add(new Text("Failed to load auctions"));
         }
     }
 
+    private Integer getUserId() {
+        Object uid = VaadinSession.getCurrent().getAttribute("userId");
+        if (uid != null) {
+            return Integer.parseInt(uid.toString());
+        }
+        UI.getCurrent().navigate("");
+        return null;
+    }
+
     private String getShopName(int shopId) {
-        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-        if (token == null) return "";
-        String url = apiBase + "/shops/" + shopId + "?token=" + token;
         try {
-            ResponseEntity<JsonNode> r = restTemplate.exchange(
-                url, HttpMethod.GET,
-                new HttpEntity<>(new HttpHeaders()),
-                JsonNode.class
+            ResponseEntity<JsonNode> resp = rest.exchange(
+                apiBase + "/shops/" + shopId + "?token=" + VaadinSession.getCurrent().getAttribute("authToken"),
+                HttpMethod.GET, HttpEntity.EMPTY, JsonNode.class
             );
-            if (r.getStatusCode().is2xxSuccessful() && r.getBody() != null) {
-                return r.getBody().path("name").asText("");
-            }
-        } catch (Exception e) { /* ignore or log */ }
-        return "";
+            return resp.getBody() != null
+                ? resp.getBody().path("name").asText("")
+                : "";
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     private String getUserName(int userId) {
-        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-        if (token == null) return "";
-        String url = apiBase + "/users/" + userId + "?token=" + token;
         try {
-            ResponseEntity<JsonNode> r = restTemplate.exchange(
-                url, 
-                HttpMethod.GET,
-                new HttpEntity<>(new HttpHeaders()),
-                JsonNode.class
+            ResponseEntity<JsonNode> resp = rest.exchange(
+                apiBase + "/users/" + userId + "?token=" + VaadinSession.getCurrent().getAttribute("authToken"),
+                HttpMethod.GET, HttpEntity.EMPTY, JsonNode.class
             );
-            if (r.getStatusCode().is2xxSuccessful() && r.getBody() != null) {
-                return r.getBody().path("username").asText("");
-            }
-        } catch (Exception e) { /* ignore or log */ }
-        return "";
+            return resp.getBody() != null
+                ? resp.getBody().path("username").asText("")
+                : "";
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     private String getItemName(int shopId, BidRecieptDTO bid) {
-        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-        if (token == null) return "";
-        String url = apiBase + "/shops/" + shopId + "/items?token=" + token;
         try {
-            ResponseEntity<JsonNode> r = restTemplate.exchange(
-                url, HttpMethod.GET,
-                new HttpEntity<>(new HttpHeaders()),
-                JsonNode.class
+            ResponseEntity<JsonNode> resp = rest.exchange(
+                apiBase + "/shops/" + shopId + "/items?token=" + VaadinSession.getCurrent().getAttribute("authToken"),
+                HttpMethod.GET, HttpEntity.EMPTY, JsonNode.class
             );
-            if (r.getStatusCode().is2xxSuccessful() && r.getBody() != null) {
-                for (JsonNode item : r.getBody()) {
-                    int id = item.path("id").asInt(-1);
-                    if (bid.getItems().containsKey(id)) {
+            if (resp.getBody() != null) {
+                for (JsonNode item : resp.getBody()) {
+                    if (bid.getItems().containsKey(item.path("id").asInt(-1))) {
                         return item.path("name").asText("");
                     }
                 }
             }
-        } catch (Exception e) { /* ignore or log */ }
+        } catch (Exception e) { /* ignore */ }
         return "";
     }
 }

@@ -188,7 +188,7 @@ public class Bid extends Purchase {
 
     @PrePersist
     @PreUpdate
-    private void prePersist() {
+    public void prePersist() {
         // Sync items to persistedItems
         persistedBiddersIds.clear();
         for (Map.Entry<Integer, Boolean> entry : biddersIds.entrySet()) {

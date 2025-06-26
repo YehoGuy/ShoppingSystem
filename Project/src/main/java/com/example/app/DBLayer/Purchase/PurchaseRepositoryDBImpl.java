@@ -56,6 +56,7 @@ public class PurchaseRepositoryDBImpl implements IPurchaseRepository {
         Bid bid = new Bid(id, userId, storeId, items, initialPrice);
         try {
             jpaRepo.save(bid);
+            bid.prePersist();
             return id;
         } catch (Exception e) {
             throw new OurRuntime("Error when creating bid");
@@ -63,12 +64,13 @@ public class PurchaseRepositoryDBImpl implements IPurchaseRepository {
     }
 
     @Override
-    public int addBid(int userId, int storeId, Map<Integer, Integer> items, int initialPrice,
-            LocalDateTime auctionStart, LocalDateTime auctionEnd) {
+    public int addBid(int userId, int storeId, Map<Integer, Integer> items, int initialPrice, LocalDateTime auctionStart, LocalDateTime auctionEnd) {
         int id = purchaseIdCounter.getAndIncrement();
         Bid bid = new Bid(id, userId, storeId, items, initialPrice, auctionStart, auctionEnd);
         try {
+            
             jpaRepo.save(bid);
+            bid.prePersist();
             return id;
         } catch (Exception e) {
             throw new OurRuntime("Error when creating auction");
@@ -131,4 +133,13 @@ public class PurchaseRepositoryDBImpl implements IPurchaseRepository {
         return reciepts;
     }
 
+
+    private void updateBid(Bid bid) {
+        try {
+            bid.prePersist();
+            jpaRepo.save(bid);
+        } catch (Exception e) {
+            throw new OurRuntime("Error when updating bid.");
+        }
+    }
 }

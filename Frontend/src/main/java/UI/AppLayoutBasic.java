@@ -52,6 +52,7 @@ public class AppLayoutBasic extends AppLayout
         }
     }
 
+
     private Integer getUserId() {
         Object uid = VaadinSession.getCurrent().getAttribute("userId");
         if (uid != null) {
@@ -76,8 +77,8 @@ public class AppLayoutBasic extends AppLayout
         );
         Boolean isAdmin = (Boolean) VaadinSession.getCurrent().getAttribute("isAdmin");
         if (Boolean.TRUE.equals(isAdmin)) {
-            nav.addItem(new SideNavItem("Admin Panel",
-                "/admin", VaadinIcon.SHIELD.create()));
+            sideNav.addItem(new SideNavItem("Admin Panel", "/admin", VaadinIcon.SHIELD.create()));
+
         }
         nav.addItem(new SideNavItem("Logout", "/logout",
             VaadinIcon.SIGN_OUT.create()));
