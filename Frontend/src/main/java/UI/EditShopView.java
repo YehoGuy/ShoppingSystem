@@ -164,7 +164,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
     private void buildUI() {
         removeAll();
 
-        H1 title = new H1("Edit Shop: " + shop.getName());
+        H1 title = new H1("Edit Shop: " + shop.getName() + " 🏬✏️");
         add(title);
 
         // “Add Item” button

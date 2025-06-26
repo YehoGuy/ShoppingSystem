@@ -177,7 +177,7 @@ class PurchaseServiceTests {
 
         service.postBidding(token, pid, 60);
 
-        verify(bid).addBidding(bidder, 60);
+        verify(bid).addBidding(bidder, 60, true);
     }
 
 
@@ -449,7 +449,7 @@ class PurchaseServiceTests {
 
                     try {
                         start.await();
-                        bid.addBidding(bidder, amount);
+                        bid.addBidding(bidder, amount, true);
                     } catch (RuntimeException ignored) {
                         /*
                          * business rules may reject some offers (e.g., too low,
@@ -766,7 +766,7 @@ class PurchaseServiceTests {
 
             service.postBiddingAuction(token, auctionId, bidPrice);
 
-            verify(bid).addBidding(bidder, bidPrice);
+            verify(bid).addBidding(bidder, bidPrice, true);
         }
 
         @Test

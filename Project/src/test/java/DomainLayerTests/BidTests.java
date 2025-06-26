@@ -66,8 +66,8 @@ class BidTests {
         bid.setAuctionStartTime(LocalDateTime.now().minusMinutes(1));
         bid.setAuctionEndTime(LocalDateTime.now().plusMinutes(1));
 
-        bid.addBidding(11, 90); // lower
-        bid.addBidding(12, 100); // equal
+        bid.addBidding(11, 90, true); // lower
+        bid.addBidding(12, 100, true); // equal
 
         assertAll(
                 () -> assertEquals(100, bid.getMaxBidding()),
@@ -116,14 +116,14 @@ class BidTests {
                     } catch (IllegalStateException ignored) {
                     }
                 }, pool),
-                CompletableFuture.runAsync(() -> bid.addBidding(42, 120), pool),
+                CompletableFuture.runAsync(() -> bid.addBidding(42, 120,true), pool),
                 CompletableFuture.runAsync(() -> {
                     try {
                         bid.completePurchase();
                     } catch (IllegalStateException ignored) {
                     }
                 }, pool),
-                CompletableFuture.runAsync(() -> bid.addBidding(43, 130), pool)).join();
+                CompletableFuture.runAsync(() -> bid.addBidding(43, 130, true), pool)).join();
         pool.shutdownNow();
 
         assertTrue(bid.isCompleted());
@@ -146,8 +146,8 @@ class BidTests {
 
         // Writer: one high bid plus many lower bids
         CompletableFuture<Void> writer = CompletableFuture.runAsync(() -> {
-            bid.addBidding(55, 200); // winning bid
-            IntStream.range(0, 50).forEach(i -> bid.addBidding(i, base + i));
+            bid.addBidding(55, 200, true); // winning bid
+            IntStream.range(0, 50).forEach(i -> bid.addBidding(i, base + i, true));
         }, pool);
 
         // Readers continuously snapshot bidder IDs

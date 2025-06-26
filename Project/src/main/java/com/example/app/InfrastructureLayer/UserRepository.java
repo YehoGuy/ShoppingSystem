@@ -769,6 +769,14 @@ public class UserRepository implements IUserRepository {
         throw new OurRuntime("No owner found for shop " + shopId);
     }
   
+
+    @Override
+    public void clearAllBidsFromCloseShopByShopId(int shopId){
+        //TODO
+        return;
+    }
+
+
     @Override
     public void updateUserInDB(Member member) {
         return;

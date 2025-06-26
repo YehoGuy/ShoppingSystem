@@ -2176,4 +2176,21 @@ public class UserService {
         }
     }
 
+    public void clearAllBidsFromCloseShopByShopId(Integer shopId) {
+        try{
+            LoggerService.logMethodExecution("clearAllBidsFromCloseShopByShopId ", shopId);
+            userRepository.clearAllBidsFromCloseShopByShopId(shopId);
+            LoggerService.logMethodExecutionEndVoid("clearAllBidsFromCloseShopByShopId");
+        }catch (OurRuntime e) {
+            LoggerService.logDebug("clearAllBidsFromCloseShopByShopId", e);
+            throw new OurRuntime("clearAllBidsFromCloseShopByShopId: " + e.getMessage(), e);
+        } catch (OurArg e) {
+                LoggerService.logDebug("clearAllBidsFromCloseShopByShopId", e);
+                throw new OurArg("clearAllBidsFromCloseShopByShopId: " + e.getMessage(), e);
+        } catch (Exception e) {
+                    LoggerService.logError("clearAllBidsFromCloseShopByShopId", e, shopId);
+                    throw new OurRuntime("clearAllBidsFromCloseShopByShopId: " + e.getMessage(), e);
+        }
+    }
+
 }

@@ -254,7 +254,7 @@ public class PurchaseService {
                 throw new OurRuntime("Purchase " + purchaseId + " is not a bid");
             }
             
-            ((Bid) purchase).addBidding(userId, bidPrice);
+            ((Bid) purchase).addBidding(userId, bidPrice, true);
             LoggerService.logMethodExecutionEndVoid("postBidding");
         } catch (OurArg e) {
             LoggerService.logDebug("postBidding", e);
@@ -522,7 +522,7 @@ public class PurchaseService {
                 throw new OurRuntime(
                         "User " + userId + " is the owner of the bid " + auctionId + " and cannot bid on it");
             }
-            ((Bid) purchase).addBidding(userId,bidPrice);
+            ((Bid) purchase).addBidding(userId,bidPrice, false);
             LoggerService.logMethodExecutionEndVoid("postBiddingAuction");
         } catch (OurArg e) {
             LoggerService.logDebug("postBiddingAuction", e);

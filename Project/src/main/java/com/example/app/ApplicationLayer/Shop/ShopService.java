@@ -455,6 +455,7 @@ public class ShopService {
             shopRepository.closeShop(shopId);
             userService.closeShopNotification(shopId);
             userService.removeOwnerFromStore(token, userId, shopId);
+            userService.clearAllBidsFromCloseShopByShopId(shopId);
             LoggerService.logMethodExecutionEndVoid("closeShop");
         } catch (OurArg e) {
             LoggerService.logDebug("closeShop", e);

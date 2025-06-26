@@ -386,16 +386,16 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
                     .set("letter-spacing", "0.5px");
 
             // Shop ID badge
-            Span idBadge = new Span("ID: " + s.getShopId());
-            idBadge.getStyle()
-                    .set("background-color", "rgba(255,255,255,0.2)")
-                    .set("padding", "4px 8px")
-                    .set("border-radius", "20px")
-                    .set("font-size", "12px")
-                    .set("font-weight", "500")
-                    .set("margin-left", "auto");
+            // Span idBadge = new Span("ID: " + s.getShopId());
+            // idBadge.getStyle()
+            //         .set("background-color", "rgba(255,255,255,0.2)")
+            //         .set("padding", "4px 8px")
+            //         .set("border-radius", "20px")
+            //         .set("font-size", "12px")
+            //         .set("font-weight", "500")
+            //         .set("margin-left", "auto");
 
-            nameContainer.add(icon, nameText, idBadge);
+            nameContainer.add(icon, nameText);
 
             nameContainer.addClickListener(evt -> {
                 nameContainer.getStyle()

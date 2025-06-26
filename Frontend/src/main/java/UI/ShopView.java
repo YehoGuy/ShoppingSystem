@@ -156,8 +156,12 @@ public class ShopView extends BaseView
                 createBidForItem(item.getId(), shop.getShopId())
             );
 
-            row.add(name, priceSpan, stock, bidButton);
-
+            if(!isOwner(shop.getShopId())){
+                row.add(name, priceSpan, stock, bidButton);
+            }else{
+                row.add(name, priceSpan, stock);
+            }
+            
             // IntegerField to choose quantity
 
             IntegerField qtyField = new IntegerField();
@@ -201,7 +205,11 @@ public class ShopView extends BaseView
             Span spacer = new Span();
             spacer.getStyle().set("flex-grow", "1");
             
-            row.add(name, priceSpan, stock, spacer, qtyField, addBtn, bidButton);
+            if(!isOwner(shop.getShopId())){
+                row.add(name, priceSpan, stock, spacer, qtyField, addBtn, bidButton);
+            }else{
+                row.add(name, priceSpan, stock, spacer, qtyField, addBtn);
+            }
 
             // Create item container with discount info
             VerticalLayout itemContainer = new VerticalLayout();
@@ -614,7 +622,7 @@ public class ShopView extends BaseView
         NumberField initialPriceField = new NumberField("Initial Bid Price ($)");
         initialPriceField.setMin(0.01);
         initialPriceField.setStep(0.01);
-        initialPriceField.setValue(prices.getOrDefault(item, 0.0));
+        // initialPriceField.setValue(prices.getOrDefault(item, 0.0));
         initialPriceField.setWidthFull();
 
         // Quantity field
@@ -643,8 +651,6 @@ public class ShopView extends BaseView
         Button cancelButton = new Button("Cancel", e -> bidDialog.close());
 
         VerticalLayout dialogLayout = new VerticalLayout(
-            new Paragraph("Creating bid for: " + item.getName()),
-            new Paragraph("Current price: $" + prices.getOrDefault(item, 0.0)),
             initialPriceField,
             quantityField,
             new HorizontalLayout(createButton, cancelButton)
@@ -684,6 +690,19 @@ public class ShopView extends BaseView
         } catch (Exception ex) {
             Notification.show("❌ Error creating bid: " + ex.getMessage());
             ex.printStackTrace();
+        }
+    }
+
+    private boolean isOwner(int shopId) {
+        Integer me = getUserId();
+        if (shop == null || me == null) return false;
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        String ownerUrl = usersUrl + "/shops/" + shopId + "/owner?token=" + token;
+        try {
+            ResponseEntity<Integer> resp = restTemplate.getForEntity(ownerUrl, Integer.class);
+            return resp.getStatusCode().is2xxSuccessful() && me.equals(resp.getBody());
+        } catch (Exception e) {
+            return false;
         }
     }
 }
