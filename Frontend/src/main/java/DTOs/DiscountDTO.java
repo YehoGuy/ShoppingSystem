@@ -40,7 +40,7 @@ public class DiscountDTO {
     public String toString() {
         String base;
         if (itemId != null && itemId != 0) {
-            base = "Discount of " + percentage + "% on item with ID " + itemId;
+            base = "Discount of " + percentage + "% on this item";
         } else if (itemCategory != null) {
             base = "Discount of " + percentage + "% on items in category " + itemCategory;
         } else {
