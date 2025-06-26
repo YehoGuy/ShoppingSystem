@@ -153,9 +153,7 @@ public class ShopView extends BaseView
             Span stock      = new Span("📊 In Stock: " + available);
 
             Button bidButton = new Button("Create Bid", ev ->
-                UI.getCurrent().navigate(
-                    "shop/" + shop.getShopId() + "/create-bid/" + item.getId()
-                )
+                createBidForItem(item.getId(), shop.getShopId())
             );
 
             row.add(name, priceSpan, stock, bidButton);
@@ -245,7 +243,7 @@ public class ShopView extends BaseView
         contentLayout.add(itemsLayout);
 
         // Bids section
-        contentLayout.add(new H2("📢 Auctions for This Shop"));
+        contentLayout.add(new H2("📢 Auctions and Bids for This Shop"));
         Map<Integer,String> itemNames = shop.getItems().stream()
             .collect(Collectors.toMap(ItemDTO::getId, ItemDTO::getName));
 
@@ -593,4 +591,99 @@ public class ShopView extends BaseView
         return panel;
     }
 
+    private void createBidForItem(int itemId, int shopId) {
+        Dialog bidDialog = new Dialog();
+        bidDialog.setWidth("400px");
+        bidDialog.add(new H2("Create Bid for Item"));
+
+        // Get item details for display
+        ItemDTO item = shop.getItems().stream()
+            .filter(i -> i.getId() == itemId)
+            .findFirst()
+            .orElse(null);
+        
+        if (item == null) {
+            Notification.show("Item not found");
+            return;
+        }
+
+        bidDialog.add(new Paragraph("Creating bid for: " + item.getName()));
+        bidDialog.add(new Paragraph("Current price: $" + prices.getOrDefault(item, 0.0)));
+
+        // Initial price field
+        NumberField initialPriceField = new NumberField("Initial Bid Price ($)");
+        initialPriceField.setMin(0.01);
+        initialPriceField.setStep(0.01);
+        initialPriceField.setValue(prices.getOrDefault(item, 0.0));
+        initialPriceField.setWidthFull();
+
+        // Quantity field
+        IntegerField quantityField = new IntegerField("Quantity");
+        quantityField.setValue(1);
+        quantityField.setMin(1);
+        quantityField.setStepButtonsVisible(true);
+        quantityField.setWidthFull();
+
+        Button createButton = new Button("Create Bid", e -> {
+            Double initialPrice = initialPriceField.getValue();
+            Integer quantity = quantityField.getValue();
+
+            if (initialPrice == null || initialPrice <= 0) {
+                Notification.show("Please enter a valid initial price");
+                return;
+            }
+            if (quantity == null || quantity <= 0) {
+                Notification.show("Please enter a valid quantity");
+                return;
+            }
+
+            submitBid(shopId, itemId, initialPrice, quantity, 0, bidDialog);
+        });
+
+        Button cancelButton = new Button("Cancel", e -> bidDialog.close());
+
+        VerticalLayout dialogLayout = new VerticalLayout(
+            new Paragraph("Creating bid for: " + item.getName()),
+            new Paragraph("Current price: $" + prices.getOrDefault(item, 0.0)),
+            initialPriceField,
+            quantityField,
+            new HorizontalLayout(createButton, cancelButton)
+        );
+
+        bidDialog.add(dialogLayout);
+        bidDialog.open();
+    }
+
+    private void submitBid(int shopId, int itemId, double initialPrice, int quantity, int duration, Dialog dialog) {
+        try {
+            String token = getToken();
+            String url = api + "/purchases/bids"
+                + "?authToken=" + token
+                + "&storeId=" + shopId
+                + "&initialPrice=" + (int) initialPrice; // Convert to int as expected by API
+
+            // Create the request body with items map
+            Map<Integer, Integer> items = Map.of(itemId, quantity);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Map<Integer, Integer>> request = new HttpEntity<>(items, headers);
+
+            ResponseEntity<Integer> response = restTemplate.postForEntity(url, request, Integer.class);
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                Integer bidId = response.getBody();
+                Notification.show("✅ Bid created successfully! Bid ID: " + bidId);
+                dialog.close();
+                
+                // Navigate to user's bids page
+                UI.getCurrent().navigate("bids");
+            } else {
+                Notification.show("❌ Failed to create bid: " + response.getStatusCode());
+            }
+        } catch (Exception ex) {
+            Notification.show("❌ Error creating bid: " + ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
 }
