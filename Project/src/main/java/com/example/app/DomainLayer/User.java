@@ -2,9 +2,11 @@ package com.example.app.DomainLayer;
 
 import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
 import com.example.app.DomainLayer.Purchase.Address;
+import jakarta.persistence.Embedded;
 
 
 public abstract class User {
+    @Embedded
     protected ShoppingCart shoppingCart; // Shopping cart associated with the user
     protected PaymentMethod paymentMethod; // Payment method associated with the user
     protected Address address; // Shipping address associated with the user
