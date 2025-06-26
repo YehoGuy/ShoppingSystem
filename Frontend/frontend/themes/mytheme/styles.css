@@ -1,5 +1,12 @@
 /* frontend/styles/styles.css */
 
+
+vaadin-app-layout.home-layout {
+  background: none !important;
+  overflow: hidden;
+}
+
+
 /* Ocean vibe */
 html, body, vaadin-app-layout {
   background: linear-gradient(120deg, 
@@ -7,6 +14,7 @@ html, body, vaadin-app-layout {
     #66a6ff 100%);
   min-height: 100vh;
 }
+
 
 /* Header container */
 .view-header {
