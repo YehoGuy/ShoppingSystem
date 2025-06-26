@@ -245,7 +245,7 @@ public class ShopView extends BaseView
         contentLayout.add(itemsLayout);
 
         // Bids section
-        contentLayout.add(new H2("📢 Bids for This Shop"));
+        contentLayout.add(new H2("📢 Auctions for This Shop"));
         Map<Integer,String> itemNames = shop.getItems().stream()
             .collect(Collectors.toMap(ItemDTO::getId, ItemDTO::getName));
 
