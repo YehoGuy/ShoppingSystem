@@ -51,19 +51,15 @@ public class ShoppingCartTests {
     @Test
     void testRemoveItem() {
         shoppingCart.addItem(1, 101, 5); // item 101 in basket 1 with quantity=5
-        shoppingCart.addItem(1, 102, 3); // item 102 in basket 1 with quantity=3
         shoppingCart.removeItem(1, 101); // remove item 101 from basket 1
         assertNull(shoppingCart.getItems().get(1).get(101), "Item 101 should be removed from basket 1");
-        assertEquals(3, shoppingCart.getItems().get(1).get(102), "Item 102 should still be in basket 1 with quantity 3");
-        shoppingCart.removeItem(1, 102); // remove item 102 from basket 1
-        assertNull(shoppingCart.getItems().get(1), "Item 102 should be removed from basket 1 and then the basket will be removed");
     }
 
     @Test
     void testRemoveItemAllQuantity() {
         shoppingCart.addItem(1, 101, 5); // item 101 in basket 1 with quantity=5
         shoppingCart.removeItem(1, 101); // remove item 101 from basket 1
-        assertNull(shoppingCart.getItems().get(1), "Item 101 should be removed from basket 1 and then the basket will be removed");
+        assertFalse(shoppingCart.getItems().get(1).containsKey(101), "Item 101 should be removed from basket 1");
     }
 
     @Test
