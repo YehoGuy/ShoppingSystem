@@ -77,7 +77,7 @@ public class AppLayoutBasic extends AppLayout
         );
         Boolean isAdmin = (Boolean) VaadinSession.getCurrent().getAttribute("isAdmin");
         if (Boolean.TRUE.equals(isAdmin)) {
-            sideNav.addItem(new SideNavItem("Admin Panel", "/admin", VaadinIcon.SHIELD.create()));
+            nav.addItem(new SideNavItem("Admin Panel", "/admin", VaadinIcon.SHIELD.create()));
 
         }
         nav.addItem(new SideNavItem("Logout", "/logout",
