@@ -1,7 +1,27 @@
 package UI;
 
+<<<<<<< 491-add-discounts-to-shopview-and-2-small-fixes
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+
+=======
 import DTOs.*;
 import com.fasterxml.jackson.databind.JsonNode;
+>>>>>>> V3
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.JsModule;
@@ -21,10 +41,19 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
+<<<<<<< 491-add-discounts-to-shopview-and-2-small-fixes
+import DTOs.BidRecieptDTO; // for Map.Entry
+import DTOs.DiscountDTO;
+import DTOs.ItemDTO; // if you use List elsewhere
+import DTOs.MemberDTO;
+import DTOs.ShopDTO;
+import DTOs.ShopReviewDTO;
+=======
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+>>>>>>> V3
 
 @Route(value = "shop", layout = AppLayoutBasic.class)
 @JsModule("@vaadin/dialog/vaadin-dialog.js")
@@ -41,6 +70,7 @@ public class ShopView extends BaseView
     private ShopDTO shop;
     private Map<ItemDTO, Double> prices;
     private List<MemberDTO> memberDTOs = new ArrayList<>();
+    private List<DiscountDTO> discounts = new ArrayList<>();
 
     public ShopView(@Value("${url.api}") String api) {
         super("Shop Details", "Your storefront", "🏬", "➡️");
@@ -89,6 +119,14 @@ public class ShopView extends BaseView
 
     private void buildPage() {
         removeAll();
+<<<<<<< 491-add-discounts-to-shopview-and-2-small-fixes
+        loadUsers(); // Load users to match usernames in reviews
+        loadDiscounts(); // Load discounts for the shop
+        setPadding(true);
+        setSpacing(true);
+
+        // Header with emoji
+=======
         loadUsers();
 
         // wrap everything in a styled card
@@ -102,11 +140,33 @@ public class ShopView extends BaseView
             .set("box-shadow", "0 8px 32px rgba(0,0,0,0.1)");
 
         // Header
+>>>>>>> V3
         H1 header = new H1("🛍️ Welcome to " + shop.getName());
         card.add(header);
 
+        // Create main layout with content and side panel
+        HorizontalLayout mainLayout = new HorizontalLayout();
+        mainLayout.setWidthFull();
+        mainLayout.setSpacing(true);
+
+        // Left side - main content
+        VerticalLayout contentLayout = new VerticalLayout();
+        contentLayout.setWidth("70%");
+        contentLayout.setSpacing(true);
+
+        // Right side - discount panel
+        VerticalLayout discountPanel = createDiscountPanel();
+        discountPanel.setWidth("30%");
+
+        mainLayout.add(contentLayout, discountPanel);
+        add(mainLayout);
+
         // Items section
+<<<<<<< 491-add-discounts-to-shopview-and-2-small-fixes
+        contentLayout.add(new H2("📦 Items"));
+=======
         card.add(new H2("📦 Items"));
+>>>>>>> V3
         VerticalLayout itemsLayout = new VerticalLayout();
         itemsLayout.setWidthFull();
         ShopDTO.itemQuantitiesToMapConverter(
@@ -126,6 +186,12 @@ public class ShopView extends BaseView
                 )
             );
 
+<<<<<<< 491-add-discounts-to-shopview-and-2-small-fixes
+            row.add(name, priceSpan, stock, bidButton);
+
+            // IntegerField to choose quantity
+=======
+>>>>>>> V3
             IntegerField qtyField = new IntegerField();
             qtyField.setLabel("Quantity");
             qtyField.setValue(1);
@@ -163,6 +229,57 @@ public class ShopView extends BaseView
                 }
             });
 
+<<<<<<< 491-add-discounts-to-shopview-and-2-small-fixes
+            // Create a spacer span that will push buttons to the right
+            Span spacer = new Span();
+            spacer.getStyle().set("flex-grow", "1");
+            
+            row.add(name, priceSpan, stock, qtyField, spacer, addBtn, bidButton);
+
+            // Create item container with discount info
+            VerticalLayout itemContainer = new VerticalLayout();
+            itemContainer.setSpacing(false);
+            itemContainer.setPadding(false);
+            itemContainer.getStyle().set("margin-bottom", "16px");
+            itemContainer.getStyle().set("padding", "12px");
+            itemContainer.getStyle().set("border", "1px solid #e0e0e0");
+            itemContainer.getStyle().set("border-radius", "8px");
+            
+            itemContainer.add(row);
+
+            // Add item-specific discounts if any
+            List<DiscountDTO> itemDiscounts = getItemDiscounts(item.getId());
+            if (!itemDiscounts.isEmpty()) {
+                VerticalLayout discountLayout = new VerticalLayout();
+                discountLayout.setSpacing(false);
+                discountLayout.setPadding(false);
+                discountLayout.getStyle().set("margin-top", "8px");
+                
+                for (DiscountDTO discount : itemDiscounts) {
+                    Span discountInfo = new Span("🏷️ " + discount.toString());
+                    discountInfo.getStyle().set("color", "#d32f2f");
+                    discountInfo.getStyle().set("font-weight", "bold");
+                    discountInfo.getStyle().set("font-size", "0.9em");
+                    discountInfo.getStyle().set("background-color", "#ffebee");
+                    discountInfo.getStyle().set("padding", "4px 8px");
+                    discountInfo.getStyle().set("border-radius", "4px");
+                    discountInfo.getStyle().set("display", "inline-block");
+                    discountInfo.getStyle().set("margin-bottom", "4px");
+                    discountLayout.add(discountInfo);
+                }
+                
+                itemContainer.add(discountLayout);
+            }
+
+            itemsLayout.add(itemContainer);
+        }
+
+        contentLayout.add(itemsLayout);
+
+        // Bids section
+        H2 bidsHeader = new H2("📢 Bids for This Shop");
+        contentLayout.add(bidsHeader);
+=======
             row.add(name, priceSpan, stock, bidButton, qtyField, addBtn);
             itemsLayout.add(row);
         });
@@ -173,6 +290,7 @@ public class ShopView extends BaseView
         Map<Integer,String> itemNames = shop.getItems().stream()
             .collect(Collectors.toMap(ItemDTO::getId, ItemDTO::getName));
 
+>>>>>>> V3
         Grid<BidRecieptDTO> shopBidsGrid = new Grid<>(BidRecieptDTO.class, false);
         shopBidsGrid.addColumn(dto ->
             itemNames.getOrDefault(
@@ -242,6 +360,21 @@ public class ShopView extends BaseView
             }
         });
 
+<<<<<<< 491-add-discounts-to-shopview-and-2-small-fixes
+        contentLayout.add(shopBidsGrid);
+        fetchStoreBids(shopBidsGrid);
+
+        // Reviews section
+        contentLayout.add(new H2("📝 Reviews"));
+        double avg = shop.getReviews().stream()
+                .mapToInt(ShopReviewDTO::getRating)
+                .average()
+                .orElse(0.0);
+        contentLayout.add(new Paragraph("⭐ Average Rating: " + String.format("%.1f", avg) + "/5"));
+        for (ShopReviewDTO rev : shop.getReviews()) {
+            contentLayout.add(new Paragraph("👤 " + matchUserName(rev.getUserId()) + ": " 
+                    + rev.getReviewText() + " (" + rev.getRating() + ")"));
+=======
         card.add(shopBidsGrid);
         card.expand(shopBidsGrid);
         add(card);
@@ -261,6 +394,7 @@ public class ShopView extends BaseView
                 + ": " + rev.getReviewText()
                 + " (" + rev.getRating() + ")"
             ));
+>>>>>>> V3
         }
 
         Button addReviewButton = new Button("Add Review", e ->
@@ -273,9 +407,23 @@ public class ShopView extends BaseView
         }
         card.add(addReviewButton);
 
+<<<<<<< 491-add-discounts-to-shopview-and-2-small-fixes
+        contentLayout.add(addReviewButton);
+
+        // reviewContainer = new VerticalLayout(); // <--- set reference
+        // reviewContainer.setWidth("80%");
+        // reviewContainer.getStyle().set("overflow", "auto");
+        // HorizontalLayout content = new HorizontalLayout(reviewContainer);
+        // content.setWidthFull();
+        // content.setHeightFull();
+        // content.setFlexGrow(1, reviewContainer);
+        // add(content);
+        // displayReviews();
+=======
         // add and expand the card
         add(card);
         expand(card);
+>>>>>>> V3
     }
 
     private void fetchStoreBids(Grid<BidRecieptDTO> shopBidsGrid) {
@@ -409,7 +557,150 @@ public class ShopView extends BaseView
                 .setAttribute("isSuspended",
                               resp.getStatusCode().is2xxSuccessful() && Boolean.TRUE.equals(resp.getBody()));
         } catch (Exception e) {
+<<<<<<< 491-add-discounts-to-shopview-and-2-small-fixes
+            Notification.show("Failed to load users");
+        }
+    }
+
+    private void loadDiscounts() {
+        try {
+            String token = getToken();
+            if (token == null) {
+                discounts = Collections.emptyList();
+                return;
+            }
+            
+            String url = shopApiUrl + "/" + shop.getShopId() + "/discounts?token=" + token;
+            
+            ResponseEntity<DiscountDTO[]> response = restTemplate.getForEntity(url, DiscountDTO[].class);
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                discounts = Arrays.asList(response.getBody());
+            } else {
+                discounts = Collections.emptyList();
+            }
+        } catch (Exception e) {
+            discounts = Collections.emptyList();
+            // Silently fail - discounts are optional
+        }
+    }
+
+    private String matchUserName(int userId) {
+        for (MemberDTO member : memberDTOs) {
+            if (member.getMemberId() == userId) {
+                return member.getUsername(); 
+            }
+        }
+        return "Unknown Item";
+    }
+
+
+
+    private void handleSuspence() {
+        Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
+        if (userId == null) {
+            return;
+        }
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            return;
+        }
+        String url = "http://localhost:8080/api/users" + "/" + userId + "/isSuspended?token=" + token;
+        ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
+
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
+        } else {
+            Notification.show(
+                    "Failed to check admin status");
+        }
+    }
+
+    private List<DiscountDTO> getItemDiscounts(int itemId) {
+        return discounts.stream()
+                .filter(discount -> discount.getItemId() != null && discount.getItemId().equals(itemId))
+                .collect(Collectors.toList());
+    }
+
+    private List<DiscountDTO> getGlobalDiscounts() {
+        return discounts.stream()
+                .filter(discount -> discount.getItemId() == 0 && discount.getItemCategory() == null)
+                .collect(Collectors.toList());
+    }
+
+    private List<DiscountDTO> getCategoryDiscounts() {
+        return discounts.stream()
+                .filter(discount -> discount.getItemCategory() != null)
+                .collect(Collectors.toList());
+    }
+
+    private VerticalLayout createDiscountPanel() {
+        VerticalLayout panel = new VerticalLayout();
+        panel.setSpacing(true);
+        panel.setPadding(true);
+        panel.getStyle().set("background-color", "#f5f5f5");
+        panel.getStyle().set("border-radius", "8px");
+        panel.getStyle().set("border", "1px solid #ddd");
+
+        H2 panelTitle = new H2("💸 Active Discounts");
+        panel.add(panelTitle);
+
+        // Global discounts section
+        List<DiscountDTO> globalDiscounts = getGlobalDiscounts();
+        if (!globalDiscounts.isEmpty()) {
+            H2 globalHeader = new H2("🌍 Shop-wide Discounts");
+            globalHeader.getStyle().set("font-size", "1.2em");
+            globalHeader.getStyle().set("color", "#2e7d32");
+            panel.add(globalHeader);
+            
+            for (DiscountDTO discount : globalDiscounts) {
+                Span discountSpan = new Span("🏷️ " + discount.toString());
+                discountSpan.getStyle().set("display", "block");
+                discountSpan.getStyle().set("margin-bottom", "8px");
+                discountSpan.getStyle().set("padding", "8px");
+                discountSpan.getStyle().set("background-color", "#e8f5e8");
+                discountSpan.getStyle().set("border-radius", "4px");
+                panel.add(discountSpan);
+            }
+        }
+        else {
+            Span noGlobalDiscounts = new Span("ℹ️ No global discounts available");
+            noGlobalDiscounts.getStyle().set("font-style", "italic");
+            noGlobalDiscounts.getStyle().set("color", "#666");
+            panel.add(noGlobalDiscounts);
+        }
+
+        // Category discounts section
+        List<DiscountDTO> categoryDiscounts = getCategoryDiscounts();
+        if (!categoryDiscounts.isEmpty()) {
+            H2 categoryHeader = new H2("📂 Category Discounts");
+            categoryHeader.getStyle().set("font-size", "1.2em");
+            categoryHeader.getStyle().set("color", "#1976d2");
+            panel.add(categoryHeader);
+            
+            for (DiscountDTO discount : categoryDiscounts) {
+                Span discountSpan = new Span("🏷️ " + discount.toString());
+                discountSpan.getStyle().set("display", "block");
+                discountSpan.getStyle().set("margin-bottom", "8px");
+                discountSpan.getStyle().set("padding", "8px");
+                discountSpan.getStyle().set("background-color", "#e3f2fd");
+                discountSpan.getStyle().set("border-radius", "4px");
+                panel.add(discountSpan);
+            }
+        }
+        else {
+            Span noCategoryDiscounts = new Span("ℹ️ No category discounts available");
+            noCategoryDiscounts.getStyle().set("font-style", "italic");
+            noCategoryDiscounts.getStyle().set("color", "#666");
+            panel.add(noCategoryDiscounts);
+        }
+
+        return panel;
+    }
+
+=======
             Notification.show("Failed to check suspension status");
         }
     }
+>>>>>>> V3
 }

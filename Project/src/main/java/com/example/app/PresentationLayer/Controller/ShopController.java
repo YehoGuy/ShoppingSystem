@@ -739,7 +739,6 @@ public class ShopController {
             List<DiscountDTO> discountDTOs = discounts.stream()
                     .map(DiscountDTO::fromDomain)
                     .collect(Collectors.toList());
-
             return ResponseEntity.ok(discountDTOs);
 
         } catch (NoSuchElementException ex) {
