@@ -1,15 +1,22 @@
 package UI;
 
-import DTOs.ItemDTO;
-import DTOs.ItemReviewDTO;
-import com.vaadin.flow.component.UI;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
@@ -18,18 +25,10 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.*;
-import org.springframework.web.client.RestTemplate;
 
-<<<<<<< 491-add-discounts-to-shopview-and-2-small-fixes
 import DTOs.ItemDTO;
 import DTOs.ItemReviewDTO;
-=======
-import java.util.ArrayList;
-import java.util.List;
->>>>>>> V3
+
 
 @Route(value = "items", layout = AppLayoutBasic.class)
 @JsModule("@vaadin/dialog/vaadin-dialog.js")
@@ -106,18 +105,10 @@ public class ItemSearchView extends BaseView implements BeforeEnterObserver {
         );
         if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
             allItems.clear();
-<<<<<<< 491-add-discounts-to-shopview-and-2-small-fixes
-            if (items != null && !items.isEmpty()) {
-                allItems.addAll(items);
-                filteredItems.addAll(allItems);
-            } else {
-                Notification.show("No items found.");
-            }
+            allItems.addAll(allItems);
+            filteredItems.addAll(allItems);
         } else {
             Notification.show("Failed to fetch items");
-=======
-            allItems.addAll(resp.getBody());
->>>>>>> V3
         }
     }
 

@@ -14,7 +14,6 @@ import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.RouterLayout;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.theme.lumo.LumoUtility;
@@ -77,7 +76,7 @@ public class AppLayoutBasic extends AppLayout
         );
         Boolean isAdmin = (Boolean) VaadinSession.getCurrent().getAttribute("isAdmin");
         if (Boolean.TRUE.equals(isAdmin)) {
-            sideNav.addItem(new SideNavItem("Admin Panel", "/admin", VaadinIcon.SHIELD.create()));
+            nav.addItem(new SideNavItem("Admin Panel", "/admin", VaadinIcon.SHIELD.create()));
 
         }
         nav.addItem(new SideNavItem("Logout", "/logout",
