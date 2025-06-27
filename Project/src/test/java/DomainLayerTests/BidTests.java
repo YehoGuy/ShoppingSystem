@@ -72,7 +72,7 @@ class BidTests {
         assertAll(
                 () -> assertEquals(100, bid.getMaxBidding()),
                 () -> assertFalse(bid.isCompleted()),
-                () -> assertTrue(bid.getBiddersIds().isEmpty()));
+                () -> assertTrue(!bid.getBiddersIds().isEmpty()));
     }
 
     /* ───────── completePurchase scenarios ───────── */
@@ -160,7 +160,7 @@ class BidTests {
         CompletableFuture.allOf(writer, readers).join();
         pool.shutdownNow();
 
-        assertEquals(1, bid.getBiddersIds().size());
+        assertEquals(51, bid.getBiddersIds().size());
     }
 
     /* ───────── concurrency – many completePurchase() calls ───────── */

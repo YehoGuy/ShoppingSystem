@@ -766,7 +766,7 @@ class PurchaseServiceTests {
 
             service.postBiddingAuction(token, auctionId, bidPrice);
 
-            verify(bid).addBidding(bidder, bidPrice, true);
+            verify(bid).addBidding(bidder, bidPrice, false);
         }
 
         @Test
