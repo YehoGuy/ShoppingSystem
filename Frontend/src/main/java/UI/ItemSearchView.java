@@ -94,7 +94,6 @@ public class ItemSearchView extends BaseView implements BeforeEnterObserver {
         }
         // hide “add review” if suspended
         handleSuspence();
-        fetchAllItems();
     }
 
     private void fetchAllItems() {
