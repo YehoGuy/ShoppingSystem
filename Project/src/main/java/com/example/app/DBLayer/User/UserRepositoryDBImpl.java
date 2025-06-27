@@ -955,7 +955,7 @@ public class UserRepositoryDBImpl implements IUserRepository {
                 .collect(Collectors.toList());
         
         if (members.isEmpty()) {
-            throw new OurRuntime("No owner found for shop ID: " + shopId);
+            return -1;
         }
         
         return members.get(0).getMemberId(); // Assuming only one owner per shop

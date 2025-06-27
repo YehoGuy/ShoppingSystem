@@ -766,7 +766,7 @@ public class UserRepository implements IUserRepository {
                 return member.getMemberId();
             }
         }
-        throw new OurRuntime("No owner found for shop " + shopId);
+        return -1;
     }
 
     @Override

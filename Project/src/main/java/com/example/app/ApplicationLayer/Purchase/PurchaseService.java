@@ -428,7 +428,7 @@ public class PurchaseService {
                 for (BidReciept bid : bids) {
                     int shopId = bid.getShopId();
                     int shopOwnerId = userService.getShopOwner(shopId);
-                    if(shopOwnerId != userId) {
+                    if(shopOwnerId != userId) { //if the shop is closed the shopOwnerId = -1
                         // 2. filter out other users’ bids
                         bids = bids.stream()
                                 .filter(b -> b.getUserId() == userId)
