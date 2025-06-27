@@ -301,24 +301,17 @@ public class PurchaseController {
         try {
             List<BidReciept> finishedBids = purchaseService.getFinishedBidsList(authToken);
             // map domain‐model receipts → DTOs
-            for(BidReciept bid: finishedBids)
-                System.out.println("biddd: " + bid.getShopId());
             List<BidRecieptDTO> dtos = finishedBids.stream()
                 .map(BidRecieptDTO::fromDomain)  
                 .toList();
-            System.out.println("i am here 309");
             return ResponseEntity.ok(dtos);
-        }catch (IllegalArgumentException ex) {
-                        System.out.println("message: " + ex.getMessage() + "stack: " + ex.getStackTrace());
-
+        } catch (IllegalArgumentException ex) {
+            // token invalid
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         } catch (Exception ex) {
-                        System.out.println("message2: " + ex.getMessage() + "stack2: " + ex.getStackTrace());
-
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         } 
     }
-
 
     @GetMapping("/shops/{shopId}/bids")
     public ResponseEntity<?> getStoreBids(

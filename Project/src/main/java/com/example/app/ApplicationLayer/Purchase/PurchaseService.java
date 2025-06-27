@@ -452,6 +452,11 @@ public class PurchaseService {
                         
                 LoggerService.logMethodExecutionEnd("getAllBids", bids);
             }
+            //Sort the list finishedBids so it will return only the bids that the shop is not close
+            List<Integer> closedShopsIds = shopService.getclosedShops(authToken);
+            bids.removeIf(b ->
+                closedShopsIds.contains(b.getShopId())
+            );
             return bids;
         } catch (OurArg e) {
             LoggerService.logDebug("getAllBids", e);
@@ -621,12 +626,6 @@ public class PurchaseService {
             if (bid.isCompleted() == true && bid.getUserId() == userId) {
                 finishedBids.add(bid);
             }
-        }
-        //Sort the list finishedBids so it will return only the bids that the shop is not close
-        List<Integer> closedShopsIds = shopService.getclosedShops(authToken);
-        for(BidReciept bid : finishedBids) {
-            if(closedShopsIds.contains(bid.getShopId()))
-                finishedBids.remove(bid);
         }
         return finishedBids;
     }
