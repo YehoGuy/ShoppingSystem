@@ -66,9 +66,9 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
     private VerticalLayout rolesLayout;
 
     public EditShopView(@Value("${url.api}") String apiBase) {
-        this.apiBase       = apiBase;
-        this.usersBaseUrl  = apiBase + "/users";
-        this.shopsBaseUrl  = apiBase + "/shops";
+        this.apiBase = apiBase;
+        this.usersBaseUrl = apiBase + "/users";
+        this.shopsBaseUrl = apiBase + "/shops";
     }
 
     ////////////////////////
@@ -88,8 +88,9 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             return label;
         }
     }
+
     ////////////////////////
-    /// 
+    ///
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         getUserId(); // Ensure userId is set in session
@@ -107,18 +108,13 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         return null; // Return null if userId is not available
     }
 
-    @ClientCallable
-    public void showNotificationFromJS(String message) {
-        Notification.show(message, 5000, Notification.Position.TOP_CENTER);
-    }
-
     private void loadShopData(int shopId) {
         try {
             String token = getToken();
             String hasRoleUrl = usersBaseUrl + "/hasRole"
-                + "?token="  + token
-                + "&userId=" + getUserId()
-                + "&shopId=" + shopId;
+                    + "?token=" + token
+                    + "&userId=" + getUserId()
+                    + "&shopId=" + shopId;
 
             ResponseEntity<Boolean> hasRoleResponse = restTemplate.getForEntity(hasRoleUrl, Boolean.class);
             if (hasRoleResponse.getStatusCode() != HttpStatus.OK || !hasRoleResponse.getBody()) {
@@ -134,9 +130,9 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                 this.shop = response.getBody();
 
                 String canManageUrl = usersBaseUrl + "/hasPermission?token=" + token
-                      + "&userId=" + getUserId()
-                      + "&shopId=" + shopId
-                      + "&permission=" + PermissionsEnum.manageItems;
+                        + "&userId=" + getUserId()
+                        + "&shopId=" + shopId
+                        + "&permission=" + PermissionsEnum.manageItems;
                 boolean canManageItems = restTemplate.getForEntity(canManageUrl, Boolean.class).getBody();
 
                 if (canManageItems) {
@@ -170,10 +166,10 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         // “Add Item” button
         Button addItemButton;
         String canManageItemUrl = usersBaseUrl + "/hasPermission"
-            + "?token="      + getToken()
-            + "&userId="     + getUserId()
-            + "&shopId="     + shop.getShopId()
-            + "&permission=" + PermissionsEnum.manageItems;
+                + "?token=" + getToken()
+                + "&userId=" + getUserId()
+                + "&shopId=" + shop.getShopId()
+                + "&permission=" + PermissionsEnum.manageItems;
 
         boolean canManageItems = restTemplate.getForEntity(canManageItemUrl, Boolean.class).getBody();
         if (canManageItems) {
@@ -184,12 +180,12 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
 
         // “Close Shop” and “Create New Bid” buttons
         Button closeShopButton;
-        Button createAuctionButton; 
+        Button createAuctionButton;
         String canCloseShopUrl = usersBaseUrl + "/hasPermission"
-            + "?token="      + getToken()
-            + "&userId="     + getUserId()
-            + "&shopId="     + shop.getShopId()
-            + "&permission=" + PermissionsEnum.closeShop;
+                + "?token=" + getToken()
+                + "&userId=" + getUserId()
+                + "&shopId=" + shop.getShopId()
+                + "&permission=" + PermissionsEnum.closeShop;
         boolean canCloseShop = restTemplate.getForEntity(canCloseShopUrl, Boolean.class).getBody();
         if (canCloseShop) {
             closeShopButton = new Button("Close Shop", e -> {
@@ -233,33 +229,33 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         H2 rolesTitle = new H2("Roles and Permissions");
         rolesLayout.removeAll();
         rolesLayout.add(rolesTitle);
-    
+
         if (roles.isEmpty()) {
             rolesLayout.add(new Span("No roles found."));
             return;
         }
-    
+
         // Check permissions once
         String changePermUrl = usersBaseUrl + "/hasPermission"
-            + "?token="     + getToken()
-            + "&userId="    + getUserId()
-            + "&shopId="    + shop.getShopId()
-            + "&permission="+ PermissionsEnum.manageOwners;
+                + "?token=" + getToken()
+                + "&userId=" + getUserId()
+                + "&shopId=" + shop.getShopId()
+                + "&permission=" + PermissionsEnum.manageOwners;
 
         boolean canChangePermissions = restTemplate
-            .getForEntity(changePermUrl, Boolean.class)
-            .getBody();
-    
+                .getForEntity(changePermUrl, Boolean.class)
+                .getBody();
+
         String removePermUrl = usersBaseUrl + "/hasPermission"
-            + "?token="     + getToken()
-            + "&userId="    + getUserId()
-            + "&shopId="    + shop.getShopId()
-            + "&permission="+ PermissionsEnum.manageManagers;
+                + "?token=" + getToken()
+                + "&userId=" + getUserId()
+                + "&shopId=" + shop.getShopId()
+                + "&permission=" + PermissionsEnum.manageManagers;
 
         boolean canRemoveMembers = restTemplate
-            .getForEntity(removePermUrl, Boolean.class)
-            .getBody();
-    
+                .getForEntity(removePermUrl, Boolean.class)
+                .getBody();
+
         // Build list of users with roles
         List<MemberDTO> members = getShopWorkers(shop.getShopId());
         List<UserPermissionsDTO> userPermissionsList = new ArrayList<>();
@@ -267,24 +263,24 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             PermissionsEnum[] perms = roles.get(member.getMemberId());
             if (perms != null) {
                 userPermissionsList.add(
-                    new UserPermissionsDTO(member.getMemberId(), member.getUsername(), perms));
+                        new UserPermissionsDTO(member.getMemberId(), member.getUsername(), perms));
             }
         }
-    
+
         if (userPermissionsList.isEmpty()) {
             rolesLayout.add(new Span("No users with roles found."));
             return;
         }
-    
+
         // Configure grid
         Grid<UserPermissionsDTO> rolesGrid = new Grid<>(UserPermissionsDTO.class, false);
         rolesGrid.addColumn(UserPermissionsDTO::getUsername)
-                 .setHeader("Username").setFlexGrow(1);
+                .setHeader("Username").setFlexGrow(1);
         rolesGrid.addColumn(UserPermissionsDTO::getRoleName)
-                 .setHeader("Role").setFlexGrow(1);
+                .setHeader("Role").setFlexGrow(1);
         rolesGrid.addColumn(UserPermissionsDTO::showPermissions)
-                 .setHeader("Permissions").setFlexGrow(2);
-    
+                .setHeader("Permissions").setFlexGrow(2);
+
         // Change Permissions column (only for manageOwners)
         rolesGrid.addComponentColumn(dto -> {
             Button changeBtn = new Button("Change Permissions", e -> changePermissions(dto));
@@ -292,28 +288,28 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             changeBtn.setVisible(canChangePermissions && !suspended);
             return changeBtn;
         }).setHeader("Change");
-    
+
         // ── Remove column ──
         rolesGrid.addComponentColumn(dto -> {
             Button removeBtn = new Button("Remove", e -> removeMemberFromShop(dto));
             boolean suspended = Boolean.TRUE.equals(VaadinSession.getCurrent().getAttribute("isSuspended"));
             boolean targetIsFounder = Arrays.stream(dto.getPermissions())
-                                            .anyMatch(p -> p == PermissionsEnum.manageOwners);
+                    .anyMatch(p -> p == PermissionsEnum.manageOwners);
             removeBtn.setVisible(canRemoveMembers && !suspended && !targetIsFounder);
             return removeBtn;
         }).setHeader("Remove");
-    
+
         rolesGrid.setItems(userPermissionsList);
-    
+
         // Add Manager button
         Button addManager = new Button("Add Manager", e -> openAddManagerDialog(members));
         if (Boolean.TRUE.equals(VaadinSession.getCurrent().getAttribute("isSuspended"))) {
             addManager.setVisible(false);
         }
-    
+
         rolesLayout.add(addManager, rolesGrid);
     }
-    
+
     // Helper to open the "Add Manager" dialog
     private void openAddManagerDialog(List<MemberDTO> members) {
         Dialog dialog = new Dialog();
@@ -322,19 +318,19 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         usernameField.setItems(getUserNames(notWorking));
         usernameField.setPlaceholder("Select a user");
         usernameField.setClearButtonVisible(true);
-    
+
         // Exclude manageOwners from new assignments
         List<PermissionsEnum> availablePerms = Arrays.stream(PermissionsEnum.values())
-            .filter(p -> p != PermissionsEnum.manageOwners && 
-                         p != PermissionsEnum.suspension &&
-                         p != PermissionsEnum.openClosedShop && // Exclude manageOwners
-                         p != PermissionsEnum.closeShop) // Exclude closeShop
-            .collect(Collectors.toList());
-    
+                .filter(p -> p != PermissionsEnum.manageOwners &&
+                        p != PermissionsEnum.suspension &&
+                        p != PermissionsEnum.openClosedShop && // Exclude manageOwners
+                        p != PermissionsEnum.closeShop) // Exclude closeShop
+                .collect(Collectors.toList());
+
         CheckboxGroup<PermissionsEnum> checkboxGroup = new CheckboxGroup<>();
         checkboxGroup.setLabel("Select Permissions");
         checkboxGroup.setItems(availablePerms);
-    
+
         Button confirm = new Button("Confirm", evt -> {
             String username = usernameField.getValue();
             if (username == null || username.isEmpty()) {
@@ -348,8 +344,8 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             }
             int memberId = getSelectedMemberId(username, notWorking);
             String url = usersBaseUrl + "/shops/" + shop.getShopId()
-                + "/managers?memberId=" + memberId
-                + "&token=" + getToken();
+                    + "/managers?memberId=" + memberId
+                    + "&token=" + getToken();
             ResponseEntity<Void> resp = restTemplate.postForEntity(url, selected, Void.class);
             if (resp.getStatusCode() == HttpStatus.NO_CONTENT) {
                 Notification.show(username + " got a new role in pending roles.");
@@ -359,18 +355,18 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             }
             dialog.close();
         });
-    
+
         dialog.add(new VerticalLayout(usernameField, checkboxGroup, confirm));
         dialog.open();
-    }    
+    }
 
     private void removeMemberFromShop(UserPermissionsDTO dto) {
         Dialog dialog = new Dialog();
         Button confirmButton = new Button("Confirm", evt -> {
             String url = usersBaseUrl + "/shops/" + shop.getShopId()
-                + "/managers/" + dto.getMemberId()
-                + "?token=" + getToken();
-        
+                    + "/managers/" + dto.getMemberId()
+                    + "?token=" + getToken();
+
             ResponseEntity<Void> response = restTemplate.exchange(url, HttpMethod.DELETE, null, Void.class);
             if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
                 Notification.show(dto.getUsername() + " was removed from the shop.");
@@ -395,48 +391,47 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         Dialog dialog = new Dialog();
         // Build a checkbox group without 'manageOwners'
         List<PermissionsEnum> perms = Arrays.stream(PermissionsEnum.values())
-            .filter(p -> p != PermissionsEnum.openClosedShop // Exclude manageOwners
-                    && p != PermissionsEnum.closeShop
-                    && p != PermissionsEnum.suspension) // Exclude closeShop
-            .collect(Collectors.toList());
+                .filter(p -> p != PermissionsEnum.openClosedShop // Exclude manageOwners
+                        && p != PermissionsEnum.closeShop
+                        && p != PermissionsEnum.suspension) // Exclude closeShop
+                .collect(Collectors.toList());
         CheckboxGroup<PermissionsEnum> checkboxGroup = new CheckboxGroup<>();
         checkboxGroup.setLabel("Select Permissions");
         checkboxGroup.setItems(perms);
-    
+
         // Pre-select existing ones (minus manageOwners)
         Set<PermissionsEnum> current = Stream.of(dto.getPermissions())
-            .filter(perms::contains)
-            .collect(Collectors.toSet());
+                .filter(perms::contains)
+                .collect(Collectors.toSet());
         checkboxGroup.setValue(current);
-    
+
         Button confirmButton = new Button("Confirm", evt -> {
             Set<PermissionsEnum> selected = checkboxGroup.getValue();
             if (selected.isEmpty()) {
                 Notification.show("Please select at least one permission.");
                 return;
             }
-    
+
             String url = usersBaseUrl + "/shops/" + shop.getShopId()
-                + "/permissions/" + dto.getMemberId()
-                + "?token=" + getToken();
-        
-    
+                    + "/permissions/" + dto.getMemberId()
+                    + "?token=" + getToken();
+
             // Build JSON headers
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-    
+
             // Wrap your enum array
             PermissionsEnum[] payload = selected.toArray(new PermissionsEnum[0]);
             HttpEntity<PermissionsEnum[]> request = new HttpEntity<>(payload, headers);
-    
+
             try {
                 // Use POST to avoid the 405
                 ResponseEntity<Void> response = restTemplate.exchange(
-                    url, HttpMethod.POST, request, Void.class);
-    
+                        url, HttpMethod.POST, request, Void.class);
+
                 if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
                     Notification.show(dto.getUsername() + "'s permissions were changed.");
-                    DisplayRoles();   // refresh the grid
+                    DisplayRoles(); // refresh the grid
                 } else {
                     Notification.show("Failed to change permissions: " + response.getStatusCode());
                 }
@@ -448,18 +443,18 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                     Notification.show("You don’t have permission to change roles.");
                 } else {
                     Notification.show("Error changing permissions: "
-                                      + e.getStatusCode()
-                                      + " — " + body);
+                            + e.getStatusCode()
+                            + " — " + body);
                 }
             } finally {
                 dialog.close();
             }
         });
-    
+
         boolean isSuspended = Boolean.TRUE.equals(
-            VaadinSession.getCurrent().getAttribute("isSuspended"));
+                VaadinSession.getCurrent().getAttribute("isSuspended"));
         confirmButton.setVisible(!isSuspended);
-    
+
         dialog.add(new VerticalLayout(checkboxGroup, confirmButton));
         dialog.open();
     }
@@ -553,13 +548,12 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         Button confirm = new Button("Add", e -> {
             String token = getToken();
             String url = shopsBaseUrl + "/" + shop.getShopId() + "/items"
-                + "?name="        + name.getValue()
-                + "&description=" + desc.getValue()
-                + "&quantity="    + quantity.getValue().intValue()
-                + "&category="    + (category.getValue() != null ? category.getValue() : "")
-                + "&price="       + price.getValue().intValue()
-                + "&token="       + token;
-
+                    + "?name=" + name.getValue()
+                    + "&description=" + desc.getValue()
+                    + "&quantity=" + quantity.getValue().intValue()
+                    + "&category=" + (category.getValue() != null ? category.getValue() : "")
+                    + "&price=" + price.getValue().intValue()
+                    + "&token=" + token;
 
             ResponseEntity<Void> response = restTemplate.postForEntity(url, null, Void.class);
             if (response.getStatusCode() == HttpStatus.CREATED) {
@@ -583,10 +577,10 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         itemsContainer.removeAll();
 
         String permCheckUrl = usersBaseUrl + "/hasPermission"
-            + "?token="      + getToken()
-            + "&userId="     + getUserId()
-            + "&shopId="     + shop.getShopId()
-            + "&permission=" + PermissionsEnum.manageItems;
+                + "?token=" + getToken()
+                + "&userId=" + getUserId()
+                + "&shopId=" + shop.getShopId()
+                + "&permission=" + PermissionsEnum.manageItems;
 
         boolean canManage = restTemplate.getForEntity(permCheckUrl, Boolean.class).getBody();
         if (!canManage) {
@@ -703,9 +697,9 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
 
     private List<DiscountDTO> getDiscounts() {
         String discountsUrl = shopsBaseUrl
-            + "/" + shop.getShopId()
-            + "/discounts"
-            + "?token=" + getToken();
+                + "/" + shop.getShopId()
+                + "/discounts"
+                + "?token=" + getToken();
 
         ResponseEntity<List<DiscountDTO>> response = restTemplate.exchange(
                 discountsUrl,
@@ -787,7 +781,6 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
                 + "/discount/items/" + id
                 + "?token=" + token;
 
-
         ResponseEntity<Void> resp = restTemplate.exchange(url, HttpMethod.DELETE, null, Void.class);
         if (resp.getStatusCode() == HttpStatus.NO_CONTENT) {
             Notification.show("Item discount removed");
@@ -801,10 +794,9 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
     private void removeCategoryDiscount(ItemCategory category) {
         String token = getToken();
         String url = shopsBaseUrl
-            + "/" + shop.getShopId()
-            + "/discount/categories?category=" + category.name()
-            + "&token=" + token;
-
+                + "/" + shop.getShopId()
+                + "/discount/categories?category=" + category.name()
+                + "&token=" + token;
 
         ResponseEntity<Void> resp = restTemplate.exchange(url, HttpMethod.DELETE, null, Void.class);
         if (resp.getStatusCode() == HttpStatus.NO_CONTENT) {
@@ -819,8 +811,8 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
     private void removeGlobalDiscount() {
         String token = getToken();
         String url = shopsBaseUrl
-            + "/" + shop.getShopId()
-            + "/discount/global?token=" + token;
+                + "/" + shop.getShopId()
+                + "/discount/global?token=" + token;
 
         ResponseEntity<Void> resp = restTemplate.exchange(url, HttpMethod.DELETE, null, Void.class);
         if (resp.getStatusCode() == HttpStatus.NO_CONTENT) {
@@ -1117,8 +1109,8 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
 
     private void shopPolicyApi(int shopId, CompositePolicyDTO dto) {
         String url = shopsBaseUrl
-            + "/" + shopId
-            + "/discount/policy?token=" + getToken();
+                + "/" + shopId
+                + "/discount/policy?token=" + getToken();
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -1151,12 +1143,11 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
     private void applyItemDiscount(int id, int pct, boolean dbl) {
         String token = getToken();
         String url = shopsBaseUrl
-            + "/" + shop.getShopId()
-            + "/discount/items/" + id
-            + "?discount="      + pct
-            + "&isDouble="      + dbl
-            + "&token="         + token;
-
+                + "/" + shop.getShopId()
+                + "/discount/items/" + id
+                + "?discount=" + pct
+                + "&isDouble=" + dbl
+                + "&token=" + token;
 
         ResponseEntity<Void> resp = restTemplate.postForEntity(url, null, Void.class);
         if (resp.getStatusCode() == HttpStatus.NO_CONTENT) {
@@ -1171,12 +1162,11 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
     private void applyCategoryDiscount(ItemCategory category, int pct, boolean dbl) {
         String token = getToken();
         String url = shopsBaseUrl
-            + "/" + shop.getShopId()
-            + "/discount/categories?category=" + category.name()
-            + "&discount="      + pct
-            + "&isDouble="      + dbl
-            + "&token="         + token;
-
+                + "/" + shop.getShopId()
+                + "/discount/categories?category=" + category.name()
+                + "&discount=" + pct
+                + "&isDouble=" + dbl
+                + "&token=" + token;
 
         ResponseEntity<Void> resp = restTemplate.postForEntity(url, null, Void.class);
         if (resp.getStatusCode() == HttpStatus.NO_CONTENT) {
@@ -1191,11 +1181,10 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
     private void applyGlobalDiscount(int pct, boolean dbl) {
         String token = getToken();
         String url = shopsBaseUrl
-            + "/" + shop.getShopId()
-            + "/discount/global?discount=" + pct
-            + "&isDouble="       + dbl
-            + "&token="          + token;
-
+                + "/" + shop.getShopId()
+                + "/discount/global?discount=" + pct
+                + "&isDouble=" + dbl
+                + "&token=" + token;
 
         ResponseEntity<Void> resp = restTemplate.postForEntity(url, null, Void.class);
         if (resp.getStatusCode() == HttpStatus.NO_CONTENT) {
@@ -1219,10 +1208,10 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             Button confirmPrice = new Button("Confirm", evt -> {
                 String token = getToken();
                 String url = shopsBaseUrl
-                    + "/"   + shop.getShopId()
-                    + "/items/" + item.getId()
-                    + "/price?price=" + newPriceField.getValue().intValue()
-                    + "&token="       + token;
+                        + "/" + shop.getShopId()
+                        + "/items/" + item.getId()
+                        + "/price?price=" + newPriceField.getValue().intValue()
+                        + "&token=" + token;
 
                 ResponseEntity<Void> priceResponse = restTemplate.postForEntity(url, null, Void.class);
                 if (priceResponse.getStatusCode().is2xxSuccessful()) {
@@ -1252,10 +1241,10 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             Button confirmSupply = new Button("Confirm", evt -> {
                 String token = getToken();
                 String url = shopsBaseUrl
-                    + "/"          + shop.getShopId()
-                    + "/items/"    + item.getId()
-                    + "/supply?quantity=" + supplyQuantity.getValue()
-                    + "&token="    + token;
+                        + "/" + shop.getShopId()
+                        + "/items/" + item.getId()
+                        + "/supply?quantity=" + supplyQuantity.getValue()
+                        + "&token=" + token;
 
                 ResponseEntity<Void> supplyResponse = restTemplate.postForEntity(url, null, Void.class);
                 if (supplyResponse.getStatusCode().is2xxSuccessful()) {
@@ -1281,9 +1270,9 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         return new Button("Delete Item", e -> {
             String token = getToken();
             String url = shopsBaseUrl
-                + "/"            + shop.getShopId()
-                + "/items/"      + item.getId()
-                + "?token="      + token;
+                    + "/" + shop.getShopId()
+                    + "/items/" + item.getId()
+                    + "?token=" + token;
 
             ResponseEntity<Void> deleteResponse = restTemplate.exchange(url, HttpMethod.DELETE, null, Void.class);
             if (deleteResponse.getStatusCode() == HttpStatus.NO_CONTENT) {
@@ -1308,10 +1297,10 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             Button confirmRemove = new Button("Confirm", evt -> {
                 String token = getToken();
                 String url = shopsBaseUrl
-                    + "/"               + shop.getShopId()
-                    + "/items/"         + item.getId()
-                    + "/supply/remove?supply=" + removeQuantity.getValue()
-                    + "&token="         + token;
+                        + "/" + shop.getShopId()
+                        + "/items/" + item.getId()
+                        + "/supply/remove?supply=" + removeQuantity.getValue()
+                        + "&token=" + token;
 
                 ResponseEntity<Void> removeResponse = restTemplate.postForEntity(url, null, Void.class);
                 if (removeResponse.getStatusCode().is2xxSuccessful()) {
@@ -1376,7 +1365,8 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             for (PermissionsEnum permission : permissions) {
                 if (permission == PermissionsEnum.manageOwners || permission == PermissionsEnum.closeShop)
                     answer = "Founder";
-                if (permission == PermissionsEnum.leaveShopAsOwner && (answer.equals("No Role")|| answer.equals("Manager")))
+                if (permission == PermissionsEnum.leaveShopAsOwner
+                        && (answer.equals("No Role") || answer.equals("Manager")))
                     answer = "Owner";
                 if (permission == PermissionsEnum.leaveShopAsManager && answer.equals("No Role"))
                     answer = "Manager";
@@ -1422,10 +1412,10 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             return;
         }
         String url = usersBaseUrl
-            + "/"    + userId
-            + "/isSuspended?token=" + token;
-            
-            ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
+                + "/" + userId
+                + "/isSuspended?token=" + token;
+
+        ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());

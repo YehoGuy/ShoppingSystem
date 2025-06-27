@@ -22,6 +22,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
+import com.example.app.ApplicationLayer.OurArg;
+import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
 import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.Guest;
@@ -186,7 +188,6 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
         }
     }
-
 
     @PostMapping("/{userId}/admin")
     public ResponseEntity<Void> makeAdmin(
@@ -574,7 +575,6 @@ public class UserController {
         }
     }
 
-
     @DeleteMapping("/shops/{shopId}/assignee/{assigneeId}/all")
     public ResponseEntity<Void> removeAllAssigned(
             @PathVariable @Min(1) int shopId,
@@ -713,8 +713,7 @@ public class UserController {
         }
     }
 
-
-        /*
+    /*
      * Suspend or unsuspend a user (admin-only token).
      * Pass an ISO-8601 timestamp in `until`. To unsuspend, omit the param.
      */
@@ -980,12 +979,23 @@ public class UserController {
             List<BidReciept> won = userService.getAuctionsWinList(userId);
             // map domain‐model receipts → DTOs
             List<BidRecieptDTO> dtos = won.stream()
-                .map(BidRecieptDTO::fromDomain)  
-                .toList();
+                    .map(BidRecieptDTO::fromDomain)
+                    .toList();
             return ResponseEntity.ok(dtos);
         } catch (IllegalArgumentException ex) {
             // token invalid
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/getNotificationsQuantity")
+    public ResponseEntity<Integer> getMissingNotificationsQuantity(@RequestParam String token) {
+        try {
+            return ResponseEntity.ok(userService.getMissingNotificationsQuantity(token));
+        } catch (OurArg | OurRuntime ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }

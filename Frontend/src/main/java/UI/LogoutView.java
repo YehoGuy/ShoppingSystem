@@ -34,9 +34,9 @@ public class LogoutView extends BaseView implements BeforeEnterObserver {
         VerticalLayout card = new VerticalLayout();
         card.addClassName("view-card");
         card.getStyle()
-            .set("background", "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)")
-            .set("padding", "2rem")
-            .set("border-radius", "1rem");
+                .set("background", "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)")
+                .set("padding", "2rem")
+                .set("border-radius", "1rem");
         card.setWidth("360px");
         card.setAlignItems(Alignment.CENTER);
         card.setSpacing(true);
@@ -44,18 +44,18 @@ public class LogoutView extends BaseView implements BeforeEnterObserver {
         // prompt
         H2 prompt = new H2("Are you sure you want to logout?");
         prompt.getStyle()
-            .set("color", "white")
-            .set("margin", "0");
+                .set("color", "white")
+                .set("margin", "0");
 
         // logout button
         Button logoutBtn = new Button("Logout", e -> performLogout());
         logoutBtn.getStyle()
-            .set("width", "100%")
-            .set("background", "linear-gradient(135deg, #ff5f6d 0%, #ffc371 100%)")
-            .set("color", "white")
-            .set("border", "none")
-            .set("border-radius", "0.5rem")
-            .set("padding", "0.75rem 1rem");
+                .set("width", "100%")
+                .set("background", "linear-gradient(135deg, #ff5f6d 0%, #ffc371 100%)")
+                .set("color", "white")
+                .set("border", "none")
+                .set("border-radius", "0.5rem")
+                .set("padding", "0.75rem 1rem");
 
         // Add into card
         card.add(prompt, logoutBtn);
@@ -83,8 +83,7 @@ public class LogoutView extends BaseView implements BeforeEnterObserver {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             ResponseEntity<String> resp = restTemplate.exchange(
-                url, HttpMethod.POST, new HttpEntity<>(headers), String.class
-            );
+                    url, HttpMethod.POST, new HttpEntity<>(headers), String.class);
             if (resp.getStatusCode().is2xxSuccessful()) {
                 VaadinSession.getCurrent().setAttribute("authToken", null);
                 Notification.show("✅ Logged out successfully", 3000, Notification.Position.MIDDLE);
@@ -94,7 +93,13 @@ public class LogoutView extends BaseView implements BeforeEnterObserver {
         } catch (Exception ex) {
             Notification.show("❌ Error during logout", 5000, Notification.Position.MIDDLE);
         }
-
+        disconnectFromWebSocket();
         UI.getCurrent().navigate("");
+    }
+
+    private void disconnectFromWebSocket() {
+        UI.getCurrent()
+                .getPage()
+                .executeJs("window.disconnectWebSocket();");
     }
 }

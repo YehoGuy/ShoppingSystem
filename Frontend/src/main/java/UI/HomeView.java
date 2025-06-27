@@ -1,6 +1,11 @@
 // File: src/main/java/UI/HomeView.java
 package UI;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+
 import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.html.Div;
@@ -23,11 +28,6 @@ public class HomeView extends VerticalLayout implements BeforeEnterObserver {
         }
     }
 
-    @ClientCallable
-    public void showNotificationFromJS(String message) {
-        Notification.show(message, 5000, Notification.Position.TOP_CENTER);
-    }
-
     public HomeView() {
         addClassName("home");
         setSizeFull();
@@ -42,5 +42,17 @@ public class HomeView extends VerticalLayout implements BeforeEnterObserver {
         content.add(title);
 
         add(content);
+
+        checkForNotifications();
+    }
+
+    private void checkForNotifications() {
+        String token = VaadinSession.getCurrent().getAttribute("authToken").toString();
+        String url = "http://localhost:8080/api/users/getNotificationsQuantity?token=" + token;
+        RestTemplate rest = new RestTemplate();
+        ResponseEntity<Integer> quantity = rest.getForEntity(url, Integer.class);
+        if (quantity.getStatusCode() == HttpStatus.OK)
+            if (quantity.getBody() > 0)
+                Notification.show("You have " + quantity.getBody() + " missing notifications.");
     }
 }
