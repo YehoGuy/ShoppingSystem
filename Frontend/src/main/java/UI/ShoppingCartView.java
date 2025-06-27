@@ -17,6 +17,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -255,7 +256,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 buttonLayout.setAlignItems(Alignment.CENTER);
                 buttonLayout.setSpacing(true);
                 return buttonLayout;
-            }).setHeader("Actions").setFlexGrow(0).setWidth("200px");
+            }).setHeader("Auctions").setFlexGrow(0).setWidth("200px");
             add(grid);
         });
 
@@ -279,7 +280,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         wonHeaders.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Void> wonEntity = new HttpEntity<>(wonHeaders);
         ResponseEntity<List<BidRecieptDTO>> wonResp = restTemplate.exchange(
-                URLUser + "/auctions/won?authToken=" + token,
+                URLPurchases + "/auctions/won?authToken=" + token,
                 HttpMethod.GET,
                 wonEntity,
                 new ParameterizedTypeReference<List<BidRecieptDTO>>() {
@@ -304,7 +305,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             });
             return payNow;
         })
-                .setHeader("Action")
+                .setHeader("Auction")
                 .setAutoWidth(true);
 
         if (wonList != null) {
@@ -526,13 +527,24 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         add(new H2("Auctions You Won"));
 
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-        List<BidRecieptDTO> won = restTemplate.exchange(
-                URLUser + "/auctions/won?authToken=" + token,
+
+        List<BidRecieptDTO> won;
+        try {
+            ResponseEntity<List<BidRecieptDTO>> resp = restTemplate.exchange(
+                URLPurchases + "/auctions/won?authToken=" + token,
                 HttpMethod.GET,
                 new HttpEntity<>(new HttpHeaders()),
-                new ParameterizedTypeReference<List<BidRecieptDTO>>() {
-                },
-                token).getBody();
+                new ParameterizedTypeReference<List<BidRecieptDTO>>() {},
+                token
+            );
+            won = resp.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException e) {
+            // Could be 404, 500, etc.
+            H3 error = new H3("Could not load your won auctions right now.");
+            error.getStyle().set("color", "var(--lumo-error-text-color)");
+            add(error);
+            return;
+        }
 
         if (won == null || won.isEmpty()) {
             H3 empty = new H3("You haven't won any auctions yet.");
@@ -543,24 +555,23 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
         Grid<BidRecieptDTO> grid = new Grid<>(BidRecieptDTO.class, false);
         grid.addColumn(BidRecieptDTO::getPurchaseId)
-                .setHeader("Auction ID")
-                .setAutoWidth(true);
+            .setHeader("Auction ID")
+            .setAutoWidth(true);
         grid.addColumn(BidRecieptDTO::getHighestBid)
-                .setHeader("Your Winning Bid")
-                .setAutoWidth(true);
-
-        // <-- THIS is the important change:
+            .setHeader("Your Winning Bid")
+            .setAutoWidth(true);
         grid.addComponentColumn(dto -> {
             Button payNow = new Button("Pay Now");
-            payNow.addClickListener(e -> {payForBid(dto);});
+            payNow.addClickListener(e -> payForBid(dto));
             return payNow;
         })
-                .setHeader("For Payment")
-                .setAutoWidth(true);
+        .setHeader("For Payment")
+        .setAutoWidth(true);
 
         grid.setItems(won);
         add(grid);
     }
+
 
     private void getFinishedBidsSection() {
         add(new H2("Finished Bids"));
@@ -570,14 +581,23 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-        ResponseEntity<List<BidRecieptDTO>> resp = restTemplate.exchange(
+        List<BidRecieptDTO> finished;
+        try {
+            ResponseEntity<List<BidRecieptDTO>> resp = restTemplate.exchange(
                 URLPurchases + "/bids/finished?authToken=" + token,
                 HttpMethod.GET,
                 entity,
-                new ParameterizedTypeReference<List<BidRecieptDTO>>() {
-                },
-                token);
-        List<BidRecieptDTO> finished = resp.getBody();
+                new ParameterizedTypeReference<List<BidRecieptDTO>>() {},
+                token
+            );
+            finished = resp.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException e) {
+            // log if you like: LOG.error("Failed to load finished bids", e);
+            H3 error = new H3("Could not load your finished bids right now.");
+            error.getStyle().set("color", "var(--lumo-error-text-color)");
+            add(error);
+            return;
+        }
 
         if (finished == null || finished.isEmpty()) {
             H3 empty = new H3("You have no finished bids.");
@@ -588,29 +608,29 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
         Grid<BidRecieptDTO> grid = new Grid<>(BidRecieptDTO.class, false);
 
-        // 1) Store Name — now correctly fetched from your shops API:
+        // 1) Store Name
         grid.addColumn(dto -> fetchShopName(dto.getStoreId()))
-                .setHeader("Store Name")
-                .setAutoWidth(true);
+            .setHeader("Store Name")
+            .setAutoWidth(true);
 
-        // 2) Item Name — likewise from your shop’s items endpoint:
+        // 2) Item Name
         grid.addColumn(this::fetchItemName)
-                .setHeader("Item Name")
-                .setAutoWidth(true);
+            .setHeader("Item Name")
+            .setAutoWidth(true);
 
         // 3) Your bid amount
         grid.addColumn(BidRecieptDTO::getHighestBid)
-                .setHeader("Your Bid")
-                .setAutoWidth(true);
+            .setHeader("Your Bid")
+            .setAutoWidth(true);
 
         // 4) “Pay Now”
         grid.addComponentColumn(dto -> {
             Button payNow = new Button("Pay Now");
-            payNow.addClickListener(e -> {payForBid(dto);});
+            payNow.addClickListener(e -> payForBid(dto));
             return payNow;
         })
-                .setHeader("For Payment")
-                .setAutoWidth(true);
+        .setHeader("For Payment")
+        .setAutoWidth(true);
 
         grid.setItems(finished);
         add(grid);

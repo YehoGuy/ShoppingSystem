@@ -162,6 +162,6 @@ public interface IUserRepository {
   
     void updateUserInDB(Member member);
 
-    void clearAllBidsFromCloseShopByShopId(int shopId);
+    // void clearAllBidsFromCloseShopByShopId(int shopId);
 
 }

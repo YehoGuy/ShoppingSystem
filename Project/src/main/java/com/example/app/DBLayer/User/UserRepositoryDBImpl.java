@@ -951,11 +951,11 @@ public class UserRepositoryDBImpl implements IUserRepository {
         return -1;
     } 
 
-    @Override
-    public void clearAllBidsFromCloseShopByShopId(int shopId){
-        //TODO
-        return;
-    }
+    // @Override
+    // public void clearAllBidsFromCloseShopByShopId(int shopId){
+    //     //TODO
+    //     return;
+    // }
     
     @Override
     public void updateUserInDB(Member member) {

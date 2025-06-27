@@ -29,6 +29,7 @@ import com.example.app.DomainLayer.Purchase.IPurchaseRepository;
 import com.example.app.DomainLayer.Purchase.Purchase;
 import com.example.app.DomainLayer.Purchase.Reciept;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
+import com.example.app.DomainLayer.Shop.Shop;
 
 import jakarta.validation.constraints.Min;
 
@@ -621,7 +622,39 @@ public class PurchaseService {
                 finishedBids.add(bid);
             }
         }
+        //Sort the list finishedBids so it will return only the bids that the shop is not close
+        List<Integer> closedShopsIds = shopService.getclosedShops(authToken);
+        for(BidReciept bid : finishedBids) {
+            if(closedShopsIds.contains(bid.getShopId()))
+                finishedBids.remove(bid);
+        }
         return finishedBids;
+    }
+
+
+    public List<BidReciept> getAuctionsWinList(String authToken) {
+        try {
+            int userId = authTokenService.ValidateToken(authToken);
+            LoggerService.logMethodExecution("getAuctionsWinList", userId);
+            List<BidReciept> auctionsWinList = userService.getAuctionsWinList(userId);
+            //Sort auctionsWinList so it will return only the wins that the shop is not close
+            List<Integer> closedShopsIds = shopService.getclosedShops(authToken);
+            for (BidReciept bid : auctionsWinList) {
+                if(closedShopsIds.contains(bid.getShopId()))
+                    auctionsWinList.remove(bid);
+            }
+            LoggerService.logMethodExecutionEnd("getAuctionsWinList", auctionsWinList);
+            return auctionsWinList;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getAuctionsWinList", e);
+            throw new OurRuntime("getAuctionsWinList: " + e.getMessage(), e);
+        } catch (OurArg e) {
+            LoggerService.logDebug("getAuctionsWinList", e);
+            throw new OurArg("getAuctionsWinList: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("getAuctionsWinList", e, authToken);
+            throw new OurRuntime("getAuctionsWinList: " + e.getMessage(), e);
+        }
     }
  
    

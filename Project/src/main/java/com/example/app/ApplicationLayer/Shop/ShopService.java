@@ -455,7 +455,7 @@ public class ShopService {
             shopRepository.closeShop(shopId);
             userService.closeShopNotification(shopId);
             userService.removeOwnerFromStore(token, userId, shopId);
-            userService.clearAllBidsFromCloseShopByShopId(shopId);
+            // userService.clearAllBidsFromCloseShopByShopId(shopId);
             LoggerService.logMethodExecutionEndVoid("closeShop");
         } catch (OurArg e) {
             LoggerService.logDebug("closeShop", e);
@@ -926,5 +926,10 @@ public class ShopService {
             LoggerService.logError("getPolicies", e, shopId, token);
             throw new OurRuntime("Error retrieving policies for shop " + shopId + ": " + e.getMessage(), e);
         }
+    }
+
+    public List<Integer> getclosedShops(String authToken) {
+        //TODO
+        return null;
     }
 }
