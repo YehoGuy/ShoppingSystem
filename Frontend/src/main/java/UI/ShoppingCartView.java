@@ -592,7 +592,15 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             );
             finished = resp.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException e) {
-            // log if you like: LOG.error("Failed to load finished bids", e);
+            // If it's a 404 (not found), treat it as "no bids" rather than an error
+            if (e instanceof HttpClientErrorException.NotFound) {
+                H3 empty = new H3("You have no finished bids.");
+                empty.getStyle().set("color", "var(--lumo-secondary-text-color)");
+                add(empty);
+                return;
+            }
+            // For other errors, show the error message
+            log.error("Failed to load finished bids", e);
             H3 error = new H3("Could not load your finished bids right now.");
             error.getStyle().set("color", "var(--lumo-error-text-color)");
             add(error);
