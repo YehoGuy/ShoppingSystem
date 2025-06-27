@@ -947,15 +947,19 @@ public class UserRepositoryDBImpl implements IUserRepository {
     @Override
     public int getShopOwner(int shopId)
     {
-        //TODO
-        return -1;
+        List<Member> members = jpaRepo.findAll().stream()
+                .filter(user -> user instanceof Member)
+                .map(user -> (Member) user)
+                .filter(member -> member.getRoles().stream()
+                        .anyMatch(role -> role.getShopId() == shopId && role.isOwner()))
+                .collect(Collectors.toList());
+        
+        if (members.isEmpty()) {
+            throw new OurRuntime("No owner found for shop ID: " + shopId);
+        }
+        
+        return members.get(0).getMemberId(); // Assuming only one owner per shop
     } 
-
-    // @Override
-    // public void clearAllBidsFromCloseShopByShopId(int shopId){
-    //     //TODO
-    //     return;
-    // }
     
     @Override
     public void updateUserInDB(Member member) {

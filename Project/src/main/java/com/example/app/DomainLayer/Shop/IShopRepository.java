@@ -262,4 +262,6 @@ public interface IShopRepository {
          */
         List<Policy> getPolicies(int shopId);
 
+        List<Integer> getClosedShops();
+
 }

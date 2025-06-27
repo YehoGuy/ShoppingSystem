@@ -929,7 +929,21 @@ public class ShopService {
     }
 
     public List<Integer> getclosedShops(String authToken) {
-        //TODO
-        return null;
+        try {
+            LoggerService.logMethodExecution("getclosedShops");
+            authTokenService.ValidateToken(authToken);
+            List<Integer> closedShops = shopRepository.getClosedShops();
+            LoggerService.logMethodExecutionEnd("getclosedShops", closedShops);
+            return closedShops;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getclosedShops", e);
+            throw new OurArg("getclosedShops" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getclosedShops", e);
+            throw new OurRuntime("getclosedShops" + e.getMessage());
+        } catch (Exception e) {
+            LoggerService.logError("getclosedShops", e);
+            throw new OurRuntime("Error retrieving closed shops: " + e.getMessage(), e);
+        }
     }
 }
