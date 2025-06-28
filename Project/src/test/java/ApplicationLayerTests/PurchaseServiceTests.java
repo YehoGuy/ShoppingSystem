@@ -2,9 +2,11 @@ package ApplicationLayerTests;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -18,6 +20,7 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.AfterEach;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -34,7 +37,7 @@ import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.Mock;
 
-import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -56,13 +59,13 @@ import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Purchase.PurchaseService;
 import com.example.app.ApplicationLayer.Shop.ShopService;
 import com.example.app.ApplicationLayer.User.UserService;
-import com.example.app.DomainLayer.Notification;
 import com.example.app.DomainLayer.Purchase.Address;
 import com.example.app.DomainLayer.Purchase.Bid;
 import com.example.app.DomainLayer.Purchase.BidReciept;
 import com.example.app.DomainLayer.Purchase.IPurchaseRepository;
 import com.example.app.DomainLayer.Purchase.Purchase;
 import com.example.app.DomainLayer.Purchase.Reciept;
+import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.InfrastructureLayer.PurchaseRepository;
 
 /**
@@ -123,7 +126,7 @@ class PurchaseServiceTests {
         cart.put(shopB, new HashMap<>(cartShopB));
 
         when(auth.ValidateToken(token)).thenReturn(uid);
-        when(users.getUserShoppingCartItems(uid)).thenReturn(new HashMap<>(cart));
+        when(users.getUserShoppingCartItems(uid)).thenReturn(new HashMap<Integer, HashMap<Integer, Integer>>(cart));
         when(shops.purchaseItems(cartShopA, shopA, token)).thenReturn(100.0);
         when(shops.purchaseItems(cartShopB, shopB, token)).thenReturn(50.0);
         when(repo.addPurchase(eq(uid), eq(shopA), eq(cartShopA), eq(100.0), any())).thenReturn(1);
@@ -492,7 +495,7 @@ class PurchaseServiceTests {
         Map<Integer, HashMap<Integer, Integer>> cart = Map.of(shop, new HashMap<>(cartShop));
 
         when(auth.ValidateToken(token)).thenReturn(uid);
-        when(users.getUserShoppingCartItems(uid)).thenReturn(new HashMap<>(cart));
+        when(users.getUserShoppingCartItems(uid)).thenReturn(new HashMap<Integer, HashMap<Integer, Integer>>(cart));
         when(shops.purchaseItems(cartShop, shop, token))
                 .thenThrow(new OurRuntime("purchase error"));
 
@@ -510,7 +513,7 @@ class PurchaseServiceTests {
         Map<Integer, Integer> cartShop = Map.of(2, 2);
         Map<Integer, HashMap<Integer, Integer>> cart = Map.of(shop, new HashMap<>(cartShop));
         when(auth.ValidateToken(token)).thenReturn(uid);
-        when(users.getUserShoppingCartItems(uid)).thenReturn(new HashMap<>(cart));
+        when(users.getUserShoppingCartItems(uid)).thenReturn(new HashMap<Integer, HashMap<Integer, Integer>>(cart));
         when(shops.purchaseItems(cartShop, shop, token)).thenReturn(44.0);
         when(repo.addPurchase(uid, shop, cartShop, 44.0, addr))
                 .thenThrow(new RuntimeException("db fail"));
@@ -786,4 +789,65 @@ class PurchaseServiceTests {
             );
         }
     }
+
+    @Nested @DisplayName("getStorePurchases tests")
+    class StorePurchases {
+        @Test @DisplayName("when user lacks permission should still return history")
+        void noPermission_returnsHistory() throws Exception {
+            String token = "t"; int shop=5;
+            when(auth.ValidateToken(token)).thenReturn(2);
+            HashMap<Integer, PermissionsEnum[]> perms = new HashMap<>();
+            perms.put(2, new PermissionsEnum[]{});
+            when(users.getPermitionsByShop(token, shop)).thenReturn(perms);
+            List<Reciept> list = List.of(mock(Reciept.class));
+            when(repo.getStorePurchases(shop)).thenReturn(list);
+
+            List<Reciept> out = service.getStorePurchases(token, shop);
+            assertEquals(list, out);
+        }
+
+        @Test @DisplayName("when repository throws should wrap in OurRuntime")
+        void repoError_throws() throws Exception{
+            String token = "t"; int shop=5;
+            when(auth.ValidateToken(token)).thenReturn(2);
+            HashMap<Integer, PermissionsEnum[]> permsMap = new HashMap<>();
+            permsMap.put(2, new PermissionsEnum[]{PermissionsEnum.getHistory});
+            when(users.getPermitionsByShop(token, shop)).thenReturn(permsMap);
+            when(repo.getStorePurchases(shop)).thenThrow(new RuntimeException("db"));
+            OurRuntime ex = assertThrows(OurRuntime.class, () -> service.getStorePurchases(token, shop));
+            assertFalse(ex.getMessage().contains("getStorePurchases:"));
+        }
+    }
+
+    @Test @DisplayName("acceptBid should notify owner and finalize bid")
+    void acceptBid_happy() throws Exception {
+        String token = "tok"; int bidId=3;
+        Bid bid = mock(Bid.class);
+        when(repo.getPurchaseById(bidId)).thenReturn(bid);
+        when(auth.ValidateToken(token)).thenReturn(10);
+        when(users.getShopOwner(anyInt())).thenReturn(20);
+        when(users.getUserById(10)).thenReturn(mock(com.example.app.DomainLayer.Member.class));
+
+        service.acceptBid(token, bidId);
+
+        verify(nots).sendToUser(eq(20), eq(token), contains("accepted bid"));
+        // finalizeBid is called internally, so verify repo.getPurchaseById again
+        verify(repo, times(2)).getPurchaseById(bidId);
+    }
+
+    @Test @DisplayName("getAuctionsWinList filters closed shops and missing items")
+    void auctionsWinList_filters() throws Exception {
+        String token = "t"; int uid=2;
+        BidReciept b1 = mock(BidReciept.class);
+        when(b1.getShopId()).thenReturn(1);
+        when(b1.getItems()).thenReturn(Map.of(9,1));
+        when(items.getAllItems(token)).thenReturn(List.of(new com.example.app.DomainLayer.Item.Item(9, "", "", 0)));
+        when(auth.ValidateToken(token)).thenReturn(uid);
+        when(users.getAuctionsWinList(uid)).thenReturn(new ArrayList<>(List.of(b1)));
+        when(shops.getclosedShops(token)).thenReturn(List.of(2));
+
+        List<BidReciept> out = service.getAuctionsWinList(token);
+        assertEquals(1, out.size());
+    }
+
 }
