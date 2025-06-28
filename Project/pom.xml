@@ -221,6 +221,9 @@
                         <configuration>
                             <excludes>
                                 <exclude>com/example/app/PresentationLayer/DTO/**</exclude>
+                                <exclude>**/Config/**</exclude>
+                                <exclude>**/com/example/app/*</exclude>
+                                <exclude>**/com/example/app/WebSocket/**</exclude>
                             </excludes>
                         </configuration>
                     </execution>

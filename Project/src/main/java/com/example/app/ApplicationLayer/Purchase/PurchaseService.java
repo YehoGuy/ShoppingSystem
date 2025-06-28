@@ -422,7 +422,7 @@ public class PurchaseService {
             LoggerService.logMethodExecution("getAllBids", authToken);
             int userId = authTokenService.ValidateToken(authToken);
             // 1. fetch everything...
-            List<BidReciept> bids = purchaseRepository.getAllBids();
+            List<BidReciept> bids = new ArrayList<>(purchaseRepository.getAllBids());
 
             if(fromBid){
                 //find shop owner of each bid - for owner only has to see all bids of his shops

@@ -2,6 +2,8 @@ package PresentationLayerTests;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.junit.jupiter.api.DisplayName;
@@ -9,6 +11,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
@@ -28,6 +31,7 @@ import com.example.app.ApplicationLayer.AuthTokenService;
 import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.Member;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
+import com.example.app.DomainLayer.Roles.Role;
 import com.example.app.PresentationLayer.Controller.UserController;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -547,6 +551,266 @@ public class UserControllerTests {
 
             mvc.perform(post("/api/users/roles/4/decline").param("token", "tok"))
                     .andExpect(status().isConflict());
+        }
+    }
+                                            
+    @Nested
+    @DisplayName("18. ALL MEMBERS")
+    class AllMembers {
+        @Test
+        void success_returns200AndList() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            Member m = new Member(1, "u1", "p", "e@mail", "123", "addr");
+            when(userService.getAllMembers()).thenReturn(Arrays.asList(m));
+
+            mvc.perform(get("/api/users/allmembers").param("token", "tok"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].memberId").value(1));
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken(anyString());
+
+            mvc.perform(get("/api/users/allmembers").param("token", "bad"))
+            .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException()).when(userService).getAllMembers();
+
+            mvc.perform(get("/api/users/allmembers").param("token", "tok"))
+            .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("19. SHOP WORKERS")
+    class ShopWorkers {
+        @Test
+        void success_returns200AndWorkers() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            Member m = new Member(2, "shopGuy", "p", "e", "ph", "ad");
+            when(userService.getShopMembers(42)).thenReturn(List.of(m));
+
+            mvc.perform(get("/api/users/shops/42/workers").param("token", "tok"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].memberId").value(2));
+        }
+        @Test
+        void badToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken(anyString());
+            mvc.perform(get("/api/users/shops/1/workers").param("token","bad"))
+            .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Nested
+    @DisplayName("20. ACCEPTED ROLES")
+    class AcceptedRoles {
+        @Test
+        void badToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException())
+                .when(userService).getAcceptedRoles(anyString());
+
+            mvc.perform(get("/api/users/getAcceptedRoles")
+                        .param("authToken", "bad"))
+            .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void success_returns200AndDTOs() throws Exception {
+            Role accepted = new Role(
+                7,
+                5,
+                new PermissionsEnum[]{ PermissionsEnum.manageItems }
+            );
+            when(userService.getAcceptedRoles("tok"))
+                .thenReturn(List.of(accepted));
+
+            Member bob = new Member(5, "bob", "pw", "bob@mail", "000", "addr");
+            when(userService.getUserById(anyInt())).thenReturn(bob);
+            doNothing().when(userService).validateMemberId(anyInt());
+
+            mvc.perform(get("/api/users/getAcceptedRoles")
+                        .param("authToken", "tok"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].shopId").value(5))
+            .andExpect(jsonPath("$[0].roleName").value("manager"))
+            .andExpect(jsonPath("$[0].permissions[0]").value("manageItems"))
+            .andExpect(jsonPath("$[0].userName").value("bob"));
+        }
+    }
+
+    @Nested
+    @DisplayName("21. PENDING ROLES")
+    class PendingRoles {
+        @Test
+        void success_returns200AndDTOs() throws Exception {
+            Role pending = new Role(9, 8, new PermissionsEnum[]{ PermissionsEnum.manageOwners });
+            when(userService.getPendingRoles("tok"))
+                .thenReturn(List.of(pending));
+
+            Member alice = new Member(8, "alice", "pw", "alice@mail", "111", "home");
+            when(userService.getUserById(anyInt())).thenReturn(alice);
+            doNothing().when(userService).validateMemberId(anyInt());
+
+            mvc.perform(get("/api/users/getPendingRoles")
+                        .param("authToken", "tok"))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$[0].shopId").value(8))
+               .andExpect(jsonPath("$[0].roleName").value("founder"))
+               .andExpect(jsonPath("$[0].permissions[0]").value("manageOwners"))
+               .andExpect(jsonPath("$[0].userName").value("alice"));
+        }
+    }
+
+    @Nested
+    @DisplayName("22. NOTIFICATIONS")
+    class Notifications {
+        @Test
+        void success_returns200AndList() throws Exception {
+            when(userService.getNotificationsAndClear("tok"))
+                .thenReturn(List.of("note1","note2"));
+
+            mvc.perform(get("/api/users/notifications").param("authToken","tok"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0]").value("note1"));
+        }
+    }
+
+    @Nested
+    @DisplayName("23/24. SUSPEND & UNSUSPEND")
+    class SuspendEndpoints {
+        @Test
+        void suspend_success_returns204() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+
+            mvc.perform(post("/api/users/7/suspension")
+                    .param("token","tok")
+                    .param("until","2025-06-28T12:00:00"))
+            .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void unsuspend_success_returns204() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+
+            mvc.perform(post("/api/users/7/unsuspension")
+                    .param("token","tok"))
+            .andExpect(status().isNoContent());
+        }
+    }
+
+    @Nested
+    @DisplayName("25. IS SUSPENDED")
+    class IsSuspended {
+        @Test
+        void true_returns200() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.isSuspended(3)).thenReturn(true);
+
+            mvc.perform(get("/api/users/3/isSuspended").param("token","tok"))
+            .andExpect(status().isOk())
+            .andExpect(content().string("true"));
+        }
+    }
+
+    @Nested
+    @DisplayName("26. LIST SUSPENDED")
+    class ListSuspended {
+        @Test
+        void success_returns200AndIds() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getSuspendedUsers()).thenReturn(List.of(2,3,4));
+
+            mvc.perform(get("/api/users/suspended").param("token","tok"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[1]").value(3));
+        }
+    }
+
+    @Nested
+    @DisplayName("27-30. SHOPPING CART")
+    class ShoppingCartTests {
+        @Test
+        void getCart_returns200AndMap() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            HashMap<Integer,HashMap<Integer,Integer>> cart = new HashMap<>();
+            cart.put(5, new HashMap<>(Map.of(11, 2)));
+            when(userService.getUserShoppingCartItems(99)).thenReturn(cart);
+
+            mvc.perform(get("/api/users/shoppingCart")
+                    .param("token","tok")
+                    .param("userId","99"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.['5']['11']").value(2));
+        }
+
+        @Test
+        void addNewItem_returns204() throws Exception {
+            mvc.perform(post("/api/users/shoppingCart/5/11")
+                    .param("quantity","3")
+                    .param("token","tok"))
+            .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void incrementItem_returns204() throws Exception {
+            mvc.perform(post("/api/users/shoppingCart/5/11/plus")
+                    .param("token","tok")
+                    .param("userId","99"))
+            .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void decrementItem_returns204() throws Exception {
+            mvc.perform(post("/api/users/shoppingCart/5/11/minus")
+                    .param("token","tok")
+                    .param("userId","99"))
+            .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void removeItem_returns204() throws Exception {
+            mvc.perform(post("/api/users/shoppingCart/5/11/remove")
+                    .param("token","tok")
+                    .param("userId","99"))
+            .andExpect(status().isNoContent());
+        }
+    }
+
+    @Nested
+    @DisplayName("31. HAS ROLE & 32. HAS PERMISSION")
+    class RolePermissionChecks {
+        @Test
+        void hasRole_true_returns200() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.hasRoleInShop(6, 7)).thenReturn(true);
+
+            mvc.perform(get("/api/users/hasRole")
+                    .param("token","tok")
+                    .param("userId","6")
+                    .param("shopId","7"))
+            .andExpect(status().isOk())
+            .andExpect(content().string("true"));
+        }
+
+        @Test
+        void hasPerm_true_returns200() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.hasPermission(6, PermissionsEnum.manageItems, 7))
+                .thenReturn(true);
+
+            mvc.perform(get("/api/users/hasPermission")
+                    .param("token","tok")
+                    .param("userId","6")
+                    .param("shopId","7")
+                    .param("permission","manageItems"))
+            .andExpect(status().isOk())
+            .andExpect(content().string("true"));
         }
     }
 }
