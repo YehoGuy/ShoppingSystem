@@ -1,6 +1,7 @@
 package ApplicationLayerTests;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -637,7 +638,7 @@ class PurchaseServiceTests {
     void getAllBids_happyPath() throws Exception {
         String token = "tok";
         int uid = 9;
-        List<BidReciept> bids = List.of();
+        List<BidReciept> bids = new ArrayList<>();  
         when(auth.ValidateToken(token)).thenReturn(uid);
         when(repo.getAllBids()).thenReturn(bids);
         List<BidReciept> out = service.getAllBids(token, true);
