@@ -107,6 +107,9 @@ public class BidsListView extends BaseView {
         // Place New Bid button
         bidGrid.addComponentColumn(dto -> {
             Button place = new Button("Place New Bid");
+            if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+                place.setVisible(false);
+            }
             boolean isOwner    = Objects.equals(getUserId(), dto.getStoreId());
             boolean isComplete = dto.isCompleted();
             place.setEnabled(!isOwner && !isComplete);

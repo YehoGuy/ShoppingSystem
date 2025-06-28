@@ -205,6 +205,9 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
             createAuctionButton = new Button("Create Auction", e -> {
                 UI.getCurrent().navigate("shop/" + shop.getShopId() + "/create-auction");
             });
+            if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+                createAuctionButton.setVisible(false);
+            }
         } else {
             closeShopButton = new Button("Close Shop",
                     e -> Notification.show("You do not have permission to close the shop."));

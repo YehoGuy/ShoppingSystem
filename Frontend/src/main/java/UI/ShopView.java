@@ -156,6 +156,10 @@ public class ShopView extends BaseView
                 createBidForItem(item.getId(), shop.getShopId())
             );
 
+            if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+                bidButton.setVisible(false);
+            }
+
             if(!isOwner(shop.getShopId())){
                 row.add(name, priceSpan, stock, bidButton);
             }else{
@@ -200,6 +204,9 @@ public class ShopView extends BaseView
                     Notification.show("❌ Error adding to cart: " + ex.getMessage());
                 }
             });
+            if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+                addBtn.setVisible(false);
+            }
 
             // Create a spacer span that will push buttons to the right
             Span spacer = new Span();
@@ -309,6 +316,9 @@ public class ShopView extends BaseView
                         UI.getCurrent().navigate("auction/" + dto.getPurchaseId());
                     }
                 });
+                if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+                    btn.setVisible(false);
+                }
                 return btn;
             } else {
                 return new Span();
@@ -647,6 +657,12 @@ public class ShopView extends BaseView
 
             submitBid(shopId, itemId, initialPrice, quantity, 0, bidDialog);
         });
+        
+        if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) 
+        {
+            createButton.setVisible(false);
+        }
+        
 
         Button cancelButton = new Button("Cancel", e -> bidDialog.close());
 
