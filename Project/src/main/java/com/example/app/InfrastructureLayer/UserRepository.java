@@ -736,7 +736,7 @@ public class UserRepository implements IUserRepository {
             throw new OurRuntime("User with ID " + userId + " doesn't exist.");
         }
         Member user = (Member) userMapping.get(userId);
-        return user.getAuctionsWins(); // Assuming Member has a method to get won bids
+        return user.getAuctionsWins(); 
     }
 
     @Override
@@ -765,7 +765,7 @@ public class UserRepository implements IUserRepository {
                 return member.getMemberId();
             }
         }
-        throw new OurRuntime("No owner found for shop " + shopId);
+        return -1;
     }
 
     @Override

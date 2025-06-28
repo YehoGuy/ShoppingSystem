@@ -2200,5 +2200,4 @@ public class UserService {
             throw new OurRuntime("getMissingNotificationsQuantity: " + e.getMessage(), e);
         }
     }
-
 }

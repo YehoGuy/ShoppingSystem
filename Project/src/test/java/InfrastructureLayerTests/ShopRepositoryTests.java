@@ -247,9 +247,9 @@ public class ShopRepositoryTests {
         Shop s = repo.createShop("C", purchasePolicy, shippingMethod);
         assertTrue(repo.getClosedShops().isEmpty());
         repo.closeShop(s.getId());
-        List<Shop> closed = repo.getClosedShops();
+        List<Integer> closed = repo.getClosedShops();
         assertEquals(1, closed.size());
-        assertSame(s, closed.get(0));
+        assertSame(s.getId(), closed.get(0));
     }
 
     // UC16 – policy is a no-op but returns true
@@ -362,9 +362,9 @@ public class ShopRepositoryTests {
         Shop s1 = repo.createShop("C1", purchasePolicy, shippingMethod);
         Shop s2 = repo.createShop("C2", purchasePolicy, shippingMethod);
         repo.closeShop(s1.getId());
-        List<Shop> closed = repo.getClosedShops();
+        List<Integer> closed = repo.getClosedShops();
         assertEquals(1, closed.size());
-        assertSame(s1, closed.get(0));
+        assertSame(s1.getId(), closed.get(0));
         // ensure C2 is still open
         assertDoesNotThrow(() -> repo.getShop(s2.getId()));
     }

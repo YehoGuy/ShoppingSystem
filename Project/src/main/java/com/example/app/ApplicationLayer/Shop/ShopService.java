@@ -455,6 +455,10 @@ public class ShopService {
             shopRepository.closeShop(shopId);
             userService.closeShopNotification(shopId);
             userService.removeOwnerFromStore(token, userId, shopId);
+            List<Item> itemsToRemove = itemService.getAllItems(token);
+            for(Item itemToRemove : itemsToRemove){
+                itemService.deleteItem(itemToRemove.getId(), token);
+            }
             LoggerService.logMethodExecutionEndVoid("closeShop");
         } catch (OurArg e) {
             LoggerService.logDebug("closeShop", e);
@@ -924,6 +928,25 @@ public class ShopService {
         } catch (Exception e) {
             LoggerService.logError("getPolicies", e, shopId, token);
             throw new OurRuntime("Error retrieving policies for shop " + shopId + ": " + e.getMessage(), e);
+        }
+    }
+
+    public List<Integer> getclosedShops(String authToken) {
+        try {
+            LoggerService.logMethodExecution("getclosedShops");
+            authTokenService.ValidateToken(authToken);
+            List<Integer> closedShops = shopRepository.getClosedShops();
+            LoggerService.logMethodExecutionEnd("getclosedShops", closedShops);
+            return closedShops;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getclosedShops", e);
+            throw new OurArg("getclosedShops" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getclosedShops", e);
+            throw new OurRuntime("getclosedShops" + e.getMessage());
+        } catch (Exception e) {
+            LoggerService.logError("getclosedShops", e);
+            throw new OurRuntime("Error retrieving closed shops: " + e.getMessage(), e);
         }
     }
 }

@@ -411,9 +411,11 @@ public class ShopRepository implements IShopRepository {
         }
     }
 
-    public List<Shop> getClosedShops() {
+    @Override
+    public List<Integer> getClosedShops() {
         try {
-            return Collections.unmodifiableList(closedShops);
+            return Collections.unmodifiableList(
+                    closedShops.stream().map(Shop::getId).collect(Collectors.toList()));
         } catch (Exception e) {
             throw new RuntimeException("Error retrieving closed shops: " + e.getMessage(), e);
         }

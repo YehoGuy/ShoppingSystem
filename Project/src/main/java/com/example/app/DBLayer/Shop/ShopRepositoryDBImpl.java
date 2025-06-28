@@ -406,5 +406,16 @@ public class ShopRepositoryDBImpl implements IShopRepository {
 
     }
 
-
+    @Override
+    public List<Integer> getClosedShops() {
+        try {
+            return Collections.unmodifiableList(
+                    jpaRepo.findAll().stream()
+                            .filter(Shop::isClosed)
+                            .map(Shop::getId)
+                            .collect(Collectors.toList()));
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving closed shops: " + e.getMessage(), e);
+        }
+    }
 }
