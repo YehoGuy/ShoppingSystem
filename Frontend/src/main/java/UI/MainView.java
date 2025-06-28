@@ -6,7 +6,6 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
@@ -16,30 +15,36 @@ import com.vaadin.flow.router.Route;
 public class MainView extends VerticalLayout {
 
     public MainView(@Value("${url.api}") String api) {
-        // Make this view fill the screen
+        // make view fill the screen and host the blurred background
+        addClassName("main");
         setSizeFull();
         setPadding(false);
         setSpacing(false);
-        addClassName("main");            // container for background + blur
 
-        // The frosted‐glass card
+        // frosted‐glass panel
         Div content = new Div();
         content.addClassName("main-content");
 
-        // Login / Register
+        // login/register buttons
         Button login    = new Button("Login",    e -> getUI().ifPresent(u -> u.navigate("login")));
         Button register = new Button("Register", e -> getUI().ifPresent(u -> u.navigate("register")));
 
+        // Vaadin primary + custom pill styling
         login.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_LARGE);
         register.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_LARGE);
+        login.addClassName("pill-button");
+        register.addClassName("pill-button");
 
-        // Wrap in a HorizontalLayout
+        // horizontal button bar
         HorizontalLayout buttons = new HorizontalLayout(login, register);
+        buttons.addClassName("hero-buttons");
+        buttons.setPadding(false);
         buttons.setSpacing(true);
-        buttons.setPadding(true);
-        buttons.setAlignItems(Alignment.CENTER);
-        
-        content.add(login, register);
+
+        // add just the button bar (no title) to the frosted card
+        content.add(buttons);
+
+        // show it
         add(content);
     }
 }

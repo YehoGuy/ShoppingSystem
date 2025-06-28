@@ -132,7 +132,6 @@ public class ItemSearchView extends BaseView implements BeforeEnterObserver {
         itemsContainer.removeAll();
         if (filteredItems.isEmpty()) {
             Span none = new Span("No items found.");
-            none.getStyle().set("color", "#c00").set("font-size", "1.2rem");
             itemsContainer.add(none);
             return;
         }

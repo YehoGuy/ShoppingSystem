@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.time.ZoneId;
 
@@ -22,6 +23,7 @@ import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Shop.ShopService;
 import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.Member;
+import com.example.app.DomainLayer.Item.Item;
 import com.example.app.DomainLayer.Purchase.Address;
 import com.example.app.DomainLayer.Purchase.Bid;
 import com.example.app.DomainLayer.Purchase.BidReciept;
@@ -29,7 +31,6 @@ import com.example.app.DomainLayer.Purchase.IPurchaseRepository;
 import com.example.app.DomainLayer.Purchase.Purchase;
 import com.example.app.DomainLayer.Purchase.Reciept;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
-import com.example.app.DomainLayer.Shop.Shop;
 
 import jakarta.validation.constraints.Min;
 
@@ -454,8 +455,16 @@ public class PurchaseService {
             }
             //Sort the list finishedBids so it will return only the bids that the shop is not close
             List<Integer> closedShopsIds = shopService.getclosedShops(authToken);
-            bids.removeIf(b ->
-                closedShopsIds.contains(b.getShopId())
+                bids.removeIf(b ->
+                    closedShopsIds.contains(b.getShopId())
+            );
+
+            //drop bids whose item no longer exists
+            Set<Integer> validItemIds = itemService.getAllItems(authToken).stream()
+                .map(Item::getId)
+                .collect(Collectors.toSet());
+            bids.removeIf(b -> b.getItems().keySet().stream()
+                .anyMatch(itemId -> !validItemIds.contains(itemId))
             );
             return bids;
         } catch (OurArg e) {
@@ -638,10 +647,18 @@ public class PurchaseService {
             List<BidReciept> auctionsWinList = userService.getAuctionsWinList(userId);
             //Sort auctionsWinList so it will return only the wins that the shop is not close
             List<Integer> closedShopsIds = shopService.getclosedShops(authToken);
-            for (BidReciept bid : auctionsWinList) {
-                if(closedShopsIds.contains(bid.getShopId()))
-                    auctionsWinList.remove(bid);
-            }
+                auctionsWinList.removeIf(b ->
+                    closedShopsIds.contains(b.getShopId())
+            );
+
+            //drop aucntions whose item no longer exists
+            Set<Integer> validItemIds = itemService.getAllItems(authToken).stream()
+                .map(Item::getId)
+                .collect(Collectors.toSet());
+            auctionsWinList.removeIf(b -> b.getItems().keySet().stream()
+                .anyMatch(itemId -> !validItemIds.contains(itemId))
+            );
+            
             LoggerService.logMethodExecutionEnd("getAuctionsWinList", auctionsWinList);
             return auctionsWinList;
         } catch (OurRuntime e) {

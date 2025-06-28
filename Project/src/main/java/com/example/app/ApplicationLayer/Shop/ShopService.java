@@ -455,6 +455,10 @@ public class ShopService {
             shopRepository.closeShop(shopId);
             userService.closeShopNotification(shopId);
             userService.removeOwnerFromStore(token, userId, shopId);
+            List<Item> itemsToRemove = itemService.getAllItems(token);
+            for(Item itemToRemove : itemsToRemove){
+                itemService.deleteItem(itemToRemove.getId(), token);
+            }
             LoggerService.logMethodExecutionEndVoid("closeShop");
         } catch (OurArg e) {
             LoggerService.logDebug("closeShop", e);

@@ -60,6 +60,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
     private final String apiBase;
     private final String usersBaseUrl;
     private final String shopsBaseUrl;
+    private final String itemsBaseUrl;
     private ShopDTO shop;
     private Map<ItemDTO, Integer> allItemPrices;
     private VerticalLayout itemsContainer;
@@ -69,6 +70,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         this.apiBase       = apiBase;
         this.usersBaseUrl  = apiBase + "/users";
         this.shopsBaseUrl  = apiBase + "/shops";
+        this.itemsBaseUrl  = apiBase + "/items";
     }
 
     ////////////////////////
@@ -1280,18 +1282,24 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         }
         return new Button("Delete Item", e -> {
             String token = getToken();
-            String url = shopsBaseUrl
-                + "/"            + shop.getShopId()
-                + "/items/"      + item.getId()
+            String url = itemsBaseUrl
+                + "/" + item.getId()
                 + "?token="      + token;
 
-            ResponseEntity<Void> deleteResponse = restTemplate.exchange(url, HttpMethod.DELETE, null, Void.class);
+             // send the token in the Authorization header
+            HttpHeaders headers = new HttpHeaders();
+            headers.setBearerAuth(token);
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+
+            ResponseEntity<Void> deleteResponse =
+                restTemplate.exchange(url, HttpMethod.DELETE, request, Void.class);
+
             if (deleteResponse.getStatusCode() == HttpStatus.NO_CONTENT) {
                 Notification.show("Item deleted successfully");
                 loadShopData(shop.getShopId());
                 displayItems();
             } else {
-                Notification.show("Failed to delete item");
+                Notification.show("Failed to delete item: " + deleteResponse.getStatusCode());
             }
         });
     }

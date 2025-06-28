@@ -403,8 +403,8 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                         URLShop + "/" + id + "?token=" + token,
                         HttpMethod.GET,
                         entity,
-                        ShopDTO.class,
-                        token);
+                        ShopDTO.class
+                        );
                 if (resp.getBody() != null) {
                     result.add(resp.getBody());
                 }
@@ -554,12 +554,22 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         }
 
         Grid<BidRecieptDTO> grid = new Grid<>(BidRecieptDTO.class, false);
-        grid.addColumn(BidRecieptDTO::getPurchaseId)
-            .setHeader("Auction ID")
+        // 1) Store Name
+        grid.addColumn(dto -> fetchShopName(dto.getStoreId()))
+            .setHeader("Store Name")
             .setAutoWidth(true);
+
+        // 2) Item Name
+        grid.addColumn(this::fetchItemName)
+            .setHeader("Item Name")
+            .setAutoWidth(true);
+        
+        // 3) Your Winning Bid
         grid.addColumn(BidRecieptDTO::getHighestBid)
             .setHeader("Your Winning Bid")
             .setAutoWidth(true);
+        
+        // 4) “Pay Now”
         grid.addComponentColumn(dto -> {
             Button payNow = new Button("Pay Now");
             payNow.addClickListener(e -> payForBid(dto));
