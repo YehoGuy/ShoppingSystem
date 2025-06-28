@@ -137,6 +137,7 @@ public class Member extends User {
     public String getUsername() {
         return username; // Return the username
     }
+
     @Transactional
     public String getPassword() {
         return password; // Return the password
@@ -157,10 +158,12 @@ public class Member extends User {
     public Boolean isSuspended() {
         return suspended.isAfter(LocalDateTime.now()); // Check if the user is suspended
     }
+
     @Transactional
     public void setSuspended(LocalDateTime suspended) {
         this.suspended = suspended; // Set the suspension status
     }
+
     @Transactional
     public void setUnSuspended() {
         this.suspended = LocalDateTime.now(); // Set the suspension status to now (unsuspended)
@@ -169,22 +172,27 @@ public class Member extends User {
     public boolean isAdmin() {
         return isAdmin; // Return the admin status
     }
+
     @Transactional
     public synchronized void setAdmin(boolean isAdmin) {
         this.isAdmin = isAdmin; // Set the admin status
     }
+
     @Transactional
     public synchronized void setUsername(String username) {
         this.username = username; // Set the username
     }
+
     @Transactional
     public synchronized void setPassword(String password) {
         this.password = password; // Set the password
     }
+
     @Transactional
     public synchronized void setEmail(String email) {
         this.email = email; // Set the email address
     }
+
     @Transactional
     public synchronized void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber; // Set the phone number
@@ -195,6 +203,7 @@ public class Member extends User {
             return new CopyOnWriteArrayList<>(orderHistory);
         } // Return a copy of the order history
     }
+
     @Transactional
     public void addOrderToHistory(int orderId) {
         synchronized (orderHistoryLock) {
@@ -207,6 +216,7 @@ public class Member extends User {
             return new CopyOnWriteArrayList<>(roles);
         } // Return a copy of the roles
     }
+
     @Transactional
     public void addRoleToPending(Role role) {
         synchronized (pendingRolesLock) {
@@ -220,6 +230,7 @@ public class Member extends User {
             roles.add(role);
         } // Add a role to the list of roles
     }
+
     @Transactional
     public void removeRole(Role role) {
         synchronized (rolesLock) {
@@ -255,6 +266,7 @@ public class Member extends User {
             }
         }
     }
+
     @Transactional
     public void declineRole(Role role) {
         synchronized (pendingRolesLock) {
@@ -265,6 +277,7 @@ public class Member extends User {
             }
         }
     }
+
     @Transactional
     public void addPermission(int shopId, PermissionsEnum permission) {
         synchronized (rolesLock) {
@@ -307,6 +320,7 @@ public class Member extends User {
             return new CopyOnWriteArrayList<>(pending_roles);
         } // Return a copy of the pending roles
     }
+
     @Transactional
     public void setPendingRoles(List<Role> newPendingRoles) {
         synchronized (pendingRolesLock) {
@@ -314,6 +328,7 @@ public class Member extends User {
             this.pending_roles.addAll(newPendingRoles);
         }
     }
+
     @Transactional
     public void setRoles(List<Role> newRoles) {
         synchronized (rolesLock) {
@@ -321,6 +336,7 @@ public class Member extends User {
             this.roles.addAll(newRoles);
         }
     }
+
     @Transactional
     public void setOrderHistory(List<Integer> newOrderHistory) {
         synchronized (orderHistoryLock) {
@@ -328,6 +344,7 @@ public class Member extends User {
             this.orderHistory.addAll(newOrderHistory);
         }
     }
+
     @Transactional
     public void addNotification(Notification notification) {
         synchronized (notificationsLock) {
@@ -358,12 +375,14 @@ public class Member extends User {
             return auctionsWins;
         } // Return a copy of the auctions won
     }
+
     @Transactional
     public void addAuctionWin(BidReciept bid) {
         synchronized (notificationsLock) {
             auctionsWins.add(bid);
         } // Add a bid to the list of auctions won
     }
+
     @Transactional
     public void setConnected(boolean isConnected) {
         this.isConnected = isConnected; // Set the connection status
@@ -371,5 +390,9 @@ public class Member extends User {
 
     public boolean isConnected() {
         return isConnected; // Return the connection status
+    }
+
+    public int getMissingNotificationsQuantity() {
+        return this.notifications.size();
     }
 }

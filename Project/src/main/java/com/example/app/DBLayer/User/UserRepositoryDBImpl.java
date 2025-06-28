@@ -49,28 +49,29 @@ public class UserRepositoryDBImpl implements IUserRepository {
     private final String adminPhoneNumber;
     private final String adminAddress;
 
-
     @PersistenceContext
     private EntityManager entityManager;
 
     private final ConcurrentHashMap<Integer, Guest> guests;
 
-    public UserRepositoryDBImpl( @Value("${admin.username:admin}") String adminUsername,
-        @Value("${admin.password:admin}") String adminPlainPassword,
-        @Value("${admin.email:admin@mail.com}") String adminEmail,
-        @Value("${admin.phoneNumber:0}") String adminPhoneNumber,
-        @Value("${admin.address:admin st.}") String adminAddress,
-        @Lazy @Autowired UserRepositoryDB jpaRepo) {
+    public UserRepositoryDBImpl(@Value("${admin.username:admin}") String adminUsername,
+            @Value("${admin.password:admin}") String adminPlainPassword,
+            @Value("${admin.email:admin@mail.com}") String adminEmail,
+            @Value("${admin.phoneNumber:0}") String adminPhoneNumber,
+            @Value("${admin.address:admin st.}") String adminAddress,
+            @Lazy @Autowired UserRepositoryDB jpaRepo) {
 
-        this.adminUsername       = adminUsername;
-        this.adminPlainPassword  = adminPlainPassword;
-        this.adminEmail          = adminEmail;
-        this.adminPhoneNumber    = adminPhoneNumber;
-        this.adminAddress        = adminAddress;
+        this.adminUsername = adminUsername;
+        this.adminPlainPassword = adminPlainPassword;
+        this.adminEmail = adminEmail;
+        this.adminPhoneNumber = adminPhoneNumber;
+        this.adminAddress = adminAddress;
         this.jpaRepo = jpaRepo;
         this.guests = new ConcurrentHashMap<>();
-    }    
-    private volatile boolean adminInitialized = false;    
+    }
+
+    private volatile boolean adminInitialized = false;
+
     private void ensureAdminExists() {
         if (!adminInitialized) {
             synchronized (this) {
@@ -79,8 +80,8 @@ public class UserRepositoryDBImpl implements IUserRepository {
                         // Check if admin already exists first
                         List<Member> existingMembers = jpaRepo.findAll();
                         boolean adminExists = existingMembers.stream()
-                            .anyMatch(member -> "admin".equals(member.getUsername()));
-                        
+                                .anyMatch(member -> "admin".equals(member.getUsername()));
+
                         if (!adminExists) {
                             // Create admin using the default constructor to let ID be auto-generated
                             Member admin = new Member();
@@ -89,9 +90,9 @@ public class UserRepositoryDBImpl implements IUserRepository {
                             admin.setEmail(adminEmail);
                             admin.setPhoneNumber(adminPhoneNumber);
                             admin.setAdmin(true);
-                            
+
                             admin = jpaRepo.save(admin); // Save and get the admin with generated ID
-                        } 
+                        }
                         adminInitialized = true;
                     } catch (Exception e) {
                         // Log the exception but don't fail initialization
@@ -101,12 +102,13 @@ public class UserRepositoryDBImpl implements IUserRepository {
                 }
             }
         } else {
-            // Even if flag is set, verify admin still exists in database (for transaction rollback scenarios)
+            // Even if flag is set, verify admin still exists in database (for transaction
+            // rollback scenarios)
             try {
                 List<Member> existingMembers = jpaRepo.findAll();
                 boolean adminExists = existingMembers.stream()
-                    .anyMatch(member -> "admin".equals(member.getUsername()));
-                
+                        .anyMatch(member -> "admin".equals(member.getUsername()));
+
                 if (!adminExists) {
                     // Reset flag and re-create admin
                     adminInitialized = false;
@@ -126,16 +128,18 @@ public class UserRepositoryDBImpl implements IUserRepository {
     @Override
     public void setEncoderToTest(boolean b) {
         this.passwordEncoderUtil.setIsTest(b); // Set the encoder to test mode
-    }    @Override
+    }
+
+    @Override
     public User getUserById(int id) {
         if (id < 0) {
             throw new IllegalArgumentException("User ID cannot be negative: " + id);
         }
-        
+
         ensureAdminExists();
-        
+
         User u = jpaRepo.findById(id).orElse(null);
-        if(u != null) {
+        if (u != null) {
             return u;
         } else {
             u = guests.get(id);
@@ -144,7 +148,9 @@ public class UserRepositoryDBImpl implements IUserRepository {
             }
             return u;
         }
-    }    @Override
+    }
+
+    @Override
     public Map<Integer, User> getUserMapping() {
         ensureAdminExists();
         List<Member> users = jpaRepo.findAll();
@@ -194,7 +200,7 @@ public class UserRepositoryDBImpl implements IUserRepository {
             throw new OurRuntime("User is not a member: " + id);
         }
     }
-    
+
     @Override
     public void removeAdmin(Integer id) throws RuntimeException {
         if (id == isUsernameAndPasswordValid("admin", "admin"))
@@ -208,7 +214,7 @@ public class UserRepositoryDBImpl implements IUserRepository {
             throw new OurRuntime("User is not a member: " + id);
         }
     }
-    
+
     @Override
     public List<Integer> getAllAdmins() {
         return jpaRepo.findAll().stream()
@@ -228,12 +234,14 @@ public class UserRepositoryDBImpl implements IUserRepository {
     @Override
     public boolean isGuestById(int id) {
         return guests.containsKey(id);
-    }    @Override
+    }
+
+    @Override
     public int addMember(String username, String password, String email, String phoneNumber, String address) {
-        if(!email.contains("@") || email.isEmpty()) {
+        if (!email.contains("@") || email.isEmpty()) {
             throw new IllegalArgumentException("Invalid email format: " + email);
         }
-        
+
         int id = idCounter.incrementAndGet();
 
         Member member = new Member(id, username, password, email, phoneNumber, address);
@@ -279,17 +287,18 @@ public class UserRepositoryDBImpl implements IUserRepository {
                 .withZipCode(postalCode);
         member.setAddress(address);
         jpaRepo.save(member);
-    }    @Override
+    }
+
+    @Override
     public int isUsernameAndPasswordValid(String username, String password) {
         ensureAdminExists();
         List<Member> members = jpaRepo.findAll();
-        
+
         for (Member member : members) {
-            
+
             boolean usernameMatch = member.getUsername().equals(username);
             boolean passwordMatch = passwordEncoderUtil.matches(password, member.getPassword());
 
-            
             if (usernameMatch && passwordMatch) {
                 return member.getMemberId();
             }
@@ -374,7 +383,9 @@ public class UserRepositoryDBImpl implements IUserRepository {
         } else {
             throw new OurRuntime("User is not a member: " + userId);
         }
-    }    @Override
+    }
+
+    @Override
     public void setPermissions(int userId, int shopId, Role role, PermissionsEnum[] permissions) {
         if (role == null) {
             throw new OurRuntime("Role cannot be null.");
@@ -382,14 +393,14 @@ public class UserRepositoryDBImpl implements IUserRepository {
         if (permissions == null || permissions.length == 0) {
             throw new OurRuntime("Permissions cannot be null or empty.");
         }
-        
+
         User user = getUserById(userId);
         if (user instanceof Member) {
             Member member = (Member) user;
             if (!member.getRoles().contains(role)) {
                 throw new OurRuntime("User with ID " + userId + " does not have the specified role.");
             }
-            
+
             member.removeRole(role);
             role.setPermissions(permissions);
             member.addRole(role);
@@ -397,30 +408,32 @@ public class UserRepositoryDBImpl implements IUserRepository {
         } else {
             throw new OurRuntime("User is not a member: " + userId);
         }
-    }@Override
+    }
+
+    @Override
     public void addRoleToPending(int userId, Role role) {
         if (role == null) {
             throw new OurRuntime("Role cannot be null.");
         }
-        
+
         User user = getUserById(userId);
         if (user instanceof Member) {
             Member member = (Member) user;
-            
+
             // Check if user already has a role for this shop
             for (Role existingRole : member.getRoles()) {
                 if (existingRole.getShopId() == role.getShopId()) {
                     throw new OurRuntime("User with ID " + userId + " already has a role for this shop.");
                 }
             }
-            
+
             // Check if user already has a pending role for this shop
             for (Role pendingRole : member.getPendingRoles()) {
                 if (pendingRole.getShopId() == role.getShopId()) {
                     throw new OurRuntime("User with ID " + userId + " already has this role pending.");
                 }
             }
-            
+
             member.addRoleToPending(role);
             jpaRepo.save(member);
         } else {
@@ -445,7 +458,9 @@ public class UserRepositoryDBImpl implements IUserRepository {
         } else {
             throw new OurRuntime("User is not a member: " + memberId);
         }
-    }    @Override
+    }
+
+    @Override
     public void removeRole(int memberId, int shopId) {
         User user = getUserById(memberId);
         if (user instanceof Member) {
@@ -460,7 +475,9 @@ public class UserRepositoryDBImpl implements IUserRepository {
         } else {
             throw new OurRuntime("User is not a member: " + memberId);
         }
-    }@Override
+    }
+
+    @Override
     public Role getPendingRole(int memberId, int shopId) {
         User user = getUserById(memberId);
         if (user instanceof Member) {
@@ -468,16 +485,19 @@ public class UserRepositoryDBImpl implements IUserRepository {
             return pendingRoles.stream()
                     .filter(role -> role.getShopId() == shopId)
                     .findFirst()
-                    .orElseThrow(() -> new OurRuntime("User with ID " + memberId + " does not have a pending role for shop ID " + shopId));
+                    .orElseThrow(() -> new OurRuntime(
+                            "User with ID " + memberId + " does not have a pending role for shop ID " + shopId));
         } else {
             throw new OurRuntime("User is not a member: " + memberId);
         }
-    }@Override
+    }
+
+    @Override
     public void acceptRole(int id, Role role) {
         if (role == null) {
             throw new OurRuntime("Role cannot be null.");
         }
-        
+
         User user = getUserById(id);
         if (user instanceof Member) {
             ((Member) user).acceptRole(role);
@@ -492,7 +512,7 @@ public class UserRepositoryDBImpl implements IUserRepository {
         if (role == null) {
             throw new OurRuntime("Role cannot be null.");
         }
-        
+
         User user = getUserById(id);
         if (user instanceof Member) {
             ((Member) user).declineRole(role);
@@ -744,7 +764,7 @@ public class UserRepositoryDBImpl implements IUserRepository {
     }
 
     @Override
-    public void addAuctionWinBidToShoppingCart(int winnerId, Bid bid){
+    public void addAuctionWinBidToShoppingCart(int winnerId, Bid bid) {
         User user = getUserById(winnerId);
         if (user instanceof Member) {
             Member member = (Member) user;
@@ -766,12 +786,14 @@ public class UserRepositoryDBImpl implements IUserRepository {
         } else {
             throw new OurRuntime("User is not a member or guest: " + userId);
         }
-    }    @Override
+    }
+
+    @Override
     public void addItemToShoppingCart(int userId, int shopId, int itemId, int quantity) {
         if (quantity <= 0) {
             throw new OurRuntime("Quantity must be greater than 0.");
         }
-        
+
         User user = getUserById(userId);
         if (user instanceof Member) {
             Member member = (Member) user;
@@ -883,7 +905,8 @@ public class UserRepositoryDBImpl implements IUserRepository {
     }
 
     @Override
-    public int pay(int userId, double amount, String currency, String cardNumber, String expirationDateMonth, String expirationDateYear, String cardHolderName, String cvv, String id) {
+    public int pay(int userId, double amount, String currency, String cardNumber, String expirationDateMonth,
+            String expirationDateYear, String cardHolderName, String cvv, String id) {
         User user = getUserById(userId);
         if (user == null) {
             throw new OurRuntime("User not found: " + userId);
@@ -892,9 +915,10 @@ public class UserRepositoryDBImpl implements IUserRepository {
         if (paymentMethod == null) {
             throw new OurRuntime("Payment method not set for user: " + userId);
         }
-        
+
         try {
-            int pid = paymentMethod.processPayment(amount, currency, cardNumber, expirationDateMonth, expirationDateYear, cardHolderName, cvv, id);
+            int pid = paymentMethod.processPayment(amount, currency, cardNumber, expirationDateMonth,
+                    expirationDateYear, cardHolderName, cvv, id);
             if (pid < 0) {
                 throw new OurRuntime("Payment failed for user: " + userId);
             }
@@ -914,7 +938,7 @@ public class UserRepositoryDBImpl implements IUserRepository {
         if (paymentMethod == null) {
             throw new OurRuntime("Payment method not set for user: " + userId);
         }
-        
+
         try {
             boolean b = paymentMethod.cancelPayment(paymentId);
             if (!b) {
@@ -926,8 +950,7 @@ public class UserRepositoryDBImpl implements IUserRepository {
     }
 
     @Override
-    public void addBidToShoppingCart(int userId, int shopId, Map<Integer, Integer> items)
-    {
+    public void addBidToShoppingCart(int userId, int shopId, Map<Integer, Integer> items) {
         User user = getUserById(userId);
         if (user instanceof Member) {
             Member member = (Member) user;
@@ -961,13 +984,22 @@ public class UserRepositoryDBImpl implements IUserRepository {
         return members.get(0).getMemberId(); // Assuming only one owner per shop
     } 
     
+
     @Override
     public void updateUserInDB(Member member) {
         if (member == null) {
             throw new IllegalArgumentException("Member cannot be null.");
         }
-        
-        
+
         jpaRepo.save(member);
+    }
+
+    @Override
+    public int getMissingNotificationsQuantity(int userId) {
+        User user = getUserById(userId);
+        if (user instanceof Guest)
+            return 0;
+        Member member = (Member) user;
+        return member.getMissingNotificationsQuantity();
     }
 }
