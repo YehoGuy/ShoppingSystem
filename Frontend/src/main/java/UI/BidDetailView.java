@@ -1,41 +1,32 @@
 package UI;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H2;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.Notification.Position;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.router.BeforeEnterEvent;
-import com.vaadin.flow.router.BeforeEnterObserver;
-import com.vaadin.flow.router.NotFoundException;
-import com.vaadin.flow.router.Route;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.Notification.Position;
+import com.vaadin.flow.router.*;
+
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 
 import DTOs.BidRecieptDTO;
 
-/**
- * Route: /bid/{bidId}
- *
- * Mirrors CreateBidView’s pattern: implements BeforeEnterObserver,
- * extracts "bidId", loads bid, and renders UI without any finalize logic.
- */
 @Route(value = "bid/:bidId", layout = AppLayoutBasic.class)
 @AnonymousAllowed
-public class BidDetailView extends VerticalLayout implements BeforeEnterObserver {
+public class BidDetailView extends BaseView implements BeforeEnterObserver {
 
     private String bidIdStr;
     private int bidId;
@@ -45,81 +36,71 @@ public class BidDetailView extends VerticalLayout implements BeforeEnterObserver
     private final String apiBase;
     private final String BID_API_URL;
 
-    private final TextField purchaseIdField = new TextField("Bid ID");
-    private final TextField storeIdField = new TextField("Store ID");
-    private final TextField userIdField = new TextField("Owner ID");
-    private final TextField highestBidderField = new TextField("Highest Bidder ID");
-    private final TextField highestBidField = new TextField("Highest Bid");
-    private final TextField completedField = new TextField("Completed");
+    private final TextField storeNameField    = new TextField("Store Name");
+    private final TextField itemNameField     = new TextField("Item Name");
+    private final TextField userNameField     = new TextField("Bid's Owner Name");
+    private final TextField highestBidField   = new TextField("Highest Bid");
+    private final TextField completedField    = new TextField("Completed");
 
-    private final IntegerField newBid = new IntegerField("Your Bid");
-    private final com.vaadin.flow.component.button.Button placeBidButton = new com.vaadin.flow.component.button.Button(
-            "Place Bid");
+    private final IntegerField newBid         = new IntegerField("Your Bid");
+    private final Button placeBidButton       = new Button("Place Bid");
 
     public BidDetailView(@Value("${url.api}") String apiBase) {
-        this.apiBase = apiBase;
-        this.BID_API_URL = this.apiBase + "/purchases/bids";
+        // super(title, subtitle, iconLeft, iconRight)
+        super("Bid Details", "Inspect & place your offer", "💰", "➡️");
 
-        getUserId(); // Ensure userId is set
+        this.apiBase     = apiBase;
+        this.BID_API_URL = apiBase + "/purchases/bids";
+
+        setSizeFull();
         setPadding(true);
         setSpacing(true);
     }
 
     private Integer getUserId() {
-        Object attr = VaadinSession.getCurrent().getAttribute("userId");
-        if (attr == null) {
+        Object uid = VaadinSession.getCurrent().getAttribute("userId");
+        if (uid == null) {
             UI.getCurrent().navigate("");
             return null;
         }
-        return Integer.parseInt(attr.toString());
+        return Integer.parseInt(uid.toString());
     }
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         bidIdStr = event.getRouteParameters().get("bidId").orElse(null);
-        if (bidIdStr == null || bidIdStr.isBlank()) {
+        if (bidIdStr == null) {
             event.rerouteToError(NotFoundException.class);
             return;
         }
-
         try {
             bidId = Integer.parseInt(bidIdStr);
-            if (bidId < 0) {
-                removeAll();
-                add(new H2("Invalid Bid ID"));
-                return;
-            }
-        } catch (NumberFormatException ex) {
-            removeAll();
-            add(new H2("Invalid Bid ID"));
+        } catch (NumberFormatException e) {
+            event.rerouteToError(NotFoundException.class);
             return;
         }
-
         loadBid();
         buildPage();
     }
 
     private void loadBid() {
-        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        String token = (String)VaadinSession.getCurrent().getAttribute("authToken");
         if (token == null || token.isBlank()) {
-            Notification.show("You must be logged in to view this page.", 3000, Position.MIDDLE);
+            Notification.show("Please log in to view this bid", 3000, Position.MIDDLE);
             bid = null;
             return;
         }
-
         String url = BID_API_URL + "/" + bidId + "?authToken=" + token;
         try {
             ResponseEntity<BidRecieptDTO> resp = rest.exchange(
-                    url, HttpMethod.GET, new HttpEntity<>(new HttpHeaders()), BidRecieptDTO.class);
-            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
-                bid = resp.getBody();
-            } else {
-                bid = null;
-                Notification.show("⚠️ Failed to load bid", 3000, Position.MIDDLE);
-            }
+                url, HttpMethod.GET,
+                new HttpEntity<>(new HttpHeaders()),
+                BidRecieptDTO.class
+            );
+            bid = resp.getStatusCode().is2xxSuccessful() ? resp.getBody() : null;
         } catch (Exception e) {
+            Notification.show("Error loading bid", 3000, Position.MIDDLE);
             bid = null;
-            Notification.show("❗ Error loading bid", 3000, Position.MIDDLE);
         }
     }
 
@@ -131,73 +112,134 @@ public class BidDetailView extends VerticalLayout implements BeforeEnterObserver
             return;
         }
 
-        H2 header = new H2("Bid Details — ID: " + bidId);
-        add(header);
+        // ─── card container ───────────────────────────────────────────────
+        VerticalLayout card = new VerticalLayout();
+        card.addClassName("view-card");
+        card.setSizeFull();
+        card.setPadding(true);
+        card.setSpacing(true);
+        card.getStyle()
+            .set("background", "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)")
+            .set("box-shadow", "0 8px 32px rgba(0,0,0,0.1)");
 
-        purchaseIdField.setReadOnly(true);
-        purchaseIdField.setValue(String.valueOf(bid.getPurchaseId()));
-        storeIdField.setReadOnly(true);
-        storeIdField.setValue(String.valueOf(bid.getStoreId()));
-        userIdField.setReadOnly(true);
-        userIdField.setValue(String.valueOf(bid.getThisBidderId()));
-        highestBidderField.setReadOnly(true);
-        highestBidderField.setValue(String.valueOf(bid.getHighestBidderId()));
+        // ─── read-only fields ────────────────────────────────────────────
+        storeNameField.setReadOnly(true);
+        storeNameField.setValue(getShopName(bid.getStoreId()));
+
+        itemNameField.setReadOnly(true);
+        itemNameField.setValue(getItemName(bid.getStoreId(), bid));
+
+        userNameField.setReadOnly(true);
+        userNameField.setValue(getUserName(bid.getUserId()));
+
         highestBidField.setReadOnly(true);
         highestBidField.setValue(String.valueOf(bid.getHighestBid()));
+
         completedField.setReadOnly(true);
         completedField.setValue(bid.isCompleted() ? "Yes" : "No");
 
         FormLayout form = new FormLayout(
-                purchaseIdField,
-                storeIdField,
-                userIdField,
-                highestBidderField,
-                highestBidField,
-                completedField);
-        add(form);
+            storeNameField,
+            itemNameField,
+            userNameField,
+            highestBidField,
+            completedField
+        );
+        card.add(form);
 
+        // ─── your-bid controls ───────────────────────────────────────────
         if (bid.isCompleted()) {
             newBid.setReadOnly(true);
             placeBidButton.setEnabled(false);
-            add(new H2("This bid is closed."));
-            return;
+            card.add(new H2("This bid is closed."));
+        } else {
+            newBid.setMin(1);
+            newBid.setPlaceholder("Enter your bid");
+            placeBidButton.addClickListener(e -> onPlaceBid());
+            card.add(newBid, placeBidButton);
         }
 
-        newBid.setMin(1);
-        newBid.setPlaceholder("Enter your bid");
-        placeBidButton.addClickListener(e -> onPlaceBid());
-        add(newBid, placeBidButton);
+        // ─── finalize layout ──────────────────────────────────────────────
+        add(card);
+        expand(card);
     }
 
     private void onPlaceBid() {
-        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        String token = (String)VaadinSession.getCurrent().getAttribute("authToken");
         if (token == null || token.isBlank()) {
-            Notification.show("You must be logged in to place a bid.", 3000, Position.MIDDLE);
+            Notification.show("Login required", 3000, Position.MIDDLE);
             return;
         }
-
-        Integer price = Optional.ofNullable(newBid.getValue()).orElse(0);
-        if (price < bid.getHighestBid()){
-            Notification.show("Your bid must be higher than the current highest bid.", 3000, Position.MIDDLE);
+        int your = Optional.ofNullable(newBid.getValue()).orElse(0);
+        if (your == bid.getHighestBid()) {
+            Notification.show("Bid must lower or higher than the current price", 3000, Position.MIDDLE);
+            return;
         }
+        String postUrl = BID_API_URL
+                       + "/" + bidId
+                       + "/offers?authToken=" + token
+                       + "&bidPrice=" + your;
 
-        String postUrl = BID_API_URL + "/" + bidId + "/offers?authToken=" + token + "&bidPrice=" + price;
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<Void> entity = new HttpEntity<>(headers);
+        ResponseEntity<Void> resp = rest.exchange(
+            postUrl, HttpMethod.POST,
+            new HttpEntity<String>(null, new HttpHeaders() {{
+                setContentType(MediaType.APPLICATION_JSON);
+            }}),
 
-            ResponseEntity<Void> resp = rest.exchange(postUrl, HttpMethod.POST, entity, Void.class);
-            if (resp.getStatusCode().is2xxSuccessful()) {
-                Notification.show("Bid placed successfully!", 2000, Position.MIDDLE);
-                loadBid();
-                buildPage();
-            } else {
-                Notification.show("Failed to place bid", 3000, Position.MIDDLE);
+            Void.class
+        );
+        if (resp.getStatusCode().is2xxSuccessful()) {
+            Notification.show("Bid placed successfully!", 2000, Position.MIDDLE);
+            loadBid();
+            buildPage();
+            UI.getCurrent().navigate("bids");
+        } else {
+            Notification.show("Failed to place bid", 3000, Position.MIDDLE);
+        }
+    }
+
+    // ─── helper methods unchanged ─────────────────────────────────────
+    private String getShopName(int shopId) {
+        String token = (String)VaadinSession.getCurrent().getAttribute("authToken");
+        String url = apiBase + "/shops/" + shopId + "?token=" + token;
+        ResponseEntity<JsonNode> resp = rest.exchange(
+            url, HttpMethod.GET,
+            new HttpEntity<>(new HttpHeaders()),
+            JsonNode.class
+        );
+        return (resp.getStatusCode().is2xxSuccessful() && resp.getBody()!=null)
+             ? resp.getBody().path("name").asText("")
+             : "";
+    }
+
+    private String getUserName(int userId) {
+        String token = (String)VaadinSession.getCurrent().getAttribute("authToken");
+        String url = apiBase + "/users/" + userId + "?token=" + token;
+        ResponseEntity<JsonNode> resp = rest.exchange(
+            url, HttpMethod.GET,
+            new HttpEntity<>(new HttpHeaders()),
+            JsonNode.class
+        );
+        return (resp.getStatusCode().is2xxSuccessful() && resp.getBody()!=null)
+             ? resp.getBody().path("username").asText("")
+             : "";
+    }
+
+    private String getItemName(int shopId, BidRecieptDTO bid) {
+        String token = (String)VaadinSession.getCurrent().getAttribute("authToken");
+        String url = apiBase + "/shops/" + shopId + "/items?token=" + token;
+        ResponseEntity<JsonNode> resp = rest.exchange(
+            url, HttpMethod.GET,
+            new HttpEntity<>(new HttpHeaders()),
+            JsonNode.class
+        );
+        if (resp.getStatusCode().is2xxSuccessful() && resp.getBody()!=null) {
+            for (JsonNode itemNode : resp.getBody()) {
+                if (bid.getItems().containsKey(itemNode.path("id").asInt(-1))) {
+                    return itemNode.path("name").asText("");
+                }
             }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            Notification.show("Error placing bid", 4000, Position.MIDDLE);
         }
+        return "";
     }
 }

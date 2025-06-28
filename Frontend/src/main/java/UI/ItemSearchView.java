@@ -104,9 +104,16 @@ public class ItemSearchView extends BaseView implements BeforeEnterObserver {
             new ParameterizedTypeReference<>() {}
         );
         if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
+            // 1) clear old lists
             allItems.clear();
-            allItems.addAll(allItems);
+            filteredItems.clear();
+
+            // 2) populate from the response body
+            allItems.addAll(resp.getBody());
             filteredItems.addAll(allItems);
+
+            // 3) render them
+            renderCards();
         } else {
             Notification.show("Failed to fetch items");
         }
@@ -125,7 +132,6 @@ public class ItemSearchView extends BaseView implements BeforeEnterObserver {
         itemsContainer.removeAll();
         if (filteredItems.isEmpty()) {
             Span none = new Span("No items found.");
-            none.getStyle().set("color", "#c00").set("font-size", "1.2rem");
             itemsContainer.add(none);
             return;
         }

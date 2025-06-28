@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -268,4 +269,22 @@ public class ItemController {
         }
     }
 
+
+    /** ─────────── 9. DELETE AN ITEM ─────────── */
+    @DeleteMapping("/{itemId}")
+    public ResponseEntity<Void> deleteItem(
+            @PathVariable @Min(1) int itemId,
+            @RequestParam("token") @NotBlank String token) {
+        try {
+            itemService.deleteItem(itemId, token);
+            return ResponseEntity.noContent().build(); // 204
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().build();  // 400
+        } catch (OurRuntime ex) {
+            // e.g. “you don’t own that shop” or business rule
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();  // 409
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();  // 500
+        }
+    }
 }

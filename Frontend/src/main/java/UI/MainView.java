@@ -3,49 +3,48 @@ package UI;
 import org.springframework.beans.factory.annotation.Value;
 
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.dependency.CssImport;
+import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.theme.lumo.LumoUtility;
-
 
 @Route("")
+@CssImport("./themes/mytheme/main.css")
 public class MainView extends VerticalLayout {
 
-    private String api;
-
     public MainView(@Value("${url.api}") String api) {
-        this.api = api;
-
+        // make view fill the screen and host the blurred background
+        addClassName("main");
         setSizeFull();
-        setAlignItems(Alignment.CENTER);
-        setJustifyContentMode(JustifyContentMode.CENTER);
-        addClassName(LumoUtility.Background.CONTRAST_5); // Light background
+        setPadding(false);
+        setSpacing(false);
 
-        H1 title = new H1("Welcome to Shopping System");
-        title.addClassName(LumoUtility.Margin.Bottom.LARGE);
+        // frosted‐glass panel
+        Div content = new Div();
+        content.addClassName("main-content");
 
-        Button loginButton = new Button("Login", e -> login());
-        Button registerButton = new Button("Register", e -> register());
+        // login/register buttons
+        Button login    = new Button("Login",    e -> getUI().ifPresent(u -> u.navigate("login")));
+        Button register = new Button("Register", e -> getUI().ifPresent(u -> u.navigate("register")));
 
-        loginButton.addClassNames(
-                LumoUtility.Margin.Bottom.MEDIUM,
-                LumoUtility.Padding.SMALL,
-                LumoUtility.FontSize.LARGE);
+        // Vaadin primary + custom pill styling
+        login.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_LARGE);
+        register.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_LARGE);
+        login.addClassName("pill-button");
+        register.addClassName("pill-button");
 
-        registerButton.addClassNames(
-                LumoUtility.Padding.SMALL,
-                LumoUtility.FontSize.LARGE);
+        // horizontal button bar
+        HorizontalLayout buttons = new HorizontalLayout(login, register);
+        buttons.addClassName("hero-buttons");
+        buttons.setPadding(false);
+        buttons.setSpacing(true);
 
-        add(title, loginButton, registerButton);
+        // add just the button bar (no title) to the frosted card
+        content.add(buttons);
 
-    }
-
-    private void login() {
-        getUI().ifPresent(ui -> ui.navigate("login"));
-    }
-
-    private void register() {
-        getUI().ifPresent(ui -> ui.navigate("register"));
+        // show it
+        add(content);
     }
 }

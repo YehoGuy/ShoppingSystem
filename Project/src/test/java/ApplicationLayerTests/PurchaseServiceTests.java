@@ -1,6 +1,7 @@
 package ApplicationLayerTests;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -177,7 +178,7 @@ class PurchaseServiceTests {
 
         service.postBidding(token, pid, 60);
 
-        verify(bid).addBidding(bidder, 60);
+        verify(bid).addBidding(bidder, 60, true);
     }
 
 
@@ -449,7 +450,7 @@ class PurchaseServiceTests {
 
                     try {
                         start.await();
-                        bid.addBidding(bidder, amount);
+                        bid.addBidding(bidder, amount, true);
                     } catch (RuntimeException ignored) {
                         /*
                          * business rules may reject some offers (e.g., too low,
@@ -637,7 +638,7 @@ class PurchaseServiceTests {
     void getAllBids_happyPath() throws Exception {
         String token = "tok";
         int uid = 9;
-        List<BidReciept> bids = List.of();
+        List<BidReciept> bids = new ArrayList<>();  
         when(auth.ValidateToken(token)).thenReturn(uid);
         when(repo.getAllBids()).thenReturn(bids);
         List<BidReciept> out = service.getAllBids(token, true);
@@ -766,7 +767,7 @@ class PurchaseServiceTests {
 
             service.postBiddingAuction(token, auctionId, bidPrice);
 
-            verify(bid).addBidding(bidder, bidPrice);
+            verify(bid).addBidding(bidder, bidPrice, false);
         }
 
         @Test

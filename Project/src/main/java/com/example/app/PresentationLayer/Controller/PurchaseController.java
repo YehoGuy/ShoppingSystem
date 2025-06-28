@@ -1,6 +1,7 @@
 package com.example.app.PresentationLayer.Controller;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.format.annotation.DateTimeFormat.ISO;
 
+import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Purchase.PurchaseService;
 import com.example.app.PresentationLayer.DTO.Purchase.PaymentDetailsDTO;
 import com.example.app.DomainLayer.Purchase.BidReciept;
@@ -308,9 +310,8 @@ public class PurchaseController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        } 
     }
-
 
     @GetMapping("/shops/{shopId}/bids")
     public ResponseEntity<?> getStoreBids(
@@ -580,6 +581,23 @@ public class PurchaseController {
         }
     }
 
+    @GetMapping("/auctions/won")
+    public ResponseEntity<List<BidRecieptDTO>> getUserWonAuctions(
+            @RequestParam String authToken) {
+        try {
+            List<BidReciept> won = purchaseService.getAuctionsWinList(authToken);
+            // map domain‐model receipts → DTOs
+            List<BidRecieptDTO> dtos = won.stream()
+                .map(BidRecieptDTO::fromDomain)  
+                .toList();
+            return ResponseEntity.ok(dtos);
+        } catch (IllegalArgumentException ex) {
+            // token invalid
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
     
 
     

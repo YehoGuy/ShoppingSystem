@@ -972,22 +972,4 @@ public class UserController {
         }
     }
 
-    @GetMapping("/auctions/won")
-    public ResponseEntity<List<BidRecieptDTO>> getUserWonAuctions(
-            @RequestParam String authToken) {
-        try {
-            int userId = authService.ValidateToken(authToken);
-            List<BidReciept> won = userService.getAuctionsWinList(userId);
-            // map domain‐model receipts → DTOs
-            List<BidRecieptDTO> dtos = won.stream()
-                .map(BidRecieptDTO::fromDomain)  
-                .toList();
-            return ResponseEntity.ok(dtos);
-        } catch (IllegalArgumentException ex) {
-            // token invalid
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
 }

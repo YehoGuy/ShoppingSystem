@@ -1,11 +1,14 @@
 /* frontend/styles/styles.css */
 
-
 vaadin-app-layout.home-layout {
   background: none !important;
   overflow: hidden;
 }
 
+vaadin-app-layout.main-layout {
+  background: none !important;
+  overflow: hidden;
+}
 
 /* Ocean vibe */
 html, body, vaadin-app-layout {

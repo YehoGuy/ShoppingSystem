@@ -2175,5 +2175,4 @@ public class UserService {
                     throw new OurRuntime("getShopOwner: " + e.getMessage(), e);
         }
     }
-
 }

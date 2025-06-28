@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.time.ZoneId;
 
@@ -22,6 +23,7 @@ import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Shop.ShopService;
 import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.Member;
+import com.example.app.DomainLayer.Item.Item;
 import com.example.app.DomainLayer.Purchase.Address;
 import com.example.app.DomainLayer.Purchase.Bid;
 import com.example.app.DomainLayer.Purchase.BidReciept;
@@ -254,7 +256,7 @@ public class PurchaseService {
                 throw new OurRuntime("Purchase " + purchaseId + " is not a bid");
             }
             
-            ((Bid) purchase).addBidding(userId, bidPrice);
+            ((Bid) purchase).addBidding(userId, bidPrice, true);
             LoggerService.logMethodExecutionEndVoid("postBidding");
         } catch (OurArg e) {
             LoggerService.logDebug("postBidding", e);
@@ -427,7 +429,7 @@ public class PurchaseService {
                 for (BidReciept bid : bids) {
                     int shopId = bid.getShopId();
                     int shopOwnerId = userService.getShopOwner(shopId);
-                    if(shopOwnerId != userId) {
+                    if(shopOwnerId != userId) { //if the shop is closed the shopOwnerId = -1
                         // 2. filter out other users’ bids
                         bids = bids.stream()
                                 .filter(b -> b.getUserId() == userId)
@@ -451,6 +453,19 @@ public class PurchaseService {
                         
                 LoggerService.logMethodExecutionEnd("getAllBids", bids);
             }
+            //Sort the list finishedBids so it will return only the bids that the shop is not close
+            List<Integer> closedShopsIds = shopService.getclosedShops(authToken);
+                bids.removeIf(b ->
+                    closedShopsIds.contains(b.getShopId())
+            );
+
+            //drop bids whose item no longer exists
+            Set<Integer> validItemIds = itemService.getAllItems(authToken).stream()
+                .map(Item::getId)
+                .collect(Collectors.toSet());
+            bids.removeIf(b -> b.getItems().keySet().stream()
+                .anyMatch(itemId -> !validItemIds.contains(itemId))
+            );
             return bids;
         } catch (OurArg e) {
             LoggerService.logDebug("getAllBids", e);
@@ -522,7 +537,7 @@ public class PurchaseService {
                 throw new OurRuntime(
                         "User " + userId + " is the owner of the bid " + auctionId + " and cannot bid on it");
             }
-            ((Bid) purchase).addBidding(userId,bidPrice);
+            ((Bid) purchase).addBidding(userId,bidPrice, false);
             LoggerService.logMethodExecutionEndVoid("postBiddingAuction");
         } catch (OurArg e) {
             LoggerService.logDebug("postBiddingAuction", e);
@@ -622,6 +637,40 @@ public class PurchaseService {
             }
         }
         return finishedBids;
+    }
+
+
+    public List<BidReciept> getAuctionsWinList(String authToken) {
+        try {
+            int userId = authTokenService.ValidateToken(authToken);
+            LoggerService.logMethodExecution("getAuctionsWinList", userId);
+            List<BidReciept> auctionsWinList = userService.getAuctionsWinList(userId);
+            //Sort auctionsWinList so it will return only the wins that the shop is not close
+            List<Integer> closedShopsIds = shopService.getclosedShops(authToken);
+                auctionsWinList.removeIf(b ->
+                    closedShopsIds.contains(b.getShopId())
+            );
+
+            //drop aucntions whose item no longer exists
+            Set<Integer> validItemIds = itemService.getAllItems(authToken).stream()
+                .map(Item::getId)
+                .collect(Collectors.toSet());
+            auctionsWinList.removeIf(b -> b.getItems().keySet().stream()
+                .anyMatch(itemId -> !validItemIds.contains(itemId))
+            );
+            
+            LoggerService.logMethodExecutionEnd("getAuctionsWinList", auctionsWinList);
+            return auctionsWinList;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getAuctionsWinList", e);
+            throw new OurRuntime("getAuctionsWinList: " + e.getMessage(), e);
+        } catch (OurArg e) {
+            LoggerService.logDebug("getAuctionsWinList", e);
+            throw new OurArg("getAuctionsWinList: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("getAuctionsWinList", e, authToken);
+            throw new OurRuntime("getAuctionsWinList: " + e.getMessage(), e);
+        }
     }
  
    

@@ -5,17 +5,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-import org.atmosphere.interceptor.AtmosphereResourceStateRecovery.B;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.web.client.RestTemplate;
 
-import com.vaadin.flow.component.ClientCallable;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H1;
@@ -31,8 +27,6 @@ import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.theme.lumo.LumoUtility;
-import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
-import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 
 import DTOs.ItemDTO;
 import DTOs.MemberDTO;
@@ -42,27 +36,17 @@ import DTOs.ShopReviewDTO;
 import UI.AdminView.ItemGridRow;
 import UI.AdminView.ShopGridRow;
 import UI.AdminView.UserGridRow;
-
 import org.springframework.http.*;
-
-
-
-
 import java.util.Arrays;
-
-
-
-
 
 @Route(value = "history", layout = AppLayoutBasic.class)
 
 public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<Integer>, BeforeEnterObserver {
 
-    private final String api;
+    private final String apiBase;
     private final String purchaseHistoryUrl;
     private final String usersUrl;
     private final String itemsUrl;
-
 
     private final RestTemplate rest = new RestTemplate();
     private final VerticalLayout receiptsLayout = new VerticalLayout();
@@ -72,15 +56,13 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
 
     private List<MemberDTO> memberDTOs = new ArrayList<>();
     private List<ItemDTO> itemDTOs = new ArrayList<>();
-    
 
-    public ShopHistoryView(@Value("${url.api}") String api) {
-        this.api = api;
-        this.purchaseHistoryUrl = api + "/purchases/shops";
-        this.usersUrl = api + "/users";
-        this.itemsUrl = api + "/items";
+    public ShopHistoryView(@Value("${url.api}") String apiBase) {
+        this.apiBase = apiBase;
+        this.purchaseHistoryUrl = apiBase + "/purchases/shops";
+        this.usersUrl = apiBase + "/users";
+        this.itemsUrl = apiBase + "/items";
         
-
         setSizeFull();
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.START);
@@ -126,7 +108,7 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.START);
 
-        H1 header = new H1("Purchase History for Shop ID: " + shopId);
+        H1 header = new H1("Purchase History for Shop Name: " + getShopName(shopId));
         header.getStyle().set("margin-bottom", "var(--lumo-space-m)");
         add(header);
 
@@ -146,10 +128,8 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
 
     private void loadReceipts() {
         receiptsLayout.removeAll();
-
         String url = purchaseHistoryUrl + "/" + shopId
                 + "?authToken=" + VaadinSession.getCurrent().getAttribute("authToken");
-
         try {
             ResponseEntity<RecieptDTO[]> resp = rest.getForEntity(url, RecieptDTO[].class);
             if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
@@ -176,8 +156,6 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
     }
 
     private void displayReciepts() {
-        
-
         for (RecieptDTO reciept : reciepts) {
             List<String> foritems = new ArrayList<>();
             VerticalLayout singleReciept = new VerticalLayout();
@@ -210,7 +188,6 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         return "Unknown Item";
     }
 
-
     private String matchItemName(int itemId) {
         for (ItemDTO item : itemDTOs) {
             if (item.getId() == itemId) {
@@ -219,7 +196,6 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         }
         return "Unknown Item"; // Return a default value if no match is found
     }
-
 
     private void loadUsers() {
         try {
@@ -233,14 +209,10 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
 
             memberDTOs = response.getBody() != null ? Arrays.asList(response.getBody())
                     : Collections.emptyList();
-
-            
-
         } catch (Exception e) {
             Notification.show("Failed to load users");
         }
     }
-
 
     private void loadItems() {
         try {
@@ -259,8 +231,6 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
             Notification.show("Failed to load items");
         }
     }
-
-
 
     private void addReceiptCard(RecieptDTO r) {
         // card container
@@ -296,7 +266,6 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         Details details = new Details("View Items", grid);
         details.setWidthFull();
 
-        // assemble
         VerticalLayout box = new VerticalLayout(header, details);
         box.setWidthFull();
         card.add(box);
@@ -314,7 +283,6 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
     }
 
     private void handleSuspence() {
-
         Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
         if (userId == null) {
             return;
@@ -323,7 +291,7 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         if (token == null) {
             return;
         }
-        String url = api + "/users/" + userId + "/isSuspended?token=" + token;
+        String url = apiBase + "/users/" + userId + "/isSuspended?token=" + token;
         ResponseEntity<Boolean> response = rest.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
@@ -333,5 +301,17 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
                     "Failed to check admin status");
         }
     }
-
+    
+    private String getShopName(int shopId) {
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        String url = apiBase + "/shops/" + shopId + "?token=" + token;
+        ResponseEntity<JsonNode> resp = rest.exchange(
+            url, HttpMethod.GET,
+            new HttpEntity<>(new HttpHeaders()),
+            JsonNode.class
+        );
+        return (resp.getStatusCode().is2xxSuccessful() && resp.getBody()!=null)
+             ? resp.getBody().path("name").asText("")
+             : "";
+    }
 }

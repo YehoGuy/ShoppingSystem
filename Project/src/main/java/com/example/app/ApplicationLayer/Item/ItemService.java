@@ -16,6 +16,9 @@ import com.example.app.DomainLayer.Item.Item;
 import com.example.app.DomainLayer.Item.ItemCategory;
 import com.example.app.DomainLayer.Item.ItemReview;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
+
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 @Service
 public class ItemService {
 
@@ -312,5 +315,50 @@ public class ItemService {
             throw new OurRuntime("getItemsByCategory " + category + ": " + e.getMessage(), e);
         }
     }
+
+    public void deleteItem(int itemId, String token) {
+        try {
+            LoggerService.logMethodExecution("deleteItem", itemId);
+
+            // 1) basic arg check
+            if (itemId < 0) {
+                throw new OurArg("Item ID cannot be negative");
+            }
+
+            // 2) auth
+            Integer userId = authTokenService.ValidateToken(token);
+
+            // 3) find the shop that owns this item
+            Item existing = itemRepository.getItem(itemId);
+            if (existing == null) {
+                throw new OurArg("Item not found: " + itemId);
+            }
+            // int shopId = existing.getShopId();
+
+            // // 4) permission
+            // if (!userService.hasPermission(userId, PermissionsEnum.manageItems, shopId)) {
+            //     throw new OurRuntime("User does not have permission to delete item " 
+            //                         + itemId + " in shop " + shopId);
+            // }
+
+            // 5) delete
+            itemRepository.deleteItem(itemId);
+
+            LoggerService.logMethodExecutionEndVoid("deleteItem");
+        }
+        catch (OurArg e) {
+            LoggerService.logDebug("deleteItem", e);
+            throw new OurArg("deleteItem: " + e.getMessage(), e);
+        }
+        catch (OurRuntime e) {
+            LoggerService.logDebug("deleteItem", e);
+            throw new OurRuntime("deleteItem: " + e.getMessage(), e);
+        }
+        catch (Exception e) {
+            LoggerService.logError("deleteItem", e, itemId);
+            throw new OurRuntime("deleteItem: " + e.getMessage(), e);
+        }
+    }
+
 
 }
