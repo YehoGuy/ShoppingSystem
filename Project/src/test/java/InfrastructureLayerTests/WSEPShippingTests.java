@@ -1,64 +1,99 @@
 package InfrastructureLayerTests;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import com.example.app.ApplicationLayer.OurRuntime;
-import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
-import com.example.app.DomainLayer.Guest;
-import com.example.app.DomainLayer.Member;
-import com.example.app.DomainLayer.User;
-import com.example.app.DomainLayer.Roles.PermissionsEnum;
-import com.example.app.DomainLayer.Roles.Role;
-import com.example.app.InfrastructureLayer.UserRepository;
-import com.example.app.DomainLayer.Notification;
-import com.example.app.DomainLayer.ShoppingCart;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.client.RestTemplate;
 
 import com.example.app.InfrastructureLayer.WSEPShipping;
-import java.io.IOException;
 
+@ExtendWith(MockitoExtension.class)
 public class WSEPShippingTests {
+
+    @Mock
+    private RestTemplate restTemplate;
 
     private WSEPShipping wsepShipping;
 
     @BeforeEach
     public void setUp() {
-        wsepShipping = new WSEPShipping();
+        wsepShipping = new WSEPShipping(restTemplate);
     }
 
     @Test
     public void testIsShippingServiceAvailable() {
-        try {
-            boolean isAvailable = wsepShipping.isShippingServiceAvailable();
-            assertTrue(isAvailable, "Shipping service should be available");
-        } catch (RuntimeException e) {
-            assertFalse(true, "Shipping service is not available: " + e.getMessage());
-        }
+        // Mock the RestTemplate to return "OK"
+        when(restTemplate.postForObject(anyString(), any(), eq(String.class))).thenReturn("OK");
+        
+        boolean isAvailable = wsepShipping.isShippingServiceAvailable();
+        assertTrue(isAvailable, "Shipping service should be available");
+    }
+
+    @Test
+    public void testIsShippingServiceUnavailable() {
+        // Mock the RestTemplate to return null (service unavailable)
+        when(restTemplate.postForObject(anyString(), any(), eq(String.class))).thenReturn(null);
+        
+        assertThrows(RuntimeException.class, () -> {
+            wsepShipping.isShippingServiceAvailable();
+        }, "Should throw RuntimeException when service is unavailable");
     }
 
     @Test
     public void testProcessShippingSuccess() throws Exception {
+        // Mock the RestTemplate to return a valid shipping ID
+        when(restTemplate.postForObject(anyString(), any(), eq(String.class))).thenReturn("12345");
+        
         String name = "John Doe";
         String address = "123 Main St";
         String city = "Springfield";
         String country = "USA";
         String zipCode = "12345";
         int shippingId = wsepShipping.processShipping(name, address, city, country, zipCode);
-        assertNotEquals(0, shippingId, "Shipping ID should not be zero");
-        assertTrue(shippingId > 0, "Shipping ID should be a positive integer");
-        assertTrue(shippingId >= 10000 && shippingId <= 100000, "Expected shipping ID to be 1 for this test case");
+        assertEquals(12345, shippingId, "Shipping ID should match the mocked value");
+    }
+
+    @Test
+    public void testProcessShippingFailureNullResponse() throws Exception {
+        // Mock the RestTemplate to return null
+        when(restTemplate.postForObject(anyString(), any(), eq(String.class))).thenReturn(null);
+        
+        String name = "John Doe";
+        String address = "123 Main St";
+        String city = "Springfield";
+        String country = "USA";
+        String zipCode = "12345";
+        
+        assertThrows(RuntimeException.class, () -> {
+            wsepShipping.processShipping(name, address, city, country, zipCode);
+        }, "Should throw RuntimeException when response is null");
+    }
+
+    @Test
+    public void testProcessShippingFailureInvalidResponse() throws Exception {
+        // Mock the RestTemplate to return invalid response
+        when(restTemplate.postForObject(anyString(), any(), eq(String.class))).thenReturn("invalid");
+        
+        String name = "John Doe";
+        String address = "123 Main St";
+        String city = "Springfield";
+        String country = "USA";
+        String zipCode = "12345";
+        
+        assertThrows(RuntimeException.class, () -> {
+            wsepShipping.processShipping(name, address, city, country, zipCode);
+        }, "Should throw RuntimeException when response is invalid");
     }
 
     @Test
@@ -76,18 +111,22 @@ public class WSEPShippingTests {
 
     @Test
     public void testCancelShippingSuccess() {
-        int shippingId = 1; // Assuming this is a valid shipping ID
+        // Mock the RestTemplate to return success
+        when(restTemplate.postForObject(anyString(), any(), eq(String.class))).thenReturn("1");
+        
+        int shippingId = 12345; // Valid shipping ID
         boolean result = wsepShipping.cancelShipping(shippingId);
         assertTrue(result, "Shipping cancellation should be successful");
     }
 
     @Test
     public void testCancelShippingFailure() {
-        int shippingId = -1; // Invalid shipping ID
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            wsepShipping.cancelShipping(shippingId);
-        });
-        assertEquals("Invalid shipping ID", exception.getMessage(), "Expected exception message for invalid shipping ID");
+        // Mock the RestTemplate to return failure
+        when(restTemplate.postForObject(anyString(), any(), eq(String.class))).thenReturn("0");
+        
+        int shippingId = 12345; // Valid shipping ID but cancellation fails
+        boolean result = wsepShipping.cancelShipping(shippingId);
+        assertFalse(result, "Shipping cancellation should fail");
     }
 
     @Test
@@ -130,5 +169,14 @@ public class WSEPShippingTests {
         assertThrows(IllegalArgumentException.class, () -> {
             wsepShipping.cancelShipping(-1); // Invalid shipping ID
         }, "Expected IllegalArgumentException for invalid shipping ID");
+    }
+
+    @Test
+    public void testCancelShippingInvalidIdException() {
+        int shippingId = -1; // Invalid shipping ID
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            wsepShipping.cancelShipping(shippingId);
+        });
+        assertEquals("Invalid shipping ID", exception.getMessage(), "Expected exception message for invalid shipping ID");
     }
 }
