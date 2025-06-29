@@ -17,6 +17,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -33,10 +34,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.example.app.ApplicationLayer.Purchase.PurchaseService;
 import com.example.app.DomainLayer.Purchase.Address;
+import com.example.app.DomainLayer.Purchase.BidReciept;
+import com.example.app.DomainLayer.Purchase.Reciept;
 import com.example.app.PresentationLayer.Controller.PurchaseController;
 import com.example.app.PresentationLayer.DTO.Purchase.PaymentDetailsDTO;
+import com.example.app.PresentationLayer.DTO.Purchase.RecieptDTO;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 /**
  * Comprehensive slice tests for PurchaseController.
@@ -604,4 +610,430 @@ class PurchaseControllerTests {
         }
         }
 
+            /* ────────────────────────── STORE BIDS ───────────────────────── */
+    @Nested
+    @DisplayName("8. GET STORE BIDS")
+    class GetStoreBidsTests {
+        @Test
+        void success_returns200AndJsonList() throws Exception {
+            when(purchaseService.getShopBids("tok", 5))
+                .thenReturn(List.of());
+            mvc.perform(get("/api/purchases/shops/5/bids")
+                    .param("authToken", "tok"))
+               .andExpect(status().isOk())
+               .andExpect(content().json("[]"));
+        }
+
+        @Test
+        void badRequest_returns400() throws Exception {
+            when(purchaseService.getShopBids(anyString(), anyInt()))
+                .thenThrow(new IllegalArgumentException());
+            mvc.perform(get("/api/purchases/shops/5/bids")
+                    .param("authToken", "tok"))
+               .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void notFound_returns404() throws Exception {
+            when(purchaseService.getShopBids(anyString(), anyInt()))
+                .thenThrow(new NoSuchElementException());
+            mvc.perform(get("/api/purchases/shops/5/bids")
+                    .param("authToken", "tok"))
+               .andExpect(status().isNotFound());
+        }
+
+        @Test
+        void conflict_returns409() throws Exception {
+            when(purchaseService.getShopBids(anyString(), anyInt()))
+                .thenThrow(new RuntimeException());
+            mvc.perform(get("/api/purchases/shops/5/bids")
+                    .param("authToken", "tok"))
+               .andExpect(status().isConflict());
+        }
+    }
+
+    /* ──────────────────────── GET SINGLE RECEIPT ─────────────────────── */
+    @Nested
+    @DisplayName("9. GET RECEIPT BY ID")
+    class GetRecieptTests {
+        @Test
+        void success_returns200AndJson() throws Exception {
+                // 1. Create (or mock) a domain Reciept
+                Address domainAddress = new Address()
+                .withCountry("US")
+                .withCity("NY")
+                .withStreet("Broadway")
+                .withHouseNumber("1")
+                .withZipCode("12345");
+
+                // If Reciept has a public constructor, use it; otherwise mock it:
+                Reciept domainReciept = mock(Reciept.class);
+                LocalDateTime now = LocalDateTime.of(2025,6,29,10,0);
+                when(domainReciept.getPurchaseId()).thenReturn(7);
+                when(domainReciept.getUserId()).thenReturn(42);
+                when(domainReciept.getShopId()).thenReturn(5);
+                when(domainReciept.getShippingAddress()).thenReturn(domainAddress);
+                when(domainReciept.getItems()).thenReturn(Map.of(1,2));
+                when(domainReciept.isCompleted()).thenReturn(true);
+                when(domainReciept.getTimeOfCompletion()).thenReturn(now);
+                when(domainReciept.getPrice()).thenReturn(99.99);
+                when(domainReciept.getTimestampOfRecieptGeneration()).thenReturn(now);
+
+                // 2. Stub the service to return that single-element list
+                when(purchaseService.getReciept(7))
+                .thenReturn(List.of(domainReciept));
+
+                // 3. Build the expected DTO
+                RecieptDTO expectedDto = RecieptDTO.fromDomain(domainReciept);
+
+                ObjectMapper mapper = new ObjectMapper()
+                        .registerModule(new JavaTimeModule())
+                        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+                String expectedJson = mapper.writeValueAsString(expectedDto);
+                // 4. Perform and assert
+                mvc.perform(get("/api/purchases/7")
+                        .param("authToken", "tok"))
+                .andExpect(status().isOk())
+                .andExpect(content().json(expectedJson));
+        }
+
+        @Test
+        void badRequest_returns400() throws Exception {
+            when(purchaseService.getReciept(anyInt()))
+                .thenThrow(new IllegalArgumentException());
+            mvc.perform(get("/api/purchases/7")
+                    .param("authToken", "tok"))
+               .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void notFound_returns404() throws Exception {
+            when(purchaseService.getReciept(anyInt()))
+                .thenThrow(new NoSuchElementException());
+            mvc.perform(get("/api/purchases/7")
+                    .param("authToken", "tok"))
+               .andExpect(status().isNotFound());
+        }
+
+        @Test
+        void conflict_returns409() throws Exception {
+            when(purchaseService.getReciept(anyInt()))
+                .thenThrow(new RuntimeException());
+            mvc.perform(get("/api/purchases/7")
+                    .param("authToken", "tok"))
+               .andExpect(status().isConflict());
+        }
+    }
+
+    /* ─────────────────────── STORE PURCHASE HISTORY ───────────────────── */
+    @Nested
+    @DisplayName("10. GET STORE PURCHASES")
+    class GetStorePurchasesTests {
+        @Test
+        void success_returns200AndJsonList() throws Exception {
+            when(purchaseService.getStorePurchases("tok", 3))
+                .thenReturn(List.of());
+            mvc.perform(get("/api/purchases/shops/3")
+                    .param("authToken","tok"))
+               .andExpect(status().isOk())
+               .andExpect(content().json("[]"));
+        }
+
+        @Test
+        void badRequest_returns400() throws Exception {
+            when(purchaseService.getStorePurchases(anyString(), anyInt()))
+                .thenThrow(new IllegalArgumentException());
+            mvc.perform(get("/api/purchases/shops/3")
+                    .param("authToken","tok"))
+               .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void notFound_returns404() throws Exception {
+            when(purchaseService.getStorePurchases(anyString(), anyInt()))
+                .thenThrow(new NoSuchElementException());
+            mvc.perform(get("/api/purchases/shops/3")
+                    .param("authToken","tok"))
+               .andExpect(status().isNotFound());
+        }
+
+        @Test
+        void conflict_returns409() throws Exception {
+            when(purchaseService.getStorePurchases(anyString(), anyInt()))
+                .thenThrow(new RuntimeException());
+            mvc.perform(get("/api/purchases/shops/3")
+                    .param("authToken","tok"))
+               .andExpect(status().isConflict());
+        }
+    }
+
+    /* ─────────────────────────── GET SINGLE BID ────────────────────────── */
+    @Nested
+    @DisplayName("11. GET BID BY ID")
+    class GetBidTests {
+        @Test
+        void success_returns200AndJson() throws Exception {
+            when(purchaseService.getBid("tok", 9))
+                .thenReturn(new BidReciept(/* ... */));
+            mvc.perform(get("/api/purchases/bids/9")
+                    .param("authToken","tok"))
+               .andExpect(status().isOk());
+        }
+
+        @Test
+        void badRequest_returns400() throws Exception {
+            when(purchaseService.getBid(anyString(), anyInt()))
+                .thenThrow(new IllegalArgumentException());
+            mvc.perform(get("/api/purchases/bids/9")
+                    .param("authToken","tok"))
+               .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void notFound_returns404() throws Exception {
+            when(purchaseService.getBid(anyString(), anyInt()))
+                .thenThrow(new NoSuchElementException());
+            mvc.perform(get("/api/purchases/bids/9")
+                    .param("authToken","tok"))
+               .andExpect(status().isNotFound());
+        }
+
+        @Test
+        void conflict_returns409() throws Exception {
+            when(purchaseService.getBid(anyString(), anyInt()))
+                .thenThrow(new RuntimeException());
+            mvc.perform(get("/api/purchases/bids/9")
+                    .param("authToken","tok"))
+               .andExpect(status().isConflict());
+        }
+    }
+
+    /* ─────────────────────── AUCTION DETAILS ────────────────────── */
+    @Nested
+    @DisplayName("12. GET AUCTION DETAILS")
+    class GetAuctionDetailsTests {
+        @Test
+        void success_returns200AndJson() throws Exception {
+            when(purchaseService.getBid("tok", 5))
+                .thenReturn(new BidReciept(/* ... */));
+            mvc.perform(get("/api/purchases/auctions/5")
+                    .param("authToken","tok"))
+               .andExpect(status().isOk());
+        }
+
+        @Test
+        void badRequest_returns400() throws Exception {
+            when(purchaseService.getBid(anyString(), anyInt()))
+                .thenThrow(new IllegalArgumentException());
+            mvc.perform(get("/api/purchases/auctions/5")
+                    .param("authToken","tok"))
+               .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void notFound_returns404() throws Exception {
+            when(purchaseService.getBid(anyString(), anyInt()))
+                .thenThrow(new NoSuchElementException());
+            mvc.perform(get("/api/purchases/auctions/5")
+                    .param("authToken","tok"))
+               .andExpect(status().isNotFound());
+        }
+
+        @Test
+        void conflict_returns409() throws Exception {
+            when(purchaseService.getBid(anyString(), anyInt()))
+                .thenThrow(new RuntimeException());
+            mvc.perform(get("/api/purchases/auctions/5")
+                    .param("authToken","tok"))
+               .andExpect(status().isConflict());
+        }
+    }
+
+    /* ─────────────────────── PLACE AUCTION BID ────────────────────── */
+    @Nested
+    @DisplayName("13. PLACE AUCTION BID")
+    class PlaceAuctionBidTests {
+        @Test
+        void success_returns202() throws Exception {
+            doNothing().when(purchaseService).postBiddingAuction("tok", 6, 150);
+            mvc.perform(post("/api/purchases/auctions/6/offers")
+                    .param("authToken","tok")
+                    .param("bidAmount","150"))
+               .andExpect(status().isAccepted());
+        }
+
+        @Test
+        void badRequest_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(purchaseService)
+                .postBiddingAuction(anyString(), anyInt(), anyInt());
+            mvc.perform(post("/api/purchases/auctions/6/offers")
+                    .param("authToken","tok")
+                    .param("bidAmount","150"))
+               .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void notFound_returns404() throws Exception {
+            doThrow(new NoSuchElementException()).when(purchaseService)
+                .postBiddingAuction(anyString(), anyInt(), anyInt());
+            mvc.perform(post("/api/purchases/auctions/6/offers")
+                    .param("authToken","tok")
+                    .param("bidAmount","150"))
+               .andExpect(status().isNotFound());
+        }
+
+        @Test
+        void conflict_returns409() throws Exception {
+            doThrow(new RuntimeException()).when(purchaseService)
+                .postBiddingAuction(anyString(), anyInt(), anyInt());
+            mvc.perform(post("/api/purchases/auctions/6/offers")
+                    .param("authToken","tok")
+                    .param("bidAmount","150"))
+               .andExpect(status().isConflict());
+        }
+    }
+
+    /* ───────────────────── FINISHED BIDS SECTION ──────────────────── */
+    @Nested
+    @DisplayName("14. GET FINISHED BIDS SECTION")
+    class GetFinishedBidsSectionTests {
+        @Test
+        void success_returns200AndJsonList() throws Exception {
+            when(purchaseService.getFinishedBidsList("tok"))
+                .thenReturn(List.of());
+            mvc.perform(get("/api/purchases/bids/finished")
+                    .param("authToken","tok"))
+               .andExpect(status().isOk())
+               .andExpect(content().json("[]"));
+        }
+
+        @Test
+        void unauthorized_returns401() throws Exception {
+            when(purchaseService.getFinishedBidsList(anyString()))
+                .thenThrow(new IllegalArgumentException());
+            mvc.perform(get("/api/purchases/bids/finished")
+                    .param("authToken","tok"))
+               .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        void error_returns500() throws Exception {
+            when(purchaseService.getFinishedBidsList(anyString()))
+                .thenThrow(new RuntimeException());
+            mvc.perform(get("/api/purchases/bids/finished")
+                    .param("authToken","tok"))
+               .andExpect(status().isInternalServerError());
+        }
+    }
+
+    /* ───────────────────────── LIST AUCTIONS ───────────────────────── */
+    @Nested
+    @DisplayName("15. LIST ALL AUCTIONS")
+    class ListAuctionsTests {
+        @Test
+        void success_returns200AndJsonList() throws Exception {
+            when(purchaseService.getAllBids("tok", false))
+                .thenReturn(List.of());
+            mvc.perform(get("/api/purchases/auctions")
+                    .param("authToken","tok"))
+               .andExpect(status().isOk())
+               .andExpect(content().json("[]"));
+        }
+
+        @Test
+        void badRequest_returns400() throws Exception {
+            when(purchaseService.getAllBids(anyString(), eq(false)))
+                .thenThrow(new IllegalArgumentException());
+            mvc.perform(get("/api/purchases/auctions")
+                    .param("authToken","tok"))
+               .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void error_returns500() throws Exception {
+            when(purchaseService.getAllBids(anyString(), eq(false)))
+                .thenThrow(new RuntimeException());
+            mvc.perform(get("/api/purchases/auctions")
+                    .param("authToken","tok"))
+               .andExpect(status().isInternalServerError());
+        }
+    }
+
+    /* ─────────────────── USER WON AUCTIONS ─────────────────── */
+    @Nested
+    @DisplayName("16. GET USER WON AUCTIONS")
+    class GetUserWonAuctionsTests {
+        @Test
+        void success_returns200AndJsonList() throws Exception {
+            when(purchaseService.getAuctionsWinList("tok"))
+                .thenReturn(List.of());
+            mvc.perform(get("/api/purchases/auctions/won")
+                    .param("authToken","tok"))
+               .andExpect(status().isOk())
+               .andExpect(content().json("[]"));
+        }
+
+        @Test
+        void unauthorized_returns401() throws Exception {
+            when(purchaseService.getAuctionsWinList(anyString()))
+                .thenThrow(new IllegalArgumentException());
+            mvc.perform(get("/api/purchases/auctions/won")
+                    .param("authToken","tok"))
+               .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        void error_returns500() throws Exception {
+            when(purchaseService.getAuctionsWinList(anyString()))
+                .thenThrow(new RuntimeException());
+            mvc.perform(get("/api/purchases/auctions/won")
+                    .param("authToken","tok"))
+               .andExpect(status().isInternalServerError());
+        }
+    }
+
+    /* ───────────────────────── ACCEPT BID ───────────────────────── */
+    @Nested
+    @DisplayName("17. ACCEPT BID")
+    class AcceptBidTests {
+        @Test
+        void success_returns204() throws Exception {
+            doNothing().when(purchaseService).acceptBid("tok", 8);
+            mvc.perform(post("/api/purchases/bids/8/accept")
+                    .param("authToken","tok"))
+               .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void conflict_returns409() throws Exception {
+            doThrow(new RuntimeException()).when(purchaseService)
+                .acceptBid(anyString(), anyInt());
+            mvc.perform(post("/api/purchases/bids/8/accept")
+                    .param("authToken","tok"))
+               .andExpect(status().isConflict());
+        }
+    }
+
+    /* ─────────────────── EXISTING USER PURCHASES ─────────────────── */
+    @Nested
+    @DisplayName("5. USER PURCHASE HISTORY (additional)")
+    class GetUserPurchasesErrorBranches {
+        @Test
+        void notFound_returns404() throws Exception {
+            when(purchaseService.getUserPurchases(anyString(), anyInt()))
+                .thenThrow(new NoSuchElementException());
+            mvc.perform(get("/api/purchases/users/4")
+                    .param("authToken","tok"))
+               .andExpect(status().isNotFound());
+        }
+        @Test
+        void conflict_returns409() throws Exception {
+            when(purchaseService.getUserPurchases(anyString(), anyInt()))
+                .thenThrow(new RuntimeException());
+            mvc.perform(get("/api/purchases/users/4")
+                    .param("authToken","tok"))
+               .andExpect(status().isConflict());
+        }
+    }
 }

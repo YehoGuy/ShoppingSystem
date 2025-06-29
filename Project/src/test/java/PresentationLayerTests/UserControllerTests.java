@@ -17,6 +17,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -30,6 +31,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.example.app.ApplicationLayer.AuthTokenService;
 import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.Member;
+import com.example.app.DomainLayer.User;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
 import com.example.app.PresentationLayer.Controller.UserController;
@@ -813,4 +815,241 @@ public class UserControllerTests {
             .andExpect(content().string("true"));
         }
     }
+
+        /* ──────────────── 0. GET /{userId} NULL & UNKNOWN TYPE ─────────────── */
+    @Nested
+    @DisplayName("0. GET USER – null & wrong‐type")
+    class GetUserExtra {
+        @Test
+        void userNotExist_returns404Body() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getUserById(1)).thenReturn(null);
+
+            mvc.perform(get("/api/users/1").param("token","tok"))
+               .andExpect(status().isNotFound())
+               .andExpect(content().string("User not found"));
+        }
+
+        @Test
+        void wrongType_returns404NotMemberOrGuest() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            // return some other subclass of User
+            User weird = mock(User.class);
+            when(userService.getUserById(1)).thenReturn(weird);
+
+            mvc.perform(get("/api/users/1").param("token","tok"))
+               .andExpect(status().isNotFound())
+               .andExpect(content().string("Not member or Guest"));
+        }
+    }
+
+    /* ──────────────── 1. SHOP OWNER ──────────────── */
+    @Nested
+    @DisplayName("1. SHOP OWNER")
+    class ShopOwnerTests {
+        @Test
+        void getShopOwner_success_returns200AndOwnerId() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getShopOwner(5)).thenReturn(42);
+
+            mvc.perform(get("/api/users/shops/5/owner").param("token","tok"))
+               .andExpect(status().isOk())
+               .andExpect(content().string("42"));
+        }
+
+        @Test
+        void getShopOwner_badToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken(anyString());
+
+            mvc.perform(get("/api/users/shops/5/owner").param("token","bad"))
+               .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void getShopOwner_notFound_returns404() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new NoSuchElementException()).when(userService).getShopOwner(5);
+
+            mvc.perform(get("/api/users/shops/5/owner").param("token","tok"))
+               .andExpect(status().isNotFound());
+        }
+    }
+
+    /* ──────────────── 2. BAN USER ──────────────── */
+    @Nested
+    @DisplayName("2. BAN USER")
+    class BanUserTests {
+        @Test
+        void banUser_success_returns204() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            // no need to stub userService.banUser(…) – it’s void 
+
+            mvc.perform(post("/api/users/3/ban").param("token","tok"))
+               .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void banUser_badToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken(anyString());
+
+            mvc.perform(post("/api/users/3/ban").param("token","bad"))
+               .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void banUser_conflict_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException()).when(userService).banUser(3);
+
+            mvc.perform(post("/api/users/3/ban").param("token","tok"))
+               .andExpect(status().isConflict());
+        }
+    }
+
+    /* ──────────────── 3. CHANGE PERMISSIONS – invalid token ───────────── */
+    @Nested
+    @DisplayName("3. CHANGE PERMISSIONS – bad request")
+    class ChangePermissionsErrors {
+        @Test
+        void changePermissions_badToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken(anyString());
+
+            mvc.perform(post("/api/users/shops/4/permissions/2")
+                    .param("token","bad")
+                    .content("[\"manageItems\"]")
+                    .contentType(MediaType.APPLICATION_JSON))
+               .andExpect(status().isBadRequest());
+        }
+    }
+
+    /* ──────────────── 4. PERMISSIONS BY SHOP – conflict ─────────────── */
+    @Nested
+    @DisplayName("4. PERMISSIONS BY SHOP – conflict")
+    class PermissionsByShopErrors {
+        @Test
+        void listPermissions_conflict_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException()).when(userService).getPermitionsByShop("tok",4);
+
+            mvc.perform(get("/api/users/shops/4/permissions").param("token","tok"))
+               .andExpect(status().isConflict());
+        }
+    }
+
+    /* ──────────────── 5. REMOVE MANAGER & OWNER – success ───────────── */
+    @Nested
+    @DisplayName("5. REMOVE MANAGER SUCCESS")
+    class RemoveManagerSuccess {
+        @Test
+        void removeManager_success_returns204() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doNothing().when(userService).removeManagerFromStore("tok",2,4);
+
+            mvc.perform(delete("/api/users/shops/4/managers/2").param("token","tok"))
+               .andExpect(status().isNoContent());
+        }
+    }
+
+    @Nested
+    @DisplayName("6. REMOVE OWNER SUCCESS")
+    class RemoveOwnerSuccess {
+        @Test
+        void removeOwner_success_returns204() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doNothing().when(userService).removeOwnerFromStore("tok",2,4);
+
+            mvc.perform(delete("/api/users/shops/4/owners/2").param("token","tok"))
+               .andExpect(status().isNoContent());
+        }
+    }
+
+    /* ──────────────── 7. HAS ROLE & PERMISSION – error mapping ───────── */
+    @Nested
+    @DisplayName("7. HAS ROLE & PERMISSION – errors")
+    class RolePermissionErrors {
+        @Test
+        void hasRole_badToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken(anyString());
+
+            mvc.perform(get("/api/users/hasRole")
+                    .param("token","bad")
+                    .param("userId","6")
+                    .param("shopId","7"))
+               .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void hasRole_conflict_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException()).when(userService).hasRoleInShop(6,7);
+
+            mvc.perform(get("/api/users/hasRole")
+                    .param("token","tok")
+                    .param("userId","6")
+                    .param("shopId","7"))
+               .andExpect(status().isConflict());
+        }
+
+        @Test
+        void hasPerm_badToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken(anyString());
+
+            mvc.perform(get("/api/users/hasPermission")
+                    .param("token","bad")
+                    .param("userId","6")
+                    .param("shopId","7")
+                    .param("permission","manageItems"))
+               .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void hasPerm_conflict_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException()).when(userService)
+                .hasPermission(6, PermissionsEnum.manageItems, 7);
+
+            mvc.perform(get("/api/users/hasPermission")
+                    .param("token","tok")
+                    .param("userId","6")
+                    .param("shopId","7")
+                    .param("permission","manageItems"))
+               .andExpect(status().isConflict());
+        }
+    }
+
+    /* ──────────────── 8. LIST SUSPENDED – error mapping ──────────────── */
+    @Nested
+    @DisplayName("8. LIST SUSPENDED – errors")
+    class ListSuspendedErrors {
+        @Test
+        void badToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken(anyString());
+
+            mvc.perform(get("/api/users/suspended").param("token","bad"))
+               .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException()).when(userService).getSuspendedUsers();
+
+            mvc.perform(get("/api/users/suspended").param("token","tok"))
+               .andExpect(status().isConflict());
+        }
+    }
+
+    /* ──────────────── 9. VALIDATE MEMBER-ID – conflict ──────────────── */
+    @Nested
+    @DisplayName("9. VALIDATE MEMBER-ID – conflict")
+    class ValidateMemberIdErrors {
+        @Test
+        void conflict_returns409() throws Exception {
+            doThrow(new RuntimeException()).when(userService).validateMemberId(77);
+
+            mvc.perform(get("/api/users/validate/77"))
+               .andExpect(status().isConflict());
+        }
+    }
+
 }
