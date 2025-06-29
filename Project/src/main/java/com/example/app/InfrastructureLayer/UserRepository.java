@@ -53,19 +53,19 @@ public class UserRepository implements IUserRepository {
             @Value("${admin.phoneNumber:0}") String adminPhoneNumber,
             @Value("${admin.address:admin st.}") String adminAddress) {
 
-        if(adminUsername == null || adminUsername.isEmpty()) {
+        if (adminUsername == null || adminUsername.isEmpty()) {
             throw new IllegalArgumentException("Admin username cannot be null or empty.");
         }
-        if(adminPlainPassword == null || adminPlainPassword.isEmpty()) {
+        if (adminPlainPassword == null || adminPlainPassword.isEmpty()) {
             throw new IllegalArgumentException("Admin password cannot be null or empty.");
         }
-        if(adminEmail == null || !adminEmail.contains("@") || adminEmail.isEmpty()) {
+        if (adminEmail == null || !adminEmail.contains("@") || adminEmail.isEmpty()) {
             throw new IllegalArgumentException("Invalid admin email address.");
         }
-        if(adminPhoneNumber == null || adminPhoneNumber.isEmpty()) {
+        if (adminPhoneNumber == null || adminPhoneNumber.isEmpty()) {
             throw new IllegalArgumentException("Admin phone number cannot be null or empty.");
         }
-        if(adminAddress == null || adminAddress.isEmpty()) {
+        if (adminAddress == null || adminAddress.isEmpty()) {
             throw new IllegalArgumentException("Admin address cannot be null or empty.");
         }
 
@@ -74,11 +74,11 @@ public class UserRepository implements IUserRepository {
         this.managers = new CopyOnWriteArrayList<>(); // Initialize the managers list
         this.passwordEncoderUtil = new PasswordEncoderUtil();
 
-        this.adminUsername       = adminUsername;
-        this.adminPlainPassword  = passwordEncoderUtil.encode(adminPlainPassword);
-        this.adminEmail          = adminEmail;
-        this.adminPhoneNumber    = adminPhoneNumber;
-        this.adminAddress        = adminAddress;
+        this.adminUsername = adminUsername;
+        this.adminPlainPassword = passwordEncoderUtil.encode(adminPlainPassword);
+        this.adminEmail = adminEmail;
+        this.adminPhoneNumber = adminPhoneNumber;
+        this.adminAddress = adminAddress;
 
         initAdmin();
     }
@@ -363,7 +363,7 @@ public class UserRepository implements IUserRepository {
         }
         User user = userMapping.get(userId);
         ShoppingCart shoppingCart = user.getShoppingCart();
-        shoppingCart.removeItem(shopId, shopId);
+        shoppingCart.removeItem(shopId, itemId);
         shoppingCart.addItem(shopId, itemId, quantity);
     }
 
@@ -752,7 +752,7 @@ public class UserRepository implements IUserRepository {
             throw new OurRuntime("User with ID " + userId + " doesn't exist.");
         }
         Member user = (Member) userMapping.get(userId);
-        return user.getAuctionsWins(); 
+        return user.getAuctionsWins();
     }
 
     @Override

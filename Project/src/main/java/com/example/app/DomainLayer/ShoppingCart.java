@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.ArrayList;
 import com.example.app.ApplicationLayer.OurRuntime;
 import jakarta.persistence.Embeddable;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -19,22 +20,23 @@ import jakarta.persistence.PreUpdate;
 @Embeddable
 public class ShoppingCart {
     // JPA-compatible collections for persistence
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "shopping_cart_items")
     private List<CartItem> persistentItems = new ArrayList<>();
-    
-    @ElementCollection
+
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "shopping_cart_bids")
     @Column(name = "bid_product_id")
     private List<String> persistentBids = new ArrayList<>(); // Format: "shopId-productId"
-    
+
     // Transient collections for runtime performance
     @Transient
-    final private ConcurrentHashMap<Integer, ConcurrentHashMap<Integer,Integer>> items; // shopID, (productID, quantity)  
-                                                                    //every entry in the HashMap is a basket.
+    final private ConcurrentHashMap<Integer, ConcurrentHashMap<Integer, Integer>> items; // shopID, (productID,
+                                                                                         // quantity)
+    // every entry in the HashMap is a basket.
     @Transient
     final private ConcurrentHashMap<Integer, CopyOnWriteArrayList<Integer>> bids; // shopID, productID
-    
+
     public ShoppingCart() {
         this.items = new ConcurrentHashMap<>();
         this.bids = new ConcurrentHashMap<>();
@@ -43,17 +45,17 @@ public class ShoppingCart {
         // Load from persistent collections if they exist
         loadFromPersistentCollections();
     }
-    
+
     /**
      * Load data from persistent collections into transient runtime collections
      */
-    private void loadFromPersistentCollections() {
+    public void loadFromPersistentCollections() {
         // Load items
         for (CartItem item : persistentItems) {
             items.putIfAbsent(item.getShopId(), new ConcurrentHashMap<>());
             items.get(item.getShopId()).put(item.getProductId(), item.getQuantity());
         }
-        
+
         // Load bids
         for (String bidKey : persistentBids) {
             String[] parts = bidKey.split("-");
@@ -71,11 +73,11 @@ public class ShoppingCart {
             }
         }
     }
-    
+
     /**
      * Sync transient collections to persistent collections for database storage
      */
-    private void syncToPersistentCollections() {
+    public void syncToPersistentCollections() {
         // Clear and rebuild persistent items
         persistentItems.clear();
         for (Map.Entry<Integer, ConcurrentHashMap<Integer, Integer>> shopEntry : items.entrySet()) {
@@ -84,7 +86,7 @@ public class ShoppingCart {
                 persistentItems.add(new CartItem(shopId, itemEntry.getKey(), itemEntry.getValue()));
             }
         }
-        
+
         // Clear and rebuild persistent bids
         persistentBids.clear();
         for (Map.Entry<Integer, CopyOnWriteArrayList<Integer>> bidEntry : bids.entrySet()) {
@@ -100,7 +102,6 @@ public class ShoppingCart {
         bids.clear();
         syncToPersistentCollections();
     }
-    
 
     public void addBasket(int shopId) {
         items.putIfAbsent(shopId, new ConcurrentHashMap<>());
@@ -124,6 +125,8 @@ public class ShoppingCart {
     }
 
     public void removeItem(int shopId, int productId) {
+        if (!hasItemOfShop(shopId, productId))
+            throw new OurRuntime("item or shop not in cart. ", shopId, productId);
         ConcurrentHashMap<Integer, Integer> shopItems = items.get(shopId);
         if (shopItems != null) {
             shopItems.remove(productId);
@@ -143,7 +146,7 @@ public class ShoppingCart {
     }
 
     public void updateProduct(int shopId, int productId, int quantity) {
-        if(bids.containsKey(shopId)) {
+        if (bids.containsKey(shopId)) {
             CopyOnWriteArrayList<Integer> productBids = bids.get(shopId);
             if (productBids.contains(productId)) {
                 // If the product is bid on, we do not allow quantity updates
@@ -195,8 +198,7 @@ public class ShoppingCart {
      *              shopId -> <itemId -> quantity>
      */
     public void restoreCart(HashMap<Integer, HashMap<Integer, Integer>> newItems) {
-        if(!items.isEmpty())
-        {
+        if (!items.isEmpty()) {
             return;
         }
         for (Integer shopId : newItems.keySet()) {
@@ -224,7 +226,7 @@ public class ShoppingCart {
     public void addBid(int shopId, Map<Integer, Integer> newItems) {
         bids.putIfAbsent(shopId, new CopyOnWriteArrayList<>());
         CopyOnWriteArrayList<Integer> productBids = bids.get(shopId);
-        
+
         for (Map.Entry<Integer, Integer> entry : newItems.entrySet()) {
             Integer productId = entry.getKey();
             if (!productBids.contains(productId)) {
@@ -240,8 +242,7 @@ public class ShoppingCart {
         for (Map.Entry<Integer, Integer> entry : newItems.entrySet()) {
             if (!productBids.contains(entry.getKey())) {
                 productBids.add(entry.getKey());
-            }
-            else{
+            } else {
                 Integer productId = entry.getKey();
                 Integer quantity = entry.getValue();
                 shopItems.merge(productId, quantity, Integer::sum); // Add to the basket
@@ -257,13 +258,32 @@ public class ShoppingCart {
     private void onLoad() {
         loadFromPersistentCollections();
     }
-    
+
     /**
      * JPA lifecycle method called before persisting to database
      */
     @PrePersist
     @PreUpdate
     private void onPersistUpdate() {
+        syncToPersistentCollections();
+    }
+
+    public boolean hasItemOfShop(int shopID, int itemID) {
+        if (items.get(shopID) == null)
+            return false;
+        return items.get(shopID).get(itemID) != null;
+    }
+
+    public void updateProductQuantity(int shopID, int itemID, int addOrRemove) {
+        if (!hasItemOfShop(shopID, itemID))
+            throw new OurRuntime("item or shop not in cart. ", shopID, itemID, addOrRemove);
+        int quantity = items.get(shopID).get(itemID);
+        items.get(shopID).put(itemID, quantity + addOrRemove);
+        syncToPersistentCollections();
+    }
+
+    public void removeItemFromCart(int shopID, int itemID) {
+        items.get(shopID).remove(itemID);
         syncToPersistentCollections();
     }
 }

@@ -971,7 +971,6 @@ public class UserController {
         }
     }
 
-
     @GetMapping("/auctions/won")
     public ResponseEntity<List<BidRecieptDTO>> getUserWonAuctions(
             @RequestParam String authToken) {
