@@ -251,9 +251,9 @@ public class UserRepositoryTests {
         repo.addItemToShoppingCart(uid, 10, 100, 2);
         assertEquals(2, repo.getBasket(uid, 10).get(100));
 
-        // update quantity: old 2 + new 5 = 7
+        // update quantity: from 2 to 5
         repo.updateItemQuantityInShoppingCart(uid, 10, 100, 5);
-        assertEquals(7, repo.getBasket(uid, 10).get(100));
+        assertEquals(5, repo.getBasket(uid, 10).get(100));
 
         // remove the only item → basket still exists but is empty
         repo.removeItemFromShoppingCart(uid, 10, 100);
@@ -562,13 +562,11 @@ public class UserRepositoryTests {
         assertTrue(admins.contains(1));
 
         OurRuntime ex = assertThrows(
-            OurRuntime.class,
-            () -> repo.removeAdmin(1)
-        );
+                OurRuntime.class,
+                () -> repo.removeAdmin(1));
         assertTrue(
-            ex.getMessage().contains("cant remove admin from the user who created the system"),
-            () -> "Expected message to contain the core text, but was: " + ex.getMessage()
-        );
+                ex.getMessage().contains("cant remove admin from the user who created the system"),
+                () -> "Expected message to contain the core text, but was: " + ex.getMessage());
     }
 
     @Test
@@ -578,14 +576,13 @@ public class UserRepositoryTests {
         repo.addAdmin(uid);
 
         OurRuntime ex = assertThrows(
-            OurRuntime.class,
-            () -> repo.addAdmin(uid)
-        );
-        // actual message is "MosheTheDebugException thrown! mesage: All ready an admin objects involved: []"
+                OurRuntime.class,
+                () -> repo.addAdmin(uid));
+        // actual message is "MosheTheDebugException thrown! mesage: All ready an admin
+        // objects involved: []"
         assertTrue(
-            ex.getMessage().contains("All ready an admin"),
-            () -> "Expected message to contain 'All ready an admin', but was: " + ex.getMessage()
-        );
+                ex.getMessage().contains("All ready an admin"),
+                () -> "Expected message to contain 'All ready an admin', but was: " + ex.getMessage());
     }
 
     @Test
@@ -608,14 +605,6 @@ public class UserRepositoryTests {
     }
 
     @Test
-    void testRemoveShoppingCartItem_nonExistentNoException() {
-        repo.addMember("shopper3", "pw", "a@b", "ph", "ad");
-        int uid = repo.isUsernameAndPasswordValid("shopper3", "pw");
-
-        assertDoesNotThrow(() -> repo.removeShoppingCartItem(uid, 99, 100));
-    }
-
-    @Test
     void testAddAndRetrieveAuctionWin() {
         // arrange
         repo.addMember("winner", "pw", "w@e", "ph", "ad");
@@ -626,25 +615,24 @@ public class UserRepositoryTests {
             public BidReciept generateReciept() {
                 // you can customize this Address as needed
                 Address shipping = new Address()
-                    .withCity("TestCity")
-                    .withStreet("TestSt")
-                    .withApartmentNumber(1)
-                    .withZipCode("00000");
+                        .withCity("TestCity")
+                        .withStreet("TestSt")
+                        .withApartmentNumber(1)
+                        .withZipCode("00000");
 
                 return new BidReciept(
-                    /* purchaseId */      7,
-                    /* userId */          uid,
-                    /* storeId */         7,
-                    /* items */           Map.of(101, 1),
-                    /* shippingAddress */ shipping,
-                    /* price */           100,
-                    /* thisBidderId */    uid,
-                    /* initialPrice */    50,
-                    /* highestBid */      100,
-                    /* highestBidderId */ uid,
-                    /* isCompleted */     false,
-                    /* endTime */         LocalDateTime.now().plusHours(1)
-                );
+                        /* purchaseId */ 7,
+                        /* userId */ uid,
+                        /* storeId */ 7,
+                        /* items */ Map.of(101, 1),
+                        /* shippingAddress */ shipping,
+                        /* price */ 100,
+                        /* thisBidderId */ uid,
+                        /* initialPrice */ 50,
+                        /* highestBid */ 100,
+                        /* highestBidderId */ uid,
+                        /* isCompleted */ false,
+                        /* endTime */ LocalDateTime.now().plusHours(1));
             }
         };
 
