@@ -47,6 +47,16 @@ public class LogoutView extends BaseView implements BeforeEnterObserver {
                 .set("color", "white")
                 .set("margin", "0");
 
+        // Back button
+        Button backBtn = new Button("Back", e -> UI.getCurrent().navigate("home"));
+        backBtn.getStyle()
+            .set("width", "100%")
+            .set("background", "transparent")
+            .set("color", "white")
+            .set("border", "1px solid white")
+            .set("border-radius", "0.5rem")
+            .set("padding", "0.75rem 1rem");
+
         // logout button
         Button logoutBtn = new Button("Logout", e -> performLogout());
         logoutBtn.getStyle()
@@ -58,7 +68,7 @@ public class LogoutView extends BaseView implements BeforeEnterObserver {
                 .set("padding", "0.75rem 1rem");
 
         // Add into card
-        card.add(prompt, logoutBtn);
+        card.add(prompt, backBtn, logoutBtn);
         add(card);
     }
 
