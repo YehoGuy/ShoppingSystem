@@ -450,7 +450,7 @@ public class UserController {
 
         try {
             authService.ValidateToken(token);
-            HashMap<Integer, PermissionsEnum[]> map = userService.getPermitionsByShop(token, shopId);
+            HashMap<Integer, PermissionsEnum[]> map = userService.getPermissionsByShop(token, shopId);
             return ResponseEntity.ok(map);
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
@@ -970,7 +970,6 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(false);
         }
     }
-
 
     @GetMapping("/auctions/won")
     public ResponseEntity<List<BidRecieptDTO>> getUserWonAuctions(

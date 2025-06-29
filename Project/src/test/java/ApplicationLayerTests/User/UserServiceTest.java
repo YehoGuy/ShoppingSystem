@@ -10,16 +10,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadLocalRandom;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -711,7 +701,7 @@ public class UserServiceTest {
         userRepository.acceptRole(adminId, ownerRole);
 
         // should succeed
-        Map<Integer, PermissionsEnum[]> perms = userService.getPermitionsByShop(adminToken, 77);
+        Map<Integer, PermissionsEnum[]> perms = userService.getPermissionsByShop(adminToken, 77);
         assertTrue(perms.containsKey(adminId));
 
     }
@@ -4967,7 +4957,7 @@ public class UserServiceTest {
         notificationService.setService(svc);
 
         // act
-        Map<Integer, PermissionsEnum[]> perms = svc.getPermitionsByShop("t", 5);
+        Map<Integer, PermissionsEnum[]> perms = svc.getPermissionsByShop("t", 5);
 
         // assert
         assertEquals(1, perms.size());

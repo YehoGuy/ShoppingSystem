@@ -418,7 +418,7 @@ public class UserControllerTests {
             when(authService.ValidateToken("tok")).thenReturn(1);
             HashMap<Integer, PermissionsEnum[]> map = new HashMap<>();
             map.put(2, new PermissionsEnum[] { PermissionsEnum.manageItems });
-            when(userService.getPermitionsByShop("tok", 4)).thenReturn(map);
+            when(userService.getPermissionsByShop("tok", 4)).thenReturn(map);
 
             mvc.perform(get("/api/users/shops/4/permissions").param("token", "tok"))
                     .andExpect(status().isOk())

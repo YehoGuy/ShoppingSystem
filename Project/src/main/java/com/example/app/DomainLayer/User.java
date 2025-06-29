@@ -1,5 +1,6 @@
 package com.example.app.DomainLayer;
 
+import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
 import com.example.app.DomainLayer.Purchase.Address;
 import jakarta.persistence.Embedded;
@@ -35,6 +36,7 @@ public abstract class User {
     }
 
     public ShoppingCart getShoppingCart() {
+        shoppingCart.loadFromPersistentCollections();
         return shoppingCart; // Return the user's shopping cart
     }
 
@@ -70,6 +72,21 @@ public abstract class User {
                 .withStreet(street)
                 .withApartmentNumber(aparmentNum)
                 .withZipCode(postalCode);
+    }
+
+    public void updateShoppingCartItemQuantity(int shopID, int itemID, boolean b) {
+        if (!shoppingCart.hasItemOfShop(shopID, itemID)) {
+            System.out.println("hola");
+            throw new OurRuntime("item not in cart.", shopID, itemID);
+        }
+        int addOrRemove = b ? 1 : -1;
+        shoppingCart.updateProductQuantity(shopID, itemID, addOrRemove);
+    }
+
+    public void removeShoppingCartItem(int shopID, int itemID) {
+        if (!shoppingCart.hasItemOfShop(shopID, itemID))
+            throw new OurRuntime("item not in cart.", shopID, itemID);
+        shoppingCart.removeItemFromCart(shopID, itemID);
     }
 
 }

@@ -110,9 +110,6 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             empty.getStyle().set("color", "var(--lumo-secondary-text-color)");
             add(empty);
 
-            // optional: add a “continue shopping” button
-            Button shopMore = new Button("Continue Shopping", e -> UI.getCurrent().navigate("items"));
-
             return;
         }
 
@@ -298,10 +295,10 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 .setAutoWidth(true);
         wonGrid.addComponentColumn(dto -> {
             Button payNow = new Button("Pay Now");
-            payNow.addClickListener(e -> { 
-                
+            payNow.addClickListener(e -> {
+
                 payForBid(dto);
-              
+
             });
             return payNow;
         })
@@ -403,8 +400,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                         URLShop + "/" + id + "?token=" + token,
                         HttpMethod.GET,
                         entity,
-                        ShopDTO.class
-                        );
+                        ShopDTO.class);
                 if (resp.getBody() != null) {
                     result.add(resp.getBody());
                 }
@@ -531,12 +527,12 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         List<BidRecieptDTO> won;
         try {
             ResponseEntity<List<BidRecieptDTO>> resp = restTemplate.exchange(
-                URLPurchases + "/auctions/won?authToken=" + token,
-                HttpMethod.GET,
-                new HttpEntity<>(new HttpHeaders()),
-                new ParameterizedTypeReference<List<BidRecieptDTO>>() {},
-                token
-            );
+                    URLPurchases + "/auctions/won?authToken=" + token,
+                    HttpMethod.GET,
+                    new HttpEntity<>(new HttpHeaders()),
+                    new ParameterizedTypeReference<List<BidRecieptDTO>>() {
+                    },
+                    token);
             won = resp.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException e) {
             // Could be 404, 500, etc.
@@ -556,32 +552,31 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         Grid<BidRecieptDTO> grid = new Grid<>(BidRecieptDTO.class, false);
         // 1) Store Name
         grid.addColumn(dto -> fetchShopName(dto.getStoreId()))
-            .setHeader("Store Name")
-            .setAutoWidth(true);
+                .setHeader("Store Name")
+                .setAutoWidth(true);
 
         // 2) Item Name
         grid.addColumn(this::fetchItemName)
-            .setHeader("Item Name")
-            .setAutoWidth(true);
-        
+                .setHeader("Item Name")
+                .setAutoWidth(true);
+
         // 3) Your Winning Bid
         grid.addColumn(BidRecieptDTO::getHighestBid)
-            .setHeader("Your Winning Bid")
-            .setAutoWidth(true);
-        
+                .setHeader("Your Winning Bid")
+                .setAutoWidth(true);
+
         // 4) “Pay Now”
         grid.addComponentColumn(dto -> {
             Button payNow = new Button("Pay Now");
             payNow.addClickListener(e -> payForBid(dto));
             return payNow;
         })
-        .setHeader("For Payment")
-        .setAutoWidth(true);
+                .setHeader("For Payment")
+                .setAutoWidth(true);
 
         grid.setItems(won);
         add(grid);
     }
-
 
     private void getFinishedBidsSection() {
         add(new H2("Finished Bids"));
@@ -594,12 +589,12 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         List<BidRecieptDTO> finished;
         try {
             ResponseEntity<List<BidRecieptDTO>> resp = restTemplate.exchange(
-                URLPurchases + "/bids/finished?authToken=" + token,
-                HttpMethod.GET,
-                entity,
-                new ParameterizedTypeReference<List<BidRecieptDTO>>() {},
-                token
-            );
+                    URLPurchases + "/bids/finished?authToken=" + token,
+                    HttpMethod.GET,
+                    entity,
+                    new ParameterizedTypeReference<List<BidRecieptDTO>>() {
+                    },
+                    token);
             finished = resp.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException e) {
             // log if you like: LOG.error("Failed to load finished bids", e);
@@ -620,18 +615,18 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
         // 1) Store Name
         grid.addColumn(dto -> fetchShopName(dto.getStoreId()))
-            .setHeader("Store Name")
-            .setAutoWidth(true);
+                .setHeader("Store Name")
+                .setAutoWidth(true);
 
         // 2) Item Name
         grid.addColumn(this::fetchItemName)
-            .setHeader("Item Name")
-            .setAutoWidth(true);
+                .setHeader("Item Name")
+                .setAutoWidth(true);
 
         // 3) Your bid amount
         grid.addColumn(BidRecieptDTO::getHighestBid)
-            .setHeader("Your Bid")
-            .setAutoWidth(true);
+                .setHeader("Your Bid")
+                .setAutoWidth(true);
 
         // 4) “Pay Now”
         grid.addComponentColumn(dto -> {
@@ -639,8 +634,8 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             payNow.addClickListener(e -> payForBid(dto));
             return payNow;
         })
-        .setHeader("For Payment")
-        .setAutoWidth(true);
+                .setHeader("For Payment")
+                .setAutoWidth(true);
 
         grid.setItems(finished);
         add(grid);
@@ -688,22 +683,21 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
     private void payForBid(BidRecieptDTO dto) {
         Dialog dialog = new Dialog();
-                dialog.setHeaderTitle("Purchase Summary");
-                ShoppingCartDTO cartDto = dto.toShopingCartDTO(baseUrl);
-                PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(baseUrl, cartDto , 
-                        dialog, dto.getStoreId());
-                
-                
-                // Add your component to the dialog
-                dialog.add(purchaseCompletion);
-                // Add your component to the dialog
-                dialog.add(purchaseCompletion);
+        dialog.setHeaderTitle("Purchase Summary");
+        ShoppingCartDTO cartDto = dto.toShopingCartDTO(baseUrl);
+        PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(baseUrl, cartDto,
+                dialog, dto.getStoreId());
 
-                // Optional: add a close button in the footer
-                Button closeButton = new Button("Close", ev -> dialog.close());
-                dialog.getFooter().add(closeButton);
+        // Add your component to the dialog
+        dialog.add(purchaseCompletion);
+        // Add your component to the dialog
+        dialog.add(purchaseCompletion);
 
-                dialog.open(); // Show the dialog
-                buildView(); // Refresh the view after purchase
+        // Optional: add a close button in the footer
+        Button closeButton = new Button("Close", ev -> dialog.close());
+        dialog.getFooter().add(closeButton);
+
+        dialog.open(); // Show the dialog
+        buildView(); // Refresh the view after purchase
     }
 }

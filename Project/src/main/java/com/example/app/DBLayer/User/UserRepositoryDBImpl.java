@@ -28,6 +28,7 @@ import com.example.app.DomainLayer.Roles.Role;
 import com.example.app.DomainLayer.ShoppingCart;
 import com.example.app.DomainLayer.User;
 import com.example.app.InfrastructureLayer.PasswordEncoderUtil;
+import com.example.app.InfrastructureLayer.WSEPPay;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -687,69 +688,29 @@ public class UserRepositoryDBImpl implements IUserRepository {
 
     @Override
     public void updateShoppingCartItemQuantity(int userId, int shopID, int itemID, boolean b) {
-        User user = getUserById(userId);
-        if (user instanceof Member) {
-            Member member = (Member) user;
-            ShoppingCart cart = member.getShoppingCart();
-            Map<Integer, Integer> basket = cart.getBasket(shopID);
-            if (basket == null || !basket.containsKey(itemID)) {
-                throw new OurRuntime("No shopping cart found for shop ID: " + shopID);
-            }
-            if (b) {
-                basket.put(itemID, basket.get(itemID) + 1);
-            } else {
-                if (basket.get(itemID) > 1) {
-                    basket.put(itemID, basket.get(itemID) - 1);
-                } else {
-                    basket.remove(itemID);
-                }
-            }
-            jpaRepo.save((Member) user);
-        } else {
-            Guest guest = guests.get(userId);
-            if (guest == null) {
-                throw new OurRuntime("Guest not found: " + userId);
-            }
-            ShoppingCart cart = guest.getShoppingCart();
-            Map<Integer, Integer> basket = cart.getBasket(shopID);
-            if (basket == null || !basket.containsKey(itemID)) {
-                throw new OurRuntime("No shopping cart found for shop ID: " + shopID);
-            }
-            if (b) {
-                basket.put(itemID, basket.get(itemID) + 1);
-            } else {
-                if (basket.get(itemID) > 1) {
-                    basket.put(itemID, basket.get(itemID) - 1);
-                } else {
-                    basket.remove(itemID);
-                }
-            }
+        try {
+            User user = getUserById(userId);
+            ShoppingCart cart = user.getShoppingCart();
+            cart.updateProductQuantity(shopID, itemID, b ? 1 : -1);
+            user.setShoppingCart(cart);
+            if (user instanceof Member)
+                updateUserInDB((Member) user);
+        } catch (Exception e) {
+            throw e;
         }
     }
 
     @Override
     public void removeShoppingCartItem(int userId, int shopID, int itemID) {
-        User user = getUserById(userId);
-        if (user instanceof Member) {
-            Member member = (Member) user;
-            ShoppingCart cart = member.getShoppingCart();
-            Map<Integer, Integer> basket = cart.getBasket(shopID);
-            if (basket == null || !basket.containsKey(itemID)) {
-                throw new OurRuntime("No shopping cart found for shop ID: " + shopID);
-            }
-            basket.remove(itemID);
-            jpaRepo.save(member);
-        } else {
-            Guest guest = guests.get(userId);
-            if (guest == null) {
-                throw new OurRuntime("Guest not found: " + userId);
-            }
-            ShoppingCart cart = guest.getShoppingCart();
-            Map<Integer, Integer> basket = cart.getBasket(shopID);
-            if (basket == null || !basket.containsKey(itemID)) {
-                throw new OurRuntime("No shopping cart found for shop ID: " + shopID);
-            }
-            basket.remove(itemID);
+        try {
+            User user = getUserById(userId);
+            ShoppingCart cart = user.getShoppingCart();
+            cart.removeItem(shopID, itemID);
+            user.setShoppingCart(cart);
+            if (user instanceof Member)
+                updateUserInDB((Member) user);
+        } catch (Exception e) {
+            throw e;
         }
     }
 
@@ -779,13 +740,10 @@ public class UserRepositoryDBImpl implements IUserRepository {
     @Override
     public ShoppingCart getShoppingCartById(int userId) {
         User user = getUserById(userId);
-        if (user instanceof Member) {
-            return ((Member) user).getShoppingCart();
-        } else if (user instanceof Guest) {
-            return ((Guest) user).getShoppingCart();
-        } else {
-            throw new OurRuntime("User is not a member or guest: " + userId);
+        if (user != null) {
+            return user.getShoppingCart();
         }
+        return null;
     }
 
     @Override
@@ -795,37 +753,22 @@ public class UserRepositoryDBImpl implements IUserRepository {
         }
 
         User user = getUserById(userId);
+        ShoppingCart cart = user.getShoppingCart();
+        cart.addItem(shopId, itemId, quantity);
+        user.setShoppingCart(cart);
         if (user instanceof Member) {
-            Member member = (Member) user;
-            ShoppingCart cart = member.getShoppingCart();
-            cart.addItem(shopId, itemId, quantity);
-            jpaRepo.save(member);
-        } else {
-            Guest guest = guests.get(userId);
-            if (guest == null) {
-                throw new OurRuntime("Guest not found: " + userId);
-            }
-            ShoppingCart cart = guest.getShoppingCart();
-            cart.addItem(shopId, itemId, quantity);
+            updateUserInDB((Member) user);
         }
     }
 
     @Override
     public void removeItemFromShoppingCart(int userId, int shopId, int itemId) {
         User user = getUserById(userId);
-        if (user instanceof Member) {
-            Member member = (Member) user;
-            ShoppingCart cart = member.getShoppingCart();
-            cart.removeItem(shopId, itemId);
-            jpaRepo.save(member);
-        } else {
-            Guest guest = guests.get(userId);
-            if (guest == null) {
-                throw new OurRuntime("Guest not found: " + userId);
-            }
-            ShoppingCart cart = guest.getShoppingCart();
-            cart.removeItem(shopId, itemId);
-        }
+        ShoppingCart cart = user.getShoppingCart();
+        cart.removeItem(shopId, itemId);
+        user.setShoppingCart(cart);
+        if (user instanceof Member)
+            updateUserInDB((Member) user);
     }
 
     @Override
@@ -911,10 +854,7 @@ public class UserRepositoryDBImpl implements IUserRepository {
         if (user == null) {
             throw new OurRuntime("User not found: " + userId);
         }
-        PaymentMethod paymentMethod = user.getPaymentMethod();
-        if (paymentMethod == null) {
-            throw new OurRuntime("Payment method not set for user: " + userId);
-        }
+        PaymentMethod paymentMethod = new WSEPPay();
 
         try {
             int pid = paymentMethod.processPayment(amount, currency, cardNumber, expirationDateMonth,
@@ -968,22 +908,20 @@ public class UserRepositoryDBImpl implements IUserRepository {
     }
 
     @Override
-    public int getShopOwner(int shopId)
-    {
+    public int getShopOwner(int shopId) {
         List<Member> members = jpaRepo.findAll().stream()
                 .filter(user -> user instanceof Member)
                 .map(user -> (Member) user)
                 .filter(member -> member.getRoles().stream()
                         .anyMatch(role -> role.getShopId() == shopId && role.isOwner()))
                 .collect(Collectors.toList());
-        
+
         if (members.isEmpty()) {
             return -1;
         }
-        
+
         return members.get(0).getMemberId(); // Assuming only one owner per shop
-    } 
-    
+    }
 
     @Override
     public void updateUserInDB(Member member) {
