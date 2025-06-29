@@ -183,24 +183,13 @@ public class PersonProfileView extends BaseView implements BeforeEnterObserver {
                             try {
                                 // First try with authToken parameter
                                 shop = rest.getForObject(
-                                    shopsUrl + "/" + r.getShopId() + "?authToken=" + token,
+                                    shopsUrl + "/" + r.getShopId() + "?token=" + token,
                                     DTOs.ShopDTO.class);
                             } catch (Exception e1) {
-                                try {
-                                    // Try with token parameter instead
-                                    shop = rest.getForObject(
-                                        shopsUrl + "/" + r.getShopId() + "?token=" + token,
-                                        DTOs.ShopDTO.class);
-                                } catch (Exception e2) {
-                                    try {
-                                        // Try without any authentication parameter
-                                        shop = rest.getForObject(
-                                            shopsUrl + "/" + r.getShopId(),
-                                            DTOs.ShopDTO.class);
-                                    } catch (Exception e3) {
-                                        // Shop lookup failed, use fallback
-                                    }
-                                }
+                                // add a span with text that says the error
+                                Span errorSpan = new Span("Error loading shop details");
+                                errorSpan.getStyle().set("color", "red");
+                                roleCard.add(errorSpan);
                             }
                             
                             if (shop != null) {
