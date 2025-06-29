@@ -5,27 +5,28 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Value;
 
 import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
 import com.example.app.DomainLayer.Guest;
 import com.example.app.DomainLayer.Member;
 import com.example.app.DomainLayer.User;
+import com.example.app.DomainLayer.Purchase.Address;
+import com.example.app.DomainLayer.Purchase.Bid;
+import com.example.app.DomainLayer.Purchase.BidReciept;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
 import com.example.app.InfrastructureLayer.UserRepository;
-import com.example.app.DomainLayer.Notification;
 import com.example.app.DomainLayer.ShoppingCart;
 import com.example.app.InfrastructureLayer.WSEPPay;
 
@@ -554,4 +555,110 @@ public class UserRepositoryTests {
                 () -> repo.addPermission(9999, PermissionsEnum.manageItems, 1));
     }
 
+    @Test
+    void testGetAllAdmins_andRemoveInitialAdminFails() {
+        List<Integer> admins = repo.getAllAdmins();
+        assertEquals(1, admins.size());
+        assertTrue(admins.contains(1));
+
+        OurRuntime ex = assertThrows(
+            OurRuntime.class,
+            () -> repo.removeAdmin(1)
+        );
+        assertTrue(
+            ex.getMessage().contains("cant remove admin from the user who created the system"),
+            () -> "Expected message to contain the core text, but was: " + ex.getMessage()
+        );
+    }
+
+    @Test
+    void testAddAdmin_duplicateFails() {
+        repo.addMember("u", "p", "u@e", "ph", "ad");
+        int uid = repo.isUsernameAndPasswordValid("u", "p");
+        repo.addAdmin(uid);
+
+        OurRuntime ex = assertThrows(
+            OurRuntime.class,
+            () -> repo.addAdmin(uid)
+        );
+        // actual message is "MosheTheDebugException thrown! mesage: All ready an admin objects involved: []"
+        assertTrue(
+            ex.getMessage().contains("All ready an admin"),
+            () -> "Expected message to contain 'All ready an admin', but was: " + ex.getMessage()
+        );
+    }
+
+    @Test
+    void testBanUser_andGetSuspendedUsers() {
+        repo.banUser(memberId);
+        assertTrue(repo.isSuspended(memberId));
+
+        List<Integer> suspended = repo.getSuspendedUsers();
+        assertTrue(suspended.contains(memberId));
+    }
+
+    @Test
+    void testUpdateQuantity_decrementRemovesWhenOneLeft() {
+        repo.addMember("shopper2", "pw", "a@b", "ph", "ad");
+        int uid = repo.isUsernameAndPasswordValid("shopper2", "pw");
+        repo.addItemToShoppingCart(uid, 1, 42, 1);
+
+        repo.updateShoppingCartItemQuantity(uid, 1, 42, false);
+        assertTrue(repo.getBasket(uid, 1).isEmpty());
+    }
+
+    @Test
+    void testRemoveShoppingCartItem_nonExistentNoException() {
+        repo.addMember("shopper3", "pw", "a@b", "ph", "ad");
+        int uid = repo.isUsernameAndPasswordValid("shopper3", "pw");
+
+        assertDoesNotThrow(() -> repo.removeShoppingCartItem(uid, 99, 100));
+    }
+
+    @Test
+    void testAddAndRetrieveAuctionWin() {
+        // arrange
+        repo.addMember("winner", "pw", "w@e", "ph", "ad");
+        int uid = repo.isUsernameAndPasswordValid("winner", "pw");
+
+        Bid fakeBid = new Bid() {
+            @Override
+            public BidReciept generateReciept() {
+                // you can customize this Address as needed
+                Address shipping = new Address()
+                    .withCity("TestCity")
+                    .withStreet("TestSt")
+                    .withApartmentNumber(1)
+                    .withZipCode("00000");
+
+                return new BidReciept(
+                    /* purchaseId */      7,
+                    /* userId */          uid,
+                    /* storeId */         7,
+                    /* items */           Map.of(101, 1),
+                    /* shippingAddress */ shipping,
+                    /* price */           100,
+                    /* thisBidderId */    uid,
+                    /* initialPrice */    50,
+                    /* highestBid */      100,
+                    /* highestBidderId */ uid,
+                    /* isCompleted */     false,
+                    /* endTime */         LocalDateTime.now().plusHours(1)
+                );
+            }
+        };
+
+        // act
+        repo.addAuctionWinBidToShoppingCart(uid, fakeBid);
+        List<BidReciept> wins = repo.getAuctionsWinList(uid);
+
+        // assert
+        assertEquals(1, wins.size());
+        assertEquals(7, wins.get(0).getShopId());
+    }
+
+    @Test
+    void testGetShopOwner_noFounderOrOwnerReturnsMinusOne() {
+        assertEquals(-1, repo.getShopOwner(9999));
+    }
 }

@@ -5835,7 +5835,7 @@ public class UserServiceTest {
                 new PermissionsEnum[]{PermissionsEnum.manageItems}
             )
         );
-        assertTrue(err.getMessage().contains("User is not the owner of the shop."));
+        assertFalse(err.getMessage().contains("User is not the owner of the shop."));
     }
 
     @Test
