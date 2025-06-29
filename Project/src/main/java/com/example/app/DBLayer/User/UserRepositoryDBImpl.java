@@ -62,6 +62,23 @@ public class UserRepositoryDBImpl implements IUserRepository {
         @Value("${admin.address:admin st.}") String adminAddress,
         @Lazy @Autowired UserRepositoryDB jpaRepo) {
 
+
+        if(adminUsername == null || adminUsername.isEmpty()) {
+            throw new IllegalArgumentException("Admin username cannot be null or empty.");
+        }
+        if(adminPlainPassword == null || adminPlainPassword.isEmpty()) {
+            throw new IllegalArgumentException("Admin password cannot be null or empty.");
+        }
+        if(adminEmail == null || !adminEmail.contains("@") || adminEmail.isEmpty()) {
+            throw new IllegalArgumentException("Invalid admin email address.");
+        }
+        if(adminPhoneNumber == null || adminPhoneNumber.isEmpty()) {
+            throw new IllegalArgumentException("Admin phone number cannot be null or empty.");
+        }
+        if(adminAddress == null || adminAddress.isEmpty()) {
+            throw new IllegalArgumentException("Admin address cannot be null or empty.");
+        }
+
         this.adminUsername       = adminUsername;
         this.adminPlainPassword  = adminPlainPassword;
         this.adminEmail          = adminEmail;
@@ -71,6 +88,7 @@ public class UserRepositoryDBImpl implements IUserRepository {
         this.guests = new ConcurrentHashMap<>();
     }    
     private volatile boolean adminInitialized = false;    
+
     private void ensureAdminExists() {
         if (!adminInitialized) {
             synchronized (this) {

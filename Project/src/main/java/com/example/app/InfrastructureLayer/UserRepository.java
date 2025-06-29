@@ -55,16 +55,33 @@ public class UserRepository implements IUserRepository {
         @Value("${admin.phoneNumber:0}") String adminPhoneNumber,
         @Value("${admin.address:admin st.}") String adminAddress) {
 
-        this.adminUsername       = adminUsername;
-        this.adminPlainPassword  = adminPlainPassword;
-        this.adminEmail          = adminEmail;
-        this.adminPhoneNumber    = adminPhoneNumber;
-        this.adminAddress        = adminAddress;
+        if(adminUsername == null || adminUsername.isEmpty()) {
+            throw new IllegalArgumentException("Admin username cannot be null or empty.");
+        }
+        if(adminPlainPassword == null || adminPlainPassword.isEmpty()) {
+            throw new IllegalArgumentException("Admin password cannot be null or empty.");
+        }
+        if(adminEmail == null || !adminEmail.contains("@") || adminEmail.isEmpty()) {
+            throw new IllegalArgumentException("Invalid admin email address.");
+        }
+        if(adminPhoneNumber == null || adminPhoneNumber.isEmpty()) {
+            throw new IllegalArgumentException("Admin phone number cannot be null or empty.");
+        }
+        if(adminAddress == null || adminAddress.isEmpty()) {
+            throw new IllegalArgumentException("Admin address cannot be null or empty.");
+        }
+        
 
         this.userMapping = new ConcurrentHashMap<>();
         this.userIdCounter = new AtomicInteger(0); // Initialize the user ID counter
         this.managers = new CopyOnWriteArrayList<>(); // Initialize the managers list
         this.passwordEncoderUtil = new PasswordEncoderUtil();
+
+        this.adminUsername       = adminUsername;
+        this.adminPlainPassword  = passwordEncoderUtil.encode(adminPlainPassword);
+        this.adminEmail          = adminEmail;
+        this.adminPhoneNumber    = adminPhoneNumber;
+        this.adminAddress        = adminAddress;
 
         initAdmin();
     }

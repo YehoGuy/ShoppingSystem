@@ -1,5 +1,5 @@
 -- ----------------------------------------------------------------
--- 1) Six users (u1…u6), with u2 initially connected
+-- 1) Six users (u1…u6), with u2 initially connected / $2a$10$BQcgCRrZBJZBBzrfoAOxvuBrmSmbfZfUAUgUQr./HbZRzRgqbWPWm = 123
 -- ----------------------------------------------------------------
 INSERT INTO MEMBERS (
     username, is_admin, is_connected,
@@ -8,47 +8,35 @@ INSERT INTO MEMBERS (
     house_number, street, zip_code, payment_method_string
 ) VALUES
   ('u1', TRUE,  FALSE,
-   'u1@example.com', '123', '050-000-0001',
+   'u1@example.com', '$2a$10$BQcgCRrZBJZBBzrfoAOxvuBrmSmbfZfUAUgUQr./HbZRzRgqbWPWm', '050-000-0001',
    '2000-01-01 00:00:00', '1A', 'Tel Aviv', 'Israel',
    '10', 'Herzl St', '61000', NULL
   ),
   ('u2', FALSE, TRUE,
-   'u2@example.com', '123', '050-000-0002',
+   'u2@example.com', '$2a$10$BQcgCRrZBJZBBzrfoAOxvuBrmSmbfZfUAUgUQr./HbZRzRgqbWPWm', '050-000-0002',
    '2000-01-01 00:00:00', '2B', 'Jerusalem', 'Israel',
    '20', 'Ben Yehuda', '91000', NULL
   ),
   ('u3', FALSE, FALSE,
-   'u3@example.com', '123', '050-000-0003',
+   'u3@example.com', '$2a$10$BQcgCRrZBJZBBzrfoAOxvuBrmSmbfZfUAUgUQr./HbZRzRgqbWPWm', '050-000-0003',
    '2000-01-01 00:00:00', '3C','Haifa', 'Israel',
    '30','HaNassi','33000',NULL
   ),
   ('u4', FALSE, FALSE,
-   'u4@example.com', '123', '050-000-0004',
+   'u4@example.com', '$2a$10$BQcgCRrZBJZBBzrfoAOxvuBrmSmbfZfUAUgUQr./HbZRzRgqbWPWm', '050-000-0004',
    '2005-05-05 05:05:05', '4D','Beer Sheva','Israel',
    '40','Rothschild','84000',NULL
   ),
   ('u5', FALSE, FALSE,
-   'u5@example.com', '123', '050-000-0005',
+   'u5@example.com', '$2a$10$BQcgCRrZBJZBBzrfoAOxvuBrmSmbfZfUAUgUQr./HbZRzRgqbWPWm', '050-000-0005',
    '2010-10-10 10:10:10', '5E','Netanya','Israel',
    '50','Allenby','42500',NULL
   ),
   ('u6', FALSE, FALSE,
-   'u6@example.com', '123', '050-000-0006',
+   'u6@example.com', '$2a$10$BQcgCRrZBJZBBzrfoAOxvuBrmSmbfZfUAUgUQr./HbZRzRgqbWPWm', '050-000-0006',
    '1995-12-31 23:59:59', '6F','Beersheba','Israel',
    '60','Dizengoff','84000',NULL
   )
-;
-
--- ----------------------------------------------------------------
--- 2) Auth token for u2 (so he’s “logged in”), using INSERT…SELECT
--- ----------------------------------------------------------------
-INSERT INTO AUTH_TOKENS (token, expiration_time, user_id)
-SELECT
-  'token-u2',
-  NOW() + INTERVAL '1 hour',
-  member_id
-FROM MEMBERS
-WHERE username = 'u2'
 ;
 
 -- ----------------------------------------------------------------
@@ -56,6 +44,18 @@ WHERE username = 'u2'
 -- ----------------------------------------------------------------
 INSERT INTO SHOPS (name, is_closed, shipping_method_name)
 VALUES ('s1', FALSE, 'WSEPShipping');
+
+-- 1) Look up u2’s member_id and s1’s shop_id, then insert one MEMBER_ROLES row
+INSERT INTO MEMBER_ROLES (member_id, assignee_id, permissions, shop_id)
+SELECT
+  auth.member_id,                      -- u2 is granting the role
+  auth.member_id,                      -- u2 is also the assignee
+  ARRAY[0,1,2,3,5,8,9,10,6,7,11]::smallint[],  -- list of permission‐IDs
+  shop.id                              -- the shop “s1”
+FROM MEMBERS auth
+JOIN SHOPS    shop ON shop.name = 's1'
+WHERE auth.username = 'u2';
+
 
 -- ----------------------------------------------------------------
 -- 4) Item “Bamba” in s1, qty=20, price=30
@@ -78,6 +78,7 @@ SELECT
   30
 FROM SHOPS s, ITEMS i
 WHERE s.name='s1' AND i.name='Bamba';
+
 
 -- -------------------------------------------------------------------
 -- Grant roles in shop “s1” by user “u2” to users u3, u4 and u5
