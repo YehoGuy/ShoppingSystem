@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 import org.springframework.stereotype.Service;
 
@@ -16,7 +15,6 @@ import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
 import com.example.app.DomainLayer.IUserRepository;
 import com.example.app.DomainLayer.Member;
-import com.example.app.DomainLayer.Notification;
 import com.example.app.DomainLayer.Purchase.Address;
 import com.example.app.DomainLayer.Purchase.Bid;
 import com.example.app.DomainLayer.Purchase.BidReciept;
@@ -24,8 +22,6 @@ import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
 import com.example.app.DomainLayer.User;
 import com.example.app.InfrastructureLayer.PasswordEncoderUtil;
-
-import jakarta.validation.constraints.Min;
 
 @Service
 public class UserService {
@@ -511,12 +507,6 @@ public class UserService {
         try {
 
             LoggerService.logMethodExecution("getPermitionsByShop", shopId);
-            // int id = authTokenService.ValidateToken(token); // Validate the token and get
-            // the user ID
-            // if (!userRepository.isOwner(id, shopId)) {
-            // throw new OurArg("Member ID " + token + " is not an owner of shop ID " +
-            // shopId);
-            // }
 
             HashMap<Integer, PermissionsEnum[]> permissions = new HashMap<>();
             for (Member member : userRepository.getMembersList()) {
@@ -621,16 +611,16 @@ public class UserService {
     public void makeManagerOfStore(String token, int memberId, int shopId, PermissionsEnum[] permissions) {
         try {
             LoggerService.logMethodExecution("makeManagerOfStore", token, shopId, permissions);
-            int assignee = authTokenService.ValidateToken(token); // Validate the token and get the user ID
-            if (isSuspended(assignee)) {
+            int owner = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            if (isSuspended(owner)) {
                 throw new OurRuntime("the user is suspended");
             }
-            if (!userRepository.isOwner(assignee, shopId)) {
+            if (!userRepository.isOwner(owner, shopId)) {
                 LoggerService.logDebug("makeManagerOfStore",
-                        new OurRuntime("Member ID " + assignee + " is not an owner of shop ID " + shopId));
-                throw new OurRuntime("Member ID " + assignee + " is not an owner of shop ID " + shopId);
+                        new OurRuntime("Member ID " + owner + " is not an owner of shop ID " + shopId));
+                throw new OurRuntime("Member ID " + owner + " is not an owner of shop ID " + shopId);
             }
-            Role role = new Role(assignee, shopId, permissions);
+            Role role = new Role(owner, shopId, permissions);
             userRepository.addRoleToPending(memberId, role);
             LoggerService.logMethodExecutionEndVoid("makeManagerOfStore");
         } catch (OurRuntime e) {

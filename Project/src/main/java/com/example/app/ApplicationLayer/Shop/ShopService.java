@@ -16,21 +16,20 @@ import com.example.app.ApplicationLayer.Purchase.ShippingMethod;
 import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.Item.Item;
 import com.example.app.DomainLayer.Item.ItemCategory;
+import com.example.app.DomainLayer.Member;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
+import com.example.app.DomainLayer.Shop.Discount.Discount;
+import com.example.app.DomainLayer.Shop.Discount.Policy;
+import com.example.app.DomainLayer.Shop.Discount.PolicyComposite;
+import com.example.app.DomainLayer.Shop.Discount.PolicyLeaf;
 import com.example.app.DomainLayer.Shop.IShopRepository;
 import com.example.app.DomainLayer.Shop.Operator;
 import com.example.app.DomainLayer.Shop.PurchasePolicy;
 import com.example.app.DomainLayer.Shop.Shop;
-import com.example.app.DomainLayer.Shop.Discount.Discount;
 import com.example.app.DomainLayer.User;
-import com.example.app.DomainLayer.Member;
-import com.example.app.DomainLayer.Shop.Discount.Policy;
-import com.example.app.DomainLayer.Shop.Discount.PolicyComposite;
-import com.example.app.DomainLayer.Shop.Discount.PolicyLeaf;
 import com.example.app.PresentationLayer.DTO.Shop.CompositePolicyDTO;
 import com.example.app.PresentationLayer.DTO.Shop.LeafPolicyDTO;
-import com.example.app.PresentationLayer.DTO.Shop.PoliciesDTO;
 
 @Service
 public class ShopService {
