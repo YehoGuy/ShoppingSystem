@@ -9,6 +9,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorColumn;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -39,6 +40,7 @@ public class Reciept {
     @MapKeyColumn(name = "item_id")
     @Column(name = "quantity")
     protected final Map<Integer, Integer> items; // itemId -> quantity
+    @Embedded
     protected final Address shippingAddress; // shipping address
     protected final AtomicBoolean isCompleted; // purchase status
     protected final LocalDateTime timeOfCompletion; // time of purchase completion

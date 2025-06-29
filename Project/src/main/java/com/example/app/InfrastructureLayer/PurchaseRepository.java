@@ -222,4 +222,8 @@ public class PurchaseRepository implements IPurchaseRepository {
         bid.addBidding(userId, bidPrice, false);
     }
 
+    @Override
+    public void addReciept(Reciept reciept) {
+    }
+
 }

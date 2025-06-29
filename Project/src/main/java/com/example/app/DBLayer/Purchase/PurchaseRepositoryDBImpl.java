@@ -123,8 +123,10 @@ public class PurchaseRepositoryDBImpl implements IPurchaseRepository {
         List<Purchase> bids = jpaRepo.findAll().stream().filter(purchase -> purchase instanceof Bid).toList();
         List<BidReciept> reciepts = new LinkedList<>();
         for (Purchase bid : bids) {
-            if (bid instanceof Bid)
+            if (bid instanceof Bid){
                 reciepts.add(((Bid) bid).generateReciept());
+                entityManager.persist(((Bid) bid).generateReciept());
+            }
         }
         return reciepts;
     }
@@ -170,5 +172,14 @@ public class PurchaseRepositoryDBImpl implements IPurchaseRepository {
             throw new OurRuntime("Error when posting bid.");
         }
         
+    }
+
+    @Override
+    public void addReciept(Reciept reciept) {
+        try {
+            entityManager.persist(reciept);
+        } catch (Exception e) {
+            throw new OurRuntime("Error when adding reciept.");
+        }
     }
 }

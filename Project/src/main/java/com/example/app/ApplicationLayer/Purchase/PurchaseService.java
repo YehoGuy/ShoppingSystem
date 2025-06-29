@@ -107,6 +107,14 @@ public class PurchaseService {
                         shippingAddress.getCountry(),
                         shippingAddress.getCity(), shippingAddress.getStreet(), shippingAddress.getZipCode());
             }
+            // genrate reciept for each purchase
+            for (Integer purchaseId : purchaseIds.keySet()) {
+                Purchase purchase = purchaseRepository.getPurchaseById(purchaseId);
+                if (purchase != null) {
+                    Reciept reciept = purchase.generateReciept();
+                    purchaseRepository.addReciept(reciept);
+                }
+            }
             LoggerService.logMethodExecutionEnd("checkoutCart", purchaseIds);
             userService.purchaseNotification(cart);
             return purchaseIds.keySet().stream().toList();
@@ -174,6 +182,14 @@ public class PurchaseService {
                 shopService.shipPurchase(authToken, purchaseId, purchaseIds.get(purchaseId),
                         shippingAddress.getCountry(),
                         shippingAddress.getCity(), shippingAddress.getStreet(), shippingAddress.getZipCode());
+            }
+            // genrate reciept for each purchase
+            for (Integer purchaseId : purchaseIds.keySet()) {
+                Purchase purchase = purchaseRepository.getPurchaseById(purchaseId);
+                if (purchase != null) {
+                    Reciept reciept = purchase.generateReciept();
+                    purchaseRepository.addReciept(reciept);
+                }
             }
             LoggerService.logMethodExecutionEnd("partialCheckoutCart", purchaseIds);
             userService.purchaseNotification(cart);
@@ -315,6 +331,9 @@ public class PurchaseService {
             notificationService.sendToUser(initiatingUserId, "The bid is over ", msg);
             purchase.completePurchase();
             userService.addBidToUserShoppingCart(initiatingUserId, shopId, items);
+            // generate reciept for the bid
+            Reciept reciept = purchase.generateReciept();
+            purchaseRepository.addReciept(reciept);
             LoggerService.logMethodExecutionEnd("finalizeBid", initiatingUserId);
             return initiatingUserId;
         } catch (OurArg e) {
@@ -586,6 +605,10 @@ public class PurchaseService {
                         (pid == winnerId ? " You won with a bid of " + finalPrice + "."
                                 : " You lost. The winning bid was " + finalPrice + "."));
             }
+
+            // generate reciept for the bid
+            Reciept reciept = purchase.generateReciept();
+            purchaseRepository.addReciept(reciept);
 
             userService.addAuctionWinBidToUserShoppingCart(winnerId, bid);
         } catch (OurArg e) {
