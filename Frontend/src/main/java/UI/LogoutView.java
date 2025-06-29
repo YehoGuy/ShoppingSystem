@@ -20,17 +20,14 @@ public class LogoutView extends BaseView implements BeforeEnterObserver {
     private final String logoutApiUrl;
 
     public LogoutView(@Value("${url.api}") String api) {
-        // header: title + icons
         super("Logout", "End your session securely", "🚪", "👋");
 
         this.logoutApiUrl = api + "/users/logout";
 
-        // center everything
         setSizeFull();
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.CENTER);
 
-        // card container
         VerticalLayout card = new VerticalLayout();
         card.addClassName("view-card");
         card.getStyle()
@@ -41,11 +38,20 @@ public class LogoutView extends BaseView implements BeforeEnterObserver {
         card.setAlignItems(Alignment.CENTER);
         card.setSpacing(true);
 
-        // prompt
         H2 prompt = new H2("Are you sure you want to logout?");
         prompt.getStyle()
                 .set("color", "white")
                 .set("margin", "0");
+
+        // Back button
+        Button backBtn = new Button("Back", e -> UI.getCurrent().navigate("home"));
+        backBtn.getStyle()
+            .set("width", "100%")
+            .set("background", "transparent")
+            .set("color", "white")
+            .set("border", "1px solid white")
+            .set("border-radius", "0.5rem")
+            .set("padding", "0.75rem 1rem");
 
         // logout button
         Button logoutBtn = new Button("Logout", e -> performLogout());
@@ -57,14 +63,12 @@ public class LogoutView extends BaseView implements BeforeEnterObserver {
                 .set("border-radius", "0.5rem")
                 .set("padding", "0.75rem 1rem");
 
-        // Add into card
-        card.add(prompt, logoutBtn);
+        card.add(prompt, backBtn, logoutBtn);
         add(card);
     }
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
-        // if not logged in, redirect
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("");
         }

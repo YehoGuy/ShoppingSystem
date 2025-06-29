@@ -286,7 +286,7 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
                                     ROLES_URL + shopId + "/accept?token=" + token,
                                     null,
                                     Void.class);
-                            row.remove();
+                            UI.getCurrent().getPage().reload();
                         });
                         if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
                             accept.setVisible(false);
@@ -301,8 +301,7 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
                                     ROLES_URL + shopId + "/decline?token=" + token,
                                     null,
                                     Void.class);
-                            row.remove();
-
+                            UI.getCurrent().getPage().reload();
                         });
                         if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
                             reject.setVisible(false);
