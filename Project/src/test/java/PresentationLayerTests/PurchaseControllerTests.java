@@ -10,6 +10,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -445,6 +446,160 @@ class PurchaseControllerTests {
                 mvc.perform(post(BASE + "/10/finalize")
                         .param("authToken", "tok")
                 )
+                .andExpect(status().isConflict());
+        }
+        }
+
+
+        @Nested
+        @DisplayName("6. PARTIAL CHECKOUT")
+        class PartialCheckoutTests {
+        private PaymentDetailsDTO paymentDetails;
+        private String paymentJson;
+
+        @BeforeEach
+        void setup() throws Exception {
+                paymentDetails = new PaymentDetailsDTO(
+                "USD", "1234567890123456", "12", "25", "John Doe", "123", "tok"
+                );
+                paymentJson = new ObjectMapper().writeValueAsString(paymentDetails);
+        }
+
+        @Test
+        @DisplayName("success → 201 + IDs")
+        void success_returns201() throws Exception {
+                when(purchaseService.partialCheckoutCart(
+                eq("tok"),
+                any(Address.class),
+                anyString(), anyString(), anyString(), anyString(), anyString(),
+                anyString(), anyString(),
+                eq(42) // shopId
+                )).thenReturn(List.of(5, 6, 7));
+
+                mvc.perform(post("/api/purchases/partial-checkout")
+                        .param("authToken",  "tok")
+                        .param("country",    "US")
+                        .param("city",       "NY")
+                        .param("street",     "Main St")
+                        .param("houseNumber","123")
+                        .param("zipCode",    "10001")
+                        .param("shopId",     "42")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(paymentJson))
+                .andExpect(status().isCreated())
+                .andExpect(content().json("[5,6,7]"));
+        }
+
+        @Test
+        @DisplayName("bad data → 400")
+        void badRequest_returns400() throws Exception {
+                when(purchaseService.partialCheckoutCart(
+                anyString(), any(), anyString(), anyString(),
+                anyString(), anyString(), anyString(),
+                anyString(), anyString(), anyInt()
+                )).thenThrow(new IllegalArgumentException("boom"));
+
+                mvc.perform(post("/api/purchases/partial-checkout")
+                        .param("authToken","tok")
+                        .param("country",  "US")
+                        .param("city",     "NY")
+                        .param("street",   "Main")
+                        .param("houseNumber","1")
+                        .param("zipCode",  "12345")
+                        .param("shopId",   "42")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(paymentJson))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("not found → 404")
+        void notFound_returns404() throws Exception {
+                when(purchaseService.partialCheckoutCart(
+                anyString(), any(), anyString(), anyString(),
+                anyString(), anyString(), anyString(),
+                anyString(), anyString(), anyInt()
+                )).thenThrow(new NoSuchElementException("no cart"));
+
+                mvc.perform(post("/api/purchases/partial-checkout")
+                        .param("authToken","tok")
+                        .param("country",  "US")
+                        .param("city",     "NY")
+                        .param("street",   "Main")
+                        .param("houseNumber","1")
+                        .param("zipCode",  "12345")
+                        .param("shopId",   "42")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(paymentJson))
+                .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("business conflict → 409")
+        void conflict_returns409() throws Exception {
+                when(purchaseService.partialCheckoutCart(
+                anyString(), any(), anyString(), anyString(),
+                anyString(), anyString(), anyString(),
+                anyString(), anyString(), anyInt()
+                )).thenThrow(new RuntimeException("out of stock"));
+
+                mvc.perform(post("/api/purchases/partial-checkout")
+                        .param("authToken","tok")
+                        .param("country",  "US")
+                        .param("city",     "NY")
+                        .param("street",   "Main")
+                        .param("houseNumber","1")
+                        .param("zipCode",  "12345")
+                        .param("shopId",   "42")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(paymentJson))
+                .andExpect(status().isConflict());
+        }
+        }
+        @Nested
+        @DisplayName("7. GET ALL BIDS")
+        class GetAllBidsTests {
+        @Test
+        @DisplayName("success → 200 + empty list")
+        void success_returns200AndJsonList() throws Exception {
+                when(purchaseService.getAllBids("tok", true)).thenReturn(List.of());
+
+                mvc.perform(get("/api/purchases/bids")
+                        .param("authToken", "tok"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[]"));
+        }
+
+        @Test
+        @DisplayName("bad token → 400")
+        void badRequest_returns400() throws Exception {
+                when(purchaseService.getAllBids(anyString(), anyBoolean()))
+                .thenThrow(new IllegalArgumentException("invalid"));
+
+                mvc.perform(get("/api/purchases/bids")
+                        .param("authToken", "tok"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("no bids → 404")
+        void notFound_returns404() throws Exception {
+                when(purchaseService.getAllBids(anyString(), anyBoolean()))
+                .thenThrow(new NoSuchElementException("none"));
+
+                mvc.perform(get("/api/purchases/bids")
+                        .param("authToken", "tok"))
+                .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("business conflict → 409")
+        void conflict_returns409() throws Exception {
+                when(purchaseService.getAllBids(anyString(), anyBoolean()))
+                .thenThrow(new RuntimeException("closed"));
+
+                mvc.perform(get("/api/purchases/bids")
+                        .param("authToken", "tok"))
                 .andExpect(status().isConflict());
         }
         }
