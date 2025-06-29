@@ -157,7 +157,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
         // USERS
         add(new H2("System Users"));
         userGrid = new Grid<>(UserGridRow.class);
-        userGrid.setColumns("username", "email", "suspensionUntil");
+        userGrid.setColumns("id","username", "email", "suspensionUntil");
 
         userGrid.addComponentColumn(user -> {
             Button adminBtn = new Button("Make Admin");
