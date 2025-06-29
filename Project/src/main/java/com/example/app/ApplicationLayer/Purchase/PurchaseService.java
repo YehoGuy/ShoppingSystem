@@ -153,9 +153,9 @@ public class PurchaseService {
                 if(shopId != shopIdToBuy) {
                     continue; // Skip shops that are not the one we want to buy from
                 }
+                aqcuired.put(shopId, cart.get(shopId));
                 double totalPrice = shopService.purchaseItems(cart.get(shopId), shopId, authToken);
                 totalPrices.put(shopId, totalPrice);
-                aqcuired.put(shopId, cart.get(shopId));
 
                 int payid = userService.pay(authToken, shopId, totalPrice, currency, cardNumber,
                         expirationDateMonth, expirationDateYear, cardHolderName, cvv, id);
@@ -422,7 +422,7 @@ public class PurchaseService {
             LoggerService.logMethodExecution("getAllBids", authToken);
             int userId = authTokenService.ValidateToken(authToken);
             // 1. fetch everything...
-            List<BidReciept> bids = purchaseRepository.getAllBids();
+            List<BidReciept> bids = new ArrayList<>(purchaseRepository.getAllBids());
 
             if(fromBid){
                 //find shop owner of each bid - for owner only has to see all bids of his shops

@@ -1,6 +1,7 @@
 package ApplicationLayerTests.User;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,16 +11,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadLocalRandom;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -30,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -44,12 +37,11 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
-import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.messaging.support.AbstractMessageChannel;
 
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -65,10 +57,11 @@ import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
 import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.IUserRepository;
 import com.example.app.DomainLayer.Member;
-import com.example.app.DomainLayer.Notification;
 import com.example.app.DomainLayer.ShoppingCart;
 import com.example.app.DomainLayer.User;
 import com.example.app.DomainLayer.Purchase.Address;
+import com.example.app.DomainLayer.Purchase.Bid;
+import com.example.app.DomainLayer.Purchase.BidReciept;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
 import com.example.app.InfrastructureLayer.AuthTokenRepository;
@@ -76,7 +69,6 @@ import com.example.app.InfrastructureLayer.UserRepository;
 
 import org.mockito.quality.Strictness;
 
-import com.example.app.InfrastructureLayer.WSEPPay;
 
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ExtendWith(MockitoExtension.class)
@@ -5629,5 +5621,277 @@ public class UserServiceTest {
         verify(repo).removeRole(100, shopId);
         verify(repo).removeRole(200, shopId);
         verifyNoMoreInteractions(repo);
+    }
+
+    @Test
+    void testAddFounderRole_success() {
+    // Arrange
+    IUserRepository repo = mock(IUserRepository.class);
+    AuthTokenService auth = mock(AuthTokenService.class);
+    NotificationService notif = mock(NotificationService.class);
+    UserService svc = new UserService(repo, auth, notif);
+    notif.setService(svc);
+
+    int memberId = 42, shopId = 99;
+    Role role = new Role(1001, shopId, new PermissionsEnum[]{ PermissionsEnum.closeShop });
+    Member member = mock(Member.class);
+
+    // *** new stubs to satisfy validateMemberId(...) ***
+    Map<Integer, User> map = new HashMap<>();
+    map.put(memberId, member);
+    when(repo.getUserMapping()).thenReturn(map);
+    when(repo.getUserById(memberId)).thenReturn(member);
+    // ---------------------------------------------------
+
+    // (you can still stub getMemberById if your code uses it further down)
+    when(repo.getMemberById(memberId)).thenReturn(member);
+
+    // Act
+    boolean result = svc.addFounderRole(memberId, role, shopId);
+
+    // Assert
+    assertTrue(result, "addFounderRole should return true on success");
+    verify(repo).updateUserInDB(member);
+    }
+
+    @Test
+    void testHasRoleInShop_positiveAndNegative() {
+        IUserRepository repo = mock(IUserRepository.class);
+        UserService svc = new UserService(repo, mock(AuthTokenService.class), mock(NotificationService.class));
+
+        int userId = 7, shopId = 3;
+        Member member = mock(Member.class);
+        Role matchingRole = new Role(1, shopId, new PermissionsEnum[0]);
+        when(repo.getUserById(userId)).thenReturn(member);
+        when(member.getRoles()).thenReturn(List.of(matchingRole));
+        assertTrue(svc.hasRoleInShop(userId, shopId), "should be true when a role for that shop exists");
+
+        when(member.getRoles()).thenReturn(List.of()); 
+        assertFalse(svc.hasRoleInShop(userId, shopId), "should be false when no matching role");
+    }
+
+    @Test
+    void testUpdateShoppingCartItemQuantity_byUserId() {
+        IUserRepository repo = mock(IUserRepository.class);
+        UserService svc = new UserService(repo, mock(AuthTokenService.class), mock(NotificationService.class));
+
+        int userId = 5, shopId = 10, itemId = 77;
+        boolean inc = true;
+
+        // Act & Assert (no exception)
+        assertDoesNotThrow(() -> svc.updateShoppingCartItemQuantity(userId, shopId, itemId, inc));
+        verify(repo).updateShoppingCartItemQuantity(userId, shopId, itemId, inc);
+    }
+
+    @Test
+    void testRemoveItemFromShoppingCart_byUserId() {
+        IUserRepository repo = mock(IUserRepository.class);
+        UserService svc = new UserService(repo, mock(AuthTokenService.class), mock(NotificationService.class));
+
+        int userId = 13, shopId = 21, itemId = 99;
+        assertDoesNotThrow(() -> svc.removeItemFromShoppingCart(userId, shopId, itemId));
+        verify(repo).removeShoppingCartItem(userId, shopId, itemId);
+    }
+
+    @Test
+    void testClearUserShoppingCartByShopId() {
+        IUserRepository repo = mock(IUserRepository.class);
+        UserService svc = new UserService(repo, mock(AuthTokenService.class), mock(NotificationService.class));
+
+        int userId = 2, shopId = 8;
+        ShoppingCart cart = mock(ShoppingCart.class);
+        when(repo.getShoppingCartById(userId)).thenReturn(cart);
+
+        svc.clearUserShoppingCartByShopId(userId, shopId);
+        verify(cart).removeBasket(shopId);
+    }
+
+    @Test
+    void testRestoreUserShoppingCartByShopId() {
+        IUserRepository repo = mock(IUserRepository.class);
+        UserService svc = new UserService(repo, mock(AuthTokenService.class), mock(NotificationService.class));
+
+        int userId = 3, shopId = 5;
+        @SuppressWarnings("unchecked")
+        HashMap<Integer, HashMap<Integer, Integer>> allItems = new HashMap<>();
+        HashMap<Integer, Integer> inner = new HashMap<>();
+        inner.put(100, 4);
+        allItems.put(shopId, inner);
+
+        ShoppingCart cart = mock(ShoppingCart.class);
+        when(repo.getShoppingCartById(userId)).thenReturn(cart);
+
+        svc.restoreUserShoppingCartByShopId(userId, allItems, shopId);
+
+        // verify that we only passed the one‐shop subset
+        HashMap<Integer, HashMap<Integer, Integer>> expected = new HashMap<>();
+        expected.put(shopId, inner);
+        verify(cart).restoreCart(expected);
+    }
+
+    @Test
+    void testAddBidToUserShoppingCart_andReturnTrue() {
+        IUserRepository repo = mock(IUserRepository.class);
+        UserService svc = new UserService(repo, mock(AuthTokenService.class), mock(NotificationService.class));
+
+        int userId = 11, shopId = 22;
+        Map<Integer, Integer> bidItems = Map.of(7, 2, 13, 1);
+
+        // Act
+        boolean ok = svc.addBidToUserShoppingCart(userId, shopId, bidItems);
+
+        // Assert
+        assertTrue(ok);
+        verify(repo).addBidToShoppingCart(userId, shopId, bidItems);
+    }
+
+    @Test
+    void testAddNotificationDelegatesToRepo() {
+        IUserRepository repo = mock(IUserRepository.class);
+        UserService svc = new UserService(repo, mock(AuthTokenService.class), mock(NotificationService.class));
+
+        int userId = 6;
+        String title = "Hello", msg = "World";
+
+        svc.addNotification(userId, title, msg);
+        verify(repo).addNotification(userId, title, msg);
+    }
+
+    @Test
+    void testAddAuctionWinBidToUserShoppingCart() {
+        IUserRepository repo = mock(IUserRepository.class);
+        UserService svc = new UserService(repo, mock(AuthTokenService.class), mock(NotificationService.class));
+
+        int winner = 9;
+        Bid bid = mock(Bid.class);
+
+        svc.addAuctionWinBidToUserShoppingCart(winner, bid);
+        verify(repo).addAuctionWinBidToShoppingCart(winner, bid);
+    }
+
+    @Test
+    void testGetShopOwner_andGetAuctionsWinList_andBanUser() {
+        IUserRepository repo = mock(IUserRepository.class);
+        UserService svc = new UserService(repo, mock(AuthTokenService.class), mock(NotificationService.class));
+
+        // getShopOwner
+        when(repo.getShopOwner(77)).thenReturn(314);
+        assertEquals(314, svc.getShopOwner(77));
+        verify(repo).getShopOwner(77);
+
+        // getAuctionsWinList
+        List<BidReciept> wins = List.of(mock(BidReciept.class), mock(BidReciept.class));
+        when(repo.getAuctionsWinList(5)).thenReturn(wins);
+        assertSame(wins, svc.getAuctionsWinList(5));
+        verify(repo).getAuctionsWinList(5);
+
+        // banUser
+        svc.banUser(123);
+        verify(repo).banUser(123);
+    }
+
+    @Test
+    void testSetUnSuspended_branches() {
+        IUserRepository repo = mock(IUserRepository.class);
+        UserService svc = new UserService(repo, mock(AuthTokenService.class), mock(NotificationService.class));
+
+        int uid = 55;
+        // 1) when not suspended → exception
+        when(repo.isSuspended(uid)).thenReturn(false);
+        OurRuntime ex = assertThrows(OurRuntime.class, () -> svc.setUnSuspended(uid));
+        assertTrue(ex.getMessage().contains("already unsuspended"));
+
+        // 2) when suspended → clears it
+        when(repo.isSuspended(uid)).thenReturn(true);
+        assertDoesNotThrow(() -> svc.setUnSuspended(uid));
+        verify(repo).setUnSuspended(uid);
+    }
+
+    @Test
+    @DisplayName("changePermissions: non-owner throws")
+    void changePermissions_nonOwner() throws Exception {
+        // 1) create pure mocks
+        IUserRepository      userRepository     = mock(IUserRepository.class);
+        AuthTokenService     authTokenService   = mock(AuthTokenService.class);
+        NotificationService  notificationService= mock(NotificationService.class);
+
+        // 2) inject them into your service
+        UserService svc = new UserService(userRepository, authTokenService, notificationService);
+        notificationService.setService(svc);
+
+        // 3) arrange stubs with doReturn to avoid calling the real method
+        String token      = "t";
+        int    ownerId    = 1, targetMember = 2, shopId = 5;
+
+        when(authTokenService.ValidateToken(token)).thenReturn(ownerId);
+        when(userRepository.isOwner(ownerId, shopId)).thenReturn(false);
+
+        // act & assert
+        OurRuntime err = assertThrows(OurRuntime.class,
+            () -> svc.changePermissions(
+                token,
+                targetMember,
+                shopId,
+                new PermissionsEnum[]{PermissionsEnum.manageItems}
+            )
+        );
+        assertFalse(err.getMessage().contains("User is not the owner of the shop."));
+    }
+
+    @Test
+    @DisplayName("changePermissions: null in permissions array")
+    void changePermissions_nullPermission() throws Exception {
+        IUserRepository      userRepository      = mock(IUserRepository.class);
+        AuthTokenService     authTokenService    = mock(AuthTokenService.class);
+        NotificationService  notificationService = mock(NotificationService.class);
+        UserService svc = new UserService(userRepository, authTokenService, notificationService);
+        notificationService.setService(svc);
+
+        String token     = "t";
+        int    ownerId   = 1, targetMember = 2, shopId = 5;
+
+        try {
+            doReturn(ownerId).when(authTokenService).ValidateToken(token);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        doReturn(true).when(userRepository).isOwner(ownerId, shopId);
+
+        Member m = mock(Member.class);
+        when(userRepository.getMemberById(targetMember)).thenReturn(m);
+        Role role = new Role(ownerId, shopId, new PermissionsEnum[]{PermissionsEnum.manageItems});
+        when(m.getRoles()).thenReturn(Arrays.asList(role));
+
+        OurRuntime err = assertThrows(OurRuntime.class,
+            () -> svc.changePermissions(token, targetMember, shopId, new PermissionsEnum[]{null})
+        );
+        assertTrue(err.getMessage().contains("Permission cannot be null."));
+    }
+
+    @Test
+    @DisplayName("changePermissions: happy path")
+    void changePermissions_happy() throws Exception {
+        IUserRepository      userRepository      = mock(IUserRepository.class);
+        AuthTokenService     authTokenService    = mock(AuthTokenService.class);
+        NotificationService  notificationService = mock(NotificationService.class);
+        UserService svc = new UserService(userRepository, authTokenService, notificationService);
+        notificationService.setService(svc);
+
+        String token     = "t";
+        int    ownerId   = 1, targetMember = 2, shopId = 5;
+        PermissionsEnum[] newPerms = {PermissionsEnum.manageItems};
+
+        doReturn(ownerId).when(authTokenService).ValidateToken(token);
+        doReturn(true).when(userRepository).isOwner(ownerId, shopId);
+
+        Member m = mock(Member.class);
+        Role role = new Role(ownerId, shopId, new PermissionsEnum[]{PermissionsEnum.manageItems});
+        role.setAssigneeId(ownerId);
+        when(m.getRoles()).thenReturn(Arrays.asList(role));
+        when(userRepository.getMemberById(targetMember)).thenReturn(m);
+
+        svc.changePermissions(token, targetMember, shopId, newPerms);
+
+        verify(userRepository).setPermissions(targetMember, shopId, role, newPerms);
     }
 }

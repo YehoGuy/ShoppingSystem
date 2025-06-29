@@ -646,4 +646,56 @@ public class ItemServiceAcceptanceTests {
         assertTrue(ex.getMessage().contains("getItemdId2Cat: fail"));
     }
 
+    @Test
+    public void testCreateItemRepoThrows() {
+        String name        = "Widget";
+        String description = "A test widget";
+        ItemCategory category = ItemCategory.ELECTRONICS;
+
+        // user *does* have permission
+        when(userService.hasPermission(USER_ID, PermissionsEnum.manageItems, SHOP_ID))
+            .thenReturn(true);
+        // but repository fails
+        when(itemRepository.createItem(name, description, category.ordinal()))
+            .thenThrow(new RuntimeException("DB down"));
+
+        OurRuntime ex = assertThrows(OurRuntime.class, () ->
+            itemService.createItem(SHOP_ID, name, description, category, TOKEN)
+        );
+        assertTrue(ex.getMessage().contains("createItem: DB down"));
+    }
+
+    // ─── DeleteItem ─────────────────────────────────────────────────────────────
+    @Test
+    public void testDeleteItemSuccess() {
+        int itemId = 99;
+        // valid token → USER_ID
+        // existing item
+        Item existing = new Item(itemId, "X", "Y", ItemCategory.TOYS.ordinal());
+        when(itemRepository.getItem(itemId)).thenReturn(existing);
+
+        assertDoesNotThrow(() ->
+            itemService.deleteItem(itemId, TOKEN)
+        );
+        verify(itemRepository).deleteItem(itemId);
+    }
+
+    @Test
+    public void testDeleteItemInvalidId() {
+        assertThrows(OurArg.class, () ->
+            itemService.deleteItem(-5, TOKEN)
+        );
+    }
+
+    @Test
+    public void testDeleteItemNotFound() {
+        int itemId = 1000;
+        when(itemRepository.getItem(itemId)).thenReturn(null);
+
+        OurArg ex = assertThrows(OurArg.class, () ->
+            itemService.deleteItem(itemId, TOKEN)
+        );
+        assertTrue(ex.getMessage().contains("Item not found: " + itemId));
+    }
+
 }

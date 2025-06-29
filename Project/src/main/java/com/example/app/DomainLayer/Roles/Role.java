@@ -7,7 +7,7 @@ import jakarta.persistence.Transient;
 @Embeddable
 public class Role {
 
-    private final int assigneeId;
+    private int assigneeId;
     private final int shopId;
     private PermissionsEnum[] permissions;
     @Transient
@@ -39,6 +39,12 @@ public class Role {
 
     public int getAssigneeId() {
         return assigneeId;
+    }
+
+    public void setAssigneeId(int assigneeId) {
+        synchronized (lock) {
+            this.assigneeId = assigneeId;
+        }
     }
 
     public int getShopId() {

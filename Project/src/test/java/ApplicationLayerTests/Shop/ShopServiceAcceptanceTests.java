@@ -20,12 +20,16 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import static org.mockito.Mockito.clearInvocations;
@@ -54,7 +58,13 @@ import com.example.app.DomainLayer.Shop.Operator;
 import com.example.app.DomainLayer.Shop.PurchasePolicy;
 import com.example.app.DomainLayer.Shop.Shop;
 import com.example.app.DomainLayer.Shop.ShopReview;
+import com.example.app.DomainLayer.Shop.Discount.Discount;
+import com.example.app.DomainLayer.Shop.Discount.Policy;
+import com.example.app.DomainLayer.Shop.Discount.PolicyComposite;
+import com.example.app.DomainLayer.Shop.Discount.PolicyLeaf;
 import com.example.app.InfrastructureLayer.ShopRepository;
+import com.example.app.PresentationLayer.DTO.Shop.CompositePolicyDTO;
+import com.example.app.PresentationLayer.DTO.Shop.LeafPolicyDTO;
 
 class ShopServiceAcceptanceTests {
 
@@ -2005,4 +2015,83 @@ class ShopServiceAcceptanceTests {
         assertTrue(ex.getMessage().contains("getShopsByWorker"));
     }
 
+    @Test
+    void getClosedShops_success() throws Exception {
+        String TOKEN = "token";
+        when(authTokenService.ValidateToken(TOKEN)).thenReturn(1);
+        when(shopRepository.getClosedShops()).thenReturn(List.of(10,20,30));
+
+        var closed = shopService.getclosedShops(TOKEN);
+        assertEquals(List.of(10,20,30), closed);
+    }
+
+    @Test
+    void getClosedShops_invalidToken() throws Exception {
+        doThrow(new RuntimeException("nope")).when(authTokenService).ValidateToken("bad");
+        assertThrows(RuntimeException.class, () -> shopService.getclosedShops("bad"));
+    }
+
+    @Test
+    void getDiscounts_success() throws Exception{
+        String token = "token";
+        int shopId = 1;
+        when(authTokenService.ValidateToken(token)).thenReturn(1);
+        var discounts = List.<Discount>of(mock(Discount.class), mock(Discount.class));
+        when(shopRepository.getDiscounts(shopId)).thenReturn(discounts);
+
+        var out = shopService.getDiscounts(shopId, token);
+        assertEquals(discounts, out);
+    }
+
+    @Test
+    void setDiscountPolicy_and_mapPolicyDTO() throws Exception {
+        String token = "token";
+        int shopId = 1;
+        when(authTokenService.ValidateToken(token)).thenReturn(2);
+        when(userService.hasPermission(2, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
+
+        // Build a simple DTO: leaf-only
+        LeafPolicyDTO leaf = new LeafPolicyDTO();
+        leaf.setThreshold(5);
+        leaf.setItemId(42);
+        leaf.setItemCategory(null);
+        leaf.setBasketValue(null);
+        CompositePolicyDTO dto = new CompositePolicyDTO();
+        dto.setLeafPolicy1(leaf);
+        dto.setOperator(Operator.AND);
+
+        shopService.setDiscountPolicy(shopId, dto, token);
+
+        // ensure we passed a PolicyComposite wrapping a PolicyLeaf
+        ArgumentCaptor<Policy> cap = ArgumentCaptor.forClass(Policy.class);
+        verify(shopRepository).setDiscountPolicy(eq(shopId), cap.capture());
+        PolicyComposite comp = (PolicyComposite) cap.getValue();
+        assertTrue(comp.getPolicy1() instanceof PolicyLeaf);
+        assertNull(comp.getPolicy2());
+        assertEquals(Operator.AND, comp.getOperator());
+    }
+
+    @Test
+    void getPolicies_noPermission() throws Exception {
+        String token = "token";
+        int shopId = 1;
+        when(authTokenService.ValidateToken(token)).thenReturn(3);
+        when(userService.hasPermission(3, PermissionsEnum.viewPolicy, shopId)).thenReturn(false);
+        assertThrows(RuntimeException.class, () -> shopService.getPolicies(shopId, token));
+    }
+
+    @Test
+    void getPolicies_success() throws Exception{
+        String token = "token";
+        int shopId = 1;
+        when(authTokenService.ValidateToken(token)).thenReturn(3);
+        when(userService.hasPermission(3, PermissionsEnum.viewPolicy, shopId)).thenReturn(true);
+
+        Policy p1 = mock(Policy.class);
+        when(shopRepository.getPolicies(shopId)).thenReturn(List.of(p1));
+
+        var out = shopService.getPolicies(shopId, token);
+        assertEquals(1, out.size());
+        assertSame(p1, out.get(0));
+    }
 }
