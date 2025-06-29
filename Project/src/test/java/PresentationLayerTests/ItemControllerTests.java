@@ -31,11 +31,9 @@ import com.example.app.DomainLayer.Item.ItemCategory;
 import com.example.app.DomainLayer.Item.ItemReview;
 import com.example.app.PresentationLayer.Controller.ItemController;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.hamcrest.Matchers.containsString;
 
 /**
  * Comprehensive slice tests for ItemController.
@@ -329,4 +327,285 @@ public class ItemControllerTests {
                     .andExpect(status().isConflict());
         }
     }
+
+        @Nested
+        @DisplayName("9. DELETE ITEM")
+        class DeleteItem {
+                @Test
+                void success_returns204() throws Exception {
+                doNothing().when(itemService).deleteItem(1, "tok");
+                mvc.perform(delete("/api/items/1")
+                        .param("token", "tok"))
+                .andExpect(status().isNoContent());
+                }
+
+                @Test
+                void badRequest_returns400() throws Exception {
+                doThrow(new IllegalArgumentException("bad id"))
+                        .when(itemService).deleteItem(anyInt(), anyString());
+                mvc.perform(delete("/api/items/1")
+                        .param("token", "tok"))
+                .andExpect(status().isBadRequest());
+                }
+
+                @Test
+                void conflict_returns409_onOurRuntime() throws Exception {
+                doThrow(new OurRuntime("conflict"))
+                        .when(itemService).deleteItem(anyInt(), anyString());
+                mvc.perform(delete("/api/items/1")
+                        .param("token", "tok"))
+                .andExpect(status().isConflict());
+                }
+
+                @Test
+                void serverError_returns500() throws Exception {
+                // throw an unchecked exception so Mockito is happy
+                doThrow(new RuntimeException("boom"))
+                        .when(itemService).deleteItem(anyInt(), anyString());
+
+                mvc.perform(delete("/api/items/1")
+                        .param("token", "tok"))
+                .andExpect(status().isInternalServerError());
+                }
+        }
+
+        @Nested
+        @DisplayName("10. ERROR SCENARIOS FOR OTHER ENDPOINTS")
+        class ErrorScenarios {
+                @Test @DisplayName("CREATE → RuntimeException → 409")
+                void create_runtimeError_returns409() throws Exception {
+                when(itemService.createItem(anyInt(), anyString(), anyString(),
+                        eq(ItemCategory.ELECTRONICS), anyString()))
+                        .thenThrow(new RuntimeException("oops"));
+
+                mvc.perform(post("/api/items/create")
+                                .param("shopId",      "1")
+                                .param("name",        "X")
+                                .param("description", "D")
+                                .param("category",    "ELECTRONICS")
+                                .param("token",       "tok"))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("oops"));
+                }
+
+                @Test @DisplayName("GET ONE → RuntimeException → 409")
+                void getOne_runtimeError_returns409() throws Exception {
+                when(itemService.getItem(anyInt(), anyString()))
+                        .thenThrow(new RuntimeException("err"));
+
+                mvc.perform(get("/api/items/5")
+                                .param("token", "tok"))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("err"));
+                }
+
+                @Test @DisplayName("GET ALL → RuntimeException → 409")
+                void getAll_runtimeError_returns409() throws Exception {
+                when(itemService.getAllItems(anyString()))
+                        .thenThrow(new RuntimeException("failAll"));
+
+                mvc.perform(get("/api/items/all")
+                                .param("token", "tok"))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("failAll"));
+                }
+
+                @Test @DisplayName("ADD REVIEW → RuntimeException → 409")
+                void addReview_runtimeError_returns409() throws Exception {
+                doThrow(new RuntimeException("badReview"))
+                        .when(itemService).addReviewToItem(anyInt(), anyInt(),
+                                                        anyString(), anyString());
+
+                mvc.perform(post("/api/items/7/reviews")
+                                .param("rating",     "5")
+                                .param("reviewText","Good")
+                                .param("token",      "tok"))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("badReview"));
+                }
+
+                @Test @DisplayName("LIST REVIEWS → RuntimeException → 409")
+                void listReviews_runtimeError_returns409() throws Exception {
+                when(itemService.getItemReviews(anyInt(), anyString()))
+                        .thenThrow(new RuntimeException("badList"));
+
+                mvc.perform(get("/api/items/3/reviews")
+                                .param("token", "tok"))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("badList"));
+                }
+
+                @Test @DisplayName("GET RATING → RuntimeException → 409")
+                void getRating_runtimeError_returns409() throws Exception {
+                when(itemService.getItemAverageRating(anyInt(), anyString()))
+                        .thenThrow(new RuntimeException("badRating"));
+
+                mvc.perform(get("/api/items/8/rating")
+                                .param("token", "tok"))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("badRating"));
+                }
+
+                @Test @DisplayName("GET BY IDS → RuntimeException → 409")
+                void getByIds_runtimeError_returns409() throws Exception {
+                when(itemService.getItemsByIds(anyList(), anyString()))
+                        .thenThrow(new RuntimeException("badByIds"));
+
+                mvc.perform(post("/api/items/by-ids")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("[1,2]")
+                                .param("token", "tok"))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("badByIds"));
+                }
+
+                @Test @DisplayName("GET BY CATEGORY → RuntimeException → 409")
+                void getByCategory_runtimeError_returns409() throws Exception {
+                when(itemService.getItemsByCategory(any(), anyString()))
+                        .thenThrow(new RuntimeException("badCat"));
+
+                mvc.perform(get("/api/items/category")
+                                .param("category", "BOOKS")
+                                .param("token",    "tok"))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("badCat"));
+                }
+        }
+
+        @Nested
+        @DisplayName("11. ADDITIONAL EXCEPTION BRANCHES")
+        class AdditionalBranches {
+
+                // ─── 1. CREATE ITEM: OurRuntime → 409 + body ─────────────────
+                @Test @DisplayName("CREATE → OurRuntime → 409 w/ message")
+                void create_ourRuntimeError_returns409_body() throws Exception {
+                when(itemService.createItem(
+                        anyInt(), anyString(), anyString(),
+                        eq(ItemCategory.ELECTRONICS), anyString()))
+                        .thenThrow(new OurRuntime("conflictX"));
+
+                mvc.perform(post("/api/items/create")
+                                .param("shopId",      "1")
+                                .param("name",        "X")
+                                .param("description", "D")
+                                .param("category",    "ELECTRONICS")
+                                .param("token",       "tok"))
+                .andExpect(status().isConflict())
+                .andExpect(content().string(containsString("conflictX")));
+                }
+
+                // ─── 2. GET ONE ITEM: plain RuntimeException → catch(RuntimeException) ───────────
+                @Test @DisplayName("GET ONE → RuntimeException → 409 w/ message")
+                void getOne_runtimeError_returns409_body() throws Exception {
+                when(itemService.getItem(anyInt(), anyString()))
+                        .thenThrow(new RuntimeException("rtErr"));
+
+                mvc.perform(get("/api/items/5")
+                                .param("token", "tok"))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("rtErr"));
+                }
+
+                // ─── 3. GET ALL ITEMS: IllegalArgumentException → 400 + body ────────────────
+                @Test @DisplayName("GET ALL → IllegalArgumentException → 400 w/ message")
+                void getAll_badRequest_returns400_body() throws Exception {
+                when(itemService.getAllItems(anyString()))
+                        .thenThrow(new IllegalArgumentException("badAll"));
+
+                mvc.perform(get("/api/items/all")
+                                .param("token", "tok"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("badAll"));
+                }
+
+                // ─── 4. GET ALL ITEMS: OurRuntime → 409 + body ──────────────────────────────
+                @Test @DisplayName("GET ALL → OurRuntime → 409 w/ message")
+                void getAll_ourRuntimeError_returns409_body() throws Exception {
+                when(itemService.getAllItems(anyString()))
+                        .thenThrow(new OurRuntime("runtimeAll"));
+
+                mvc.perform(get("/api/items/all")
+                                .param("token", "tok"))
+                .andExpect(status().isConflict())
+                .andExpect(content().string(containsString("runtimeAll")));
+                }
+
+                // ─── 5. ADD REVIEW: OurRuntime → 409 empty body ───────────────────────────
+                @Test @DisplayName("ADD REVIEW → OurRuntime → 409 empty")
+                void addReview_ourRuntimeError_returns409_emptyBody() throws Exception {
+                doThrow(new OurRuntime("x"))
+                        .when(itemService).addReviewToItem(anyInt(), anyInt(), anyString(), anyString());
+
+                mvc.perform(post("/api/items/7/reviews")
+                                .param("rating",     "5")
+                                .param("reviewText","Good")
+                                .param("token",      "tok"))
+                .andExpect(status().isConflict())
+                .andExpect(content().string(""));
+                }
+
+                // ─── 6. LIST REVIEWS: OurRuntime → 409 + body ─────────────────────────────
+                @Test @DisplayName("LIST REVIEWS → OurRuntime → 409 w/ message")
+                void listReviews_ourRuntimeError_returns409_body() throws Exception {
+                when(itemService.getItemReviews(anyInt(), anyString()))
+                        .thenThrow(new OurRuntime("badListRT"));
+
+                mvc.perform(get("/api/items/3/reviews")
+                                .param("token", "tok"))
+                .andExpect(status().isConflict())
+                .andExpect(content().string(containsString("badListRT")));
+                }
+
+                // ─── 7. GET RATING: OurRuntime → 409 + body ───────────────────────────────
+                @Test @DisplayName("GET RATING → OurRuntime → 409 w/ message")
+                void getRating_ourRuntimeError_returns409_body() throws Exception {
+                when(itemService.getItemAverageRating(anyInt(), anyString()))
+                        .thenThrow(new OurRuntime("badRatingRT"));
+
+                mvc.perform(get("/api/items/8/rating")
+                                .param("token", "tok"))
+                .andExpect(status().isConflict())
+                .andExpect(content().string(containsString("badRatingRT")));
+                }
+
+                // ─── 8. GET BY IDS: OurRuntime → 409 + body ──────────────────────────────
+                @Test @DisplayName("GET BY IDS → OurRuntime → 409 w/ message")
+                void getByIds_ourRuntimeError_returns409_body() throws Exception {
+                when(itemService.getItemsByIds(anyList(), anyString()))
+                        .thenThrow(new OurRuntime("badByIdsRT"));
+
+                mvc.perform(post("/api/items/by-ids")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("[1,2]")
+                                .param("token","tok"))
+                .andExpect(status().isConflict())
+                .andExpect(content().string(containsString("badByIdsRT")));
+                }
+
+                // ─── 9. GET BY CATEGORY: OurRuntime → 409 + body ──────────────────────────
+                @Test @DisplayName("GET BY CATEGORY → OurRuntime → 409 w/ message")
+                void getByCategory_ourRuntimeError_returns409_body() throws Exception {
+                when(itemService.getItemsByCategory(any(), anyString()))
+                        .thenThrow(new OurRuntime("badCatRT"));
+
+                mvc.perform(get("/api/items/category")
+                                .param("category","BOOKS")
+                                .param("token","tok"))
+                .andExpect(status().isConflict())
+                .andExpect(content().string(containsString("badCatRT")));
+                }
+
+                // ─── 10. DELETE ITEM: OurRuntime → 409 empty body ─────────────────────────
+                @Test @DisplayName("DELETE → OurRuntime → 409 empty")
+                void delete_ourRuntime_returns409_emptyBody() throws Exception {
+                doThrow(new OurRuntime("boom"))
+                        .when(itemService).deleteItem(anyInt(), anyString());
+
+                mvc.perform(delete("/api/items/1")
+                                .param("token","tok"))
+                .andExpect(status().isConflict())
+                .andExpect(content().string(""));
+                }
+        }
+
 }
