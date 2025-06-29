@@ -62,6 +62,18 @@ public class ShopRepositoryDBImpl implements IShopRepository {
         return jpaRepo.findAll();
     }
 
+    public List<Shop> getAllOpenShops() {
+        return jpaRepo.findAll().stream()
+                .filter(shop -> !shop.isClosed())
+                .collect(Collectors.toList());
+    }
+
+    public List<Shop> getAllClosedShops() {
+        return jpaRepo.findAll().stream()
+                .filter(Shop::isClosed)
+                .collect(Collectors.toList());
+    }
+    
     @Override
     public void updatePurchasePolicy(int shopId, PurchasePolicy newPolicy) {
         return;

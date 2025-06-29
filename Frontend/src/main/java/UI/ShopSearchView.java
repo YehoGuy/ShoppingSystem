@@ -37,7 +37,7 @@ public class ShopSearchView extends BaseView implements BeforeEnterObserver {
     public ShopSearchView(@Value("${url.api}") String api) {
         super("Shops", "Browse all shops", "🔍", "🏬");
         this.api = api;
-        this.shopsApiUrl = api + "/shops/all";
+        this.shopsApiUrl = api + "/shops/all-open";
 
         /* ----------- layout basics ----------- */
         setSizeFull();
