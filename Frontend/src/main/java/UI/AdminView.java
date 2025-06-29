@@ -221,13 +221,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
         loadUsers();
         loadShops();
         loadItems();
-        Button testDialogBtn = new Button("Test Dialog", e -> {
-            Dialog dialog = new Dialog();
-            dialog.add(new VerticalLayout(new H2("Test Dialog"), new Button("Close", ev -> dialog.close())));
-            add(dialog);
-            dialog.open();
-        });
-        add(testDialogBtn);
+        
     }
 
     private String formatLocalDateTime(LocalDateTime dt) {
