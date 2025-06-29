@@ -396,7 +396,7 @@ public class PurchaseService {
         try {
             LoggerService.logMethodExecution("getStorePurchases", authToken, shopId);
             int userId = authTokenService.ValidateToken(authToken);
-            PermissionsEnum[] permissions = userService.getPermissionsByShop(authToken, shopId).get(userId);
+            PermissionsEnum[] permissions = userService.getPermitionsByShop(authToken, shopId).get(userId);
             for (PermissionsEnum permission : permissions) {
                 if (permission == PermissionsEnum.getHistory) {
                     LoggerService.logMethodExecutionEnd("getStorePurchases", null);

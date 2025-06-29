@@ -450,7 +450,7 @@ public class UserController {
 
         try {
             authService.ValidateToken(token);
-            HashMap<Integer, PermissionsEnum[]> map = userService.getPermissionsByShop(token, shopId);
+            HashMap<Integer, PermissionsEnum[]> map = userService.getPermitionsByShop(token, shopId);
             return ResponseEntity.ok(map);
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());

@@ -507,7 +507,7 @@ public class UserService {
         }
     }
 
-    public HashMap<Integer, PermissionsEnum[]> getPermissionsByShop(String token, int shopId) {
+    public HashMap<Integer, PermissionsEnum[]> getPermitionsByShop(String token, int shopId) {
         try {
 
             LoggerService.logMethodExecution("getPermitionsByShop", shopId);

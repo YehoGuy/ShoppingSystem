@@ -701,7 +701,7 @@ public class UserServiceTest {
         userRepository.acceptRole(adminId, ownerRole);
 
         // should succeed
-        Map<Integer, PermissionsEnum[]> perms = userService.getPermissionsByShop(adminToken, 77);
+        Map<Integer, PermissionsEnum[]> perms = userService.getPermitionsByShop(adminToken, 77);
         assertTrue(perms.containsKey(adminId));
 
     }
@@ -4957,7 +4957,7 @@ public class UserServiceTest {
         notificationService.setService(svc);
 
         // act
-        Map<Integer, PermissionsEnum[]> perms = svc.getPermissionsByShop("t", 5);
+        Map<Integer, PermissionsEnum[]> perms = svc.getPermitionsByShop("t", 5);
 
         // assert
         assertEquals(1, perms.size());
