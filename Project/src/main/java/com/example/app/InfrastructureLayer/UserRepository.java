@@ -26,7 +26,6 @@ import com.example.app.DomainLayer.Purchase.BidReciept;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
 
-
 import com.example.app.DomainLayer.ShoppingCart;
 import com.example.app.DomainLayer.User;
 
@@ -42,18 +41,17 @@ public class UserRepository implements IUserRepository {
     private PasswordEncoderUtil passwordEncoderUtil;
     AtomicInteger userIdCounter;
 
-    
     private final String adminUsername;
     private final String adminPlainPassword;
     private final String adminEmail;
     private final String adminPhoneNumber;
     private final String adminAddress;
 
-    public UserRepository( @Value("${admin.username:admin}") String adminUsername,
-        @Value("${admin.password:admin}") String adminPlainPassword,
-        @Value("${admin.email:admin@mail.com}") String adminEmail,
-        @Value("${admin.phoneNumber:0}") String adminPhoneNumber,
-        @Value("${admin.address:admin st.}") String adminAddress) {
+    public UserRepository(@Value("${admin.username:admin}") String adminUsername,
+            @Value("${admin.password:admin}") String adminPlainPassword,
+            @Value("${admin.email:admin@mail.com}") String adminEmail,
+            @Value("${admin.phoneNumber:0}") String adminPhoneNumber,
+            @Value("${admin.address:admin st.}") String adminAddress) {
 
         if(adminUsername == null || adminUsername.isEmpty()) {
             throw new IllegalArgumentException("Admin username cannot be null or empty.");
@@ -70,7 +68,6 @@ public class UserRepository implements IUserRepository {
         if(adminAddress == null || adminAddress.isEmpty()) {
             throw new IllegalArgumentException("Admin address cannot be null or empty.");
         }
-        
 
         this.userMapping = new ConcurrentHashMap<>();
         this.userIdCounter = new AtomicInteger(0); // Initialize the user ID counter
@@ -531,16 +528,18 @@ public class UserRepository implements IUserRepository {
     }
 
     @Override
-    public int pay(int userId, double amount, String currency, String cardNumber, String expirationDateMonth, String expirationDateYear, String cardHolderName, String cvv, String id) {
+    public int pay(int userId, double amount, String currency, String cardNumber, String expirationDateMonth,
+            String expirationDateYear, String cardHolderName, String cvv, String id) {
         User user = userMapping.get(userId);
         if (user == null) {
             throw new OurRuntime("User with ID " + userId + " doesn't exist.");
         }
-  
+
         PaymentMethod paymentMethod = new WSEPPay();
-        
+
         try {
-            int pid = paymentMethod.processPayment(amount, currency, cardNumber, expirationDateMonth, expirationDateYear, cardHolderName, cvv, id);
+            int pid = paymentMethod.processPayment(amount, currency, cardNumber, expirationDateMonth,
+                    expirationDateYear, cardHolderName, cvv, id);
             if (pid < 0) {
                 throw new OurRuntime("Payment processing failed.");
             }
@@ -561,7 +560,8 @@ public class UserRepository implements IUserRepository {
             throw new OurRuntime("Payment method not set for user with ID " + userId);
         }
         try {
-            boolean worked = paymentMethod.cancelPayment(paymentId); // Assuming PaymentMethod has a method to process refund
+            boolean worked = paymentMethod.cancelPayment(paymentId); // Assuming PaymentMethod has a method to process
+                                                                     // refund
             if (!worked) {
                 throw new OurRuntime("Refund processing failed.");
             }
@@ -628,7 +628,6 @@ public class UserRepository implements IUserRepository {
         member.setUnSuspended();
     }
 
-
     @Override
     public boolean isSuspended(int userId) {
         Member member;
@@ -663,11 +662,10 @@ public class UserRepository implements IUserRepository {
         if (member == null) {
             throw new OurRuntime("User with ID " + userId + " doesn't exist.");
         }
-        //LocalDateTime suspendedUntil = LocalDateTime.now().plusYears((long)1000);
+        // LocalDateTime suspendedUntil = LocalDateTime.now().plusYears((long)1000);
         LocalDateTime suspendedUntil = LocalDateTime.of(9999, 12, 31, 23, 59);
         member.setSuspended(suspendedUntil);
     }
-
 
     @Override
     public List<Integer> getShopIdsByWorkerId(int userId) {
@@ -758,7 +756,7 @@ public class UserRepository implements IUserRepository {
     }
 
     @Override
-    public void addAuctionWinBidToShoppingCart(int winnerId, Bid bid){
+    public void addAuctionWinBidToShoppingCart(int winnerId, Bid bid) {
         Member user = (Member) userMapping.get(winnerId);
         BidReciept bidReciept = bid.generateReciept();
         if (user == null) {
@@ -789,6 +787,15 @@ public class UserRepository implements IUserRepository {
     @Override
     public void updateUserInDB(Member member) {
         return;
+    }
+
+    @Override
+    public int getMissingNotificationsQuantity(int userId) {
+        User user = getUserById(userId);
+        if (user instanceof Guest)
+            return 0;
+        Member member = (Member) user;
+        return member.getMissingNotificationsQuantity();
     }
 
 }

@@ -20,6 +20,11 @@ public class WSEPShipping implements ShippingMethod {
         this.restTemplate = new RestTemplate();
     }
 
+    // Constructor for testing with dependency injection
+    public WSEPShipping(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
+
     @Override
     public boolean isShippingServiceAvailable() {
         Map<String, String> postContent = Map.of(
@@ -88,7 +93,7 @@ public class WSEPShipping implements ShippingMethod {
         HttpEntity<MultiValueMap<String, String>> requestCancel = new HttpEntity<>(formDataCancel, headers);
         String responseBody = restTemplate.postForObject(PAYMENT_URL, requestCancel, String.class);
 
-        return responseBody != null && responseBody.equals("1");
+        return "1".equals(responseBody);
     }
     
 }

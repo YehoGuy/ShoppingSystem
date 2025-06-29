@@ -115,7 +115,8 @@ public interface IUserRepository {
 
     void setPaymentMethod(int userId, int shopId, PaymentMethod paymentMethod);
 
-    public int pay(int userId, double amount, String currency, String cardNumber, String expirationDateMonth, String expirationDateYear, String cardHolderName, String cvv, String id);
+    public int pay(int userId, double amount, String currency, String cardNumber, String expirationDateMonth,
+            String expirationDateYear, String cardHolderName, String cvv, String id);
 
     public void refund(int userId, int paymentId);
 
@@ -135,7 +136,7 @@ public interface IUserRepository {
     public List<Member> getOwners(int shopId);
 
     void setSuspended(int userId, LocalDateTime suspended); // Set a user as suspended
-    
+
     void setUnSuspended(int userId); // Set a user as suspended
 
     boolean isSuspended(int userId); // Check if a user is suspended
@@ -159,8 +160,10 @@ public interface IUserRepository {
     void addAuctionWinBidToShoppingCart(int winnerId, Bid bid);
 
     int getShopOwner(int shopId);
-  
+
     void updateUserInDB(Member member);
+
+    int getMissingNotificationsQuantity(int userId);
 
 
 }
