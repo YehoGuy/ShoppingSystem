@@ -1,3 +1,9 @@
+-- ================================================================
+-- SHOPPING SYSTEM DATABASE INITIALIZATION SCRIPT
+-- This script initializes the database with test data.
+-- If errors occur, the application will continue running.
+-- ================================================================
+
 -- ----------------------------------------------------------------
 -- 1) Six users (u1…u6), with u2 initially connected / $2a$10$BQcgCRrZBJZBBzrfoAOxvuBrmSmbfZfUAUgUQr./HbZRzRgqbWPWm = 123
 -- ----------------------------------------------------------------
