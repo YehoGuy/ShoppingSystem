@@ -35,10 +35,13 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
+
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -61,6 +64,7 @@ import com.example.app.ApplicationLayer.Shop.ShopService;
 import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.Purchase.Address;
 import com.example.app.DomainLayer.Purchase.Bid;
+import com.example.app.DomainLayer.Item.Item;
 import com.example.app.DomainLayer.Purchase.BidReciept;
 import com.example.app.DomainLayer.Purchase.IPurchaseRepository;
 import com.example.app.DomainLayer.Purchase.Purchase;
@@ -848,6 +852,527 @@ class PurchaseServiceTests {
 
         List<BidReciept> out = service.getAuctionsWinList(token);
         assertEquals(1, out.size());
+    }
+
+    // ─────────── partialCheckoutCart tests ───────────
+
+    @Test
+    @DisplayName("partialCheckoutCart_happyPath_shouldOnlyProcessOneShop")
+    void partialCheckoutCart_happyPath() throws Exception {
+        String token = "tok";
+        int uid = 1, shopA = 10, shopB = 20;
+        Map<Integer,Integer> cartA = Map.of(5,2);
+        Map<Integer,HashMap<Integer,Integer>> cart = Map.of(
+            shopA, new HashMap<>(cartA),
+            shopB, new HashMap<>(Map.of(7,1))
+        );
+
+        when(auth.ValidateToken(token)).thenReturn(uid);
+        when(users.getUserShoppingCartItems(uid))
+            .thenReturn(new HashMap<>(cart));
+        when(shops.purchaseItems(cartA, shopA, token)).thenReturn(100.0);
+        when(repo.addPurchase(eq(uid), eq(shopA), eq(cartA), eq(100.0), any()))
+            .thenReturn(42);
+
+        List<Integer> out = service.partialCheckoutCart(
+            token, addr,
+            "USD","4111","12","25","Alice","123","ID",
+            shopA
+        );
+
+        assertEquals(List.of(42), out);
+        verify(users).clearUserShoppingCartByShopId(uid, shopA);
+        verify(shops).shipPurchase(eq(token), eq(42), eq(shopA),
+            any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("partialCheckoutCart_whenPurchaseThrows_shouldRollbackAndThrow")
+    void partialCheckoutCart_exceptionPath() throws Exception{
+        String token = "tok";
+        int uid = 2, shop = 5;
+        Map<Integer,Integer> cartShop = Map.of(9,1);
+        when(auth.ValidateToken(token)).thenReturn(uid);
+        when(users.getUserShoppingCartItems(uid))
+            .thenReturn(new HashMap<>(Map.of(shop, new HashMap<>(cartShop))));
+        when(shops.purchaseItems(cartShop, shop, token))
+            .thenThrow(new OurRuntime("boom"));
+
+        OurRuntime ex = assertThrows(
+            OurRuntime.class,
+            () -> service.partialCheckoutCart(
+                token, addr,
+                "USD","4111","12","25","Bob","123","ID",
+                shop
+            )
+        );
+        assertTrue(ex.getMessage().contains("partialCheckoutCart:"));
+        verify(shops).rollBackPurchase(cartShop, shop);
+        verify(users).restoreUserShoppingCartByShopId(eq(uid), any(), eq(shop));
+    }
+
+    // ─────────── getReciept tests ───────────
+
+    @Test @DisplayName("getReciept_happyPath_returnsListOfOne")
+    void getReciept_happyPath() throws Exception {
+        Reciept r = mock(Reciept.class);
+        Purchase p = mock(Purchase.class);
+        when(repo.getPurchaseById(99)).thenReturn(p);
+        when(p.generateReciept()).thenReturn(r);
+
+        List<Reciept> out = service.getReciept(99);
+        assertEquals(1, out.size());
+        assertSame(r, out.get(0));
+    }
+
+    @Test @DisplayName("getReciept_notFound_throwsOurRuntime")
+    void getReciept_notFound() {
+        when(repo.getPurchaseById(123)).thenReturn(null);
+        OurRuntime ex = assertThrows(
+            OurRuntime.class,
+            () -> service.getReciept(123)
+        );
+        assertTrue(ex.getMessage().contains("does not exist"));
+    }
+
+    // ─────────── getShopBids tests ───────────
+
+    @Test @DisplayName("getShopBids_happyPath_returnsRepoList")
+    void getShopBids_happyPath() throws Exception {
+        List<BidReciept> bids = List.of(mock(BidReciept.class));
+        when(auth.ValidateToken("tok")).thenReturn(7);
+        when(repo.getShopBids(5)).thenReturn(bids);
+
+        List<BidReciept> out = service.getShopBids("tok", 5);
+        assertSame(bids, out);
+    }
+
+    @Test @DisplayName("getShopBids_repoError_wrapsOurRuntime")
+    void getShopBids_repoError() throws Exception {
+        when(auth.ValidateToken("tok")).thenReturn(7);
+        when(repo.getShopBids(5)).thenThrow(new RuntimeException("db"));
+
+        OurRuntime ex = assertThrows(
+            OurRuntime.class,
+            () -> service.getShopBids("tok", 5)
+        );
+        assertTrue(ex.getMessage().contains("Error retrieving shop bids"));
+    }
+
+    // ─────────── getAllBids(fromBid=false) tests ───────────
+
+    @Test @DisplayName("getAllBids_falseBranch_filtersByCompletionClosedAndMissingItems")
+    void getAllBids_falseBranch() throws Exception {
+        String token = "tok"; int uid = 9;
+        // make two receipts: one completed, one not
+        BidReciept done = mock(BidReciept.class),
+                    open = mock(BidReciept.class);
+        when(done.getEndTime()).thenReturn(LocalDateTime.now().minusDays(1));
+        when(done.getShopId()).thenReturn(1);
+        when(done.getItems()).thenReturn(Map.of(100,1));
+        when(open.getEndTime()).thenReturn(null);
+
+        when(auth.ValidateToken(token)).thenReturn(uid);
+        when(repo.getAllBids()).thenReturn(List.of(done, open));
+        // filter out shop-2 as “closed”
+        lenient().when(shops.getclosedShops(token)).thenReturn(List.of(2));
+        // filter out item-200 as “missing”
+        lenient().when(items.getAllItems(token))
+            .thenReturn(List.of(new Item(100, "", "", 0)));
+
+        List<BidReciept> out = service.getAllBids(token, false);
+        // only “done” with shopId=1 & itemId=100 survives
+        assertEquals(1, out.size());
+        assertSame(done, out.get(0));
+    }
+
+    // ─────────── getFinishedBidsList tests ───────────
+
+    @Test
+    @DisplayName("getFinishedBidsList_returnsOnlyCompletedForUser")
+    void getFinishedBidsList_filtersCorrectly() throws Exception {
+        String token = "t";
+        int    uid   = 42;
+
+        BidReciept done = mock(BidReciept.class);
+        BidReciept open = mock(BidReciept.class);
+
+        when(done.isCompleted()).thenReturn(true);
+        when(done.getUserId())     .thenReturn(uid);
+
+        // spy the service
+        PurchaseService spySvc = spy(service);
+
+        // make these two lenient stubs:
+        lenient().doReturn(List.of(done, open))
+                .when(spySvc).getAllBids(eq(token), eq(true));
+
+        lenient().when(auth.ValidateToken(token))
+                .thenReturn(uid);
+
+        List<BidReciept> out = spySvc.getFinishedBidsList(token);
+
+        assertEquals(1, out.size());
+        assertSame(done, out.get(0));
+    }
+
+    // ────────────────────────────── finalizeAuction via startAuction callback ──────────────────────────────
+    @Test
+    @DisplayName("startAuction_schedules_and_finalizeAuction_runsCallback")
+    void startAuction_schedules_and_finalizeAuction_runsCallback() throws Exception {
+        String token = "tok";
+        int    user  = 1, shopId = 2, auctionId = 99;
+        Map<Integer,Integer> items = Map.of(1,1);
+        LocalDateTime end = LocalDateTime.now().plusHours(1);
+
+        when(auth.ValidateToken(token)).thenReturn(user);
+        when(shops.purchaseItems(items, shopId, token)).thenReturn(0.0);
+        when(repo.addBid(eq(user), eq(shopId), eq(items), eq(10),
+                        any(LocalDateTime.class), eq(end)))
+            .thenReturn(auctionId);
+
+        // capture the Runnable that Spring will schedule
+        ArgumentCaptor<Runnable> runCap = ArgumentCaptor.forClass(Runnable.class);
+
+        service.startAuction(token, shopId, items, 10, end);
+
+        verify(taskscheduler)
+        .schedule(runCap.capture(), any(Date.class));
+
+        // now prepare that Bid so finalizeAuction will run
+        Bid bid = mock(Bid.class);
+        when(repo.getPurchaseById(auctionId)).thenReturn(bid);
+        when(bid.completePurchase()).thenReturn(mock(BidReciept.class));
+        when(bid.getHighestBidderId()).thenReturn(77);
+        when(bid.getMaxBidding()).thenReturn(123);
+        when(bid.getStoreId()).thenReturn(shopId);
+        when(bid.getBiddersIds()).thenReturn(List.of(77,88));
+
+        // run the callback
+        runCap.getValue().run();
+
+        // verify notifications & cart addition
+        verify(nots).sendToUser(eq(77), eq("Auction ended"), contains("won"));
+        verify(users).addAuctionWinBidToUserShoppingCart(77, bid);
+    }
+
+    // ─────────────────────────── getAllBids true‐branch for owner vs non‐owner ───────────────────────────
+    @Test
+    @DisplayName("getAllBids_trueBranch_filtersCorrectly_forOwnerAndOthers")
+    void getAllBids_trueBranch_filtersCorrectly_forOwnerAndOthers() throws Exception {
+        String token = "tok"; int uid = 1;
+        BidReciept ownerBid = mock(BidReciept.class),
+                otherBid = mock(BidReciept.class);
+
+        when(ownerBid.getShopId()).thenReturn(5);
+        when(ownerBid.getUserId()).thenReturn(uid);
+        when(ownerBid.getEndTime()).thenReturn(null);
+
+        when(otherBid.getShopId()).thenReturn(6);
+        when(otherBid.getUserId()).thenReturn(2);
+        when(otherBid.getEndTime()).thenReturn(null);
+
+        when(auth.ValidateToken(token)).thenReturn(uid);
+        when(repo.getAllBids()).thenReturn(List.of(ownerBid, otherBid));
+
+        // shop 5 belongs to me, shop 6 belongs to somebody else
+        when(users.getShopOwner(5)).thenReturn(uid);
+        when(users.getShopOwner(6)).thenReturn(3);
+        when(shops.getclosedShops(token)).thenReturn(List.of());
+        when(items.getAllItems(token))
+            .thenReturn(List.of(new Item(1,"","",0)));
+
+        List<BidReciept> out = service.getAllBids(token, true);
+        assertEquals(1, out.size());
+        assertSame(ownerBid, out.get(0));
+    }
+
+    // ─────────────────────────────── setServices actually overrides deps ───────────────────────────────
+    @Test
+    @DisplayName("setServices_overridesAuthTokenService")
+    void setServices_overridesAuthTokenService() throws Exception{
+        AuthTokenService newAuth = mock(AuthTokenService.class);
+        service.setServices(newAuth, users, items, shops, msg);
+
+        // newAuth should now be in use
+        when(newAuth.ValidateToken("bad")).thenThrow(new OurArg("nope"));
+        OurArg ex = assertThrows(
+        OurArg.class,
+        () -> service.getUserPurchases("bad", 0)
+        );
+        assertTrue(ex.getMessage().contains("getUserPurchases:"));
+    }
+
+    // ─────────────────────── acceptBid when repo returns null ───────────────────────
+    @Test
+    @DisplayName("acceptBid_whenBidNull_throwsOurRuntime")
+    void acceptBid_whenBidNull_throwsOurRuntime() {
+        when(repo.getPurchaseById(42)).thenReturn(null);
+        OurRuntime ex = assertThrows(
+        OurRuntime.class,
+        () -> service.acceptBid("tok", 42)
+        );
+        assertTrue(ex.getMessage().contains("Bid 42 does not exist"));
+    }
+
+    // ─────────────────────────── shipping‐failure in checkoutCart ───────────────────────────
+    @Test
+    @DisplayName("checkoutCart_whenShipFails_rollsBackAndRefunds")
+    void checkoutCart_whenShipFails_rollsBackAndRefunds() throws Exception {
+        String token = "tok";
+        int    uid       = 7,
+            shop      = 3,
+            purchaseId = 55;
+        Map<Integer,Integer> cartShop = Map.of(9,1);
+
+        when(auth.ValidateToken(token)).thenReturn(uid);
+        when(users.getUserShoppingCartItems(uid))
+            .thenReturn(new HashMap<>(Map.of(shop, new HashMap<>(cartShop))));
+        when(shops.purchaseItems(cartShop, shop, token)).thenReturn(10.0);
+        when(repo.addPurchase(uid, shop, cartShop, 10.0, addr))
+            .thenReturn(purchaseId);
+
+        when(users.pay(
+            eq(token), eq(shop), eq(10.0),
+            eq("USD"), eq("4111"), eq("12"), eq("25"),
+            eq("Name"), eq("CVV"), eq("ID")
+        )).thenReturn(purchaseId);
+
+        // simulate shipping blow-up
+        doThrow(new OurRuntime("ship error"))
+            .when(shops)
+            .shipPurchase(
+                eq(token), eq(purchaseId), eq(shop),
+                any(), any(), any(), any()
+            );
+
+        OurRuntime ex = assertThrows(
+            OurRuntime.class,
+            () -> service.checkoutCart(
+                token, addr,
+                "USD","4111","12","25","Name","CVV","ID"
+            )
+        );
+        assertTrue(ex.getMessage().contains("checkoutCart:"));
+
+        // verify rollback + restore + refund
+        verify(shops).rollBackPurchase(cartShop, shop);
+        verify(users).restoreUserShoppingCart(eq(uid), any());
+        verify(users).refundPaymentAuto(token, purchaseId);
+    }
+
+    // ─────────── getBid exception branches ───────────
+    @Test
+    @DisplayName("getBid_whenNotABid_throwsOurRuntime")
+    void getBid_nonBidType() throws Exception{
+        when(repo.getPurchaseById(10)).thenReturn(mock(Purchase.class));
+        when(auth.ValidateToken("t")).thenReturn(1);
+
+        OurRuntime ex = assertThrows(
+        OurRuntime.class,
+        () -> service.getBid("t", 10)
+        );
+        assertTrue(ex.getMessage().contains("is not a bid"));
+    }
+
+    @Test
+    @DisplayName("getBid_whenValidateTokenFails_propagatesOurArg")
+    void getBid_validateTokenThrows() throws Exception{
+        when(auth.ValidateToken("bad")).thenThrow(new OurArg("nope"));
+        assertThrows(OurArg.class, () -> service.getBid("bad", 1));
+    }
+
+    // ─────────── postBiddingAuction exception ───────────
+
+    @Test
+    @DisplayName("postBiddingAuction_whenNotABid_throwsOurRuntime")
+    void postBiddingAuction_nonBidType() throws Exception{
+        when(auth.ValidateToken("tok")).thenReturn(1);
+        when(repo.getPurchaseById(42)).thenReturn(mock(Purchase.class));
+
+        OurRuntime ex = assertThrows(
+        OurRuntime.class,
+        () -> service.postBiddingAuction("tok", 42, 100)
+        );
+        assertTrue(ex.getMessage().contains("is not a bid"));
+    }
+
+    // ─────────── finalizeBid negative branches ───────────
+
+    @Test
+    @DisplayName("finalizeBid_nonBidType_throwsOurRuntime_variant")
+    void finalizeBid_nonBidType_variant(){
+        when(repo.getPurchaseById(5)).thenReturn(mock(Purchase.class));
+
+        OurRuntime ex = assertThrows(
+        OurRuntime.class,
+        () -> service.finalizeBid("t", 5, false)
+        );
+        assertTrue(ex.getMessage().contains("is not a bid"));
+    }
+
+    @Test
+    @DisplayName("finalizeBid_initiatorIsBuyer_notAccept_throwsOurRuntime")
+    void finalizeBid_initiatorIsBuyer() throws Exception{
+        Bid b = mock(Bid.class);
+        when(repo.getPurchaseById(7)).thenReturn(b);
+        when(auth.ValidateToken("t")).thenReturn(2);
+        when(b.getUserId()).thenReturn(2);
+
+        OurRuntime ex = assertThrows(
+        OurRuntime.class,
+        () -> service.finalizeBid("t", 7, false)
+        );
+        assertTrue(ex.getMessage().contains("You need to be shop's owner"));
+    }
+
+    @Test
+    @DisplayName("finalizeBid_notShopOwner_notAccept_throwsOurRuntime")
+    void finalizeBid_notShopOwner() throws Exception{
+        Bid b = mock(Bid.class);
+        when(repo.getPurchaseById(8)).thenReturn(b);
+        when(auth.ValidateToken("t")).thenReturn(2);
+        when(b.getUserId()).thenReturn(1);
+        when(b.getStoreId()).thenReturn(99);
+        when(users.getShopOwner(99)).thenReturn(3);
+
+        OurRuntime ex = assertThrows(
+        OurRuntime.class,
+        () -> service.finalizeBid("t", 8, false)
+        );
+        assertTrue(ex.getMessage().contains("is not the owner of shop"));
+    }
+
+    @Test
+    @DisplayName("finalizeBid_noFinalPrice_throwsOurRuntime")
+    void finalizeBid_noFinalPrice() throws Exception{
+        Bid b = mock(Bid.class);
+        when(repo.getPurchaseById(9)).thenReturn(b);
+        when(auth.ValidateToken("t")).thenReturn(2);
+        when(b.getUserId()).thenReturn(1);
+        when(b.getStoreId()).thenReturn(5);
+        when(users.getShopOwner(5)).thenReturn(2);
+        when(b.getMaxBidding()).thenReturn(-1);
+
+        OurRuntime ex = assertThrows(
+        OurRuntime.class,
+        () -> service.finalizeBid("t", 9, false)
+        );
+        assertTrue(ex.getMessage().contains("No final price"));
+    }
+
+    @Test
+    @DisplayName("finalizeBid_noShopId_throwsOurRuntime")
+    void finalizeBid_noShopId() throws Exception{
+        Bid b = mock(Bid.class);
+        when(repo.getPurchaseById(10)).thenReturn(b);
+        when(auth.ValidateToken("t")).thenReturn(2);
+        when(b.getUserId()).thenReturn(1);
+        when(b.getStoreId()).thenReturn(-1);
+        when(b.getMaxBidding()).thenReturn(100);
+        when(users.getShopOwner(-1)).thenReturn(2);
+
+        OurRuntime ex = assertThrows(
+        OurRuntime.class,
+        () -> service.finalizeBid("t", 10, false)
+        );
+        assertTrue(ex.getMessage().contains("No shop ID"));
+    }
+
+    // ─────────── finalizeAuction exception paths ───────────
+
+    @Test
+    @DisplayName("startAuction_callback_noBids_throwsOurRuntime")
+    void finalizeAuction_noBids() throws Exception {
+        String tok = "t"; int user = 1, shopId = 2, aId = 77;
+        when(auth.ValidateToken(tok)).thenReturn(user);
+        when(shops.purchaseItems(any(), eq(shopId), eq(tok))).thenReturn(0.0);
+        when(repo.addBid(eq(user), eq(shopId), anyMap(), anyInt(), any(), any()))
+        .thenReturn(aId);
+
+        ArgumentCaptor<Runnable> cap = ArgumentCaptor.forClass(Runnable.class);
+        service.startAuction(tok, shopId, Map.of(1,1), 10, LocalDateTime.now().plusHours(1));
+        verify(taskscheduler).schedule(cap.capture(), any(Date.class));
+
+        Bid b = mock(Bid.class);
+        when(repo.getPurchaseById(aId)).thenReturn(b);
+        // no bidders at all:
+        when(b.getHighestBidderId()).thenReturn(-1);
+
+        OurRuntime ex = assertThrows(
+        OurRuntime.class,
+        () -> cap.getValue().run()
+        );
+        assertTrue(ex.getMessage().contains("No bids were placed"));
+    }
+
+    @Test
+    @DisplayName("startAuction_callback_noFinalPrice_throwsOurRuntime")
+    void finalizeAuction_noFinalPrice() throws Exception {
+        String tok = "t"; int user = 1, shopId = 2, aId = 78;
+        when(auth.ValidateToken(tok)).thenReturn(user);
+        when(shops.purchaseItems(any(), eq(shopId), eq(tok))).thenReturn(0.0);
+        when(repo.addBid(eq(user), eq(shopId), anyMap(), anyInt(), any(), any()))
+        .thenReturn(aId);
+
+        ArgumentCaptor<Runnable> cap = ArgumentCaptor.forClass(Runnable.class);
+        service.startAuction(tok, shopId, Map.of(1,1), 10, LocalDateTime.now().plusHours(1));
+        verify(taskscheduler).schedule(cap.capture(), any(Date.class));
+
+        Bid b = mock(Bid.class);
+        when(repo.getPurchaseById(aId)).thenReturn(b);
+        when(b.getHighestBidderId()).thenReturn(5);
+        when(b.getMaxBidding()).thenReturn(-1);
+
+        OurRuntime ex = assertThrows(
+        OurRuntime.class,
+        () -> cap.getValue().run()
+        );
+        assertTrue(ex.getMessage().contains("No final price"));
+    }
+
+    // ─────────── getStorePurchases permission branch ───────────
+
+    @Test
+    @DisplayName("getStorePurchases_withHistoryPermission_returnsList")
+    void getStorePurchases_withHistoryPermission() throws Exception {
+        String tok = "t"; int shop=5, uid=3;
+        when(auth.ValidateToken(tok)).thenReturn(uid);
+        when(users.getPermitionsByShop(tok, shop))
+        .thenReturn(new HashMap<>(Map.of(uid, new PermissionsEnum[]{PermissionsEnum.getHistory})));
+
+        List<Reciept> data = List.of(mock(Reciept.class));
+        when(repo.getStorePurchases(shop)).thenReturn(data);
+
+        List<Reciept> out = service.getStorePurchases(tok, shop);
+        assertSame(data, out);
+    }
+
+    // ─────────── getAuctionsWinList exception branch ───────────
+
+    @Test
+    @DisplayName("getAuctionsWinList_validateTokenFails_throwsOurArg")
+    void getAuctionsWinList_validateFails() throws Exception{
+        when(auth.ValidateToken("bad")).thenThrow(new OurArg("nope"));
+        assertThrows(OurArg.class,
+        () -> service.getAuctionsWinList("bad")
+        );
+    }
+
+    @Test
+    @DisplayName("getAuctionsWinList_itemServiceError_wrapsOurRuntime")
+    void getAuctionsWinList_itemServiceError() throws Exception {
+        String tok = "t"; int uid=4;
+        when(auth.ValidateToken(tok)).thenReturn(uid);
+        when(users.getAuctionsWinList(uid)).thenReturn(new ArrayList<>(List.of(mock(BidReciept.class))));
+        when(shops.getclosedShops(tok)).thenReturn(List.of());
+        when(items.getAllItems(tok)).thenThrow(new RuntimeException("db"));
+
+        OurRuntime ex = assertThrows(
+        OurRuntime.class,
+        () -> service.getAuctionsWinList(tok)
+        );
+        assertTrue(ex.getMessage().contains("getAuctionsWinList:"));
     }
 
 }
