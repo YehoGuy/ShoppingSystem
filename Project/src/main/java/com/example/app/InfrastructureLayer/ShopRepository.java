@@ -70,6 +70,28 @@ public class ShopRepository implements IShopRepository {
     }
 
     @Override
+    public List<Shop> getAllOpenShops() {
+        try {
+            return Collections.unmodifiableList(
+                    shops.values().stream()
+                            .filter(shop -> !shop.isClosed())
+                            .collect(Collectors.toList()));
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving open shops: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public List<Shop> getAllClosedShops() {
+        try {
+            return Collections.unmodifiableList(
+                    closedShops.stream().collect(Collectors.toList()));
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving closed shops: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
     public void updatePurchasePolicy(int shopId, PurchasePolicy newPolicy) {
         try {
             Shop shop = shops.get(shopId);

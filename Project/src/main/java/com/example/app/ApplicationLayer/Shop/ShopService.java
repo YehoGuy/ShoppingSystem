@@ -110,6 +110,47 @@ public class ShopService {
         }
     }
 
+    public List<Shop> getAllOpenShops(String token) {
+        try {
+            LoggerService.logMethodExecution("getAllShops", token);
+            authTokenService.ValidateToken(token);
+            List<Shop> returnShops = shopRepository.getAllOpenShops();
+            LoggerService.logMethodExecutionEnd("getAllShops", returnShops);
+            return returnShops;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getAllShops", e);
+            throw new OurArg("getAllShops" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getAllShops", e);
+            throw new OurRuntime("getAllShops" + e.getMessage());
+        } catch (Exception e) {
+            LoggerService.logError("getAllShops", e, token);
+            throw new OurRuntime("Error retrieving all shops: " + e.getMessage(), e);
+        }
+    }
+
+
+    public List<Shop> getAllClosedShops(String token) {
+        try {
+            LoggerService.logMethodExecution("getAllShops", token);
+            authTokenService.ValidateToken(token);
+            List<Shop> returnShops = shopRepository.getAllClosedShops();
+            LoggerService.logMethodExecutionEnd("getAllShops", returnShops);
+            return returnShops;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getAllShops", e);
+            throw new OurArg("getAllShops" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getAllShops", e);
+            throw new OurRuntime("getAllShops" + e.getMessage());
+        } catch (Exception e) {
+            LoggerService.logError("getAllShops", e, token);
+            throw new OurRuntime("Error retrieving all shops: " + e.getMessage(), e);
+        }
+    }
+
+
+
     public void updatePurchasePolicy(int shopId, PurchasePolicy newPolicy, String token) {
         try {
             LoggerService.logMethodExecution("updatePurchasePolicy", shopId, newPolicy);

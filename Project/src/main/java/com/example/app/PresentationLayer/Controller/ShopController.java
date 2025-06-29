@@ -229,6 +229,45 @@ public class ShopController {
         }
     }
 
+    @GetMapping("/all-open")
+    public ResponseEntity<List<ShopDTO>> getAllOpenShops(@RequestParam String token) {
+        try {
+            List<Shop> shops = shopService.getAllOpenShops(token);
+            List<Item> items = shopService.getItems(token);
+            List<ItemDTO> itemDTOs = items.stream()
+                    .map(ItemDTO::fromDomain)
+                    .toList();
+            List<ShopDTO> shopDTOs = new ArrayList<>();
+            for (Shop shop : shops) {
+                shopDTOs.add(ShopDTO.fromDomain(shop, itemDTOs));
+            }
+            return ResponseEntity.ok(shopDTOs);
+        } catch (Exception ex) {
+            ex.printStackTrace(); // log the real error
+            // Instead of a 500, return an empty list
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+    }
+
+    @GetMapping("/all-closed")
+    public ResponseEntity<List<ShopDTO>> getAllClosedShops(@RequestParam String token) {
+        try {
+            List<Shop> shops = shopService.getAllClosedShops(token);
+            List<Item> items = shopService.getItems(token);
+            List<ItemDTO> itemDTOs = items.stream()
+                    .map(ItemDTO::fromDomain)
+                    .toList();
+            List<ShopDTO> shopDTOs = new ArrayList<>();
+            for (Shop shop : shops) {
+                shopDTOs.add(ShopDTO.fromDomain(shop, itemDTOs));
+            }
+            return ResponseEntity.ok(shopDTOs);
+        } catch (Exception ex) {
+            ex.printStackTrace(); // log the real error
+            // Instead of a 500, return an empty list
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+    }
     /* ───────────────────────── 4. DISCOUNTS & POLICY ────────────────── */
 
     @PostMapping("/{shopId}/policy")

@@ -37,6 +37,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
 
     private Grid<UserGridRow> userGrid;
     private Grid<ShopGridRow> shopGrid;
+    private Grid<ShopGridRow> closedShopGrid;
     private Grid<ItemGridRow> itemGrid;
     private final RestTemplate restTemplate = new RestTemplate();
     private final String BASE_URL;
@@ -95,6 +96,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
         }
     }
 
+    
     public static class ItemGridRow {
         private int id;
         private String name;
@@ -199,6 +201,26 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
         shopGrid.setWidthFull();
         add(shopGrid);
 
+        // CLOSED SHOPS
+        add(new H2("System Closed Shops"));
+        closedShopGrid = new Grid<>(ShopGridRow.class);
+        closedShopGrid.setColumns("name");
+
+        closedShopGrid.addComponentColumn(shop -> {
+        //     //Button removeBtn = new Button("Remove");
+        //     //Button viewBtn = new Button("View");
+
+        //     //removeBtn.addClickListener(e -> removeShop(shop.getId()));
+        //     //viewBtn.addClickListener(e -> UI.getCurrent().navigate("shop/" + shop.getId()));
+
+        //     //return new HorizontalLayout(removeBtn, viewBtn);
+            return new HorizontalLayout(); // Placeholder for future actions
+        });
+
+        closedShopGrid.setWidthFull();
+        add(closedShopGrid);
+
+
         // ITEMS
         add(new H2("System Items"));
         itemGrid = new Grid<>(ItemGridRow.class);
@@ -219,7 +241,8 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
         add(itemGrid);
 
         loadUsers();
-        loadShops();
+        loadOpenShops();
+        loadClosedShops();
         loadItems();
         
     }
@@ -273,12 +296,12 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
         }
     }
 
-    private void loadShops() {
+    private void loadOpenShops() {
         try {
             String token = getToken();
             HttpHeaders headers = getHeaders(token);
             HttpEntity<Void> request = new HttpEntity<>(headers);
-            String url = BASE_URL + "/shops/all?token=" + token;
+            String url = BASE_URL + "/shops/all-open?token=" + token;
 
             ResponseEntity<ShopDTO[]> response = restTemplate.exchange(
                     url, HttpMethod.GET, request, ShopDTO[].class);
@@ -292,9 +315,33 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
 
             shopGrid.setItems(rows);
         } catch (Exception e) {
-            Notification.show("Failed to load shops");
+            Notification.show("Failed to load open shops");
         }
     }
+
+    private void loadClosedShops() {
+        try {
+            String token = getToken();
+            HttpHeaders headers = getHeaders(token);
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+            String url = BASE_URL + "/shops/all-closed?token=" + token;
+
+            ResponseEntity<ShopDTO[]> response = restTemplate.exchange(
+                    url, HttpMethod.GET, request, ShopDTO[].class);
+
+            List<ShopDTO> shops = response.getBody() != null ? Arrays.asList(response.getBody())
+                    : Collections.emptyList();
+
+            List<ShopGridRow> rows = shops.stream()
+                    .map(s -> new ShopGridRow(s.getShopId(), s.getName()))
+                    .collect(Collectors.toList());
+
+            closedShopGrid.setItems(rows);
+        } catch (Exception e) {
+            Notification.show("Failed to load closed shops");
+        }
+    }
+
 
     private void loadItems() {
         try {
@@ -308,7 +355,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
 
             List<ItemDTO> items = response.getBody() != null ? Arrays.asList(response.getBody())
                     : Collections.emptyList();
-
+            System.out.println("Items loaded: " + items.size());
             List<ItemGridRow> rows = items.stream()
                     .map(it -> new ItemGridRow(it.getId(), it.getName(), it.getDescription(), it.getCategory()))
                     .collect(Collectors.toList());
@@ -453,7 +500,9 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
 
             restTemplate.exchange(url, HttpMethod.DELETE, request, Void.class);
             Notification.show("Shop " + shopId + " removed");
-            loadShops();
+            loadOpenShops();
+            loadClosedShops(); // Refresh closed shops as well
+            loadItems(); // Refresh items as well
         } catch (Exception e) {
             Notification.show("Failed to remove shop");
         }

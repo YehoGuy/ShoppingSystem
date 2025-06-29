@@ -37,6 +37,10 @@ public interface IShopRepository {
          */
         List<Shop> getAllShops();
 
+        List<Shop> getAllOpenShops();
+
+        List<Shop> getAllClosedShops();
+
         /**
          * Updates the purchase policy for the specified shop.
          *
