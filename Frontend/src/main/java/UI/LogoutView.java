@@ -67,14 +67,12 @@ public class LogoutView extends BaseView implements BeforeEnterObserver {
                 .set("border-radius", "0.5rem")
                 .set("padding", "0.75rem 1rem");
 
-        // Add into card
         card.add(prompt, backBtn, logoutBtn);
         add(card);
     }
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
-        // if not logged in, redirect
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("");
         }
