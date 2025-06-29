@@ -728,6 +728,48 @@ public class ShopController {
         }
     }
 
+
+    @GetMapping("/ByWorkerId-open")
+    public ResponseEntity<?> getOpenShopsByWorkerId(
+            @RequestParam int workerId,
+            @RequestParam String token) {
+        try {
+            List<Shop> shops = shopService.getOpenShopsByWorker(workerId, token);
+            List<Item> items = shopService.getItems(token);
+            List<ItemDTO> itemDTOs = items.stream()
+                    .map(ItemDTO::fromDomain)
+                    .toList();
+            List<ShopDTO> shopDTOs = new ArrayList<>();
+            for (Shop shop : shops) {
+                shopDTOs.add(ShopDTO.fromDomain(shop, itemDTOs));
+            }
+            return ResponseEntity.ok(shopDTOs);
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }
+    }
+
+
+    @GetMapping("/ByWorkerId-closed")
+    public ResponseEntity<?> getShopsClosedByWorkerId(
+            @RequestParam int workerId,
+            @RequestParam String token) {
+        try {
+            List<Shop> shops = shopService.getClosedShopsByWorker(workerId, token);
+            List<Item> items = shopService.getItems(token);
+            List<ItemDTO> itemDTOs = items.stream()
+                    .map(ItemDTO::fromDomain)
+                    .toList();
+            List<ShopDTO> shopDTOs = new ArrayList<>();
+            for (Shop shop : shops) {
+                shopDTOs.add(ShopDTO.fromDomain(shop, itemDTOs));
+            }
+            return ResponseEntity.ok(shopDTOs);
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }
+    }
+
     // @PostMapping("/addDiscountPolicy")
     // public ResponseEntity<?> addDiscountPolicy(@RequestParam String token,
     // @RequestParam int threshold,

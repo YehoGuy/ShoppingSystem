@@ -34,16 +34,22 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
 
     private final String api;
     private final String getShopsUrl;
+    private final String getOpenShopsUrl;
+    private final String getClosedShopsUrl;
     private final String createUrl;
 
     private final RestTemplate restTemplate = new RestTemplate();
-    private List<ShopDTO> allShops;
+    private List<ShopDTO> allOpenShops;
+    private List<ShopDTO> allClosedShops;
     private VerticalLayout shopsContainer;
+    private VerticalLayout closedShopsContainer;
     private TextField searchField;
 
     public MyShopsView(@Value("${url.api}") String api) {
         this.api           = api;
         this.getShopsUrl   = api + "/shops/ByWorkerId";
+        this.getOpenShopsUrl   = api + "/shops/ByWorkerId-open";
+        this.getClosedShopsUrl   = api + "/shops/ByWorkerId-closed";
         this.createUrl     = api + "/shops/create";
 
         setSizeFull();
@@ -246,7 +252,7 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
         header.setAlignItems(Alignment.CENTER);
         add(header);
 
-        // Shops container
+        // Open Shops container
         shopsContainer = new VerticalLayout();
         shopsContainer.setSizeFull();
         shopsContainer.getStyle()
@@ -258,6 +264,19 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
             
         add(shopsContainer);
 
+
+        // Closed Shops container
+        closedShopsContainer = new VerticalLayout();
+        closedShopsContainer.setSizeFull();
+        closedShopsContainer.getStyle()
+            .set("overflow", "auto")
+            .set("padding", "30px")
+            .set("gap", "0px")
+            .set("background", "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)")
+            .set("min-height", "100vh");
+            
+        add(closedShopsContainer);
+
     }
 
     @Override
@@ -267,8 +286,9 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
         if (token == null) {
             event.forwardTo("login");
         }
-        loadShops();
-
+        loadOpenShops();
+        loadClosedShops();
+        
         handleSuspence();
     }
 
@@ -280,24 +300,44 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
         return null; // Return null if userId is not available
     }
 
-    private void loadShops() {
+    private void loadOpenShops() {
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
         try {
             
             ResponseEntity<ShopDTO[]> resp = restTemplate
-                .getForEntity(getShopsUrl + "?workerId=" + getUserId() + "&token=" + token,
+                .getForEntity(getOpenShopsUrl + "?workerId=" + getUserId() + "&token=" + token,
                   ShopDTO[].class);
             if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
-                allShops = Arrays.asList(resp.getBody());
+                allOpenShops = Arrays.asList(resp.getBody());
                 filterAndDisplay();
             } else {
                 Notification.show("⚠️ Failed to load shops");
             }
         } catch (Exception ex) {
-            Notification.show("❗ Error loading shop" + ex.getMessage());
+            //Notification.show("❗ Error loading open shops" );
         }
     }
 
+    private void loadClosedShops() {
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        try {
+            
+            ResponseEntity<ShopDTO[]> resp = restTemplate
+                .getForEntity(getClosedShopsUrl + "?workerId=" + getUserId() + "&token=" + token,
+                  ShopDTO[].class);
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
+                allClosedShops = Arrays.asList(resp.getBody());
+                filterAndDisplay();
+            } else {
+                Notification.show("⚠️ Failed to load shops");
+            }
+        } catch (Exception ex) {
+            Notification.show("❗ Error loading closed shops");
+        }
+    }
+
+
+    
     private void openCreateDialog() {
         Dialog dialog = new Dialog();
         dialog.setModal(true);
@@ -328,7 +368,7 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
 
             if (resp.getStatusCode() == HttpStatus.CREATED) {
                 Notification.show("✅ Shop created: " + name);
-                loadShops();
+                loadOpenShops();
             } else {
                 Notification.show("⚠️ Could not create shop");
             }
@@ -339,16 +379,22 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
 
     private void filterAndDisplay() {
         String q = searchField.getValue();
-        List<ShopDTO> filtered = allShops.stream()
+        List<ShopDTO> filteredOpen = allOpenShops.stream()
                 .filter(s -> s.getName().toLowerCase().contains(q.toLowerCase()))
                 .toList();
-        displayShops(filtered);
+        displayOpenShops(filteredOpen);
+        
+        List<ShopDTO> filteredClosed = allClosedShops.stream()
+                .filter(s -> s.getName().toLowerCase().contains(q.toLowerCase()))
+                .toList();
+        displayClosedShops(filteredClosed);
+
     }
 
-    private void displayShops(List<ShopDTO> shops) {
+    private void displayOpenShops(List<ShopDTO> shops) {
         shopsContainer.removeAll();
         if (shops.isEmpty()) {
-            shopsContainer.add(new Paragraph("No shops found."));
+            shopsContainer.add(new Paragraph("No open shops found."));
             return;
         }
         for (ShopDTO s : shops) {
@@ -513,6 +559,177 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
             });
 
             shopsContainer.add(shopCard);
+        }
+    }
+
+    private void displayClosedShops(List<ShopDTO> shops) {
+        closedShopsContainer.removeAll();
+        if (shops.isEmpty()) {
+            closedShopsContainer.add(new Paragraph("No closed shops found."));
+            return;
+        }
+        for (ShopDTO s : shops) {
+            HorizontalLayout row = new HorizontalLayout();
+            row.setWidthFull();
+
+            // a container for the shop name with icon
+            com.vaadin.flow.component.html.Div nameContainer = new com.vaadin.flow.component.html.Div();
+            nameContainer.getStyle()
+                    .set("display", "flex")
+                    .set("align-items", "center")
+                    .set("gap", "12px")
+                    .set("cursor", "pointer")
+                    .set("padding", "16px 20px")
+                    .set("border-radius", "12px")
+                    .set("background", "linear-gradient(135deg, #667eea 0%, #764ba2 100%)")
+                    .set("color", "white")
+                    .set("box-shadow", "0 4px 15px rgba(102, 126, 234, 0.3)")
+                    .set("transition", "all 0.3s ease")
+                    .set("min-width", "300px");
+
+            // Shop icon
+            // Shop icon
+            Span icon = new Span("🏢");
+            icon.getStyle()
+                    .set("font-size", "28px")
+                    .set("filter", "drop-shadow(0 2px 4px rgba(0,0,0,0.3))");
+
+            // Shop name text
+            Span nameText = new Span(s.getName());
+            nameText.getStyle()
+                    .set("font-size", "22px")
+                    .set("font-weight", "700")
+                    .set("text-shadow", "0 1px 3px rgba(0,0,0,0.3)")
+                    .set("letter-spacing", "0.5px");
+
+            // Shop ID badge
+            // Span idBadge = new Span("ID: " + s.getShopId());
+            // idBadge.getStyle()
+            //         .set("background-color", "rgba(255,255,255,0.2)")
+            //         .set("padding", "4px 8px")
+            //         .set("border-radius", "20px")
+            //         .set("font-size", "12px")
+            //         .set("font-weight", "500")
+            //         .set("margin-left", "auto");
+
+            nameContainer.add(icon, nameText);
+
+            nameContainer.addClickListener(evt -> {
+                nameContainer.getStyle()
+                        .set("transform", "translateY(-2px)")
+                        .set("box-shadow", "0 6px 20px rgba(102, 126, 234, 0.4)");
+                UI.getCurrent().navigate("shop/" + s.getShopId());
+            });
+
+            // Add hover effects
+            nameContainer.getElement().addEventListener("mouseenter", e -> {
+                nameContainer.getStyle()
+                        .set("transform", "translateY(-2px)")
+                        .set("box-shadow", "0 6px 20px rgba(102, 126, 234, 0.4)");
+            });
+
+            nameContainer.getElement().addEventListener("mouseleave", e -> {
+                nameContainer.getStyle()
+                        .set("transform", "translateY(0)")
+                        .set("box-shadow", "0 4px 15px rgba(102, 126, 234, 0.3)");
+            });
+
+            // Button view = new Button("✏️ Edit Shop", e -> UI.getCurrent().navigate("edit-shop/" + s.getShopId()));
+            // view.getStyle()
+            //         .set("background", "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)")
+            //         .set("color", "white")
+            //         .set("border", "none")
+            //         .set("border-radius", "12px")
+            //         .set("padding", "12px 20px")
+            //         .set("font-weight", "600")
+            //         .set("font-size", "14px")
+            //         .set("cursor", "pointer")
+            //         .set("box-shadow", "0 4px 15px rgba(240, 147, 251, 0.4)")
+            //         .set("transition", "all 0.3s ease")
+            //         .set("text-transform", "uppercase")
+            //         .set("letter-spacing", "0.5px");
+
+            Button historyBtn = new Button("📊 Purchase History", e -> UI.getCurrent().navigate("history/" + s.getShopId()));
+            historyBtn.getStyle()
+                    .set("background", "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)")
+                    .set("color", "white")
+                    .set("border", "none")
+                    .set("border-radius", "12px")
+                    .set("padding", "12px 20px")
+                    .set("font-weight", "600")
+                    .set("font-size", "14px")
+                    .set("cursor", "pointer")
+                    .set("box-shadow", "0 4px 15px rgba(79, 172, 254, 0.4)")
+                    .set("transition", "all 0.3s ease")
+                    .set("text-transform", "uppercase")
+                    .set("letter-spacing", "0.5px");
+
+            // Add hover effects for buttons
+            // view.getElement().addEventListener("mouseenter", e -> {
+            //     view.getStyle().set("transform", "translateY(-2px)")
+            //             .set("box-shadow", "0 6px 20px rgba(240, 147, 251, 0.6)");
+            // });
+            // view.getElement().addEventListener("mouseleave", e -> {
+            //     view.getStyle().set("transform", "translateY(0)")
+            //             .set("box-shadow", "0 4px 15px rgba(240, 147, 251, 0.4)");
+            // });
+
+            historyBtn.getElement().addEventListener("mouseenter", e -> {
+                historyBtn.getStyle().set("transform", "translateY(-2px)")
+                        .set("box-shadow", "0 6px 20px rgba(79, 172, 254, 0.6)");
+            });
+            historyBtn.getElement().addEventListener("mouseleave", e -> {
+                historyBtn.getStyle().set("transform", "translateY(0)")
+                        .set("box-shadow", "0 4px 15px rgba(79, 172, 254, 0.4)");
+            });
+
+            // Create a premium card-like container for each shop
+            com.vaadin.flow.component.html.Div shopCard = new com.vaadin.flow.component.html.Div();
+            shopCard.getStyle()
+                .set("background", "#ffffff")
+                .set("border-radius", "20px")
+                .set("box-shadow", "0 8px 32px rgba(0, 0, 0, 0.12)")
+                .set("padding", "24px")
+                .set("margin-bottom", "24px")
+                .set("border", "1px solid #e2e8f0")
+                .set("transition", "all 0.4s ease")
+                .set("position", "relative")
+                .set("overflow", "hidden");
+
+            // Add decorative gradient overlay
+            com.vaadin.flow.component.html.Div overlay = new com.vaadin.flow.component.html.Div();
+            overlay.getStyle()
+                    .set("position", "absolute")
+                    .set("top", "0")
+                    .set("left", "0")
+                    .set("right", "0")
+                    .set("height", "4px")
+                    .set("background", "linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%)");
+
+            VerticalLayout cardContent = new VerticalLayout();
+            cardContent.setSpacing(true);
+            cardContent.setPadding(false);
+
+            HorizontalLayout buttonGroup = new HorizontalLayout(historyBtn);
+            buttonGroup.setSpacing(true);
+            buttonGroup.setJustifyContentMode(JustifyContentMode.END);
+
+            cardContent.add(nameContainer, buttonGroup);
+            shopCard.add(overlay, cardContent);
+
+            // Add hover effect for the entire card
+            shopCard.getElement().addEventListener("mouseenter", e -> {
+                shopCard.getStyle()
+                        .set("transform", "translateY(-4px)")
+                        .set("box-shadow", "0 12px 40px rgba(0, 0, 0, 0.15)");
+            });
+            shopCard.getElement().addEventListener("mouseleave", e -> {
+                shopCard.getStyle()
+                        .set("transform", "translateY(0)")
+                        .set("box-shadow", "0 8px 32px rgba(0, 0, 0, 0.12)");
+            });
+
+            closedShopsContainer.add(shopCard);
         }
     }
 

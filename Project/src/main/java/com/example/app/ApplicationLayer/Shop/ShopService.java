@@ -857,6 +857,59 @@ public class ShopService {
         }
     }
 
+    public List<Shop> getOpenShopsByWorker(int workerId, String token) {
+        try {
+            LoggerService.logMethodExecution("getShopsByWorker", workerId);
+            List<Integer> shopIds = userService.getShopIdsByWorkerId(workerId);
+            List<Shop> returnShops = new ArrayList<>();
+            for (Integer shopId : shopIds) {
+                Shop shop = getShop(shopId, token);
+                if (!shop.isClosed())
+                {
+                    returnShops.add(shop);
+                }
+            }
+            LoggerService.logMethodExecutionEnd("getShopsByWorker", returnShops);
+            return returnShops;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getShopsByWorker", e);
+            throw new OurArg("getShopsByWorker" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getShopsByWorker", e);
+            throw new OurRuntime("getShopsByWorker" + e.getMessage());
+        } catch (Exception e) {
+            LoggerService.logError("getShopsByWorker", e, workerId);
+            throw new OurRuntime("Error retrieving shops by worker " + workerId + ": " + e.getMessage(), e);
+        }
+    }
+
+
+    public List<Shop> getClosedShopsByWorker(int workerId, String token) {
+        try {
+            LoggerService.logMethodExecution("getShopsByWorker", workerId);
+            List<Integer> shopIds = userService.getShopIdsByWorkerId(workerId);
+            List<Shop> returnShops = new ArrayList<>();
+            for (Integer shopId : shopIds) {
+                Shop shop = getShop(shopId, token);
+                if (shop.isClosed())
+                {
+                    returnShops.add(shop);
+                }
+            }
+            LoggerService.logMethodExecutionEnd("getShopsByWorker", returnShops);
+            return returnShops;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getShopsByWorker", e);
+            throw new OurArg("getShopsByWorker" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getShopsByWorker", e);
+            throw new OurRuntime("getShopsByWorker" + e.getMessage());
+        } catch (Exception e) {
+            LoggerService.logError("getShopsByWorker", e, workerId);
+            throw new OurRuntime("Error retrieving shops by worker " + workerId + ": " + e.getMessage(), e);
+        }
+    }
+
     public void setDiscountPolicy(int shopId, CompositePolicyDTO dto, String token) {
         try {
             LoggerService.logMethodExecution("setDiscountPolicy", shopId, dto);

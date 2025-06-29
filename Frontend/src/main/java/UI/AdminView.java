@@ -355,7 +355,6 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
 
             List<ItemDTO> items = response.getBody() != null ? Arrays.asList(response.getBody())
                     : Collections.emptyList();
-            System.out.println("Items loaded: " + items.size());
             List<ItemGridRow> rows = items.stream()
                     .map(it -> new ItemGridRow(it.getId(), it.getName(), it.getDescription(), it.getCategory()))
                     .collect(Collectors.toList());
@@ -499,7 +498,7 @@ public class AdminView extends VerticalLayout implements BeforeEnterObserver {
             String url = BASE_URL + "/shops/" + shopId + "?token=" + token;
 
             restTemplate.exchange(url, HttpMethod.DELETE, request, Void.class);
-            Notification.show("Shop " + shopId + " removed");
+            Notification.show("Shop " + shopId + " removed and all it's items deleted");
             loadOpenShops();
             loadClosedShops(); // Refresh closed shops as well
             loadItems(); // Refresh items as well
