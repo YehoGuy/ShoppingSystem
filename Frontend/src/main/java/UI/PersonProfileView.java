@@ -165,7 +165,7 @@ public class PersonProfileView extends BaseView implements BeforeEnterObserver {
                 
                 for (rolesDTO r : roles) {
                     // Check if this role belongs to the current user
-                    if (currentUsername != null && r.getUserName().equalsIgnoreCase(currentUsername)) {
+                    if (currentUsername != null) {
                         VerticalLayout roleCard = new VerticalLayout();
                         roleCard.setPadding(false);
                         roleCard.setSpacing(false);

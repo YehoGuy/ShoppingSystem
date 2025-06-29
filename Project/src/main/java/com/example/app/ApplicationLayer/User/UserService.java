@@ -626,7 +626,7 @@ public class UserService {
                         new OurRuntime("Member ID " + owner + " is not an owner of shop ID " + shopId));
                 throw new OurRuntime("Member ID " + owner + " is not an owner of shop ID " + shopId);
             }
-            Role role = new Role(memberId, shopId, permissions);
+            Role role = new Role(owner, shopId, permissions);
             userRepository.addRoleToPending(memberId, role);
             LoggerService.logMethodExecutionEndVoid("makeManagerOfStore");
         } catch (OurRuntime e) {
