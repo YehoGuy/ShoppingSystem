@@ -3,6 +3,7 @@ package com.example.app.ApplicationLayer.Purchase;
 import java.sql.Date;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,7 @@ import com.example.app.DomainLayer.Purchase.Reciept;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 
 import jakarta.validation.constraints.Min;
+import java.util.HashSet;
 
 @Service
 public class PurchaseService {
@@ -459,9 +461,13 @@ public class PurchaseService {
             bids.removeIf(b -> closedShopsIds.contains(b.getShopId()));
 
             // drop bids whose item no longer exists
-            Set<Integer> validItemIds = itemService.getAllItems(authToken).stream()
-                    .map(Item::getId)
-                    .collect(Collectors.toSet());
+            Set<Integer> validItemIds = new HashSet<>();
+            for (BidReciept bid : bids) {
+                Set<Integer> shopItemIds = shopService.searchItemsInShop(bid.getShopId(), null, null, Collections.emptyList(), null, null, null, authToken).stream()
+                        .map(Item::getId)
+                        .collect(Collectors.toSet());
+                validItemIds.addAll(shopItemIds);
+            }
             bids.removeIf(b -> b.getItems().keySet().stream()
                     .anyMatch(itemId -> !validItemIds.contains(itemId)));
             return bids;
@@ -535,7 +541,7 @@ public class PurchaseService {
                 throw new OurRuntime(
                         "User " + userId + " is the owner of the bid " + auctionId + " and cannot bid on it");
             }
-            ((Bid) purchase).addBidding(userId, bidPrice, false);
+            purchaseRepository.postBiddingAuction((Bid) purchase, userId, bidPrice);
             LoggerService.logMethodExecutionEndVoid("postBiddingAuction");
         } catch (OurArg e) {
             LoggerService.logDebug("postBiddingAuction", e);

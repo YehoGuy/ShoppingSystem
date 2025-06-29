@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Collections;
 
 import org.springframework.stereotype.Service;
 
@@ -495,17 +496,17 @@ public class ShopService {
             shopRepository.closeShop(shopId);
             userService.closeShopNotification(shopId);
             
-            List<Item> itemsToRemove = itemService.getAllItems(token);
+            List<Item> itemsToRemove = searchItemsInShop(shopId,null, null, Collections.emptyList(), null, null, null, token);
             for(Item itemToRemove : itemsToRemove){
-                itemService.deleteItem(itemToRemove.getId(), token);
+                removeItemFromShop(shopId, itemToRemove.getId(), token);
             }
-            if (userService.isAdmin(userId)) {
-                //userService.removeOwnerFromStoreAsAdmin(token, userId, shopId);
+            // if (userService.isAdmin(userId)) {
+            //     //userService.removeOwnerFromStoreAsAdmin(token, userId, shopId);
                 
-            }
-            else{
-                userService.removeOwnerFromStore(token, userId, shopId);
-            }
+            // }
+            // else{
+            //     userService.removeOwnerFromStore(token, userId, shopId);
+            // }
             LoggerService.logMethodExecutionEndVoid("closeShop");
         } catch (OurArg e) {
             LoggerService.logDebug("closeShop", e);

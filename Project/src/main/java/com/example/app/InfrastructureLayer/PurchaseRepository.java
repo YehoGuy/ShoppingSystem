@@ -196,4 +196,30 @@ public class PurchaseRepository implements IPurchaseRepository {
                 .map(purchase -> ((Bid) purchase).generateReciept())
                 .toList();
     }
+
+
+    /**
+     * Posts a bid to an auction.
+     * This method adds a bidding to an existing bid.
+     * @param bid      The bid to which the bidding is added.
+     * @param userId   The ID of the user making the bid.
+     * @param bidPrice The price of the bid.
+     */
+   @Override
+    public void postBiddingAuction(Bid bid, int userId, int bidPrice) {
+        bid.addBidding(userId, bidPrice, false);
+    }
+
+    /**
+     * Posts a bid to a non-auction purchase.
+     * This method adds a bidding to an existing bid.
+     * @param bid      The bid to which the bidding is added.
+     * @param userId   The ID of the user making the bid.
+     * @param bidPrice The price of the bid.
+     */
+    @Override
+    public void postBidding(Bid bid, int userId, int bidPrice) {
+        bid.addBidding(userId, bidPrice, false);
+    }
+
 }
