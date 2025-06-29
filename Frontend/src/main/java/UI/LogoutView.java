@@ -20,17 +20,14 @@ public class LogoutView extends BaseView implements BeforeEnterObserver {
     private final String logoutApiUrl;
 
     public LogoutView(@Value("${url.api}") String api) {
-        // header: title + icons
         super("Logout", "End your session securely", "🚪", "👋");
 
         this.logoutApiUrl = api + "/users/logout";
 
-        // center everything
         setSizeFull();
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.CENTER);
 
-        // card container
         VerticalLayout card = new VerticalLayout();
         card.addClassName("view-card");
         card.getStyle()
@@ -41,7 +38,6 @@ public class LogoutView extends BaseView implements BeforeEnterObserver {
         card.setAlignItems(Alignment.CENTER);
         card.setSpacing(true);
 
-        // prompt
         H2 prompt = new H2("Are you sure you want to logout?");
         prompt.getStyle()
                 .set("color", "white")
