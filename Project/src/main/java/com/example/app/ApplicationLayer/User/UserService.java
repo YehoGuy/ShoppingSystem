@@ -736,6 +736,44 @@ public class UserService {
         }
     }
 
+    public void removeOwnerFromStoreAsAdmin(String token, int memberId, int shopId) {
+        try {
+            // token and userId of system admin
+
+            LoggerService.logMethodExecution("removeOwnerFromStoreAsAdmin", token, shopId);
+            Role role = userRepository.getRole(memberId, shopId);
+            if (!role.isOwner()) {
+                LoggerService.logDebug("removeOwnerFromStoreAsAdmin",
+                        new OurRuntime("Member ID " + memberId + " is not an owner of shop ID " + shopId));
+                throw new OurRuntime("Member ID " + memberId + " is not an owner of shop ID " + shopId);
+            }
+            int assigneeId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            if (isSuspended(assigneeId)) {
+                throw new OurRuntime("the user is suspended");
+            }
+            if (role.getAssigneeId() != assigneeId) {
+                LoggerService.logDebug("removeOwnerFromStoreAsAdmin", new OurRuntime("Member ID " + assigneeId
+                        + " is not the assignee of member ID " + memberId + " in shop ID " + shopId));
+                throw new OurRuntime("Member ID " + assigneeId + " is not the assignee of member ID " + memberId
+                        + " in shop ID " + shopId);
+            }
+            userRepository.removeRole(memberId, shopId);
+            removeAllAssigned(memberId, shopId); // Remove all assigned roles for the member
+            removedAppointment(memberId, "Owner", shopId);
+            LoggerService.logMethodExecutionEndVoid("removeOwnerFromStoreAsAdmin");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("removeOwnerFromStoreAsAdmin", e);
+            throw new OurRuntime("removeOwnerFromStoreAsAdmin: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("removeOwnerFromStoreAsAdmin", e);
+            throw new OurArg("removeOwnerFromStoreAsAdmin: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("removeOwnerFromStoreAsAdmin", e, token, shopId);
+            throw new OurRuntime("removeOwnerFromStoreAsAdmin: " + e.getMessage(), e);
+        }
+    }
+
+
     public void removeAllAssigned(int assignee, int shopId) {
         try {
             for (Member member : userRepository.getMembersList()) {

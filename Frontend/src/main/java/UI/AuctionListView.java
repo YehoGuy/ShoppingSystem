@@ -107,6 +107,9 @@ public class AuctionListView extends BaseView {
                     UI.getCurrent().navigate("auction/" + dto.getPurchaseId());
                 }
             });
+            if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+                btn.setVisible(false);
+            }
             return btn;
         }))
         .setHeader("Auction")

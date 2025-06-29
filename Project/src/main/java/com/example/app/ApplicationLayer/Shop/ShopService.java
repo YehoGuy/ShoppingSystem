@@ -454,10 +454,17 @@ public class ShopService {
             }
             shopRepository.closeShop(shopId);
             userService.closeShopNotification(shopId);
-            userService.removeOwnerFromStore(token, userId, shopId);
+            
             List<Item> itemsToRemove = itemService.getAllItems(token);
             for(Item itemToRemove : itemsToRemove){
                 itemService.deleteItem(itemToRemove.getId(), token);
+            }
+            if (userService.isAdmin(userId)) {
+                //userService.removeOwnerFromStoreAsAdmin(token, userId, shopId);
+                
+            }
+            else{
+                userService.removeOwnerFromStore(token, userId, shopId);
             }
             LoggerService.logMethodExecutionEndVoid("closeShop");
         } catch (OurArg e) {

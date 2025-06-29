@@ -16,7 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 
 @Route("register")
 public class RegistrationView extends BaseView {
-    private final String api, registerUrl, authUrl;
+    private final String api, registerUrl, authUrl, baseUrl;
     private final RestTemplate restTemplate = new RestTemplate();
 
     public RegistrationView(@Value("${url.api}") String api) {
@@ -24,6 +24,7 @@ public class RegistrationView extends BaseView {
         this.api = api;
         this.registerUrl = api + "/users/register";
         this.authUrl = api + "/auth";
+        this.baseUrl = api + "/users";
 
         VerticalLayout card = new VerticalLayout();
         card.addClassName("view-card");
@@ -102,7 +103,8 @@ public class RegistrationView extends BaseView {
             if(resp.getStatusCode()==HttpStatus.CREATED){
                 VaadinSession.getCurrent().setAttribute("authToken", resp.getBody());
                 Notification.show("✅ Registration successful!");
-                setUserId(); getUI().ifPresent(ui->ui.navigate("home"));
+                setUserId(); 
+                getUI().ifPresent(ui->ui.navigate("home"));
             } else {
                 Notification.show("❌ Registration failed");
             }
@@ -118,6 +120,25 @@ public class RegistrationView extends BaseView {
     private void setUserId() {
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken"); if(token==null)return;
         ResponseEntity<Integer> resp = restTemplate.getForEntity(authUrl+"/validate?authToken="+token,Integer.class);
-        if(resp.getStatusCode().is2xxSuccessful()) VaadinSession.getCurrent().setAttribute("userId",resp.getBody());
+        if(resp.getStatusCode().is2xxSuccessful()) 
+        {
+            VaadinSession.getCurrent().setAttribute("userId",resp.getBody());
+            handleAdmin();
+        }
+    }
+
+    private void handleAdmin() {
+        Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
+        if (userId == null) return;
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) return;
+
+        String url = baseUrl + "/" + userId + "/isAdmin?token=" + token;
+        ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            VaadinSession.getCurrent().setAttribute("isAdmin", response.getBody());
+        } else {
+            Notification.show("❌ Failed to check admin status");
+        }
     }
 }
