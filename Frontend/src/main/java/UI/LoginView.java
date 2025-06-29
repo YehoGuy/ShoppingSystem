@@ -39,6 +39,7 @@ public class LoginView extends BaseView {
         /* ── Login form ───────────────────────────────────────────────── */
         LoginForm loginForm = new LoginForm();
         loginForm.setI18n(createCustomLoginI18n());
+        loginForm.setForgotPasswordButtonVisible(false);
         loginForm.addLoginListener(event -> {
             String username = event.getUsername();
             String password = event.getPassword();
