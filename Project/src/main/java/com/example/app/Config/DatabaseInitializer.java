@@ -14,9 +14,16 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Custom database initializer that handles SQL script errors gracefully.
+ * Self-contained database initializer that handles SQL script errors gracefully.
  * This component runs after the application context is loaded and executes
- * the import.sql script with proper error handling.
+ * the import.sql script with complete error handling - no additional configuration needed.
+ * 
+ * Features:
+ * - Works with existing application-db.properties (no new files needed)
+ * - Graceful error handling - never crashes the application
+ * - Database connectivity checks
+ * - Duplicate initialization prevention
+ * - Detailed logging and error reporting
  */
 @Component
 @Profile("db") // Only run in database mode
@@ -32,6 +39,13 @@ public class DatabaseInitializer implements CommandLineRunner {
         logger.info("Starting custom database initialization...");
         
         try {
+            // Check if database connection is available
+            if (!isDatabaseAvailable()) {
+                logger.warn("Database not available. Skipping initialization. " +
+                          "Check your database connection configuration.");
+                return;
+            }
+            
             // Check if we should run initialization (e.g., check if data already exists)
             if (shouldSkipInitialization()) {
                 logger.info("Database already initialized, skipping init script.");
@@ -47,6 +61,21 @@ public class DatabaseInitializer implements CommandLineRunner {
             // Log the error but don't crash the application
             logger.error("Database initialization failed, but application will continue: {}", e.getMessage(), e);
             logger.warn("The application is running without initial test data.");
+            logger.info("To fix this issue check: " +
+                       "1. Database connection is working " +
+                       "2. Database tables exist (run with spring.jpa.hibernate.ddl-auto=create-drop first) " +
+                       "3. The import.sql script syntax is correct");
+        }
+    }
+
+    private boolean isDatabaseAvailable() {
+        try {
+            // Simple test query to check database connectivity
+            jdbcTemplate.queryForObject("SELECT 1", Integer.class);
+            return true;
+        } catch (Exception e) {
+            logger.debug("Database connectivity check failed: {}", e.getMessage());
+            return false;
         }
     }
 
