@@ -431,6 +431,21 @@ public class UserController {
         }
     }
 
+    @GetMapping("/isGuest")
+    public ResponseEntity<?> isGuest(@RequestParam String token) {
+        try {
+            authService.ValidateToken(token);
+            boolean isGuest = userService.isGuest(token);
+            return ResponseEntity.ok(isGuest);
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
+    }
+
     @PostMapping("/logout")
     public ResponseEntity<?> logout(@RequestParam String token) {
         try {
