@@ -480,13 +480,13 @@ public class PurchaseService {
             bids.removeIf(b -> closedShopsIds.contains(b.getShopId()));
 
             // drop bids whose item no longer exists
-            Set<Integer> validItemIds = new HashSet<>();
-            for (BidReciept bid : bids) {
-                Set<Integer> shopItemIds = shopService.searchItemsInShop(bid.getShopId(), null, null, Collections.emptyList(), null, null, null, authToken).stream()
-                        .map(Item::getId)
-                        .collect(Collectors.toSet());
-                validItemIds.addAll(shopItemIds);
-            }
+            Set<Integer> validItemIds = bids.stream()
+            // for each bid, fetch that shop’s items
+            .flatMap(bid -> shopService.searchItemsInShop(bid.getShopId(),null,null, Collections.emptyList(),
+                    null, null, null,authToken).stream()
+                .map(Item::getId)
+            )
+            .collect(Collectors.toSet());
             bids.removeIf(b -> b.getItems().keySet().stream()
                     .anyMatch(itemId -> !validItemIds.contains(itemId)));
             return bids;

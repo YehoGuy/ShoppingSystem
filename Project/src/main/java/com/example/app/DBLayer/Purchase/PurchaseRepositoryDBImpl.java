@@ -125,7 +125,6 @@ public class PurchaseRepositoryDBImpl implements IPurchaseRepository {
         for (Purchase bid : bids) {
             if (bid instanceof Bid){
                 reciepts.add(((Bid) bid).generateReciept());
-                entityManager.persist(((Bid) bid).generateReciept());
             }
         }
         return reciepts;
