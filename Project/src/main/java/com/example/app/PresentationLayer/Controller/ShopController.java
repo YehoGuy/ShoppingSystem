@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
@@ -34,6 +35,11 @@ import com.example.app.PresentationLayer.DTO.Shop.CompositePolicyDTO;
 import com.example.app.PresentationLayer.DTO.Shop.DiscountDTO;
 import com.example.app.PresentationLayer.DTO.Shop.PoliciesDTO;
 import com.example.app.PresentationLayer.DTO.Shop.ShopDTO;
+
+import com.example.app.PresentationLayer.DTO.User.ShoppingCartDTO;
+import com.example.app.DomainLayer.Shop.Discount.SingleDiscount;
+import com.example.app.DomainLayer.Shop.Discount.CategoryDiscount;
+import com.example.app.DomainLayer.Shop.Discount.GlobalDiscount;
 
 import jakarta.validation.ConstraintViolationException;
 
@@ -886,6 +892,23 @@ public class ShopController {
 
             return ResponseEntity.ok(responseList);
 
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/applyDiscount/cart")
+    public ResponseEntity<?> applyDiscount(
+            @RequestBody Map<Integer,Integer> cart,
+            @RequestParam int shopId, 
+            @RequestParam String token) {
+        try {
+            double result = shopService.applyDiscount(cart, shopId, token);
+            return ResponseEntity.ok(result);
         } catch (NoSuchElementException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
         } catch (RuntimeException ex) {

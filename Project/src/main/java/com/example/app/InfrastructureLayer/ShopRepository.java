@@ -501,4 +501,17 @@ public class ShopRepository implements IShopRepository {
         }
         return shop.getPolicies();
     }
+
+    @Override
+    public double applyDiscount(Map<Integer, Integer> items, Map<Integer, ItemCategory> itemsCat, int shopId) {
+        try {
+            Shop shop = shops.get(shopId);
+            if (shop == null) {
+                throw new IllegalArgumentException("Shop not found: " + shopId);
+            }
+            return shop.applyDiscount(items, itemsCat);
+        } catch (Exception e) {
+            throw new RuntimeException("Error applying discount: " + e.getMessage(), e);
+        }
+    }
 }

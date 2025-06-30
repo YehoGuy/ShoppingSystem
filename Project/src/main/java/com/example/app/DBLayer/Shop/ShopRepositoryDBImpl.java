@@ -40,12 +40,20 @@ public class ShopRepositoryDBImpl implements IShopRepository {
 
     @Override
     public Shop createShop(String name, PurchasePolicy purchasePolicy, ShippingMethod shippingMethod) {
+
+
+        if(getAllShops().stream().anyMatch(shop -> shop.getName().equals(name))) {
+            throw new OurRuntime("Shop with name " + name + " already exists.");
+        }   
+        
+
         int highestShopId = jpaRepo.findAll().stream()
             .mapToInt(Shop::getId)
             .max()
             .orElse(0) + 1;
 
         Shop shop = new Shop(highestShopId, name, shippingMethod);
+
         try {
             Shop saved = jpaRepo.save(shop);
             return saved;
@@ -443,6 +451,16 @@ public class ShopRepositoryDBImpl implements IShopRepository {
                             .collect(Collectors.toList()));
         } catch (Exception e) {
             throw new RuntimeException("Error retrieving closed shops: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public double applyDiscount(Map<Integer, Integer> items, Map<Integer, ItemCategory> itemsCat, int shopId) {
+        try {
+            Shop shop = getShop(shopId);
+            return shop.applyDiscount(items, itemsCat);
+        } catch (RuntimeException e) {
+            throw e;
         }
     }
 }
