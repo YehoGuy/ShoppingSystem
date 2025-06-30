@@ -354,7 +354,7 @@ public class Shop {
         return total;
     }
 
-    private double applyDiscount(Map<Integer, Integer> items, Map<Integer, ItemCategory> itemsCat) {
+    public double applyDiscount(Map<Integer, Integer> items, Map<Integer, ItemCategory> itemsCat) {
         Map<Integer, Double> itemsDiscountedPrices = new HashMap<>();
         for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
             int itemId = entry.getKey();

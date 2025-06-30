@@ -17,6 +17,7 @@ import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.Item.Item;
 import com.example.app.DomainLayer.Item.ItemCategory;
 import com.example.app.DomainLayer.Member;
+import com.example.app.DomainLayer.ShoppingCart;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
 import com.example.app.DomainLayer.Shop.Discount.Discount;
@@ -28,8 +29,13 @@ import com.example.app.DomainLayer.Shop.Operator;
 import com.example.app.DomainLayer.Shop.PurchasePolicy;
 import com.example.app.DomainLayer.Shop.Shop;
 import com.example.app.DomainLayer.User;
+import com.example.app.PresentationLayer.DTO.Item.ItemDTO;
 import com.example.app.PresentationLayer.DTO.Shop.CompositePolicyDTO;
 import com.example.app.PresentationLayer.DTO.Shop.LeafPolicyDTO;
+import com.example.app.PresentationLayer.DTO.User.ShoppingCartDTO;
+
+import io.micrometer.common.lang.NonNull;
+import jakarta.validation.constraints.NotNull;
 
 @Service
 public class ShopService {
@@ -1048,5 +1054,35 @@ public class ShopService {
             LoggerService.logError("getclosedShops", e);
             throw new OurRuntime("Error retrieving closed shops: " + e.getMessage(), e);
         }
+    }
+
+
+    public double applyDiscount( Map<Integer,Integer> cart, int shopId, String token) {
+        try {
+            LoggerService.logMethodExecution("applyDiscount", cart);
+            authTokenService.ValidateToken(token);
+
+            Map<Integer, ItemCategory> itemsCategory = itemService.getItemdId2Cat(cart);
+
+            double totalPrice = shopRepository.applyDiscount(cart, itemsCategory, shopId);
+
+
+            
+            //double applyDiscount(Map<Integer, Integer> items, Map<Integer, ItemCategory> itemsCat, int shopId);
+
+            LoggerService.logMethodExecutionEnd("applyDiscount", totalPrice);
+            return totalPrice;
+        } catch (OurArg e) {
+            LoggerService.logDebug("applyDiscount", e);
+            throw new OurArg("applyDiscount" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("applyDiscount", e);
+            throw new OurRuntime("applyDiscount" + e.getMessage());
+        } catch (Exception e) {
+            LoggerService.logError("applyDiscount", e, cart);
+            throw new OurRuntime("Error applying discount: " + e.getMessage(), e);
+        }
+
+
     }
 }

@@ -268,4 +268,6 @@ public interface IShopRepository {
 
         List<Integer> getClosedShops();
 
+        double applyDiscount(Map<Integer, Integer> items, Map<Integer, ItemCategory> itemsCat, int shopId);
+
 }
