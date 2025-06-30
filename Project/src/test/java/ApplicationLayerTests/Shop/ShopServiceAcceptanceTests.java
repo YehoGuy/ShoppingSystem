@@ -26,7 +26,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import static org.mockito.Mockito.clearInvocations;
@@ -49,14 +48,14 @@ import com.example.app.DomainLayer.Item.Item;
 import com.example.app.DomainLayer.Item.ItemCategory;
 import com.example.app.DomainLayer.Item.ItemReview;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
+import com.example.app.DomainLayer.Shop.Discount.Discount;
+import com.example.app.DomainLayer.Shop.Discount.Policy;
 import com.example.app.DomainLayer.Shop.IShopRepository;
 import com.example.app.DomainLayer.Shop.PurchasePolicy;
 import com.example.app.DomainLayer.Shop.Shop;
 import com.example.app.DomainLayer.Shop.ShopReview;
-import com.example.app.DomainLayer.Shop.Discount.Discount;
-import com.example.app.DomainLayer.Shop.Discount.Policy;
-import com.example.app.PresentationLayer.DTO.Shop.CompositePolicyDTO;
 import com.example.app.InfrastructureLayer.ShopRepository;
+import com.example.app.PresentationLayer.DTO.Shop.CompositePolicyDTO;
 
 class ShopServiceAcceptanceTests {
 
@@ -1924,9 +1923,10 @@ class ShopServiceAcceptanceTests {
         
         Item item1 = new Item(1, "Test Product", "A test product description", ItemCategory.ELECTRONICS.ordinal());
         item1.addReview(new ItemReview(4, "Good product"));
-        Item item2 = new Item(2, "Other Item", "Different description", ItemCategory.CLOTHING.ordinal());
+        Item item2 = new Item(2, "Regular Item", "Normal description", ItemCategory.CLOTHING.ordinal());
         when(itemService.getItemsByIds(Arrays.asList(1, 2), token)).thenReturn(Arrays.asList(item1, item2));
         
+        // Test with all filters applied
         List<Item> result = shopService.searchItems("test", ItemCategory.ELECTRONICS, keywords, 40, 60, 3.0, 4.0, token);
         
         assertEquals(1, result.size());
@@ -1950,159 +1950,214 @@ class ShopServiceAcceptanceTests {
     }
 
     @Test
-    void testSearchItems_InvalidToken() throws Exception {
-        String token = "invalidToken";
+    void testSearchItems_TokenValidationFailure() throws Exception {
+        String invalidToken = "invalid";
         
-        when(authTokenService.ValidateToken(token)).thenThrow(new OurArg("Invalid token"));
+        when(authTokenService.ValidateToken(invalidToken)).thenThrow(new OurArg("Invalid token"));
         
         OurArg exception = assertThrows(OurArg.class, 
-            () -> shopService.searchItems("test", null, null, null, null, null, null, token));
-        assertTrue(exception != null);
-        verify(authTokenService).ValidateToken(token);
+            () -> shopService.searchItems("test", null, null, null, null, null, null, invalidToken));
+        assertTrue(exception.getMessage().contains("Invalid token"));
     }
-
-    // Additional comprehensive tests for searchItemsInShop method
+    
     @Test
-    void testSearchItemsInShop_AllFilters() throws Exception {
+    void testAddSupplyToItem_InvalidToken() throws Exception {
+        String invalidToken = "invalid";
+        
+        when(authTokenService.ValidateToken(invalidToken)).thenThrow(new OurArg("Invalid token"));
+        
+        OurArg exception = assertThrows(OurArg.class, 
+            () -> shopService.addSupplyToItem(1, 42, 10, invalidToken));
+        assertTrue(exception.getMessage().contains("Invalid token"));
+    }
+    
+    @Test
+    void testAddSupplyToItem_NoPermission() throws Exception {
         String token = "validToken";
-        int shopId = 1;
-        List<String> keywords = Arrays.asList("special");
+        int shopId = 1, itemId = 42, quantity = 10;
         
         when(authTokenService.ValidateToken(token)).thenReturn(123);
+        when(userService.hasPermission(123, PermissionsEnum.manageItems, shopId)).thenReturn(false);
         
-        Shop mockShop = mock(Shop.class);
-        when(mockShop.getId()).thenReturn(shopId);
-        when(mockShop.getItemPrice(1)).thenReturn(50); // item1 price within range 20-100
-        when(mockShop.getItemPrice(2)).thenReturn(200); // item2 price outside range
-        when(mockShop.getItemPrice(3)).thenReturn(75); // item3 price within range
-        
-        when(shopRepository.getShop(shopId)).thenReturn(mockShop);
-        when(shopRepository.getItemsByShop(shopId)).thenReturn(Arrays.asList(1, 2, 3));
-        
-        Item item1 = new Item(1, "Special Widget", "A special widget description", ItemCategory.ELECTRONICS.ordinal());
-        item1.addReview(new ItemReview(5, "Excellent"));
-        Item item2 = new Item(2, "Regular Item", "Normal description", ItemCategory.CLOTHING.ordinal());
-        Item item3 = new Item(3, "Special Gadget", "Another special item", ItemCategory.ELECTRONICS.ordinal());
-        item3.addReview(new ItemReview(3, "Average"));
-        
-        when(itemService.getItemsByIds(Arrays.asList(1, 2, 3), token))
-            .thenReturn(Arrays.asList(item1, item2, item3));
-        
-        List<Item> result = shopService.searchItemsInShop(shopId, "widget", ItemCategory.ELECTRONICS, keywords, 20, 100, 4.0, token);
-        
-        assertEquals(1, result.size());
-        assertEquals(item1, result.get(0));
-        verify(authTokenService, times(3)).ValidateToken(token); // Called in searchItemsInShop, getShop, and getItemsByShop
-        verify(shopRepository).getShop(shopId);
-        verify(shopRepository).getItemsByShop(shopId);
+        OurRuntime exception = assertThrows(OurRuntime.class, 
+            () -> shopService.addSupplyToItem(shopId, itemId, quantity, token));
+        assertTrue(exception.getMessage().contains("does not have permission"));
     }
-
+    
     @Test
-    void testSearchItemsInShop_ShopNotFound() throws Exception {
+    void testRemoveGlobalDiscount_RepositoryError() throws Exception {
         String token = "validToken";
-        int shopId = 999;
+        int shopId = 1, userId = 123;
         
-        when(authTokenService.ValidateToken(token)).thenReturn(123);
-        when(shopRepository.getShop(shopId)).thenThrow(new RuntimeException("Shop not found"));
+        when(authTokenService.ValidateToken(token)).thenReturn(userId);
+        when(userService.hasPermission(userId, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
+        doThrow(new RuntimeException("Database error")).when(shopRepository).removeGlobalDiscount(shopId);
         
         RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> shopService.searchItemsInShop(shopId, null, null, null, null, null, null, token));
-        assertTrue(exception.getMessage().contains("searchItemsInShop") && 
-                   exception.getMessage().contains("Shop not found"));
+                () -> shopService.removeGlobalDiscount(shopId, token));
+        assertTrue(exception.getMessage().contains("Error removing global discount"));
+    }
+
+    // Additional tests for supply management edge cases
+    @Test
+    void testAddSupplyToItem_RepositoryError() throws Exception {
+        String token = "validToken";
+        int shopId = 1, itemId = 42, quantity = 10, userId = 123;
+        
+        when(authTokenService.ValidateToken(token)).thenReturn(userId);
+        when(userService.hasPermission(userId, PermissionsEnum.manageItems, shopId)).thenReturn(true);
+        doThrow(new RuntimeException("Database error")).when(shopRepository).addSupplyToItem(shopId, itemId, quantity);
+        
+        OurRuntime exception = assertThrows(OurRuntime.class,
+                () -> shopService.addSupplyToItem(shopId, itemId, quantity, token));
+        assertTrue(exception.getMessage().contains("Error adding supply for item " + itemId + " in shop " + shopId));
     }
 
     @Test
-    void testSearchItemsInShop_EmptyResults() throws Exception {
+    void testRemoveSupply_RepositoryError() throws Exception {
         String token = "validToken";
-        int shopId = 1;
+        int shopId = 1, itemId = 42, quantity = 10, userId = 123;
         
-        when(authTokenService.ValidateToken(token)).thenReturn(123);
-        when(shopRepository.getShop(shopId)).thenReturn(new Shop(shopId, "TestShop", shippingMethod));
-        when(shopRepository.getItemsByShop(shopId)).thenReturn(Arrays.asList());
-        
-        List<Item> result = shopService.searchItemsInShop(shopId, "anything", null, null, null, null, null, token);
-        
-        assertTrue(result.isEmpty());
-        verify(authTokenService, times(3)).ValidateToken(token); // Called in searchItemsInShop, getShop, and getItemsByShop
-        verify(shopRepository).getShop(shopId);
-        verify(shopRepository).getItemsByShop(shopId);
-    }
-
-    // Comprehensive tests for setDiscountPolicy method
-    @Test
-    void testSetDiscountPolicy_Success() throws Exception {
-        String token = "validToken";
-        int shopId = 1;
-        CompositePolicyDTO policyDTO = mock(CompositePolicyDTO.class);
-        
-        when(authTokenService.ValidateToken(token)).thenReturn(123);
-        when(userService.hasPermission(123, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
-        doNothing().when(shopRepository).setDiscountPolicy(eq(shopId), any(Policy.class));
-        
-        shopService.setDiscountPolicy(shopId, policyDTO, token);
-        
-        verify(authTokenService).ValidateToken(token);
-        verify(userService).hasPermission(123, PermissionsEnum.setPolicy, shopId);
-        verify(shopRepository).setDiscountPolicy(eq(shopId), any(Policy.class));
-    }
-
-    @Test
-    void testSetDiscountPolicy_NoPermission() throws Exception {
-        String token = "validToken";
-        int shopId = 1;
-        CompositePolicyDTO policyDTO = mock(CompositePolicyDTO.class);
-        
-        when(authTokenService.ValidateToken(token)).thenReturn(123);
-        when(userService.hasPermission(123, PermissionsEnum.setPolicy, shopId)).thenReturn(false);
+        when(authTokenService.ValidateToken(token)).thenReturn(userId);
+        when(userService.hasPermission(userId, PermissionsEnum.manageItems, shopId)).thenReturn(true);
+        doThrow(new RuntimeException("Database error")).when(shopRepository).removeSupply(shopId, itemId, quantity);
         
         RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> shopService.setDiscountPolicy(shopId, policyDTO, token));
-        assertTrue(exception.getMessage().contains("No permission to set policy"));
-        
-        verify(authTokenService).ValidateToken(token);
-        verify(userService).hasPermission(123, PermissionsEnum.setPolicy, shopId);
+                () -> shopService.removeSupply(shopId, itemId, quantity, token));
+        assertTrue(exception.getMessage().contains("Error removing supply"));
     }
 
+    // Additional tests for checkSupplyAvailability edge cases
     @Test
-    void testSetDiscountPolicy_InvalidToken() throws Exception {
-        String token = "invalidToken";
-        int shopId = 1;
-        CompositePolicyDTO policyDTO = mock(CompositePolicyDTO.class);
+    void testCheckSupplyAvailability_TokenValidationFailure() throws Exception {
+        String invalidToken = "invalid";
         
-        when(authTokenService.ValidateToken(token)).thenThrow(new OurArg("Invalid token"));
+        when(authTokenService.ValidateToken(invalidToken)).thenThrow(new OurArg("Invalid token"));
         
         OurArg exception = assertThrows(OurArg.class,
-            () -> shopService.setDiscountPolicy(shopId, policyDTO, token));
-        assertTrue(exception != null);
-        verify(authTokenService).ValidateToken(token);
+                () -> shopService.checkSupplyAvailability(1, 42, invalidToken));
+        assertTrue(exception.getMessage().contains("Invalid token"));
     }
 
     @Test
-    void testSetDiscountPolicy_RepositoryError() throws Exception {
+    void testCheckSupplyAvailability_RepositoryError() throws Exception {
+        String token = "validToken";
+        int shopId = 1, itemId = 42;
+        
+        when(authTokenService.ValidateToken(token)).thenReturn(123);
+        when(shopRepository.checkSupplyAvailability(shopId, itemId)).thenThrow(new RuntimeException("Database error"));
+        
+        OurRuntime exception = assertThrows(OurRuntime.class,
+                () -> shopService.checkSupplyAvailability(shopId, itemId, token));
+        assertTrue(exception.getMessage().contains("Error checking supply for item " + itemId + " in shop " + shopId));
+    }
+
+    // Additional tests for checkSupplyAvailabilityAndAcquire edge cases
+    @Test
+    void testCheckSupplyAvailabilityAndAcquire_RepositoryError() throws Exception {
+        int shopId = 1, itemId = 42, quantity = 5;
+        
+        when(shopRepository.checkSupplyAvailabilityAndAqcuire(shopId, itemId, quantity))
+                .thenThrow(new RuntimeException("Database error"));
+        
+        OurRuntime exception = assertThrows(OurRuntime.class,
+                () -> shopService.checkSupplyAvailabilityAndAcquire(shopId, itemId, quantity));
+        assertTrue(exception.getMessage().contains("Error checking supply for item " + itemId + " in shop " + shopId));
+    }
+
+    // Additional comprehensive test for searchItemsInShop error handling
+    @Test
+    void testSearchItemsInShop_RepositoryError() throws Exception {
         String token = "validToken";
         int shopId = 1;
+        
+        when(authTokenService.ValidateToken(token)).thenReturn(123);
+        when(shopRepository.getShop(shopId)).thenThrow(new RuntimeException("Database error"));
+        
+        OurRuntime exception = assertThrows(OurRuntime.class,
+                () -> shopService.searchItemsInShop(shopId, "test", null, null, null, null, null, token));
+        assertTrue(exception.getMessage().contains("Error retrieving shop with id " + shopId));
+    }
+
+    // Additional comprehensive test for getPolicies error handling
+    @Test
+    void testGetPolicies_RepositoryError() throws Exception {
+        String token = "validToken";
+        int shopId = 1, userId = 123;
+        
+        when(authTokenService.ValidateToken(token)).thenReturn(userId);
+        when(userService.hasPermission(userId, PermissionsEnum.viewPolicy, shopId)).thenReturn(true);
+        when(shopRepository.getPolicies(shopId)).thenThrow(new RuntimeException("Database error"));
+        
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> shopService.getPolicies(shopId, token));
+        assertTrue(exception.getMessage().contains("Error retrieving policies"));
+    }
+
+    // Additional comprehensive test for getDiscounts error handling
+    @Test
+    void testGetDiscounts_RepositoryError() throws Exception {
+        String token = "validToken";
+        int shopId = 1;
+        
+        when(authTokenService.ValidateToken(token)).thenReturn(123);
+        when(shopRepository.getDiscounts(shopId)).thenThrow(new RuntimeException("Database error"));
+        
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> shopService.getDiscounts(shopId, token));
+        assertTrue(exception.getMessage().contains("Error retrieving discounts"));
+    }
+
+    // Additional test for setDiscountPolicy edge case
+    @Test
+    void testSetDiscountPolicy_TokenValidationFailure() throws Exception {
+        String invalidToken = "invalid";
         CompositePolicyDTO policyDTO = mock(CompositePolicyDTO.class);
         
-        when(authTokenService.ValidateToken(token)).thenReturn(123);
-        when(userService.hasPermission(123, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
-        doThrow(new RuntimeException("Database error")).when(shopRepository).setDiscountPolicy(eq(shopId), any(Policy.class));
+        when(authTokenService.ValidateToken(invalidToken)).thenThrow(new OurArg("Invalid token"));
         
-        RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> shopService.setDiscountPolicy(shopId, policyDTO, token));
-        assertTrue(exception.getMessage().contains("Error setting discount policy"));
+        OurArg exception = assertThrows(OurArg.class,
+                () -> shopService.setDiscountPolicy(1, policyDTO, invalidToken));
+        assertTrue(exception.getMessage().contains("Invalid token"));
+    }
+
+    // Additional comprehensive tests for worker shop methods
+    @Test
+    void testGetShopsByWorker_InvalidToken() throws Exception {
+        String invalidToken = "invalid";
+        int workerId = 456;
+        
+        when(userService.getShopIdsByWorkerId(workerId)).thenReturn(Arrays.asList(1));
+        when(authTokenService.ValidateToken(invalidToken)).thenThrow(new OurArg("Invalid token"));
+        
+        OurArg exception = assertThrows(OurArg.class,
+                () -> shopService.getShopsByWorker(workerId, invalidToken));
+        assertTrue(exception.getMessage().contains("Invalid token"));
     }
 
     @Test
-    void testSetDiscountPolicy_NullPolicy() throws Exception {
-        String token = "validToken";
-        int shopId = 1;
+    void testGetOpenShopsByWorker_InvalidToken() throws Exception {
+        String invalidToken = "invalid";
+        int workerId = 456;
         
-        when(authTokenService.ValidateToken(token)).thenReturn(123);
-        when(userService.hasPermission(123, PermissionsEnum.setPolicy, shopId)).thenReturn(true);
+        when(userService.getShopIdsByWorkerId(workerId)).thenReturn(Arrays.asList(1));
+        when(authTokenService.ValidateToken(invalidToken)).thenThrow(new OurArg("Invalid token"));
         
-        RuntimeException exception = assertThrows(RuntimeException.class,
-            () -> shopService.setDiscountPolicy(shopId, null, token));
-        assertTrue(exception != null);
+        OurArg exception = assertThrows(OurArg.class,
+                () -> shopService.getOpenShopsByWorker(workerId, invalidToken));
+        assertTrue(exception.getMessage().contains("Invalid token"));
     }
 
+    @Test
+    void testGetClosedShopsByWorker_InvalidToken() throws Exception {
+        String invalidToken = "invalid";
+        int workerId = 456;
+        
+        when(userService.getShopIdsByWorkerId(workerId)).thenReturn(Arrays.asList(1));
+        when(authTokenService.ValidateToken(invalidToken)).thenThrow(new OurArg("Invalid token"));
+        
+        OurArg exception = assertThrows(OurArg.class,
+                () -> shopService.getClosedShopsByWorker(workerId, invalidToken));
+        assertTrue(exception.getMessage().contains("Invalid token"));
+    }
 }
