@@ -184,6 +184,115 @@ class AddressTests {
 
         @Test @DisplayName("null returns false")
         void nullSafe() { assertNotEquals(base, null); }
+
+        @Test @DisplayName("different class returns false")
+        void differentClass() {
+            Object notAnAddress = "This is a String, not an Address";
+            assertNotEquals(base, notAnAddress);
+        }
+
+        @Test @DisplayName("different country returns false")
+        void differentCountry() {
+            Address differentCountry = new Address()
+                .withCountry("USA")  // Different from "IL"
+                .withCity("Haifa")
+                .withStreet("Ha-Namal")
+                .withHouseNumber("15")
+                .withApartmentNumber(8)
+                .withZipCode("3303125");
+            
+            assertNotEquals(base, differentCountry);
+        }
+
+        @Test @DisplayName("different city returns false")
+        void differentCity() {
+            Address differentCity = new Address()
+                .withCountry("IL")
+                .withCity("Tel-Aviv")  // Different from "Haifa"
+                .withStreet("Ha-Namal")
+                .withHouseNumber("15")
+                .withApartmentNumber(8)
+                .withZipCode("3303125");
+            
+            assertNotEquals(base, differentCity);
+        }
+
+        @Test @DisplayName("different street returns false")
+        void differentStreet() {
+            Address differentStreet = new Address()
+                .withCountry("IL")
+                .withCity("Haifa")
+                .withStreet("Herzl")  // Different from "Ha-Namal"
+                .withHouseNumber("15")
+                .withApartmentNumber(8)
+                .withZipCode("3303125");
+            
+            assertNotEquals(base, differentStreet);
+        }
+
+        @Test @DisplayName("different house number returns false")
+        void differentHouseNumber() {
+            Address differentHouse = new Address()
+                .withCountry("IL")
+                .withCity("Haifa")
+                .withStreet("Ha-Namal")
+                .withHouseNumber("99")  // Different from "15"
+                .withApartmentNumber(8)
+                .withZipCode("3303125");
+            
+            assertNotEquals(base, differentHouse);
+        }
+
+        @Test @DisplayName("different apartment number returns false")
+        void differentApartmentNumber() {
+            Address differentApt = new Address()
+                .withCountry("IL")
+                .withCity("Haifa")
+                .withStreet("Ha-Namal")
+                .withHouseNumber("15")
+                .withApartmentNumber(99)  // Different from 8
+                .withZipCode("3303125");
+            
+            assertNotEquals(base, differentApt);
+        }
+
+        @Test @DisplayName("different zip code returns false")
+        void differentZipCode() {
+            Address differentZip = new Address()
+                .withCountry("IL")
+                .withCity("Haifa")
+                .withStreet("Ha-Namal")
+                .withHouseNumber("15")
+                .withApartmentNumber(8)
+                .withZipCode("99999");  // Different from "3303125"
+            
+            assertNotEquals(base, differentZip);
+        }
+    }
+
+    /* ─────────────────────────────────────────
+     *  hashCode() contract
+     * ───────────────────────────────────────── */
+    @Nested
+    @DisplayName("hashCode contract")
+    class HashCodeContract {
+
+        @Test
+        @DisplayName("hashCode is consistent")
+        void hashCodeConsistent() {
+            Address address = new Address()
+                .withCountry("IL")
+                .withCity("Haifa")
+                .withStreet("Ha-Namal")
+                .withHouseNumber("15")
+                .withApartmentNumber(8)
+                .withZipCode("3303125");
+
+            int hash1 = address.hashCode();
+            int hash2 = address.hashCode();
+            
+            assertEquals(hash1, hash2);
+        }
     }
 
     /* ─────────────────────────────────────────
@@ -203,4 +312,6 @@ class AddressTests {
         /* Underlying state changed as expected */
         assertEquals("Beer-Sheva", spy.getCity());
     }
+
+    
 }

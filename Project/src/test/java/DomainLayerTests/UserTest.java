@@ -7,6 +7,7 @@ import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
 import com.example.app.DomainLayer.ShoppingCart;
 import com.example.app.DomainLayer.User;
 import com.example.app.DomainLayer.Purchase.Address;
+import com.example.app.ApplicationLayer.OurRuntime;
 
 import java.util.HashMap;
 
@@ -94,5 +95,48 @@ public class UserTest {
 
         u.setAddress("X","Y","Z",2,"P");
         assertNotNull(u.getAddress());
+    }
+
+    @Test
+    void testUpdateShoppingCartItemQuantity() {
+        // Add an item to the cart
+        cart.addItem(1, 101, 2);
+        assertTrue(cart.hasItemOfShop(1, 101));
+
+        // Update quantity to increase
+        user.updateShoppingCartItemQuantity(1, 101, true);
+        assertEquals(3, cart.getItems().get(1).get(101));
+
+        // Update quantity to decrease
+        user.updateShoppingCartItemQuantity(1, 101, false);
+        assertEquals(2, cart.getItems().get(1).get(101));
+
+    }
+
+    @Test
+    void testUpdateShoppingCartItemQuantityThrowsExceptionForNonExistentItem() {
+        // Attempt to update quantity of an item not in the cart
+        assertThrows(OurRuntime.class, () -> {
+            user.updateShoppingCartItemQuantity(1, 999, true);
+        });
+    }
+
+    @Test
+    void testremoveItemFromCart() {
+        // Add an item to the cart
+        cart.addItem(1, 101, 2);
+        assertTrue(cart.hasItemOfShop(1, 101));
+
+        // Remove the item
+        user.removeShoppingCartItem(1, 101);
+        assertFalse(cart.hasItemOfShop(1, 101));
+    }
+
+    @Test
+    void testRemoveItemFromCartThrowsExceptionForNonExistentItem() {
+        // Attempt to remove an item not in the cart
+        assertThrows(OurRuntime.class, () -> {
+            user.removeShoppingCartItem(1, 999);
+        });
     }
 }
