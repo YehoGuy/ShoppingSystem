@@ -274,9 +274,32 @@ public class ShopRepository implements IShopRepository {
             if (removed == null) {
                 throw new IllegalArgumentException("Shop not found: " + shopId);
             }
+            removed.setClosed(true);
             closedShops.add(removed);
         } catch (Exception e) {
             throw new RuntimeException("Error closing shop: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void reOpenShop(Integer shopId) {
+        try {
+
+            Shop sh = null;
+            for (Shop shop : closedShops) {
+                if (shop.getId() == shopId) {
+                    sh = shop;
+                    closedShops.remove(shop);
+                    break;
+                }
+            }
+            if (sh == null) {
+                throw new IllegalArgumentException("Shop not found: " + shopId);
+            }
+            sh.setClosed(false);
+            shops.put(shopId, sh);
+        } catch (Exception e) {
+            throw new RuntimeException("Error reopening shop: " + e.getMessage(), e);
         }
     }
 
