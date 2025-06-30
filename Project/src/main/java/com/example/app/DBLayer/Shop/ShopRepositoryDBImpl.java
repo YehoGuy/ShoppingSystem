@@ -1,6 +1,5 @@
 package com.example.app.DBLayer.Shop;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -244,6 +243,18 @@ public class ShopRepositoryDBImpl implements IShopRepository {
         try {
             Shop shop = getShop(shopId);
             shop.setClosed(true);
+            updateShop(shop);
+        } catch (RuntimeException e) {
+            throw e;
+        }
+    }
+
+    @Override
+    @Transactional
+    public void reOpenShop(Integer shopId) {
+        try {
+            Shop shop = getShop(shopId);
+            shop.setClosed(false);
             updateShop(shop);
         } catch (RuntimeException e) {
             throw e;

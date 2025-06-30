@@ -1,10 +1,10 @@
 package com.example.app.ApplicationLayer.Shop;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Collections;
 
 import org.springframework.stereotype.Service;
 
@@ -495,19 +495,11 @@ public class ShopService {
             }
             shopRepository.closeShop(shopId);
             userService.closeShopNotification(shopId);
-            
             List<Item> itemsToRemove = searchItemsInShop(shopId,null, null, Collections.emptyList(), null, null, null, token);
             for(Item itemToRemove : itemsToRemove){
                 removeItemFromShop(shopId, itemToRemove.getId(), token);
-            }
-            // if (userService.isAdmin(userId)) {
-            //     //userService.removeOwnerFromStoreAsAdmin(token, userId, shopId);
-                
-            // }
-            // else{
-            //     userService.removeOwnerFromStore(token, userId, shopId);
-            // }
             LoggerService.logMethodExecutionEndVoid("closeShop");
+            }
         } catch (OurArg e) {
             LoggerService.logDebug("closeShop", e);
             throw new OurArg("closeShop" + e.getMessage());
@@ -516,6 +508,32 @@ public class ShopService {
             throw new OurRuntime("closeShop" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("closeShop", e, shopId);
+            throw new OurRuntime("Error closing shop " + shopId + ": " + e.getMessage(), e);
+        }
+    }
+
+    public void reOpenShop(Integer shopId, String token) {
+        try {
+            LoggerService.logMethodExecution("reOpenShop", shopId);
+            Integer userId = authTokenService.ValidateToken(token);
+            if ((!userService.isAdmin(userId))
+                    && (!userService.hasPermission(userId, PermissionsEnum.closeShop, shopId))) {
+                OurRuntime e = new OurRuntime("User does not have permission to reOPen shop " + shopId);
+                LoggerService.logDebug("reOpen", e);
+                throw e;
+            }
+            shopRepository.reOpenShop(shopId);
+            userService.reOpenShopNotification(shopId);
+        
+            LoggerService.logMethodExecutionEndVoid("reOpenShop");
+        } catch (OurArg e) {
+            LoggerService.logDebug("reOpenShop", e);
+            throw new OurArg("reOpenShop" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("reOpenShop", e);
+            throw new OurRuntime("reOpenShop" + e.getMessage());
+        } catch (Exception e) {
+            LoggerService.logError("reOpenShop", e, shopId);
             throw new OurRuntime("Error closing shop " + shopId + ": " + e.getMessage(), e);
         }
     }
