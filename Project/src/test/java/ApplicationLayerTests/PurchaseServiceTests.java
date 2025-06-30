@@ -33,6 +33,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -41,6 +42,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
@@ -67,12 +69,15 @@ import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.Purchase.Address;
 import com.example.app.DomainLayer.Purchase.Bid;
 import com.example.app.DomainLayer.Item.Item;
+import com.example.app.DomainLayer.Item.ItemCategory;
 import com.example.app.DomainLayer.Purchase.BidReciept;
 import com.example.app.DomainLayer.Purchase.IPurchaseRepository;
 import com.example.app.DomainLayer.Purchase.Purchase;
 import com.example.app.DomainLayer.Purchase.Reciept;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
+import com.example.app.DomainLayer.Shop.Shop;
 import com.example.app.InfrastructureLayer.PurchaseRepository;
+import com.example.app.InfrastructureLayer.WSEPShipping;
 
 /**
  * High-level “acceptance” tests for {@link PurchaseService}.
@@ -1409,5 +1414,178 @@ class PurchaseServiceTests {
         );
         assertTrue(ex.getMessage().contains("getAuctionsWinList:"));
     }
+
+    //---------------------------------------------
+    //---- Happy-flow cart checkout (WSEP) test ----
+    //---------------------------------------------
+    @Test
+    void scenario_BuyerChecksOutCart_success() throws Exception {
+
+        // owner user
+        final String ownerTok = "tok-owner";
+        final int    ownerId  = 1;
+
+        // shop with WSEPShipping
+        final int         shopId   = 70;
+        final WSEPShipping shipping = new WSEPShipping();
+        Shop shop = new Shop(shopId, "King-Shop", shipping);
+        when(shops.createShop("King-Shop", null, shipping, ownerTok)).thenReturn(shop);
+        shops.createShop("King-Shop", null, shipping, ownerTok);
+
+        // owner adds two items
+        int itemId1 = 100, itemId2 = 101;
+        shops.addItemToShop(shopId, "Item-1", "D1", 1, ItemCategory.ELECTRONICS, 30, ownerTok);
+        shops.addItemToShop(shopId, "Item-2", "D2", 2, ItemCategory.ELECTRONICS, 20, ownerTok);
+
+        // buyer user with WSEPPay
+        final String buyerTok = "tok-buyer";
+        final int    buyerId  = 2;
+        when(auth.ValidateToken(buyerTok)).thenReturn(buyerId);
+
+        // buyer’s cart
+        HashMap<Integer, HashMap<Integer, Integer>> cart = new HashMap<>();
+        cart.put(shopId, new HashMap<>(Map.of(itemId1, 1, itemId2, 2)));
+        when(users.getUserShoppingCartItems(buyerId)).thenReturn(cart);
+
+        // shop quotes price & buyer pays
+        double totalPrice = 30 * 1 + 20 * 2;                 // 70.0
+        when(shops.purchaseItems(cart.get(shopId), shopId, buyerTok))
+                .thenReturn(totalPrice);
+
+        when(users.pay(
+                eq(buyerTok), eq(shopId), eq(totalPrice),       // <-- precise price
+                eq("ILS"), eq("4580458045804580"),              // card number
+                eq("05"), eq("28"),                             // exp-month / exp-year
+                eq("King Buyer"), eq("123"), eq("AB12")))       // cardholder / cvv / id
+            .thenReturn(555);                                   // paymentId
+
+        Address addr = new Address()
+                .withCountry("Israel").withCity("Tel-Aviv")
+                .withStreet("Rothschild 1").withZipCode("61000");
+
+        when(repo.addPurchase(buyerId, shopId, cart.get(shopId), totalPrice, addr))
+                .thenReturn(999);                               // purchaseId
+
+        // side-effects
+        doNothing().when(users).clearUserShoppingCart(buyerId);
+        doNothing().when(shops).shipPurchase(buyerTok, 999, shopId,
+                                            "Israel", "Tel-Aviv", "Rothschild 1", "61000");
+        doNothing().when(users).purchaseNotification(cart);
+
+        // ACT
+        List<Integer> purchaseIds = service.checkoutCart(
+                buyerTok, addr,
+                "ILS", "4580458045804580", "05", "28",
+                "King Buyer", "123", "AB12");
+
+        // ASSERT
+        assertEquals(List.of(999), purchaseIds);
+        verify(repo).addPurchase(buyerId, shopId, cart.get(shopId), totalPrice, addr);
+        verify(users).clearUserShoppingCart(buyerId);
+    }
+
+    //---------------------------------------------
+    //---- ❶ FAIL: shop without ShippingMethod ----
+    //---------------------------------------------
+    @Test
+    void scenario_CheckoutFails_NoShippingMethod() throws Exception {
+
+        // owner creates a shop *without* shipping
+        final String ownerTok = "tok-owner";
+        final int    shopId   = 71;
+        Shop shop = new Shop(shopId, "NoShip-Shop", null);
+        when(shops.createShop("NoShip-Shop", null, null, ownerTok)).thenReturn(shop);
+        shops.createShop("NoShip-Shop", null, null, ownerTok);
+
+        // owner stocks two items (mock only)
+        int itemId1 = 100, itemId2 = 101;
+        shops.addItemToShop(shopId, "Item-1", "D1", 1, ItemCategory.ELECTRONICS, 30, ownerTok);
+        shops.addItemToShop(shopId, "Item-2", "D2", 2, ItemCategory.ELECTRONICS, 20, ownerTok);
+
+        // buyer & cart
+        final String buyerTok = "tok-buyer";
+        final int    buyerId  = 2;
+        when(auth.ValidateToken(buyerTok)).thenReturn(buyerId);
+
+        HashMap<Integer, HashMap<Integer, Integer>> cart = new HashMap<>();
+        cart.put(shopId, new HashMap<>(Map.of(itemId1, 1, itemId2, 2)));
+        when(users.getUserShoppingCartItems(buyerId)).thenReturn(cart);
+
+        // shop refuses to price items because shipping method is missing
+        when(shops.purchaseItems(cart.get(shopId), shopId, buyerTok))
+                .thenThrow(new RuntimeException("Shop missing shipping method"));
+
+        Address addr = new Address()
+                .withCountry("Israel").withCity("Tel-Aviv")
+                .withStreet("Rothschild 1").withZipCode("61000");
+
+        // ACT + ASSERT
+        assertThrows(RuntimeException.class, () ->
+            service.checkoutCart(buyerTok, addr,
+                                "ILS", "4580458045804580", "05", "28",
+                                "King Buyer", "123", "AB12")
+        );
+
+        // ensure no payment/purchase occurred
+        verify(users, never()).pay(any(), anyInt(), anyDouble(),
+                                any(), any(), any(), any(), any(), any(), any());
+        verify(repo,  never()).addPurchase(anyInt(), anyInt(), any(), anyDouble(), any());
+    }
+
+
+    //-----------------------------------------------
+    //---- ❷ FAIL: buyer without PaymentMethod  ------
+    //-----------------------------------------------
+    @Test
+    void scenario_CheckoutFails_NoPaymentMethod() throws Exception {
+
+        // owner creates a normal shop with WSEPShipping
+        final String ownerTok = "tok-owner";
+        final int         shopId   = 72;
+        final WSEPShipping shipping = new WSEPShipping();
+        Shop shop = new Shop(shopId, "NoPay-Shop", shipping);
+        when(shops.createShop("NoPay-Shop", null, shipping, ownerTok)).thenReturn(shop);
+        shops.createShop("NoPay-Shop", null, shipping, ownerTok);
+
+        // stock items
+        int itemId1 = 100, itemId2 = 101;
+        shops.addItemToShop(shopId, "Item-1", "D1", 1, ItemCategory.ELECTRONICS, 30, ownerTok);
+        shops.addItemToShop(shopId, "Item-2", "D2", 2, ItemCategory.ELECTRONICS, 20, ownerTok);
+
+        // buyer & cart
+        final String buyerTok = "tok-buyer";
+        final int    buyerId  = 2;
+        when(auth.ValidateToken(buyerTok)).thenReturn(buyerId);
+
+        HashMap<Integer, HashMap<Integer, Integer>> cart = new HashMap<>();
+        cart.put(shopId, new HashMap<>(Map.of(itemId1, 1, itemId2, 2)));
+        when(users.getUserShoppingCartItems(buyerId)).thenReturn(cart);
+
+        // shop successfully prices items
+        double totalPrice = 30 * 1 + 20 * 2;                      // 70.0
+        when(shops.purchaseItems(cart.get(shopId), shopId, buyerTok))
+                .thenReturn(totalPrice);
+
+        // pay fails because buyer lacks WSEPPay method
+        when(users.pay(
+                eq(buyerTok), eq(shopId), eq(totalPrice),
+                any(), any(), any(), any(), any(), any(), any()))
+            .thenThrow(new RuntimeException("Buyer missing payment method"));
+
+        Address addr = new Address()
+                .withCountry("Israel").withCity("Tel-Aviv")
+                .withStreet("Rothschild 1").withZipCode("61000");
+
+        // ACT + ASSERT
+        assertThrows(RuntimeException.class, () ->
+            service.checkoutCart(buyerTok, addr,
+                                "ILS", "4580458045804580", "05", "28",
+                                "King Buyer", "123", "AB12")
+        );
+
+        // ensure nothing was persisted
+        verify(repo, never()).addPurchase(anyInt(), anyInt(), any(), anyDouble(), any());
+    }
+
 
 }
