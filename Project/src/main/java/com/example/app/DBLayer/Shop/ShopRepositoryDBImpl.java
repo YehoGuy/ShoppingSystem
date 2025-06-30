@@ -31,7 +31,6 @@ import jakarta.persistence.PersistenceContext;
 public class ShopRepositoryDBImpl implements IShopRepository {
 
     private ShopRepositoryDB jpaRepo;
-    private AtomicInteger shopIdCounter = new AtomicInteger(1);
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -43,11 +42,19 @@ public class ShopRepositoryDBImpl implements IShopRepository {
     @Override
     public Shop createShop(String name, PurchasePolicy purchasePolicy, ShippingMethod shippingMethod) {
 
+
         if(getAllShops().stream().anyMatch(shop -> shop.getName().equals(name))) {
             throw new OurRuntime("Shop with name " + name + " already exists.");
         }   
         
-        Shop shop = new Shop(shopIdCounter.getAndIncrement(), name, shippingMethod);
+
+        int highestShopId = jpaRepo.findAll().stream()
+            .mapToInt(Shop::getId)
+            .max()
+            .orElse(0) + 1;
+
+        Shop shop = new Shop(highestShopId, name, shippingMethod);
+
         try {
             Shop saved = jpaRepo.save(shop);
             return saved;

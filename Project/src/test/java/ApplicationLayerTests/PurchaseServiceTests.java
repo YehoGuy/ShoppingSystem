@@ -35,10 +35,12 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
@@ -171,23 +173,36 @@ class PurchaseServiceTests {
      * ══════════════════════════════════════════════════════════════
      */
 
-    @Test
+   @Test
     @DisplayName("postBidding_whenUserIsNotOwnerAndBidExists_shouldAddBiddingViaDomainObjectOnce")
     void postBidding_nonOwnerPostsBid() throws Exception {
-        String token = "a";
-        int owner = 1, bidder = 2, pid = 10;
-        Bid bid = spy(new Bid(pid, owner, 7, Map.of(1, 1), 50));
+        String token    = "a";
+        int    owner    = 1;
+        int    bidder   = 2;
+        int    pid      = 10;
+        int    bidPrice = 60;
+
+        Bid bid = spy(new Bid(pid, owner, 7, Map.of(1,1), 50));
         bid.setAuctionStartTime(LocalDateTime.now().minusMinutes(1));
-        bid.setAuctionEndTime(LocalDateTime.now().plusMinutes(1));
+        bid.setAuctionEndTime  (LocalDateTime.now().plusMinutes (1));
 
         when(auth.ValidateToken(token)).thenReturn(bidder);
         when(repo.getPurchaseById(pid)).thenReturn(bid);
 
-        service.postBidding(token, pid, 60);
-
-        verify(bid).addBidding(bidder, 60, true);
+        doAnswer(inv -> {
+            Bid    b    = inv.getArgument(0);
+            int    u    = inv.getArgument(1);
+            int    p    = inv.getArgument(2);
+            b.addBidding(u, p, true);
+            return null;
+        }).when(repo).postBidding(
+            eq(bid), 
+            eq(bidder), 
+            eq(bidPrice)
+        );
+        service.postBidding(token, pid, bidPrice);
+        verify(bid).addBidding(bidder, bidPrice, true);
     }
-
 
     /*
      * ══════════════════════════════════════════════════════════════
@@ -764,16 +779,24 @@ class PurchaseServiceTests {
         @Test
         @DisplayName("whenNonOwner_addsBid")
         void nonOwner_addsBid() throws Exception {
-            String token = "tok";
-            int owner = 1, bidder = 2, auctionId = 10, bidPrice = 60;
-            Bid bid = mock(Bid.class);
+            String token    = "tok";
+            int    bidder   = 2;
+            int    auctionId= 10;
+            int    bidPrice = 60;
 
+            Bid bid = mock(Bid.class);
             when(auth.ValidateToken(token)).thenReturn(bidder);
             when(repo.getPurchaseById(auctionId)).thenReturn(bid);
-            when(bid.getUserId()).thenReturn(owner);
+
+            doAnswer(invocation -> {
+                Bid b     = invocation.getArgument(0);
+                int uid   = invocation.getArgument(1);
+                int price = invocation.getArgument(2);
+                b.addBidding(uid, price, false);
+                return null;
+            }).when(repo).postBiddingAuction(eq(bid), eq(bidder), eq(bidPrice));
 
             service.postBiddingAuction(token, auctionId, bidPrice);
-
             verify(bid).addBidding(bidder, bidPrice, false);
         }
 
@@ -961,30 +984,42 @@ class PurchaseServiceTests {
 
     // ─────────── getAllBids(fromBid=false) tests ───────────
 
-    @Test @DisplayName("getAllBids_falseBranch_filtersByCompletionClosedAndMissingItems")
+    @Test
+    @DisplayName("getAllBids_falseBranch_filtersByCompletionClosedAndMissingItems")
     void getAllBids_falseBranch() throws Exception {
-        String token = "tok"; int uid = 9;
-        // make two receipts: one completed, one not
+        String token = "tok";
+        int    uid   = 9;
+        // 1) two receipts: done (completed), open (not yet)
         BidReciept done = mock(BidReciept.class),
-                    open = mock(BidReciept.class);
+                open = mock(BidReciept.class);
         when(done.getEndTime()).thenReturn(LocalDateTime.now().minusDays(1));
-        when(done.getShopId()).thenReturn(1);
-        when(done.getItems()).thenReturn(Map.of(100,1));
+        when(done.getShopId()  ).thenReturn(1);
+        when(done.getItems()   ).thenReturn(Map.of(100, 1));
         when(open.getEndTime()).thenReturn(null);
-
         when(auth.ValidateToken(token)).thenReturn(uid);
         when(repo.getAllBids()).thenReturn(List.of(done, open));
-        // filter out shop-2 as “closed”
-        lenient().when(shops.getclosedShops(token)).thenReturn(List.of(2));
-        // filter out item-200 as “missing”
-        lenient().when(items.getAllItems(token))
-            .thenReturn(List.of(new Item(100, "", "", 0)));
+
+        lenient().when(shops.getclosedShops(token))
+                .thenReturn(List.of(2));  // shop #2 is closed
+
+        lenient().when(shops.searchItemsInShop(
+            eq(1),       // the only shop we care about
+            isNull(),    // name
+            isNull(),    // category
+            eq(Collections.emptyList()), // keywords
+            isNull(),    // minPrice
+            isNull(),    // maxPrice
+            isNull(),    // minRating
+            eq(token)    // auth token
+        )).thenReturn(List.of(
+            new Item(100, "", "", 0)  // only item #100 exists in shop #1
+        ));
 
         List<BidReciept> out = service.getAllBids(token, false);
-        // only “done” with shopId=1 & itemId=100 survives
         assertEquals(1, out.size());
         assertSame(done, out.get(0));
     }
+
 
     // ─────────── getFinishedBidsList tests ───────────
 
@@ -1078,8 +1113,8 @@ class PurchaseServiceTests {
         // shop 5 belongs to me, shop 6 belongs to somebody else
         when(users.getShopOwner(5)).thenReturn(uid);
         when(users.getShopOwner(6)).thenReturn(3);
-        when(shops.getclosedShops(token)).thenReturn(List.of());
-        when(items.getAllItems(token))
+        lenient().when(shops.getclosedShops(token)).thenReturn(List.of());
+        lenient().when(items.getAllItems(token))
             .thenReturn(List.of(new Item(1,"","",0)));
 
         List<BidReciept> out = service.getAllBids(token, true);
