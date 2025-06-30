@@ -353,6 +353,25 @@ public class UserService {
         }
     }
 
+    public boolean isGuest(String token) {
+        try {
+            LoggerService.logMethodExecution("isGuestById", token);
+            int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            boolean isGuest = userRepository.isGuestById(id);
+            LoggerService.logMethodExecutionEnd("isGuestById", isGuest);
+            return isGuest;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("isGuestById", e);
+            throw new OurRuntime("isGuestById: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("isGuestById", e);
+            throw new OurArg("isGuestById: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("isGuestById", e, token);
+            throw new OurRuntime("isGuestById: " + e.getMessage(), e);
+        }
+    }
+
     public String loginAsMember(String username, String password, String token_if_guest) {
         LoggerService.logMethodExecution("loginAsMember", username, "****", token_if_guest);
         String token = null;
