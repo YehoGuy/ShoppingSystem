@@ -287,6 +287,7 @@ public class UserRepositoryDBImpl implements IUserRepository {
         idCounter.set(id);
 
         Member member = new Member(id, username, password, email, phoneNumber, address);
+        member.setConnected(true);
         jpaRepo.save(member);
         return member.getMemberId();
     }
