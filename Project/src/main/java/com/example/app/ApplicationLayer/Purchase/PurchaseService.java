@@ -276,7 +276,7 @@ public class PurchaseService {
                 throw new OurRuntime("Purchase " + purchaseId + " is not a bid");
             }
 
-            ((Bid) purchase).addBidding(userId, bidPrice, true);
+            purchaseRepository.postBidding((Bid) purchase, userId, bidPrice);
             LoggerService.logMethodExecutionEndVoid("postBidding");
         } catch (OurArg e) {
             LoggerService.logDebug("postBidding", e);

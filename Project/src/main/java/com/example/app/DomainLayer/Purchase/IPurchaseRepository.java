@@ -99,9 +99,9 @@ public interface IPurchaseRepository {
      */
     List<BidReciept> getShopBids(int shopId);
 
-    public void postBiddingAuction(Bid bid, int userId, int bidPrice);
-
     public void postBidding(Bid bid, int userId, int bidPrice);
+
+    public void postBiddingAuction(Bid bid, int userId, int bidPrice);
 
     public void addReciept(Reciept reciept);
 

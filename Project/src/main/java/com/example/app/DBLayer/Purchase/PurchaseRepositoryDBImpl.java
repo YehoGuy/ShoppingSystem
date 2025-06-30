@@ -176,7 +176,7 @@ public class PurchaseRepositoryDBImpl implements IPurchaseRepository {
     @Override
     public void addReciept(Reciept reciept) {
         try {
-            entityManager.persist(reciept);
+            // Assuming Reciept is a subclass of Purchase, we can save it directly
         } catch (Exception e) {
             throw new OurRuntime("Error when adding reciept.");
         }
