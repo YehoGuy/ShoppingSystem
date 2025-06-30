@@ -453,14 +453,11 @@ public class PurchaseService {
                     int shopOwnerId = userService.getShopOwner(shopId);
                     if (shopOwnerId != userId) { // if the shop is closed the shopOwnerId = -1
                         // 2. filter out other users’ bids
-                        bids = bids.stream()
-                                .filter(b -> b.getUserId() == userId)
-                                .collect(Collectors.toList());
+                        bids = bids.stream().filter(b -> b.getUserId() == userId).collect(Collectors.toList());
 
                         // 3.Distinguish between the bids of the user to auctions he has participated in
                         // - present only the bids he has made
-                        bids = bids.stream().filter(b -> b.getUserId() == userId
-                                && b.getEndTime() == null).collect(Collectors.toList());
+                        bids = bids.stream().filter(b -> b.getUserId() == userId && b.getEndTime() == null).collect(Collectors.toList());
 
                         LoggerService.logMethodExecutionEnd("getAllBids", bids);
                     } else {
@@ -498,6 +495,68 @@ public class PurchaseService {
             throw new OurRuntime("getAllBids: " + e.getMessage(), e);
         } catch (Exception e) {
             LoggerService.logError("getAllBids", e, authToken);
+            throw new OurRuntime("Error retrieving all bids: " + e.getMessage(), e);
+        }
+    }
+
+
+    public List<BidReciept> getAllBidsNew(String authToken, boolean fromBid) {
+        try {
+            LoggerService.logMethodExecution("getAllBidsNew", authToken);
+            int userId = authTokenService.ValidateToken(authToken);
+            // 1. fetch everything...
+            List<BidReciept> bids = new ArrayList<>(purchaseRepository.getAllBids());
+            
+            List<BidReciept> returnBids = new ArrayList<>();
+
+            if (fromBid) 
+            {
+                // find shop owner of each bid - for owner only has to see all bids of his shops
+                for (BidReciept bid : bids) 
+                {
+                    int shopId = bid.getShopId();
+                    int shopOwnerId = userService.getShopOwner(shopId);
+                    if ((shopOwnerId == userId) || (bid.getUserId() == userId)) { // if the shop is closed the shopOwnerId = -1
+                        
+                        returnBids.add(bid);
+
+                    }
+                }
+                bids = returnBids;
+                
+            } 
+            else 
+            {
+                bids = bids.stream().filter(b -> b.getEndTime() != null).collect(Collectors.toList());
+
+            }
+            
+            LoggerService.logMethodExecutionEnd("getAllBidsNew", bids);
+
+            // Sort the list finishedBids so it will return only the bids that the shop is
+            // not close
+            List<Integer> closedShopsIds = shopService.getclosedShops(authToken);
+            bids.removeIf(b -> closedShopsIds.contains(b.getShopId()));
+
+            // drop bids whose item no longer exists
+            Set<Integer> validItemIds = bids.stream()
+            // for each bid, fetch that shop’s items
+            .flatMap(bid -> shopService.searchItemsInShop(bid.getShopId(),null,null, Collections.emptyList(),
+                    null, null, null,authToken).stream()
+                .map(Item::getId)
+            )
+            .collect(Collectors.toSet());
+            bids.removeIf(b -> b.getItems().keySet().stream()
+                    .anyMatch(itemId -> !validItemIds.contains(itemId)));
+            return bids;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getAllBidsNew", e);
+            throw new OurArg("getAllBidsNew: " + e.getMessage(), e);
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getAllBidsNew", e);
+            throw new OurRuntime("getAllBidsNew: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("getAllBidsNew", e, authToken);
             throw new OurRuntime("Error retrieving all bids: " + e.getMessage(), e);
         }
     }
