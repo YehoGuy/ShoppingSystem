@@ -29,7 +29,6 @@ public class ItemRepositoryDBImpl implements IItemRepository {
     @PersistenceContext
     private EntityManager entityManager;
 
-    private final AtomicInteger itemIdCounter = new AtomicInteger(1);
 
     public ItemRepositoryDBImpl(@Lazy @Autowired ItemRepositoryDB jpaRepo) {
         this.jpaRepo = jpaRepo;
@@ -37,7 +36,11 @@ public class ItemRepositoryDBImpl implements IItemRepository {
 
     @Override
     public Integer createItem(String name, String description, Integer category) {
-        Item item = new Item(itemIdCounter.incrementAndGet(), name, description, category);
+        int highestId = jpaRepo.findAll().stream()
+            .mapToInt(Item::getId)
+            .max()
+            .orElse(0) + 1;
+        Item item = new Item(highestId, name, description, category);
         Item saved = jpaRepo.save(item);
         if (saved == null) {
             throw new OurRuntime("Failed to save item: " + item);

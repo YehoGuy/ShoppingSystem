@@ -242,7 +242,20 @@ public class UserRepositoryDBImpl implements IUserRepository {
 
     @Override
     public int addGuest() {
-        int id = idCounter.incrementAndGet();
+        int dbId = jpaRepo.findAll().stream()
+            .mapToInt(Member::getMemberId)
+            .max()
+            .orElse(0) + 1;
+
+        int highestGuestId = guests.keySet().stream()
+            .mapToInt(Integer::intValue)
+            .max()
+            .orElse(0) + 1;
+
+        int id = Math.max(dbId,highestGuestId);
+
+        idCounter.set(id);
+
         Guest guest = new Guest(id);
         guests.put(id, guest);
         return id;
@@ -259,7 +272,19 @@ public class UserRepositoryDBImpl implements IUserRepository {
             throw new IllegalArgumentException("Invalid email format: " + email);
         }
 
-        int id = idCounter.incrementAndGet();
+        int dbId = jpaRepo.findAll().stream()
+            .mapToInt(Member::getMemberId)
+            .max()
+            .orElse(0) + 1;
+
+        int highestGuestId = guests.keySet().stream()
+            .mapToInt(Integer::intValue)
+            .max()
+            .orElse(0) + 1;
+            
+        int id = Math.max(dbId,highestGuestId);
+
+        idCounter.set(id);
 
         Member member = new Member(id, username, password, email, phoneNumber, address);
         jpaRepo.save(member);
