@@ -614,14 +614,6 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
 
             nameContainer.add(icon, nameText);
 
-
-            // Add hover effects
-            nameContainer.getElement().addEventListener("mouseenter", e -> {
-                nameContainer.getStyle()
-                        .set("transform", "translateY(-2px)")
-                        .set("box-shadow", "0 6px 20px rgba(102, 126, 234, 0.4)");
-            });
-
             nameContainer.getElement().addEventListener("mouseleave", e -> {
                 nameContainer.getStyle()
                         .set("transform", "translateY(0)")

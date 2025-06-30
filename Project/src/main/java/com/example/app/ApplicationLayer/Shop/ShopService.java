@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Collections;
 
 import org.springframework.stereotype.Service;
 
@@ -494,7 +495,9 @@ public class ShopService {
             }
             shopRepository.closeShop(shopId);
             userService.closeShopNotification(shopId);
-        
+            List<Item> itemsToRemove = searchItemsInShop(shopId,null, null, Collections.emptyList(), null, null, null, token);
+            for(Item itemToRemove : itemsToRemove){
+                removeItemFromShop(shopId, itemToRemove.getId(), token);
             LoggerService.logMethodExecutionEndVoid("closeShop");
         } catch (OurArg e) {
             LoggerService.logDebug("closeShop", e);

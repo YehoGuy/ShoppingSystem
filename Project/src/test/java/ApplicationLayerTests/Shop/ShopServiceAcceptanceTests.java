@@ -28,6 +28,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
@@ -528,14 +529,30 @@ class ShopServiceAcceptanceTests {
     // UC24 – Close Shop
     @Test
     void testCloseShop_Success() throws Exception {
-        String token = "t";
-        int shopId = 9;
+        String token  = "t";
+        int    shopId = 9;
+        int    userId = 15;
 
-        when(authTokenService.ValidateToken(token)).thenReturn(15);
-        when(userService.hasPermission(15, PermissionsEnum.closeShop, shopId)).thenReturn(true);
+        when(authTokenService.ValidateToken(token)).thenReturn(userId);
+        when(userService.hasPermission(userId, PermissionsEnum.closeShop, shopId))
+            .thenReturn(true);
+
         doNothing().when(shopRepository).closeShop(shopId);
+        doNothing().when(userService).closeShopNotification(shopId);
 
-        shopService.closeShop(shopId, token);
+        ShopService spySvc = spy(shopService);
+
+        doReturn(Collections.emptyList()).when(spySvc).searchItemsInShop(
+            eq(shopId),
+            isNull(),        // name
+            isNull(),        // category
+            eq(Collections.emptyList()),
+            isNull(),        // minPrice
+            isNull(),        // maxPrice
+            isNull(),        // minProductRating
+            eq(token)
+        );
+        spySvc.closeShop(shopId, token);
         verify(shopRepository).closeShop(shopId);
     }
 

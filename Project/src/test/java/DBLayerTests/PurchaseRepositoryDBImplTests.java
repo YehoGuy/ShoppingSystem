@@ -16,6 +16,7 @@ import com.example.app.SimpleHttpServerApplication;
 import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.DBLayer.Purchase.PurchaseRepositoryDBImpl;
 import com.example.app.DomainLayer.Purchase.Address;
+import com.example.app.DomainLayer.Purchase.Purchase;
 
 import jakarta.transaction.Transactional;
 
@@ -36,6 +37,8 @@ public class PurchaseRepositoryDBImplTests {
 
     @Test
     void testAddPurchase_Success() {
+        Address shipping = new Address();
+        int id = repo.addPurchase(1, 1, new HashMap<>(), 0, shipping);
         assertDoesNotThrow(() -> repo.getPurchaseById(id));
     }
 
@@ -53,7 +56,8 @@ public class PurchaseRepositoryDBImplTests {
 
     @Test
     void testGetPurchaseById_Success() {
-        int id2 = repo.addBid(0, 0, new HashMap<>(), 0, null, null);
+        int id = repo.addBid(1, 1, new HashMap<>(), 100, null, null);
+        int id2 = repo.addBid(1, 1, new HashMap<>(), 200, null, null);
         assertDoesNotThrow(() -> repo.getPurchaseById(id));
         assertDoesNotThrow(() -> repo.getPurchaseById(id2));
     }
@@ -65,6 +69,13 @@ public class PurchaseRepositoryDBImplTests {
 
     @Test
     void testDeletePurchase_Success() {
+        int userId = 0;
+        int storeId = 0;
+        HashMap<Integer, Integer> products = new HashMap<>();
+        double price = 0;
+        Address address = new Address();
+        int id = repo.addPurchase(userId, storeId, products, price, address);
+
         repo.deletePurchase(id);
         assertThrows(OurRuntime.class, () -> repo.getPurchaseById(id));
     }

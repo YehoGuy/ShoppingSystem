@@ -35,11 +35,11 @@ public class MessageRepositoryDBImpl implements IMessageRepository {
     }
 
     private int nextId() {
-        // H2 (and every real DB) understands “next value for …”
-        Object val = entityManager
-            .createNativeQuery("select next value for message_sequence")
-            .getSingleResult();
-        return ((Number) val).intValue();
+        int highestId = jpaRepo.findAll().stream()
+            .mapToInt(Message::getMessageId)
+            .max()
+            .orElse(0);
+        return highestId + 1;  // Increment the highest ID found in the database
     }
 
     @Override
