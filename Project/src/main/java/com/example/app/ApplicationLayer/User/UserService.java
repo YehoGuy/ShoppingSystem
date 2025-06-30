@@ -377,7 +377,6 @@ public class UserService {
                     // {throw new OurRuntime("the user is suspended");}
 
                     LoggerService.logMethodExecutionEnd("loginAsMember", loginAsMember_id);
-                    return token; // Return the ID of the logged-in member
                 } else {
                     int id = authTokenService.ValidateToken(token_if_guest); // guest id
                     // merge the guest cart with the member cart
@@ -387,8 +386,9 @@ public class UserService {
                     userRepository.removeUserById(id);
                     token = authTokenService.Login(username, password, loginAsMember_id);
                     LoggerService.logMethodExecutionEnd("loginAsMember", loginAsMember_id);
-                    return token;
                 }
+                this.userRepository.updateUserInDB(member);
+                return token;
             } else {
                 LoggerService.logError("loginAsMember", new OurArg("Invalid username or password."));
                 throw new OurArg("Invalid username or password.");
@@ -405,77 +405,6 @@ public class UserService {
         }
     }
 
-    /*
-     * public int loginAsMember(String username, String password, int id_if_guest) {
-     * try {
-     * if (username == null || password == null) {
-     * throw new OurArg("Username and password cannot be null.");
-     * }
-     * if (username.isEmpty() || password.isEmpty()) {
-     * throw new OurArg("Username and password cannot be empty.");
-     * }
-     * int loginAsMember_id = userRepository.isUsernameAndPasswordValid(username,
-     * password);
-     * if (loginAsMember_id>0)//valid login attempt
-     * {
-     * if (id_if_guest == -1) { //if the user is not a guest,its his initial logging
-     * in and we just return the id of the member
-     * return loginAsMember_id; // Return the ID of the logged-in member
-     * }
-     * else if (userRepository.isGuestById(id_if_guest)){ //we ensure that the given
-     * id matches a guest in the data!
-     * //we merge the guest cart with the member cart
-     * User member = userRepository.getUserById(loginAsMember_id);
-     * User guest = userRepository.getUserById(id_if_guest);
-     * member.mergeShoppingCart(guest.getShoppingCart());
-     * //we remove the guest user from the data
-     * userRepository.removeUserById(id_if_guest);
-     * // Return the ID of the logged-in member
-     * return loginAsMember_id;
-     * 
-     * }
-     * else {
-     * throw new
-     * OurArg("The given id does not match a guest in the data. probably it is a member id!"
-     * );
-     * }
-     * 
-     * }
-     * 
-     * 
-     * }
-     * catch (Exception e) {
-     * return -1; // Indicate failure to log in as a member
-     * }
-     * }
-     * 
-     */
-
-    // public String signUp(String username, String password, String email, String
-    // phoneNumber, String address) {
-    // password = passwordEncoder.encode(password); // Encode the password using the
-    // PasswordEncoderUtil
-    // try {
-    // if (userRepository.isUsernameTaken(username)) {
-    // LoggerService.logError("signUp", new OurArg("Username is already taken."));
-    // throw new OurArg("Username is already taken.");
-    // }
-    // if (!email.contains("@")) {
-    // throw new OurArg("Invalid email format.");
-    // }
-    // String token = authTokenService.generateAuthToken(username); // Generate a
-    // token for the member
-    // LoggerService.logMethodExecution("signUp", username, password, email,
-    // phoneNumber, address);
-    // userRepository.addMember(username, password, email, phoneNumber, address);
-    // return token;
-    // } catch (Exception e) {
-    // LoggerService.logError("signUp", e, username, password, email, phoneNumber,
-    // address);
-    // throw new OurRuntime("Error signing up: " + e.getMessage(), e);
-    // }
-    // }
-
     public String logout(String token) {
         try {
             LoggerService.logMethodExecution("logout", token);
@@ -485,6 +414,7 @@ public class UserService {
             } else {
                 Member member = userRepository.getMemberById(id);
                 member.setConnected(false); // Set the member as disconnected
+                this.userRepository.updateUserInDB(member);
             }
             authTokenService.Logout(token); // Logout the user by removing the token
 
@@ -762,7 +692,6 @@ public class UserService {
             throw new OurRuntime("removeOwnerFromStoreAsAdmin: " + e.getMessage(), e);
         }
     }
-
 
     public void removeAllAssigned(int assignee, int shopId) {
         try {
