@@ -100,8 +100,8 @@ public class ShopSearchView extends BaseView implements BeforeEnterObserver {
     public void beforeEnter(BeforeEnterEvent event) {
         Integer userId = getUserId();
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-        if (userId == null || token == null) {
-            event.forwardTo("login");
+        if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
+            event.forwardTo("");
             return;
         }
         loadShops(token);

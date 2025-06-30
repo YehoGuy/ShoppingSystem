@@ -198,10 +198,10 @@ public class ShopView extends BaseView
                     if (resp.getStatusCode() == HttpStatus.NO_CONTENT) {
                         Notification.show("🚀 Added “" + item.getName() + "” x" + qty + " to cart");
                     } else {
-                        Notification.show("❌ Could not add to cart: " + resp.getStatusCode());
+                        Notification.show("❌ Could not add to cart ");
                     }
                 } catch (Exception ex) {
-                    Notification.show("❌ Error adding to cart: " + ex.getMessage());
+                    Notification.show("❌ Error adding to cart");
                 }
             });
             if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
