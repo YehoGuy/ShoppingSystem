@@ -74,6 +74,7 @@ public class Purchase {
         this.shippingAddress = shippingAddress;
         this.isCompleted = false;
         this.price = price;
+        prePersist();
     }
 
     /**
@@ -241,6 +242,7 @@ public class Purchase {
      * @return a string containing the purchase details.
      */
     public Reciept generateReciept() {
+        postLoad();
         if (!isCompleted)
             return new Reciept(purchaseId, userId, storeId, items, shippingAddress, null, this.price);
         else
