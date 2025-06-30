@@ -1,10 +1,10 @@
 package com.example.app.ApplicationLayer.Shop;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Collections;
 
 import org.springframework.stereotype.Service;
 
@@ -18,6 +18,7 @@ import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.Item.Item;
 import com.example.app.DomainLayer.Item.ItemCategory;
 import com.example.app.DomainLayer.Member;
+import com.example.app.DomainLayer.ShoppingCart;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
 import com.example.app.DomainLayer.Shop.Discount.Discount;
@@ -29,8 +30,13 @@ import com.example.app.DomainLayer.Shop.Operator;
 import com.example.app.DomainLayer.Shop.PurchasePolicy;
 import com.example.app.DomainLayer.Shop.Shop;
 import com.example.app.DomainLayer.User;
+import com.example.app.PresentationLayer.DTO.Item.ItemDTO;
 import com.example.app.PresentationLayer.DTO.Shop.CompositePolicyDTO;
 import com.example.app.PresentationLayer.DTO.Shop.LeafPolicyDTO;
+import com.example.app.PresentationLayer.DTO.User.ShoppingCartDTO;
+
+import io.micrometer.common.lang.NonNull;
+import jakarta.validation.constraints.NotNull;
 
 @Service
 public class ShopService {
@@ -495,19 +501,11 @@ public class ShopService {
             }
             shopRepository.closeShop(shopId);
             userService.closeShopNotification(shopId);
-            
             List<Item> itemsToRemove = searchItemsInShop(shopId,null, null, Collections.emptyList(), null, null, null, token);
             for(Item itemToRemove : itemsToRemove){
                 removeItemFromShop(shopId, itemToRemove.getId(), token);
-            }
-            // if (userService.isAdmin(userId)) {
-            //     //userService.removeOwnerFromStoreAsAdmin(token, userId, shopId);
-                
-            // }
-            // else{
-            //     userService.removeOwnerFromStore(token, userId, shopId);
-            // }
             LoggerService.logMethodExecutionEndVoid("closeShop");
+            }
         } catch (OurArg e) {
             LoggerService.logDebug("closeShop", e);
             throw new OurArg("closeShop" + e.getMessage());
@@ -516,6 +514,32 @@ public class ShopService {
             throw new OurRuntime("closeShop" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("closeShop", e, shopId);
+            throw new OurRuntime("Error closing shop " + shopId + ": " + e.getMessage(), e);
+        }
+    }
+
+    public void reOpenShop(Integer shopId, String token) {
+        try {
+            LoggerService.logMethodExecution("reOpenShop", shopId);
+            Integer userId = authTokenService.ValidateToken(token);
+            if ((!userService.isAdmin(userId))
+                    && (!userService.hasPermission(userId, PermissionsEnum.closeShop, shopId))) {
+                OurRuntime e = new OurRuntime("User does not have permission to reOPen shop " + shopId);
+                LoggerService.logDebug("reOpen", e);
+                throw e;
+            }
+            shopRepository.reOpenShop(shopId);
+            userService.reOpenShopNotification(shopId);
+        
+            LoggerService.logMethodExecutionEndVoid("reOpenShop");
+        } catch (OurArg e) {
+            LoggerService.logDebug("reOpenShop", e);
+            throw new OurArg("reOpenShop" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("reOpenShop", e);
+            throw new OurRuntime("reOpenShop" + e.getMessage());
+        } catch (Exception e) {
+            LoggerService.logError("reOpenShop", e, shopId);
             throw new OurRuntime("Error closing shop " + shopId + ": " + e.getMessage(), e);
         }
     }
@@ -1049,5 +1073,35 @@ public class ShopService {
             LoggerService.logError("getclosedShops", e);
             throw new OurRuntime("Error retrieving closed shops: " + e.getMessage(), e);
         }
+    }
+
+
+    public double applyDiscount( Map<Integer,Integer> cart, int shopId, String token) {
+        try {
+            LoggerService.logMethodExecution("applyDiscount", cart);
+            authTokenService.ValidateToken(token);
+
+            Map<Integer, ItemCategory> itemsCategory = itemService.getItemdId2Cat(cart);
+
+            double totalPrice = shopRepository.applyDiscount(cart, itemsCategory, shopId);
+
+
+            
+            //double applyDiscount(Map<Integer, Integer> items, Map<Integer, ItemCategory> itemsCat, int shopId);
+
+            LoggerService.logMethodExecutionEnd("applyDiscount", totalPrice);
+            return totalPrice;
+        } catch (OurArg e) {
+            LoggerService.logDebug("applyDiscount", e);
+            throw new OurArg("applyDiscount" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("applyDiscount", e);
+            throw new OurRuntime("applyDiscount" + e.getMessage());
+        } catch (Exception e) {
+            LoggerService.logError("applyDiscount", e, cart);
+            throw new OurRuntime("Error applying discount: " + e.getMessage(), e);
+        }
+
+
     }
 }

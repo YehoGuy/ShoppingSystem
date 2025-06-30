@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import com.example.app.DomainLayer.IMessageRepository;
@@ -14,6 +15,7 @@ import com.example.app.DomainLayer.Message;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
 
 /**
  * JPA-backed implementation of IMessageRepository.
@@ -24,47 +26,28 @@ import jakarta.persistence.PersistenceContext;
 public class MessageRepositoryDBImpl implements IMessageRepository {
 
     private final MessageRepositoryDB jpaRepo;
-    //private final AtomicInteger idCounter = new AtomicInteger(0);
+    // private final AtomicInteger idCounter = new AtomicInteger(0);
 
     @PersistenceContext
     private EntityManager entityManager;
-
 
     public MessageRepositoryDBImpl(@Lazy @Autowired MessageRepositoryDB jpaRepo) {
         this.jpaRepo = jpaRepo;
     }
 
-    private int nextId() {
-        int highestId = jpaRepo.findAll().stream()
-            .mapToInt(Message::getMessageId)
-            .max()
-            .orElse(0);
-        return highestId + 1;  // Increment the highest ID found in the database
-    }
-
     @Override
     public void addMessage(int senderId,
-                           int receiverId,
-                           String content,
-                           String timestamp,
-                           boolean userToUser,
-                           int previousMessageId) {
-        
-        int messageId = nextId();
-        Message message = new Message(
-            messageId,
-            senderId,
-            receiverId,
-            content,
-            timestamp,
-            userToUser,
-            previousMessageId
-        );
-        entityManager.merge(message);       // use merge to avoid detached-entity error
-        entityManager.flush();          // NEW
+            int receiverId,
+            String content,
+            String timestamp,
+            boolean userToUser,
+            int previousMessageId) {
+
+        Message message = new Message(senderId, receiverId, content, timestamp, userToUser,
+                previousMessageId);
+        jpaRepo.save(message);
     }
 
-    
     @Override
     public List<Message> getAllMessages() {
         return jpaRepo.findAll();
@@ -77,16 +60,12 @@ public class MessageRepositoryDBImpl implements IMessageRepository {
 
     @Override
     public List<Message> getMessagesBySenderId(int senderId) {
-        return getAllMessages().stream()
-                      .filter(m -> m.getSenderId() == senderId)
-                      .collect(Collectors.toList());
+        return jpaRepo.findBySenderId(senderId);
     }
 
     @Override
     public List<Message> getMessagesByReceiverId(int receiverId) {
-        return getAllMessages().stream()
-                      .filter(m -> m.getReceiverId() == receiverId)
-                      .collect(Collectors.toList());
+        return jpaRepo.findByReceiverId(receiverId);
     }
 
     @Override
@@ -116,8 +95,8 @@ public class MessageRepositoryDBImpl implements IMessageRepository {
 
     @Override
     public boolean isMessagePrevious(int previousMessageId,
-                                     int senderId,
-                                     int receiverId) {
+            int senderId,
+            int receiverId) {
         if (previousMessageId < 0) {
             return true;
         }
@@ -126,7 +105,7 @@ public class MessageRepositoryDBImpl implements IMessageRepository {
             return false;
         }
         return (previous.getSenderId() == senderId && previous.getReceiverId() == receiverId)
-            || (previous.getSenderId() == receiverId && previous.getReceiverId() == senderId);
+                || (previous.getSenderId() == receiverId && previous.getReceiverId() == senderId);
     }
 
     @Override
@@ -134,25 +113,23 @@ public class MessageRepositoryDBImpl implements IMessageRepository {
         // Update the row in-place, no need to recreate the entity
         int rows = entityManager.createQuery(
                 "UPDATE Message m SET m.content = :content, m.timestamp = :ts WHERE m.messageId = :id")
-            .setParameter("content", newContent)
-            .setParameter("ts",      newTimestamp)
-            .setParameter("id",      messageId)
-            .executeUpdate();
+                .setParameter("content", newContent)
+                .setParameter("ts", newTimestamp)
+                .setParameter("id", messageId)
+                .executeUpdate();
 
         if (rows > 0) {
-            entityManager.clear();   // purge first-level cache so a fresh read sees the new values
+            entityManager.clear(); // purge first-level cache so a fresh read sees the new values
         }
     }
-
-
 
     @Override
     public void deleteMessage(int messageId, int userId) {
         Message message = getMessageById(messageId);
         if (message != null &&
-            (message.getSenderId() == userId || message.getReceiverId() == userId)) {
+                (message.getSenderId() == userId || message.getReceiverId() == userId)) {
 
-            jpaRepo.deleteById(messageId);   // use primary-key delete to avoid detached entity issues
+            jpaRepo.deleteById(messageId); // use primary-key delete to avoid detached entity issues
         }
     }
 

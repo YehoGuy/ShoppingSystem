@@ -5,6 +5,7 @@ import java.util.Map;
 import com.example.app.DomainLayer.Item.ItemCategory;
 import com.example.app.DomainLayer.Shop.Operator;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -16,11 +17,11 @@ import jakarta.persistence.ManyToOne;
 @DiscriminatorValue("composite")
 public class PolicyComposite extends Policy {
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "policy1_id")
     private Policy policy1;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "policy2_id")
     private Policy policy2;
 

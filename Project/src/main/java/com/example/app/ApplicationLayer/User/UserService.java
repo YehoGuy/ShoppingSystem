@@ -1849,6 +1849,27 @@ public class UserService {
         }
     }
 
+    public void reOpenShopNotification(Integer shopId) {
+        try {
+            LoggerService.logMethodExecution("reOpenShopNotification", shopId);
+            List<Member> owners = userRepository.getOwners(shopId);
+            for (Member owner : owners) {
+                this.notificationService.sendToUser(owner.getMemberId(), "Shop re-opened",
+                        "Your shop ID: " + shopId + " has been re-opened.");
+            }
+            LoggerService.logMethodExecutionEndVoid("reOpenShopNotification");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("reOpenShopNotification", e);
+            throw new OurRuntime("reOpenShopNotification: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("reOpenShopNotification", e);
+            throw new OurArg("reOpenShopNotification: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("reOpenShopNotification", e, shopId);
+            throw new OurRuntime("reOpenShopNotification: " + e.getMessage(), e);
+        }
+    }
+
     public void removedAppointment(Integer memberId, String appointment, Integer shopId) {
         try {
             LoggerService.logMethodExecution("removedAppointment", memberId, appointment);

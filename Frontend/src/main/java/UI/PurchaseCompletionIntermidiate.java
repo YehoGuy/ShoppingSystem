@@ -37,7 +37,7 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
     private TextField houseNumberField;
     private TextField apartmentNumberField;
     private TextField zipCodeField;
-
+    
     private ShoppingCartDTO cartDto;
     private Map<ItemDTO, Integer> items;
     private double totalPrice = 0;
@@ -61,11 +61,10 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
         return null; // Return null if userId is not available
     }
 
-    public PurchaseCompletionIntermidiate(@Value("${url.api}") String api, ShoppingCartDTO cart, Dialog addressDialog, int partialCart) {
+    public PurchaseCompletionIntermidiate(@Value("${url.api}") String api, ShoppingCartDTO cart, Dialog addressDialog, int partialCart, double price) {
         this.api = api;
-
-        this.cartDto = cart;
-        this.totalPrice = cart.getTotalPrice();
+        this.totalPrice = price;
+        this.cartDto = cart;;
 
         this.partialCart = partialCart;
 
@@ -136,18 +135,7 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
         }
         add(new H1("🛒 Cart Summary"));
 
-        cartDto.getShopItemPrices().forEach((shopId, itemPrices) -> {
-            itemPrices.forEach((itemId, price) -> {
-                ItemDTO item = getItemById(itemId);
-                if (item != null) {
-                    String line = "- " + item.getName() + " x" + cartDto.getShopItemQuantities().get(shopId).get(itemId)
-                            + " = $" + (price * cartDto.getShopItemQuantities().get(shopId).get(itemId));
-                    add(new Span(line));
-                }
-            });
-        });
-
-        Span total = new Span("💰 Total: $" + totalPrice);
+        Span total = new Span("💰 Total after discounts: $" + totalPrice);
         total.getStyle().set("font-weight", "bold").set("font-size", "18px");
         add(total);
     }
