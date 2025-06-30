@@ -274,7 +274,7 @@ public class PurchaseController {
             @RequestParam String authToken) {
 
         try {
-            List<BidReciept> bids = purchaseService.getAllBids(authToken, true);
+            List<BidReciept> bids = purchaseService.getAllBidsNew(authToken, true);
             List<BidRecieptDTO> bidDTOs = bids.stream()
                     .map(BidRecieptDTO::fromDomain) // convert to DTO
                     .toList();

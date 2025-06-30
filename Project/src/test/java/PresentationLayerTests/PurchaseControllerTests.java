@@ -568,7 +568,7 @@ class PurchaseControllerTests {
         @Test
         @DisplayName("success → 200 + empty list")
         void success_returns200AndJsonList() throws Exception {
-                when(purchaseService.getAllBids("tok", true)).thenReturn(List.of());
+                when(purchaseService.getAllBidsNew("tok", true)).thenReturn(List.of());
 
                 mvc.perform(get("/api/purchases/bids")
                         .param("authToken", "tok"))
@@ -579,7 +579,7 @@ class PurchaseControllerTests {
         @Test
         @DisplayName("bad token → 400")
         void badRequest_returns400() throws Exception {
-                when(purchaseService.getAllBids(anyString(), anyBoolean()))
+                when(purchaseService.getAllBidsNew(anyString(), anyBoolean()))
                 .thenThrow(new IllegalArgumentException("invalid"));
 
                 mvc.perform(get("/api/purchases/bids")
@@ -590,7 +590,7 @@ class PurchaseControllerTests {
         @Test
         @DisplayName("no bids → 404")
         void notFound_returns404() throws Exception {
-                when(purchaseService.getAllBids(anyString(), anyBoolean()))
+                when(purchaseService.getAllBidsNew(anyString(), anyBoolean()))
                 .thenThrow(new NoSuchElementException("none"));
 
                 mvc.perform(get("/api/purchases/bids")
@@ -601,7 +601,7 @@ class PurchaseControllerTests {
         @Test
         @DisplayName("business conflict → 409")
         void conflict_returns409() throws Exception {
-                when(purchaseService.getAllBids(anyString(), anyBoolean()))
+                when(purchaseService.getAllBidsNew(anyString(), anyBoolean()))
                 .thenThrow(new RuntimeException("closed"));
 
                 mvc.perform(get("/api/purchases/bids")
