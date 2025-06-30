@@ -1,10 +1,10 @@
 package com.example.app.ApplicationLayer.Shop;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Collections;
 
 import org.springframework.stereotype.Service;
 
@@ -499,6 +499,7 @@ public class ShopService {
             for(Item itemToRemove : itemsToRemove){
                 removeItemFromShop(shopId, itemToRemove.getId(), token);
             LoggerService.logMethodExecutionEndVoid("closeShop");
+            }
         } catch (OurArg e) {
             LoggerService.logDebug("closeShop", e);
             throw new OurArg("closeShop" + e.getMessage());
