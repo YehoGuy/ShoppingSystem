@@ -84,7 +84,7 @@ public class BidsListView extends BaseView {
                .setHeader("Store Name")
                .setAutoWidth(true);
 
-        bidGrid.addColumn(this::fetchItemName)
+        bidGrid.addColumn(dto -> fetchItemName(dto.getStoreId(), dto))
                .setHeader("Item Name")
                .setAutoWidth(true);
 
@@ -257,21 +257,37 @@ public class BidsListView extends BaseView {
         }
     }
 
-    private String fetchItemName(BidRecieptDTO dto) {
+    private String fetchItemName(int shopId, BidRecieptDTO bid) {
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-        String url = apiBase + "/shops/" + dto.getStoreId() + "/items?token=" + token;
+        String url   = apiBase + "/shops/" + shopId + "/items?token=" + token;
         try {
-            ResponseEntity<JsonNode> r = rest.exchange(
+            ResponseEntity<JsonNode> resp = rest.exchange(
                 url, HttpMethod.GET, HttpEntity.EMPTY, JsonNode.class
             );
-            if (r.getBody() != null) {
-                for (JsonNode item : r.getBody()) {
-                    if (dto.getItems().containsKey(item.path("id").asInt(-1))) {
-                        return item.path("name").asText("");
+            JsonNode body = resp.getBody();
+
+            if (body != null && body.isArray() && body.size() > 0) {
+                // 1) If our DTO map is empty, just grab the first element's name:
+                if (bid.getItems().isEmpty()) {
+                    JsonNode first = body.get(0);
+                    int    fid   = first.path("id").asInt(-1);
+                    String fname = first.path("name").asText("(no-name)");
+                    return fname;
+                }
+
+                // 2) Otherwise do your normal matching:
+                for (JsonNode item : body) {
+                    int    id   = item.path("id").asInt(-1);
+                    String name = item.path("name").asText("(no-name)");
+                    if (bid.getItems().containsKey(id)) {
+                        return name;
                     }
                 }
+            } else {
             }
-        } catch (Exception e) { /* ignore */ }
+        } catch (Exception e) {
+            /*ignore */
+        }
         return "";
     }
 }

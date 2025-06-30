@@ -3,6 +3,7 @@ package com.example.app.ApplicationLayer.Purchase;
 import java.sql.Date;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,7 @@ import com.example.app.DomainLayer.Purchase.Reciept;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 
 import jakarta.validation.constraints.Min;
+import java.util.HashSet;
 
 @Service
 public class PurchaseService {
@@ -105,6 +107,14 @@ public class PurchaseService {
                         shippingAddress.getCountry(),
                         shippingAddress.getCity(), shippingAddress.getStreet(), shippingAddress.getZipCode());
             }
+            // genrate reciept for each purchase
+            for (Integer purchaseId : purchaseIds.keySet()) {
+                Purchase purchase = purchaseRepository.getPurchaseById(purchaseId);
+                if (purchase != null) {
+                    Reciept reciept = purchase.generateReciept();
+                    purchaseRepository.addReciept(reciept);
+                }
+            }
             LoggerService.logMethodExecutionEnd("checkoutCart", purchaseIds);
             userService.purchaseNotification(cart);
             return purchaseIds.keySet().stream().toList();
@@ -172,6 +182,14 @@ public class PurchaseService {
                 shopService.shipPurchase(authToken, purchaseId, purchaseIds.get(purchaseId),
                         shippingAddress.getCountry(),
                         shippingAddress.getCity(), shippingAddress.getStreet(), shippingAddress.getZipCode());
+            }
+            // genrate reciept for each purchase
+            for (Integer purchaseId : purchaseIds.keySet()) {
+                Purchase purchase = purchaseRepository.getPurchaseById(purchaseId);
+                if (purchase != null) {
+                    Reciept reciept = purchase.generateReciept();
+                    purchaseRepository.addReciept(reciept);
+                }
             }
             LoggerService.logMethodExecutionEnd("partialCheckoutCart", purchaseIds);
             userService.purchaseNotification(cart);
@@ -258,7 +276,7 @@ public class PurchaseService {
                 throw new OurRuntime("Purchase " + purchaseId + " is not a bid");
             }
 
-            ((Bid) purchase).addBidding(userId, bidPrice, true);
+            purchaseRepository.postBidding((Bid) purchase, userId, bidPrice);
             LoggerService.logMethodExecutionEndVoid("postBidding");
         } catch (OurArg e) {
             LoggerService.logDebug("postBidding", e);
@@ -313,6 +331,9 @@ public class PurchaseService {
             notificationService.sendToUser(initiatingUserId, "The bid is over ", msg);
             purchase.completePurchase();
             userService.addBidToUserShoppingCart(initiatingUserId, shopId, items);
+            // generate reciept for the bid
+            Reciept reciept = purchase.generateReciept();
+            purchaseRepository.addReciept(reciept);
             LoggerService.logMethodExecutionEnd("finalizeBid", initiatingUserId);
             return initiatingUserId;
         } catch (OurArg e) {
@@ -432,14 +453,11 @@ public class PurchaseService {
                     int shopOwnerId = userService.getShopOwner(shopId);
                     if (shopOwnerId != userId) { // if the shop is closed the shopOwnerId = -1
                         // 2. filter out other users’ bids
-                        bids = bids.stream()
-                                .filter(b -> b.getUserId() == userId)
-                                .collect(Collectors.toList());
+                        bids = bids.stream().filter(b -> b.getUserId() == userId).collect(Collectors.toList());
 
                         // 3.Distinguish between the bids of the user to auctions he has participated in
                         // - present only the bids he has made
-                        bids = bids.stream().filter(b -> b.getUserId() == userId
-                                && b.getEndTime() == null).collect(Collectors.toList());
+                        bids = bids.stream().filter(b -> b.getUserId() == userId && b.getEndTime() == null).collect(Collectors.toList());
 
                         LoggerService.logMethodExecutionEnd("getAllBids", bids);
                     } else {
@@ -459,9 +477,13 @@ public class PurchaseService {
             bids.removeIf(b -> closedShopsIds.contains(b.getShopId()));
 
             // drop bids whose item no longer exists
-            Set<Integer> validItemIds = itemService.getAllItems(authToken).stream()
-                    .map(Item::getId)
-                    .collect(Collectors.toSet());
+            Set<Integer> validItemIds = bids.stream()
+            // for each bid, fetch that shop’s items
+            .flatMap(bid -> shopService.searchItemsInShop(bid.getShopId(),null,null, Collections.emptyList(),
+                    null, null, null,authToken).stream()
+                .map(Item::getId)
+            )
+            .collect(Collectors.toSet());
             bids.removeIf(b -> b.getItems().keySet().stream()
                     .anyMatch(itemId -> !validItemIds.contains(itemId)));
             return bids;
@@ -473,6 +495,68 @@ public class PurchaseService {
             throw new OurRuntime("getAllBids: " + e.getMessage(), e);
         } catch (Exception e) {
             LoggerService.logError("getAllBids", e, authToken);
+            throw new OurRuntime("Error retrieving all bids: " + e.getMessage(), e);
+        }
+    }
+
+
+    public List<BidReciept> getAllBidsNew(String authToken, boolean fromBid) {
+        try {
+            LoggerService.logMethodExecution("getAllBidsNew", authToken);
+            int userId = authTokenService.ValidateToken(authToken);
+            // 1. fetch everything...
+            List<BidReciept> bids = new ArrayList<>(purchaseRepository.getAllBids());
+            
+            List<BidReciept> returnBids = new ArrayList<>();
+
+            if (fromBid) 
+            {
+                // find shop owner of each bid - for owner only has to see all bids of his shops
+                for (BidReciept bid : bids) 
+                {
+                    int shopId = bid.getShopId();
+                    int shopOwnerId = userService.getShopOwner(shopId);
+                    if ((shopOwnerId == userId) || (bid.getUserId() == userId)) { // if the shop is closed the shopOwnerId = -1
+                        
+                        returnBids.add(bid);
+
+                    }
+                }
+                bids = returnBids;
+                
+            } 
+            else 
+            {
+                bids = bids.stream().filter(b -> b.getEndTime() != null).collect(Collectors.toList());
+
+            }
+            
+            LoggerService.logMethodExecutionEnd("getAllBidsNew", bids);
+
+            // Sort the list finishedBids so it will return only the bids that the shop is
+            // not close
+            List<Integer> closedShopsIds = shopService.getclosedShops(authToken);
+            bids.removeIf(b -> closedShopsIds.contains(b.getShopId()));
+
+            // drop bids whose item no longer exists
+            Set<Integer> validItemIds = bids.stream()
+            // for each bid, fetch that shop’s items
+            .flatMap(bid -> shopService.searchItemsInShop(bid.getShopId(),null,null, Collections.emptyList(),
+                    null, null, null,authToken).stream()
+                .map(Item::getId)
+            )
+            .collect(Collectors.toSet());
+            bids.removeIf(b -> b.getItems().keySet().stream()
+                    .anyMatch(itemId -> !validItemIds.contains(itemId)));
+            return bids;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getAllBidsNew", e);
+            throw new OurArg("getAllBidsNew: " + e.getMessage(), e);
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getAllBidsNew", e);
+            throw new OurRuntime("getAllBidsNew: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("getAllBidsNew", e, authToken);
             throw new OurRuntime("Error retrieving all bids: " + e.getMessage(), e);
         }
     }
@@ -535,7 +619,7 @@ public class PurchaseService {
                 throw new OurRuntime(
                         "User " + userId + " is the owner of the bid " + auctionId + " and cannot bid on it");
             }
-            ((Bid) purchase).addBidding(userId, bidPrice, false);
+            purchaseRepository.postBiddingAuction((Bid) purchase, userId, bidPrice);
             LoggerService.logMethodExecutionEndVoid("postBiddingAuction");
         } catch (OurArg e) {
             LoggerService.logDebug("postBiddingAuction", e);
@@ -580,6 +664,10 @@ public class PurchaseService {
                         (pid == winnerId ? " You won with a bid of " + finalPrice + "."
                                 : " You lost. The winning bid was " + finalPrice + "."));
             }
+
+            // generate reciept for the bid
+            Reciept reciept = purchase.generateReciept();
+            purchaseRepository.addReciept(reciept);
 
             userService.addAuctionWinBidToUserShoppingCart(winnerId, bid);
         } catch (OurArg e) {

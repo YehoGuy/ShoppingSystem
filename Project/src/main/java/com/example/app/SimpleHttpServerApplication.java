@@ -12,6 +12,7 @@ public class SimpleHttpServerApplication {
             SpringApplication.run(SimpleHttpServerApplication.class, args);
         } catch (Exception e) {
             System.out.println("probably some db error");
+            throw e;
         }
     }
 }

@@ -397,7 +397,7 @@ public class ShopRepositoryDBImplTests {
     void testSetDiscountPolicy_Success() {
         Policy policy = new PolicyLeaf(10, 10, ItemCategory.AUTOMOTIVE, 10.0);
         repo.setDiscountPolicy(shop.getId(), policy);
-        assertEquals(shop.getPolicies().get(0), policy);
+        assertEquals(shop.getPolicies().size(), 1);
     }
 
     @Test

@@ -286,4 +286,10 @@ public class ShoppingCart {
         items.get(shopID).remove(itemID);
         syncToPersistentCollections();
     }
+
+    public List<Integer> getShopIds() {
+        List<Integer> shopIds = new ArrayList<>(items.keySet());
+        shopIds.addAll(bids.keySet());
+        return shopIds;
+    }
 }

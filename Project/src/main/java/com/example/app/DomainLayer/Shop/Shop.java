@@ -23,14 +23,15 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EntityManager;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PostLoad;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
@@ -89,10 +90,12 @@ public class Shop {
     private String shippingMethodName;
 
     // ===== Fields for Purchase Policy =====
-    @Transient
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "policytemp_id")
     private Policy policytemp;
 
-    @Transient
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "policy_composite_id")
     private PolicyComposite policyComposite;
 
     private boolean isClosed = false;
@@ -354,7 +357,7 @@ public class Shop {
         return total;
     }
 
-    private double applyDiscount(Map<Integer, Integer> items, Map<Integer, ItemCategory> itemsCat) {
+    public double applyDiscount(Map<Integer, Integer> items, Map<Integer, ItemCategory> itemsCat) {
         Map<Integer, Double> itemsDiscountedPrices = new HashMap<>();
         for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
             int itemId = entry.getKey();

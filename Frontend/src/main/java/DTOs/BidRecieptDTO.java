@@ -9,7 +9,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Matches com.example.app.PresentationLayer.DTO.Purchase.BidRecieptDTO on the backend.
+ * Matches com.example.app.PresentationLayer.DTO.Purchase.BidRecieptDTO on the
+ * backend.
  */
 public class BidRecieptDTO {
     // ─── base receipt fields ───────────────────────────────────────────────────
@@ -31,27 +32,27 @@ public class BidRecieptDTO {
     private int highestBidderId;
 
     // Default no-args constructor (for Jackson)
-    public BidRecieptDTO() { }
-
+    public BidRecieptDTO() {
+    }
 
     public BidRecieptDTO(int purchaseId,
-                         int userId,
-                         int storeId,
-                         AddressDTO shippingAddress,
-                         Map<Integer, Integer> items,
-                         boolean completed,
-                         LocalDateTime timeOfCompletion,
-                         double price,
-                         int thisBidderId,
-                         int initialPrice,
-                         int highestBid,
-                         int highestBidderId,
-                         LocalDateTime endTime) {
+            int userId,
+            int storeId,
+            AddressDTO shippingAddress,
+            Map<Integer, Integer> items,
+            boolean completed,
+            LocalDateTime timeOfCompletion,
+            double price,
+            int thisBidderId,
+            int initialPrice,
+            int highestBid,
+            int highestBidderId,
+            LocalDateTime endTime) {
         this.purchaseId = purchaseId;
         this.userId = userId;
         this.storeId = storeId;
         this.shippingAddress = shippingAddress;
-        if(items.keySet().size() !=1) {
+        if (items.keySet().size() != 1) {
             throw new IllegalArgumentException("BidRecieptDTO should only contain one store's items");
         }
         this.items = items;
@@ -70,6 +71,7 @@ public class BidRecieptDTO {
     public int getPurchaseId() {
         return purchaseId;
     }
+
     public void setPurchaseId(int purchaseId) {
         this.purchaseId = purchaseId;
     }
@@ -77,6 +79,7 @@ public class BidRecieptDTO {
     public int getUserId() {
         return userId;
     }
+
     public void setUserId(int userId) {
         this.userId = userId;
     }
@@ -84,6 +87,7 @@ public class BidRecieptDTO {
     public int getStoreId() {
         return storeId;
     }
+
     public void setStoreId(int storeId) {
         this.storeId = storeId;
     }
@@ -91,6 +95,7 @@ public class BidRecieptDTO {
     public AddressDTO getShippingAddress() {
         return shippingAddress;
     }
+
     public void setShippingAddress(AddressDTO shippingAddress) {
         this.shippingAddress = shippingAddress;
     }
@@ -98,6 +103,7 @@ public class BidRecieptDTO {
     public Map<Integer, Integer> getItems() {
         return items;
     }
+
     public void setItems(Map<Integer, Integer> items) {
         this.items = items;
     }
@@ -105,6 +111,7 @@ public class BidRecieptDTO {
     public boolean isCompleted() {
         return completed;
     }
+
     public void setCompleted(boolean completed) {
         this.completed = completed;
     }
@@ -112,6 +119,7 @@ public class BidRecieptDTO {
     public LocalDateTime getTimeOfCompletion() {
         return timeOfCompletion;
     }
+
     public void setTimeOfCompletion(LocalDateTime timeOfCompletion) {
         this.timeOfCompletion = timeOfCompletion;
     }
@@ -119,6 +127,7 @@ public class BidRecieptDTO {
     public double getPrice() {
         return price;
     }
+
     public void setPrice(double price) {
         this.price = price;
     }
@@ -126,6 +135,7 @@ public class BidRecieptDTO {
     public int getThisBidderId() {
         return thisBidderId;
     }
+
     public void setThisBidderId(int thisBidderId) {
         this.thisBidderId = thisBidderId;
     }
@@ -133,6 +143,7 @@ public class BidRecieptDTO {
     public int getInitialPrice() {
         return initialPrice;
     }
+
     public void setInitialPrice(int initialPrice) {
         this.initialPrice = initialPrice;
     }
@@ -140,6 +151,7 @@ public class BidRecieptDTO {
     public int getHighestBid() {
         return highestBid;
     }
+
     public void setHighestBid(int highestBid) {
         this.highestBid = highestBid;
     }
@@ -147,6 +159,7 @@ public class BidRecieptDTO {
     public int getHighestBidderId() {
         return highestBidderId;
     }
+
     public void setHighestBidderId(int highestBidderId) {
         this.highestBidderId = highestBidderId;
     }
@@ -162,37 +175,32 @@ public class BidRecieptDTO {
     public ShoppingCartDTO toShopingCartDTO(String api) {
         Map<Integer, List<Integer>> shopItems = new java.util.HashMap<>();
         shopItems.put(storeId, items.keySet().stream().toList());
-    
+
         Map<Integer, Map<Integer, Double>> shopItemPrices = new java.util.HashMap<>();
         Map<Integer, Double> itemPriceMap = new java.util.HashMap<>();
         Integer itemId = items.keySet().stream().findFirst().orElseThrow();
         itemPriceMap.put(itemId, (double) this.highestBid);
         shopItemPrices.put(storeId, itemPriceMap);
         Map<Integer, Map<Integer, Integer>> shopItemQuantities = new java.util.HashMap<>();
-        double totalPrice = this.highestBid;
 
         List<ItemDTO> itemsList = List.of(getItemById(itemId, api)); // Placeholder, implement as needed
-        
+
         return new ShoppingCartDTO(
                 shopItems,
                 shopItemPrices,
                 shopItemQuantities,
-                totalPrice,
-                itemsList
-        );
+                itemsList);
     }
 
+    private ItemDTO getItemById(int id, String api) {
 
+        org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+        String url = api + "/items/" + id;
+        try {
+            return restTemplate.getForObject(url, ItemDTO.class);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to fetch item with id " + id, e);
+        }
 
-   private ItemDTO getItemById(int id, String api) {
-    
-    org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
-    String url = api + "/items/" + id;
-    try {
-        return restTemplate.getForObject(url, ItemDTO.class);
-    } catch (Exception e) {
-        throw new RuntimeException("Failed to fetch item with id " + id, e);
-    }
-        
     }
 }

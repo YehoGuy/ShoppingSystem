@@ -1,6 +1,10 @@
 package UI;
 
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+
 import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
@@ -22,9 +26,13 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 @CssImport("./themes/mytheme/styles.css")
 public class AppLayoutBasic extends AppLayout
     implements RouterLayout, BeforeEnterObserver {
-    public AppLayoutBasic() {
-        // addClassName("home-layout");  
 
+    private final RestTemplate restTemplate = new RestTemplate();
+    private final String baseUrl;
+    
+    public AppLayoutBasic(@Value("${url.api}") String api) {
+        // addClassName("home-layout");  
+        this.baseUrl = api;
         // WebSocket hookup
         UI.getCurrent()
           .getPage()
@@ -65,15 +73,22 @@ public class AppLayoutBasic extends AppLayout
         SideNav nav = new SideNav();
         nav.addItem(
             new SideNavItem("Home",        "/home",     VaadinIcon.HOME.create()),
-            new SideNavItem("Profile",     "/profile",  VaadinIcon.USER.create()),
             new SideNavItem("Shopping Cart","/cart",    VaadinIcon.CART.create()),
             new SideNavItem("Search Item", "/items",    VaadinIcon.SEARCH.create()),
-            new SideNavItem("Search Shop", "/shops",    VaadinIcon.SHOP.create()),
-            new SideNavItem("Bids",        "/bids",     VaadinIcon.MONEY.create()),
-            new SideNavItem("Auctions",    "/auctions", VaadinIcon.GAVEL.create()),
-            new SideNavItem("My Shops",    "/myshops",  VaadinIcon.LIST_UL.create()),
-            new SideNavItem("Messages",    "/messages", VaadinIcon.ENVELOPE.create())
+            new SideNavItem("Search Shop", "/shops",    VaadinIcon.SHOP.create())
+            
         );
+
+        if(!isGuest()) {
+            nav.addItem(
+                new SideNavItem("Bids",        "/bids",     VaadinIcon.MONEY.create()),//
+                new SideNavItem("Auctions",    "/auctions", VaadinIcon.GAVEL.create()),//
+                new SideNavItem("My Shops",    "/myshops",  VaadinIcon.LIST_UL.create()),//
+                new SideNavItem("Messages",    "/messages", VaadinIcon.ENVELOPE.create()),//
+                new SideNavItem("Profile",     "/profile",  VaadinIcon.USER.create())//
+            );
+           
+        }
         Boolean isAdmin = (Boolean) VaadinSession.getCurrent().getAttribute("isAdmin");
         if (Boolean.TRUE.equals(isAdmin)) {
             nav.addItem(new SideNavItem("Admin Panel", "/admin", VaadinIcon.SHIELD.create()));
@@ -88,4 +103,28 @@ public class AppLayoutBasic extends AppLayout
     public void showNotificationFromJS(String message) {
         Notification.show(message, 5000, Notification.Position.TOP_CENTER);
     }
+
+    private boolean isGuest() {
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            Notification.show("No auth token found. Please log in.", 3000, Notification.Position.MIDDLE);
+            return true; // Default to guest if not authenticated
+        }
+
+        String url = baseUrl + "/users/isGuest?token=" + token;
+
+        try {
+            ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                return response.getBody();
+            } else {
+                Notification.show("Could not determine guest status", 3000, Notification.Position.MIDDLE);
+            }
+        } catch (Exception e) {
+            Notification.show("Error checking guest status", 3000, Notification.Position.MIDDLE);
+        }
+
+        return true; // fallback to guest on error
+    }
+
 }

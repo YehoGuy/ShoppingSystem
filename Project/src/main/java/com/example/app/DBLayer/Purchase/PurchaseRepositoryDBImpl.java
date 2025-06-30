@@ -26,8 +26,6 @@ import jakarta.persistence.PersistenceContext;
 @Repository
 public class PurchaseRepositoryDBImpl implements IPurchaseRepository {
 
-    private AtomicInteger purchaseIdCounter = new AtomicInteger(1);
-
     private PurchaseRepositoryDB jpaRepo;
 
     @PersistenceContext
@@ -40,8 +38,11 @@ public class PurchaseRepositoryDBImpl implements IPurchaseRepository {
     @Override
     public int addPurchase(int userId, int storeId, Map<Integer, Integer> items, double price,
             Address shippingAddresse) {
-        int id = purchaseIdCounter.getAndIncrement();
-        Purchase purchase = new Purchase(id, userId, storeId, shippingAddresse);
+        int id = jpaRepo.findAll().stream()
+                .mapToInt(Purchase::getPurchaseId)
+                .max()
+                .orElse(0) + 1;
+        Purchase purchase = new Purchase(id, userId, storeId, items, price, shippingAddresse);
         try {
             jpaRepo.save(purchase);
             return id;
@@ -52,7 +53,10 @@ public class PurchaseRepositoryDBImpl implements IPurchaseRepository {
 
     @Override
     public int addBid(int userId, int storeId, Map<Integer, Integer> items, int initialPrice) {
-        int id = purchaseIdCounter.getAndIncrement();
+        int id = jpaRepo.findAll().stream()
+                .mapToInt(Purchase::getPurchaseId)
+                .max()
+                .orElse(0) + 1;
         Bid bid = new Bid(id, userId, storeId, items, initialPrice);
         try {
             jpaRepo.save(bid);
@@ -64,11 +68,15 @@ public class PurchaseRepositoryDBImpl implements IPurchaseRepository {
     }
 
     @Override
-    public int addBid(int userId, int storeId, Map<Integer, Integer> items, int initialPrice, LocalDateTime auctionStart, LocalDateTime auctionEnd) {
-        int id = purchaseIdCounter.getAndIncrement();
+    public int addBid(int userId, int storeId, Map<Integer, Integer> items, int initialPrice,
+            LocalDateTime auctionStart, LocalDateTime auctionEnd) {
+        int id = jpaRepo.findAll().stream()
+                .mapToInt(Purchase::getPurchaseId)
+                .max()
+                .orElse(0) + 1;
         Bid bid = new Bid(id, userId, storeId, items, initialPrice, auctionStart, auctionEnd);
         try {
-            
+
             jpaRepo.save(bid);
             bid.prePersist();
             return id;
@@ -115,8 +123,9 @@ public class PurchaseRepositoryDBImpl implements IPurchaseRepository {
         List<Purchase> bids = jpaRepo.findAll().stream().filter(purchase -> purchase instanceof Bid).toList();
         List<BidReciept> reciepts = new LinkedList<>();
         for (Purchase bid : bids) {
-            if (bid instanceof Bid)
+            if (bid instanceof Bid) {
                 reciepts.add(((Bid) bid).generateReciept());
+            }
         }
         return reciepts;
     }
@@ -133,13 +142,42 @@ public class PurchaseRepositoryDBImpl implements IPurchaseRepository {
         return reciepts;
     }
 
-
     private void updateBid(Bid bid) {
         try {
             bid.prePersist();
             jpaRepo.save(bid);
         } catch (Exception e) {
             throw new OurRuntime("Error when updating bid.");
+        }
+    }
+
+    public void postBiddingAuction(Bid bid, int userId, int bidPrice) {
+        try {
+            bid.addBidding(userId, bidPrice, false);
+            jpaRepo.save(bid);
+            bid.prePersist();
+        } catch (Exception e) {
+            throw new OurRuntime("Error when posting bid.");
+        }
+    }
+
+    public void postBidding(Bid bid, int userId, int bidPrice) {
+        try {
+            bid.addBidding(userId, bidPrice, false);
+            jpaRepo.save(bid);
+            bid.prePersist();
+        } catch (Exception e) {
+            throw new OurRuntime("Error when posting bid.");
+        }
+
+    }
+
+    @Override
+    public void addReciept(Reciept reciept) {
+        try {
+            // Assuming Reciept is a subclass of Purchase, we can save it directly
+        } catch (Exception e) {
+            throw new OurRuntime("Error when adding reciept.");
         }
     }
 }

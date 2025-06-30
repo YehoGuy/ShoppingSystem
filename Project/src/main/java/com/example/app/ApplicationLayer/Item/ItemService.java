@@ -316,6 +316,12 @@ public class ItemService {
         }
     }
 
+
+    /**
+     * Deletes an item by its identifier from the repository - all shops that own this item.
+     *
+     * @param itemId the item id.
+     */
     public void deleteItem(int itemId, String token) {
         try {
             LoggerService.logMethodExecution("deleteItem", itemId);

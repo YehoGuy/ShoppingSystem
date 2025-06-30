@@ -17,15 +17,19 @@ import org.junit.jupiter.api.AfterEach;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import static org.mockito.Mockito.clearInvocations;
@@ -50,6 +54,8 @@ import com.example.app.DomainLayer.Item.ItemReview;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Shop.Discount.Discount;
 import com.example.app.DomainLayer.Shop.Discount.Policy;
+import com.example.app.DomainLayer.Shop.Discount.PolicyComposite;
+import com.example.app.DomainLayer.Shop.Discount.PolicyLeaf;
 import com.example.app.DomainLayer.Shop.IShopRepository;
 import com.example.app.DomainLayer.Shop.PurchasePolicy;
 import com.example.app.DomainLayer.Shop.Shop;
@@ -531,14 +537,30 @@ class ShopServiceAcceptanceTests {
     // UC24 – Close Shop
     @Test
     void testCloseShop_Success() throws Exception {
-        String token = "t";
-        int shopId = 9;
+        String token  = "t";
+        int    shopId = 9;
+        int    userId = 15;
 
-        when(authTokenService.ValidateToken(token)).thenReturn(15);
-        when(userService.hasPermission(15, PermissionsEnum.closeShop, shopId)).thenReturn(true);
+        when(authTokenService.ValidateToken(token)).thenReturn(userId);
+        when(userService.hasPermission(userId, PermissionsEnum.closeShop, shopId))
+            .thenReturn(true);
+
         doNothing().when(shopRepository).closeShop(shopId);
+        doNothing().when(userService).closeShopNotification(shopId);
 
-        shopService.closeShop(shopId, token);
+        ShopService spySvc = spy(shopService);
+
+        doReturn(Collections.emptyList()).when(spySvc).searchItemsInShop(
+            eq(shopId),
+            isNull(),        // name
+            isNull(),        // category
+            eq(Collections.emptyList()),
+            isNull(),        // minPrice
+            isNull(),        // maxPrice
+            isNull(),        // minProductRating
+            eq(token)
+        );
+        spySvc.closeShop(shopId, token);
         verify(shopRepository).closeShop(shopId);
     }
 
@@ -2160,4 +2182,187 @@ class ShopServiceAcceptanceTests {
                 () -> shopService.getClosedShopsByWorker(workerId, invalidToken));
         assertTrue(exception.getMessage().contains("Invalid token"));
     }
+
+
+    //-----------------------------------
+    //-------- Assign Manager Test ------
+    //-----------------------------------
+    @Test
+    void scenario_OwnerCreatesShop_ManagerAddsAndRemovesItem_success() throws Exception {
+
+        // ─── test fixtures ─────────────────────────────────────────────────────────
+        final String ownerTok   = "tok-owner";
+        final String managerTok = "tok-manager";
+        final int    ownerId    = 1;
+        final int    managerId  = 2;
+        final int    shopId     = 42;
+
+        // Common auth stubs
+        when(authTokenService.ValidateToken(ownerTok))  .thenReturn(ownerId);
+        when(authTokenService.ValidateToken(managerTok)).thenReturn(managerId);
+
+        // Grant permission queries after promotion
+        when(userService.hasPermission(ownerId,   PermissionsEnum.manageItems, shopId)).thenReturn(true);
+        when(userService.hasPermission(managerId, PermissionsEnum.manageItems, shopId)).thenReturn(true);
+
+        // ─── 1️ owner registers / logs in (token already stubbed) ────────────────
+        //     nothing to call: we just use ownerTok in later service calls
+
+        // ─── 2️ owner creates a shop ─────────────────────────────────────────────
+        Shop dummyShop = new Shop(shopId, "My-Shop", null);
+        when(shopRepository.createShop("My-Shop", null, null))
+                .thenReturn(dummyShop);
+
+        Shop created = shopService.createShop(
+                "My-Shop", null, null, ownerTok);
+        assertEquals(shopId, created.getId());
+
+        // ─── 3️ owner adds an item to the shop ───────────────────────────────────
+        int itemIdOwner = 100;
+        when(itemService.createItem(shopId, "Owner-Item", "desc",
+                                    ItemCategory.ELECTRONICS, ownerTok))
+                .thenReturn(itemIdOwner);
+        shopService.addItemToShop(shopId, "Owner-Item", "desc",
+                                5, ItemCategory.ELECTRONICS, 50, ownerTok);
+        verify(shopRepository).addItemToShop(shopId, itemIdOwner, 5, 50);
+
+        // ─── 4️ second user appears (token already stubbed) ─────────────────────
+        //     nothing to call: we’ll use managerTok later
+
+        // ─── 5️ owner assigns second user as manager ─────────────────────────────
+        doNothing().when(userService).makeManagerOfStore(
+                ownerTok, managerId, shopId,
+                new PermissionsEnum[]{PermissionsEnum.manageItems});               // call args
+
+        // owner initiates the assignment
+        userService.makeManagerOfStore(
+                ownerTok, managerId, shopId,
+                new PermissionsEnum[]{PermissionsEnum.manageItems});
+
+        // manager accepts the pending role
+        doNothing().when(userService).acceptRole(managerTok, shopId);
+        userService.acceptRole(managerTok, shopId);
+
+        // ─── 6️ manager adds a new item ──────────────────────────────────────────
+        int itemIdMgr = 101;
+        when(itemService.createItem(shopId, "Mgr-Item", "desc-2",
+                                    ItemCategory.ELECTRONICS, managerTok))
+                .thenReturn(itemIdMgr);
+        shopService.addItemToShop(shopId, "Mgr-Item", "desc-2",
+                                3, ItemCategory.ELECTRONICS, 30, managerTok);
+        verify(shopRepository).addItemToShop(shopId, itemIdMgr, 3, 30);
+
+        // ─── 7️ manager removes owner’s first item ───────────────────────────────
+        doNothing().when(shopRepository).removeItemFromShop(shopId, itemIdOwner);
+        shopService.removeItemFromShop(shopId, itemIdOwner, managerTok);
+        verify(shopRepository).removeItemFromShop(shopId, itemIdOwner);
+    }
+
+    //----------------------------------------------
+    //---- Non-manager may NOT add an item test ----
+    //----------------------------------------------
+    @Test
+    void scenario_UserWithoutPermissionCannotAddItem_failure() throws Exception {
+
+        // ─── fixtures ───────────────────────────────────────────────────────────
+        final String ownerTok = "tok-owner";
+        final String userTok  = "tok-user";      // <- NOT a manager
+        final int    ownerId  = 1;
+        final int    userId   = 2;
+        final int    shopId   = 43;
+
+        // token → id mapping
+        when(authTokenService.ValidateToken(ownerTok)).thenReturn(ownerId);
+        when(authTokenService.ValidateToken(userTok)) .thenReturn(userId);
+
+        // permission matrix
+        when(userService.hasPermission(ownerId, PermissionsEnum.manageItems, shopId)).thenReturn(true);
+        when(userService.hasPermission(userId,  PermissionsEnum.manageItems, shopId)).thenReturn(false);
+
+        // ─── 2️ owner creates a shop ───────────────────────────────────────────
+        Shop shop = new Shop(shopId, "Fail-Shop", null);
+        when(shopRepository.createShop("Fail-Shop", null, null)).thenReturn(shop);
+        shopService.createShop("Fail-Shop", null, null, ownerTok);
+
+        // ─── 3️ owner adds an item ─────────────────────────────────────────────
+        int ownerItemId = 200;
+        when(itemService.createItem(shopId, "Owner-Item", "desc",
+                                    ItemCategory.ELECTRONICS, ownerTok))
+                .thenReturn(ownerItemId);
+        shopService.addItemToShop(shopId, "Owner-Item", "desc",
+                                5, ItemCategory.ELECTRONICS, 50, ownerTok);
+        verify(shopRepository).addItemToShop(shopId, ownerItemId, 5, 50);
+
+        // ─── 4️ second user exists (token stubbed) ─────────────────────────────
+
+        // ---- 5️ non-manager attempts to add item ──────────────────────────────────────
+        when(itemService.createItem(
+                eq(shopId),
+                eq("Intruder-Item"),
+                eq("hack"),
+                eq(ItemCategory.ELECTRONICS),
+                eq(userTok)))
+            .thenThrow(new RuntimeException("User not authorised"));
+
+        assertThrows(RuntimeException.class, () ->
+                shopService.addItemToShop(shopId, "Intruder-Item", "hack",
+                                        1, ItemCategory.ELECTRONICS, 10, userTok));
+
+    }
+
+    //----------------------------------------------
+    //---- Manager w/o permission CANNOT remove ----
+    //----------------------------------------------
+    @Test
+    void scenario_ManagerWithoutPermissionCannotRemoveItem_failure() throws Exception {
+
+        // ─── fixtures ───────────────────────────────────────────────────────────
+        final String ownerTok   = "tok-owner";
+        final String managerTok = "tok-manager";
+        final int    ownerId    = 1;
+        final int    managerId  = 2;
+        final int    shopId     = 44;
+
+        when(authTokenService.ValidateToken(ownerTok))  .thenReturn(ownerId);
+        when(authTokenService.ValidateToken(managerTok)).thenReturn(managerId);
+
+        // owner can manage items; manager will NOT be granted that permission
+        when(userService.hasPermission(ownerId,   PermissionsEnum.manageItems, shopId)).thenReturn(true);
+        when(userService.hasPermission(managerId, PermissionsEnum.manageItems, shopId)).thenReturn(false);
+
+        // ─── owner creates shop & adds one item ─────────────────────────────────
+        Shop shop = new Shop(shopId, "No-Remove-Shop", null);
+        when(shopRepository.createShop("No-Remove-Shop", null, null)).thenReturn(shop);
+        shopService.createShop("No-Remove-Shop", null, null, ownerTok);
+
+        int itemId = 300;
+        when(itemService.createItem(shopId, "OwnerItem", "desc",
+                                    ItemCategory.ELECTRONICS, ownerTok))
+            .thenReturn(itemId);
+
+        shopService.addItemToShop(shopId, "OwnerItem", "desc",
+                                2, ItemCategory.ELECTRONICS, 25, ownerTok);
+        verify(shopRepository).addItemToShop(shopId, itemId, 2, 25);
+
+        // ─── owner appoints manager *without* manageItems permission ────────────
+        doNothing().when(userService).makeManagerOfStore(
+                ownerTok, managerId, shopId, new PermissionsEnum[]{});   // empty perms
+        userService.makeManagerOfStore(ownerTok, managerId, shopId, new PermissionsEnum[]{});
+
+        doNothing().when(userService).acceptRole(managerTok, shopId);
+        userService.acceptRole(managerTok, shopId);
+
+        // ─── manager tries to remove item – must fail ───────────────────────────
+        doThrow(new RuntimeException("User not authorised"))
+            .when(shopRepository)
+            .removeItemFromShop(eq(shopId), eq(itemId));
+
+        assertThrows(RuntimeException.class, () ->
+            shopService.removeItemFromShop(shopId, itemId, managerTok)
+        );
+    }
+
+
+
+
 }

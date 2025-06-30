@@ -66,6 +66,8 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
     private String URLItem;
     private String baseUrl;
 
+    private double totalPrice = 0.0;
+
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         getUserId(); // Ensure userId is set in session
@@ -95,6 +97,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         this.URLItem = baseUrl + "/items";
         this.baseUrl = baseUrl;
 
+        
         setSizeFull();
         setSpacing(true);
         setPadding(true);
@@ -105,6 +108,8 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
     private void buildView() {
         getData();
 
+        this.totalPrice = getTotalAllShops();
+        
         if (cart.getShopItems() == null || cart.getShopItems().isEmpty()) {
             H2 empty = new H2("Your shopping cart is empty 😕");
             empty.getStyle().set("color", "var(--lumo-secondary-text-color)");
@@ -134,7 +139,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 dialog.setHeaderTitle("Purchase Summary");
 
                 PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(baseUrl, cart,
-                        dialog, -1);
+                        dialog, -1, totalPrice );/////////////
 
                 // Add your component to the dialog
                 dialog.add(purchaseCompletion);
@@ -162,22 +167,19 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             Map<Integer, Double> itemPricesMap = cart.getShopItemPrices().get(shopID);
             Map<Integer, Integer> itemQuantitiesMap = cart.getShopItemQuantities().get(shopID);
 
-            double shopTotal = 0;
+            double shopTotal = getShopPrice(shopID);
             List<CartEntryDTO> entries = new ArrayList<>();
             for (Integer itemId : itemIDs) {
                 int quantity = itemQuantitiesMap != null && itemQuantitiesMap.containsKey(itemId)
                         ? itemQuantitiesMap.get(itemId)
                         : 1;
-                double price = itemPricesMap != null && itemPricesMap.containsKey(itemId) ? itemPricesMap.get(itemId)
-                        : 0;
-                shopTotal += price * quantity;
                 ItemDTO item = getAllItems().stream().filter(it -> it.getId() == itemId).findFirst().orElse(null);
                 if (item != null) {
                     entries.add(new CartEntryDTO(quantity, item, shopID));
                 }
             }
 
-            Button buyBasketButton = new Button("Buy basket from " + shopName + " " + shopTotal + "₪");
+            Button buyBasketButton = new Button("Buy basket from " + shopName + " price after discounts: " + shopTotal + "₪");
             if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
                 buyBasketButton.setVisible(false);
             }
@@ -186,9 +188,9 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
                 Dialog dialog = new Dialog();
                 dialog.setHeaderTitle("Purchase Summary");
-
+                ShoppingCartDTO newCart = cart.getShoppingCartDTOofShop(shopID);
                 PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(
-                        baseUrl, cart.getShoppingCartDTOofShop(shopID), dialog, shopID);
+                        baseUrl, cart.getShoppingCartDTOofShop(shopID), dialog, shopID, shopTotal);
 
                 // Add your component to the dialog
                 dialog.add(purchaseCompletion);
@@ -200,7 +202,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 dialog.open(); // Show the dialog
                 buildView(); // Refresh the view after purchase
             });
-            H3 shopHeader = new H3(shopName + " - total price: " + shopTotal + "₪");
+            H3 shopHeader = new H3(shopName + " - total price after discounts: " + shopTotal + "₪");
             VerticalLayout shopHeaderContainer = new VerticalLayout(shopHeader, buyBasketButton);
             shopHeaderContainer.setWidthFull();
             shopHeaderContainer.setAlignItems(Alignment.CENTER);
@@ -257,13 +259,17 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             add(grid);
         });
 
+        
+
+
         HorizontalLayout totalContainer = new HorizontalLayout();
         totalContainer.setAlignItems(Alignment.CENTER);
         totalContainer.getStyle()
                 .set("bottom", "0")
                 .set("right", "0")
                 .set("margin", "0px");
-        H2 total = new H2("Total: " + cart.getTotalPrice() + "₪");
+        
+        H2 total = new H2("Total after discounts: " + totalPrice  + "₪");
         totalContainer.add(total, buyButton);
         add(buyButtonContainer, totalContainer);
 
@@ -311,6 +317,41 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         add(wonGrid);
 
     }
+
+    private Double getTotalAllShops() {
+        
+        List<Integer> shopIds = new ArrayList<>(cart.getShopItems().keySet());
+        Double total = 0.0;
+        for (Integer shopId : shopIds) {
+            total += getShopPrice(shopId);
+        }
+        return total;
+    }
+
+    private Double getShopPrice(int shopId) {
+        String token = VaadinSession.getCurrent().getAttribute("authToken").toString();
+        Map<Integer, Integer> itemQuantities = cart.getShopItemQuantities().get(shopId); 
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<Map<Integer, Integer>> request = new HttpEntity<>(itemQuantities, headers);
+
+        String url = URLShop + "/applyDiscount/cart?shopId=" + shopId + "&token=" + token;
+
+        try {
+            ResponseEntity<Double> response = restTemplate.postForEntity(url, request, Double.class);
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                return response.getBody();
+            }
+        } catch (Exception e) {
+            Notification.show("Failed to calculate shop price", 3000, Notification.Position.MIDDLE);
+            log.warn("Discount calculation failed for shop {}", shopId, e);
+        }
+
+        return 0.0;
+}
+
 
     private void getData() {
         HashMap<Integer, HashMap<Integer, Integer>> IDs = getCartIDs();
@@ -686,7 +727,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         dialog.setHeaderTitle("Purchase Summary");
         ShoppingCartDTO cartDto = dto.toShopingCartDTO(baseUrl);
         PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(baseUrl, cartDto,
-                dialog, dto.getStoreId());
+                dialog, dto.getStoreId(), dto.getHighestBid());
 
         // Add your component to the dialog
         dialog.add(purchaseCompletion);

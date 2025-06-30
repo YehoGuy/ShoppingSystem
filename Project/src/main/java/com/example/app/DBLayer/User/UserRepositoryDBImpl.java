@@ -55,39 +55,39 @@ public class UserRepositoryDBImpl implements IUserRepository {
 
     private final ConcurrentHashMap<Integer, Guest> guests;
 
-    public UserRepositoryDBImpl( @Value("${admin.username:admin}") String adminUsername,
-        @Value("${admin.password:admin}") String adminPlainPassword,
-        @Value("${admin.email:admin@mail.com}") String adminEmail,
-        @Value("${admin.phoneNumber:0}") String adminPhoneNumber,
-        @Value("${admin.address:admin st.}") String adminAddress,
-        @Lazy @Autowired UserRepositoryDB jpaRepo) {
+    public UserRepositoryDBImpl(@Value("${admin.username:admin}") String adminUsername,
+            @Value("${admin.password:admin}") String adminPlainPassword,
+            @Value("${admin.email:admin@mail.com}") String adminEmail,
+            @Value("${admin.phoneNumber:0}") String adminPhoneNumber,
+            @Value("${admin.address:admin st.}") String adminAddress,
+            @Lazy @Autowired UserRepositoryDB jpaRepo) {
 
-
-        if(adminUsername == null || adminUsername.isEmpty()) {
+        if (adminUsername == null || adminUsername.isEmpty()) {
             throw new IllegalArgumentException("Admin username cannot be null or empty.");
         }
-        if(adminPlainPassword == null || adminPlainPassword.isEmpty()) {
+        if (adminPlainPassword == null || adminPlainPassword.isEmpty()) {
             throw new IllegalArgumentException("Admin password cannot be null or empty.");
         }
-        if(adminEmail == null || !adminEmail.contains("@") || adminEmail.isEmpty()) {
+        if (adminEmail == null || !adminEmail.contains("@") || adminEmail.isEmpty()) {
             throw new IllegalArgumentException("Invalid admin email address.");
         }
-        if(adminPhoneNumber == null || adminPhoneNumber.isEmpty()) {
+        if (adminPhoneNumber == null || adminPhoneNumber.isEmpty()) {
             throw new IllegalArgumentException("Admin phone number cannot be null or empty.");
         }
-        if(adminAddress == null || adminAddress.isEmpty()) {
+        if (adminAddress == null || adminAddress.isEmpty()) {
             throw new IllegalArgumentException("Admin address cannot be null or empty.");
         }
 
-        this.adminUsername       = adminUsername;
-        this.adminPlainPassword  = adminPlainPassword;
-        this.adminEmail          = adminEmail;
-        this.adminPhoneNumber    = adminPhoneNumber;
-        this.adminAddress        = adminAddress;
+        this.adminUsername = adminUsername;
+        this.adminPlainPassword = adminPlainPassword;
+        this.adminEmail = adminEmail;
+        this.adminPhoneNumber = adminPhoneNumber;
+        this.adminAddress = adminAddress;
         this.jpaRepo = jpaRepo;
         this.guests = new ConcurrentHashMap<>();
-    }    
-    private volatile boolean adminInitialized = false;    
+    }
+
+    private volatile boolean adminInitialized = false;
 
     private void ensureAdminExists() {
         if (!adminInitialized) {
@@ -242,7 +242,20 @@ public class UserRepositoryDBImpl implements IUserRepository {
 
     @Override
     public int addGuest() {
-        int id = idCounter.incrementAndGet();
+        int dbId = jpaRepo.findAll().stream()
+                .mapToInt(Member::getMemberId)
+                .max()
+                .orElse(0) + 1;
+
+        int highestGuestId = guests.keySet().stream()
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(0) + 1;
+
+        int id = Math.max(dbId, highestGuestId);
+
+        idCounter.set(id);
+
         Guest guest = new Guest(id);
         guests.put(id, guest);
         return id;
@@ -259,9 +272,22 @@ public class UserRepositoryDBImpl implements IUserRepository {
             throw new IllegalArgumentException("Invalid email format: " + email);
         }
 
-        int id = idCounter.incrementAndGet();
+        int dbId = jpaRepo.findAll().stream()
+                .mapToInt(Member::getMemberId)
+                .max()
+                .orElse(0) + 1;
+
+        int highestGuestId = guests.keySet().stream()
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(0) + 1;
+
+        int id = Math.max(dbId, highestGuestId);
+
+        idCounter.set(id);
 
         Member member = new Member(id, username, password, email, phoneNumber, address);
+        member.setConnected(true);
         jpaRepo.save(member);
         return member.getMemberId();
     }
@@ -606,7 +632,9 @@ public class UserRepositoryDBImpl implements IUserRepository {
             throw new OurRuntime("User not found: " + userId);
         }
         if (user instanceof Member) {
-            return ((Member) user).getNotificationsAndClear();
+            List<String> notifications = ((Member) user).getNotificationsAndClear();
+            updateUserInDB((Member) user);
+            return notifications;
         } else {
             throw new OurRuntime("User is not a member: " + userId);
         }
