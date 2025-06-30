@@ -8,7 +8,6 @@ import com.example.app.ApplicationLayer.Purchase.ShippingMethod;
 import com.example.app.DomainLayer.Item.ItemCategory;
 import com.example.app.DomainLayer.Shop.Discount.Discount;
 import com.example.app.DomainLayer.Shop.Discount.Policy;
-import com.example.app.PresentationLayer.DTO.Shop.PoliciesDTO;
 
 public interface IShopRepository {
 
@@ -172,6 +171,13 @@ public interface IShopRepository {
         void closeShop(Integer shopId);
 
         /**
+         * Reopens the shop identified by shopId.
+         * 
+         * @param shopId the shop id.
+         */
+        void reOpenShop(Integer shopId);
+
+        /**
          * Checks if the supply is available for the given item in the specified shop.
          *
          * @param shopId the shop id.
@@ -234,11 +240,37 @@ public interface IShopRepository {
          */
         void addSupply(Integer shopId, Integer itemId, Integer supply);
 
+
+        /**
+         * Purchases items from the specified shop.
+         * 
+         * @param purchaseLists a map of item IDs and their quantities to purchase.
+         * @param itemsCategory a map of item IDs and their categories.
+         * @param shopdId       the shop id.
+         * @return the total cost of the purchase.
+         */
         double purchaseItems(Map<Integer, Integer> purchaseLists, Map<Integer, ItemCategory> itemsCategory,
                         Integer shopdId);
-
+        
+        /**
+         * Rolls back a purchase for the specified shop.
+         * @param purchaseLists a map of item IDs and their quantities to roll back.
+         * @param shopId the shop id.
+         * @return void
+         */
         void rollBackPurchase(Map<Integer, Integer> purchaseLists, Integer shopId);
 
+        /**
+         * Ships a purchase for the specified shop.
+         * 
+         * @param name        the name of the recipient.
+         * @param shopId     the shop id.
+         * @param country     the country of the recipient.
+         * @param city        the city of the recipient.
+         * @param street      the street of the recipient.
+         * @param postalCode  the postal code of the recipient.
+         * @return true if the purchase was successfully shipped, false otherwise.
+         */
         public boolean shipPurchase(String name, int shopId, String country, String city, String street,
                         String postalCode);
 
@@ -266,6 +298,11 @@ public interface IShopRepository {
          */
         List<Policy> getPolicies(int shopId);
 
+        /*
+         * Retrieves a list of closed shops.
+         * 
+         * @return a list of closed shop IDs.
+         */
         List<Integer> getClosedShops();
 
         double applyDiscount(Map<Integer, Integer> items, Map<Integer, ItemCategory> itemsCat, int shopId);

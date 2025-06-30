@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
@@ -27,6 +28,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 
 import DTOs.ShopDTO;
+import Domain.PermissionsEnum;
 
 @Route(value = "myshops", layout = AppLayoutBasic.class)
 
@@ -34,8 +36,10 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
 
     private final String api;
     private final String getShopsUrl;
+    private final String usersBaseUrl;
     private final String getOpenShopsUrl;
     private final String getClosedShopsUrl;
+    private final String shopsBaseUrl;
     private final String createUrl;
 
     private final RestTemplate restTemplate = new RestTemplate();
@@ -51,6 +55,8 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
         this.getOpenShopsUrl   = api + "/shops/ByWorkerId-open";
         this.getClosedShopsUrl   = api + "/shops/ByWorkerId-closed";
         this.createUrl     = api + "/shops/create";
+        this.usersBaseUrl  = api + "/users";
+        this.shopsBaseUrl = api + "/shops";
 
         setSizeFull();
         setPadding(true);
@@ -309,6 +315,7 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
                   ShopDTO[].class);
             if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 allOpenShops = Arrays.asList(resp.getBody());
+                Notification.show("loaded "+allOpenShops.size()+" open shops");
                 filterAndDisplay();
             } else {
                 Notification.show("⚠️ Failed to load shops");
@@ -327,9 +334,10 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
                   ShopDTO[].class);
             if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 allClosedShops = Arrays.asList(resp.getBody());
+                Notification.show("loaded "+allClosedShops.size()+" closed shops");
                 filterAndDisplay();
             } else {
-                Notification.show("⚠️ Failed to load shops");
+                Notification.show("⚠️ Failed to load closed shops");
             }
         } catch (Exception ex) {
             Notification.show("❗ Error loading closed shops");
@@ -602,31 +610,9 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
                     .set("text-shadow", "0 1px 3px rgba(0,0,0,0.3)")
                     .set("letter-spacing", "0.5px");
 
-            // Shop ID badge
-            // Span idBadge = new Span("ID: " + s.getShopId());
-            // idBadge.getStyle()
-            //         .set("background-color", "rgba(255,255,255,0.2)")
-            //         .set("padding", "4px 8px")
-            //         .set("border-radius", "20px")
-            //         .set("font-size", "12px")
-            //         .set("font-weight", "500")
-            //         .set("margin-left", "auto");
+            
 
             nameContainer.add(icon, nameText);
-
-            // nameContainer.addClickListener(evt -> {
-            //     nameContainer.getStyle()
-            //             .set("transform", "translateY(-2px)")
-            //             .set("box-shadow", "0 6px 20px rgba(102, 126, 234, 0.4)");
-            //     UI.getCurrent().navigate("shop/" + s.getShopId());
-            // });
-
-            // Add hover effects
-            // nameContainer.getElement().addEventListener("mouseenter", e -> {
-            //     nameContainer.getStyle()
-            //             .set("transform", "translateY(-2px)")
-            //             .set("box-shadow", "0 6px 20px rgba(102, 126, 234, 0.4)");
-            // });
 
             nameContainer.getElement().addEventListener("mouseleave", e -> {
                 nameContainer.getStyle()
@@ -634,23 +620,9 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
                         .set("box-shadow", "0 4px 15px rgba(102, 126, 234, 0.3)");
             });
 
-            // Button view = new Button("✏️ Edit Shop", e -> UI.getCurrent().navigate("edit-shop/" + s.getShopId()));
-            // view.getStyle()
-            //         .set("background", "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)")
-            //         .set("color", "white")
-            //         .set("border", "none")
-            //         .set("border-radius", "12px")
-            //         .set("padding", "12px 20px")
-            //         .set("font-weight", "600")
-            //         .set("font-size", "14px")
-            //         .set("cursor", "pointer")
-            //         .set("box-shadow", "0 4px 15px rgba(240, 147, 251, 0.4)")
-            //         .set("transition", "all 0.3s ease")
-            //         .set("text-transform", "uppercase")
-            //         .set("letter-spacing", "0.5px");
-
-            Button historyBtn = new Button("📊 Purchase History", e -> UI.getCurrent().navigate("history/" + s.getShopId()));
-            historyBtn.getStyle()
+            
+            Button reopenButton = new Button("ReOpen Store", e -> reopenStore(s.getShopId()));
+            reopenButton.getStyle()
                     .set("background", "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)")
                     .set("color", "white")
                     .set("border", "none")
@@ -664,22 +636,13 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
                     .set("text-transform", "uppercase")
                     .set("letter-spacing", "0.5px");
 
-            // Add hover effects for buttons
-            // view.getElement().addEventListener("mouseenter", e -> {
-            //     view.getStyle().set("transform", "translateY(-2px)")
-            //             .set("box-shadow", "0 6px 20px rgba(240, 147, 251, 0.6)");
-            // });
-            // view.getElement().addEventListener("mouseleave", e -> {
-            //     view.getStyle().set("transform", "translateY(0)")
-            //             .set("box-shadow", "0 4px 15px rgba(240, 147, 251, 0.4)");
-            // });
 
-            historyBtn.getElement().addEventListener("mouseenter", e -> {
-                historyBtn.getStyle().set("transform", "translateY(-2px)")
+            reopenButton.getElement().addEventListener("mouseenter", e -> {
+                reopenButton.getStyle().set("transform", "translateY(-2px)")
                         .set("box-shadow", "0 6px 20px rgba(79, 172, 254, 0.6)");
             });
-            historyBtn.getElement().addEventListener("mouseleave", e -> {
-                historyBtn.getStyle().set("transform", "translateY(0)")
+            reopenButton.getElement().addEventListener("mouseleave", e -> {
+                reopenButton.getStyle().set("transform", "translateY(0)")
                         .set("box-shadow", "0 4px 15px rgba(79, 172, 254, 0.4)");
             });
 
@@ -710,7 +673,7 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
             cardContent.setSpacing(true);
             cardContent.setPadding(false);
 
-            HorizontalLayout buttonGroup = new HorizontalLayout(historyBtn);
+            HorizontalLayout buttonGroup = new HorizontalLayout(reopenButton);
             buttonGroup.setSpacing(true);
             buttonGroup.setJustifyContentMode(JustifyContentMode.END);
 
@@ -731,6 +694,30 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
 
             closedShopsContainer.add(shopCard);
         }
+    }
+
+    public void reopenStore(int shopId){
+        String canCloseShopUrl = usersBaseUrl + "/hasPermission"
+                + "?token=" + getToken()
+                + "&userId=" + getUserId()
+                + "&shopId=" + shopId
+                + "&permission=" + PermissionsEnum.closeShop;
+        boolean permission = restTemplate.getForEntity(canCloseShopUrl, Boolean.class).getBody();
+        if(permission){
+            String token = getToken();
+                String url = shopsBaseUrl + "/" + shopId + "/reOpen" + "?token=" + token;
+                ResponseEntity<Void> response = restTemplate.exchange(url, HttpMethod.POST, null, Void.class);
+                if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
+                    Notification.show("Shop reopened successfully");
+                    UI.getCurrent().navigate("home");
+                } else {
+                    Notification.show("Failed to reopen shop");
+                }
+        }
+    }
+
+    private String getToken() {
+        return (String) VaadinSession.getCurrent().getAttribute("authToken");
     }
 
     private void handleSuspence() {
