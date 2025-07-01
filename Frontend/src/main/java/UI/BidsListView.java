@@ -27,6 +27,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Route(value = "bids", layout = AppLayoutBasic.class)
 @AnonymousAllowed
@@ -197,7 +198,14 @@ public class BidsListView extends BaseView {
             new ParameterizedTypeReference<>() {}
         );
         if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
-            bidGrid.setItems(resp.getBody());
+            List<BidRecieptDTO> all = resp.getBody();
+            List<BidRecieptDTO> filtered = all.stream()
+                .filter(dto -> {
+                    String name = fetchItemName(dto.getStoreId(), dto);
+                    return name != null && !name.isEmpty();
+                })
+                .collect(Collectors.toList());
+            bidGrid.setItems(filtered);
         } else {
             add(new Text("Failed to load bids"));
         }
