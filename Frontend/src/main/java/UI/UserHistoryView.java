@@ -1,11 +1,16 @@
 package UI;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -19,24 +24,21 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
-import com.vaadin.flow.router.BeforeEvent;
-import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 
+import DTOs.AddressDTO;
+import DTOs.BidRecieptDTO;
 import DTOs.ItemDTO;
 import DTOs.MemberDTO;
 import DTOs.RecieptDTO;
 import DTOs.BidRecieptDTO;
-import org.springframework.http.*;
-import java.util.Arrays;
 
-@Route(value = "history", layout = AppLayoutBasic.class)
+@Route(value = "userHistory", layout = AppLayoutBasic.class)
 
-public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<Integer>, BeforeEnterObserver {
-
+public class UserHistoryView extends VerticalLayout implements BeforeEnterObserver {
+    
     private final String apiBase;
-    private final String purchaseHistoryUrl;
     private final String usersUrl;
     private final String itemsUrl;
 
@@ -44,14 +46,11 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
     private final VerticalLayout receiptsLayout = new VerticalLayout();
     private List<RecieptDTO> reciepts;
     private String token;
-    private int shopId;
 
-    private List<MemberDTO> memberDTOs = new ArrayList<>();
     private List<ItemDTO> itemDTOs = new ArrayList<>();
 
-    public ShopHistoryView(@Value("${url.api}") String apiBase) {
+    public UserHistoryView(@Value("${url.api}") String apiBase) {
         this.apiBase = apiBase;
-        this.purchaseHistoryUrl = apiBase + "/purchases/shops";
         this.usersUrl = apiBase + "/users";
         this.itemsUrl = apiBase + "/items";
         
@@ -73,21 +72,14 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         }
 
         handleSuspence();
+        buildView();
     }
-
     public Integer getUserId() {
         if (VaadinSession.getCurrent().getAttribute("userId") != null) {
             return Integer.parseInt(VaadinSession.getCurrent().getAttribute("userId").toString());
         }
         UI.getCurrent().navigate(""); // Redirect to login if userId is not set
         return null; // Return null if userId is not available
-    }
-
-    @Override
-    public void setParameter(BeforeEvent event, Integer parameter) {
-        this.shopId = parameter;
-        buildView();
-
     }
 
     private void buildView() {
@@ -99,7 +91,7 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.START);
 
-        H1 header = new H1("🏪 Purchase History for " + getShopName(shopId));
+        H1 header = new H1("🛒 Purchase History for " + getUserName());
         header.getStyle().set("margin-bottom", "var(--lumo-space-m)");
         header.getStyle().set("color", "#1976d2");
         add(header);
@@ -113,51 +105,49 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         // Add the receipts layout to the main view
         add(receiptsLayout);
 
-        loadUsers();
+        loadMember();
         loadItems();
         loadReceipts();
     }
 
     private void loadReceipts() {
         receiptsLayout.removeAll();
-        String url = purchaseHistoryUrl + "/" + shopId
-                + "?authToken=" + VaadinSession.getCurrent().getAttribute("authToken");
+        String url = apiBase + "/purchases/users/" + getUserId() 
+        + "?authToken=" + token;
         try {
-            ResponseEntity<RecieptDTO[]> resp = rest.getForEntity(url, RecieptDTO[].class);
-            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
-                RecieptDTO[] recieptsBodyDtos = resp.getBody();
-                reciepts = List.of(recieptsBodyDtos);
-                
-                if (reciepts == null || reciepts.size() == 0) {
+            ResponseEntity<RecieptDTO[]> response = rest.getForEntity(url, RecieptDTO[].class);
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                reciepts = Arrays.asList(response.getBody());
+                if (reciepts.isEmpty()) {
                     VerticalLayout emptyState = new VerticalLayout();
                     emptyState.setAlignItems(Alignment.CENTER);
                     emptyState.getStyle().set("padding", "40px");
                     emptyState.getStyle().set("background-color", "#f5f5f5");
                     emptyState.getStyle().set("border-radius", "8px");
+                    emptyState.setWidthFull();
                     
-                    H3 emptyMessage = new H3("📭 No purchase history found for this shop");
+                    H3 emptyMessage = new H3("📭 No purchase history found");
                     emptyMessage.getStyle().set("color", "#666");
                     emptyMessage.getStyle().set("text-align", "center");
+                    emptyMessage.getStyle().set("margin", "0");
                     
-                    emptyState.add(emptyMessage);
+                    Span emptySubtext = new Span("Start shopping to see your purchase history here!");
+                    emptySubtext.getStyle().set("color", "#999");
+                    emptySubtext.getStyle().set("text-align", "center");
+                    emptySubtext.getStyle().set("margin-top", "8px");
+                    
+                    emptyState.add(emptyMessage, emptySubtext);
                     receiptsLayout.add(emptyState);
                 } else {
                     displayReciepts();
                 }
-                // receiptsLayout.removeAll();
+            } else {
+                Notification.show("Failed to load purchase history.");
             }
-            else {
-                Notification.show("Failed to load purchase history");
-            }
-
         } catch (Exception e) {
-            receiptsLayout.add(new H3("Error loading history"));
-            Notification.show("Error loading purchase history");
-            return;
+            Notification.show("Error loading purchase history: " + e.getMessage());
         }
-
     }
-
     private void displayReciepts() {
         receiptsLayout.removeAll();
         
@@ -184,27 +174,13 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
             H3 purchaseId = new H3("🛍️ Purchase #" + reciept.getPurchaseId());
             purchaseId.getStyle().set("margin", "0");
             purchaseId.getStyle().set("color", "#2196f3");
-            
+
             H3 price = new H3("💰 $" + String.format("%.2f", reciept.getPrice()));
             price.getStyle().set("margin", "0");
             price.getStyle().set("color", "#4caf50");
             
             header.add(purchaseId, price);
             receiptCard.add(header);
-            
-            // Customer section
-            Span customerLabel = new Span("👤 Customer:");
-            customerLabel.getStyle().set("font-weight", "bold");
-            customerLabel.getStyle().set("margin-top", "8px");
-            
-            String customerName = matchUserName(reciept.getUserId());
-            Span customer = new Span(customerName);
-            customer.getStyle().set("color", "#666");
-            customer.getStyle().set("margin-left", "8px");
-            
-            HorizontalLayout customerLayout = new HorizontalLayout(customerLabel, customer);
-            customerLayout.setSpacing(false);
-            receiptCard.add(customerLayout);
             
             // Items section
             if (reciept.getItems() != null && !reciept.getItems().isEmpty()) {
@@ -244,15 +220,6 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         }
     }
 
-    private String matchUserName(int userId) {
-        for (MemberDTO member : memberDTOs) {
-            if (member.getMemberId() == userId) {
-                return member.getUsername(); 
-            }
-        }
-        return "Unknown Item";
-    }
-
     private String matchItemName(int itemId) {
         for (ItemDTO item : itemDTOs) {
             if (item.getId() == itemId) {
@@ -262,29 +229,12 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         return "Unknown Item"; // Return a default value if no match is found
     }
 
-    private void loadUsers() {
-        try {
-            String token = getToken();
-            HttpHeaders headers = getHeaders(token);
-            HttpEntity<Void> request = new HttpEntity<>(headers);
-            String url = usersUrl + "/allmembers?token=" + token;
-
-            ResponseEntity<MemberDTO[]> response = rest.exchange(
-                    url, HttpMethod.GET, request, MemberDTO[].class);
-
-            memberDTOs = response.getBody() != null ? Arrays.asList(response.getBody())
-                    : Collections.emptyList();
-        } catch (Exception e) {
-            Notification.show("Failed to load users");
-        }
-    }
-
     private void loadItems() {
         try {
-            String token = getToken();
-            HttpHeaders headers = getHeaders(token);
+            String authToken = getToken();
+            HttpHeaders headers = getHeaders(authToken);
             HttpEntity<Void> request = new HttpEntity<>(headers);
-            String url = itemsUrl + "/all?token=" + token;
+            String url = itemsUrl + "/all?token=" + authToken;
 
             ResponseEntity<ItemDTO[]> response = rest.exchange(
                     url, HttpMethod.GET, request, ItemDTO[].class);
@@ -294,6 +244,26 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
 
         } catch (Exception e) {
             Notification.show("Failed to load items");
+        }
+    }
+
+    private void loadMember() {
+        try {
+            String authToken = getToken();
+            HttpHeaders headers = getHeaders(authToken);
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+            String url = usersUrl + "/" + getUserId() + "?token=" + authToken;
+
+            ResponseEntity<MemberDTO> response = rest.exchange(
+                    url, HttpMethod.GET, request, MemberDTO.class);
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                // Member data loaded successfully - could be used for additional features
+            } else {
+                Notification.show("Failed to load member information");
+            }
+        } catch (Exception e) {
+            Notification.show("Error loading member information: " + e.getMessage());
         }
     }
 
@@ -312,11 +282,11 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         if (userId == null) {
             return;
         }
-        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-        if (token == null) {
+        String authToken = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (authToken == null) {
             return;
         }
-        String url = apiBase + "/users/" + userId + "/isSuspended?token=" + token;
+        String url = apiBase + "/users/" + userId + "/isSuspended?token=" + authToken;
         ResponseEntity<Boolean> response = rest.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
@@ -327,20 +297,27 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
         }
     }
     
-    private String getShopName(int shopId) {
-        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-        String url = apiBase + "/shops/" + shopId + "?token=" + token;
-        ResponseEntity<JsonNode> resp = rest.exchange(
-            url, HttpMethod.GET,
-            new HttpEntity<>(new HttpHeaders()),
-            JsonNode.class
-        );
-        return (resp.getStatusCode().is2xxSuccessful() && resp.getBody()!=null)
-             ? resp.getBody().path("name").asText("")
-             : "";
+    private String getUserName() {
+        String authToken = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        Integer userId = getUserId();
+        if (authToken == null || userId == null) {
+            return "Unknown User";
+        }
+        String url = usersUrl + "/" + userId + "?token=" + authToken;
+        try {
+            ResponseEntity<JsonNode> response = rest.getForEntity(url, JsonNode.class);
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                JsonNode userNode = response.getBody();
+                return userNode.path("username").asText("Unknown User");
+            } else {
+                return "Unknown User";
+            }
+        } catch (Exception e) {
+            return "Unknown User";
+        }
     }
 
-    private String formatAddress(DTOs.AddressDTO address) {
+    private String formatAddress(AddressDTO address) {
         if (address == null) {
             return "N/A";
         }
