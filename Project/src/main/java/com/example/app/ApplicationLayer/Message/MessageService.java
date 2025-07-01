@@ -1,6 +1,7 @@
 package com.example.app.ApplicationLayer.Message;
 
 import java.time.LocalDate;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -226,6 +227,20 @@ public class MessageService {
         } catch (Exception e) {
             LoggerService.logError("getPreviousMessage", e, token, messageId);
             throw new OurRuntime("Error getting previous message: " + e.getMessage(), e);
+        }
+    }
+
+    public List<Message> getUserConversations(String token) {
+        try {
+            LoggerService.logMethodExecution("getUserConversations", token);
+            int userId = authTokenService.getUserIdByToken(token);
+            List<Message> messages = messageRepository.getUserConversations(userId);
+            LoggerService.logMethodExecutionEnd("getUserConversations", messages);
+            return messages;
+        } catch (OurRuntime | OurArg e) {
+            throw new OurRuntime("Error in getUserConversations: " + e.getMessage(), e);
+        } catch (Exception e) {
+            throw new OurRuntime("internal server error");
         }
     }
 }
