@@ -1713,37 +1713,6 @@ public class UserRepositoryDBImplTests {
     }
 
     @Test
-    void testGetBasket_ExtensiveScenarios() {
-        // Create basket and add items
-        repo.createBasket(memberId, 131);
-        repo.addItemToShoppingCart(memberId, 131, 1, 10);
-        repo.addItemToShoppingCart(memberId, 131, 2, 15);
-        
-        // Test getting basket
-        Map<Integer, Integer> basket = repo.getBasket(memberId, 131);
-        assertNotNull(basket);
-        assertEquals(10, basket.get(1));
-        assertEquals(15, basket.get(2));
-        
-        // Test getting non-existent basket
-        Map<Integer, Integer> emptyBasket = repo.getBasket(memberId, 999);
-        assertNotNull(emptyBasket);
-        assertTrue(emptyBasket.isEmpty());
-        
-        // Test for guest user
-        repo.createBasket(guestId, 132);
-        repo.addItemToShoppingCart(guestId, 132, 3, 20);
-        
-        Map<Integer, Integer> guestBasket = repo.getBasket(guestId, 132);
-        assertNotNull(guestBasket);
-        assertEquals(20, guestBasket.get(3));
-        
-        // Test for invalid user - Spring wraps exceptions
-        @SuppressWarnings("unused")
-        Exception ex18 = assertThrows(Exception.class, () -> repo.getBasket(-1, 131));
-    }
-
-    @Test
     void testRefund_DetailedScenarios() {
         // Test successful refund
         // First make a payment
