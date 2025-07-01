@@ -1,6 +1,7 @@
 package UI;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -170,10 +171,30 @@ public class BidDetailView extends BaseView implements BeforeEnterObserver {
             Notification.show("Login required", 3000, Position.MIDDLE);
             return;
         }
+        
         int your = Optional.ofNullable(newBid.getValue()).orElse(0);
-        if (your == bid.getHighestBid()) {
-            Notification.show("Bid must lower or higher than the current price", 3000, Position.MIDDLE);
-            return;
+        double current = bid.getHighestBid();
+        boolean amOwner = false;
+        try {
+            String url = apiBase
+                + "/users/shops/" + bid.getStoreId()
+                + "/owner?token=" + token;
+            ResponseEntity<Integer> resp = rest.exchange(
+                url, HttpMethod.GET, HttpEntity.EMPTY, Integer.class
+            );
+            amOwner = resp.getStatusCode().is2xxSuccessful()
+                    && Objects.equals(getUserId(), resp.getBody());
+        } catch (Exception ignored) {}
+        if (amOwner) {
+            if (your <= current) {
+                Notification.show("As store manager, your bid must exceed the current highest bid (" + current + ")",3000, Position.MIDDLE);
+                return;
+            }
+        } else {
+            if (your >= current) {
+                Notification.show("Your bid must be lower than the current highest bid (" + current + ")", 3000, Position.MIDDLE);
+                return;
+            }
         }
         String postUrl = BID_API_URL
                        + "/" + bidId
@@ -226,19 +247,35 @@ public class BidDetailView extends BaseView implements BeforeEnterObserver {
     }
 
     private String getItemName(int shopId, BidRecieptDTO bid) {
-        String token = (String)VaadinSession.getCurrent().getAttribute("authToken");
-        String url = apiBase + "/shops/" + shopId + "/items?token=" + token;
-        ResponseEntity<JsonNode> resp = rest.exchange(
-            url, HttpMethod.GET,
-            new HttpEntity<>(new HttpHeaders()),
-            JsonNode.class
-        );
-        if (resp.getStatusCode().is2xxSuccessful() && resp.getBody()!=null) {
-            for (JsonNode itemNode : resp.getBody()) {
-                if (bid.getItems().containsKey(itemNode.path("id").asInt(-1))) {
-                    return itemNode.path("name").asText("");
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        String url   = apiBase + "/shops/" + shopId + "/items?token=" + token;
+        try {
+            ResponseEntity<JsonNode> resp = rest.exchange(
+                url, HttpMethod.GET, HttpEntity.EMPTY, JsonNode.class
+            );
+            JsonNode body = resp.getBody();
+
+            if (body != null && body.isArray() && body.size() > 0) {
+                // 1) If our DTO map is empty, just grab the first element's name:
+                if (bid.getItems().isEmpty()) {
+                    JsonNode first = body.get(0);
+                    int    fid   = first.path("id").asInt(-1);
+                    String fname = first.path("name").asText("(no-name)");
+                    return fname;
                 }
+
+                // 2) Otherwise do your normal matching:
+                for (JsonNode item : body) {
+                    int    id   = item.path("id").asInt(-1);
+                    String name = item.path("name").asText("(no-name)");
+                    if (bid.getItems().containsKey(id)) {
+                        return name;
+                    }
+                }
+            } else {
             }
+        } catch (Exception e) {
+            /*ignore */
         }
         return "";
     }

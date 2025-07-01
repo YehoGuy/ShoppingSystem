@@ -163,7 +163,7 @@ public class PurchaseRepositoryDBImpl implements IPurchaseRepository {
 
     public void postBidding(Bid bid, int userId, int bidPrice) {
         try {
-            bid.addBidding(userId, bidPrice, false);
+            bid.addBidding(userId, bidPrice, true);
             jpaRepo.save(bid);
             bid.prePersist();
         } catch (Exception e) {

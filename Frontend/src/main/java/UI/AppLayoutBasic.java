@@ -85,7 +85,8 @@ public class AppLayoutBasic extends AppLayout
                 new SideNavItem("Auctions",    "/auctions", VaadinIcon.GAVEL.create()),//
                 new SideNavItem("My Shops",    "/myshops",  VaadinIcon.LIST_UL.create()),//
                 new SideNavItem("Messages",    "/messages", VaadinIcon.ENVELOPE.create()),//
-                new SideNavItem("Profile",     "/profile",  VaadinIcon.USER.create())//
+                new SideNavItem("Profile",     "/profile",  VaadinIcon.USER.create()),//
+                new SideNavItem("Purchase History", "/userHistory", VaadinIcon.ARCHIVE.create())//
             );
            
         }

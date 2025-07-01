@@ -174,7 +174,7 @@ public class ShopView extends BaseView
             qtyField.setMin(1);
             qtyField.setMax(available);
             qtyField.setStepButtonsVisible(true);
-            qtyField.setWidth("80px");
+            qtyField.setWidth("auto");
 
             Button addBtn = new Button("🛒 Add to Cart", ev -> {
                 int qty = qtyField.getValue() != null ? qtyField.getValue() : 1;
@@ -258,84 +258,84 @@ public class ShopView extends BaseView
         contentLayout.add(itemsLayout);
 
         // Bids section
-        contentLayout.add(new H2("📢 Auctions and Bids for This Shop"));
-        Map<Integer,String> itemNames = shop.getItems().stream()
-            .collect(Collectors.toMap(ItemDTO::getId, ItemDTO::getName));
+        // contentLayout.add(new H2("📢 Auctions and Bids for This Shop"));
+        // Map<Integer,String> itemNames = shop.getItems().stream()
+        //     .collect(Collectors.toMap(ItemDTO::getId, ItemDTO::getName));
 
-        Grid<BidRecieptDTO> shopBidsGrid = new Grid<>(BidRecieptDTO.class, false);
-        shopBidsGrid.addColumn(dto ->
-            itemNames.getOrDefault(
-                dto.getItems().keySet().stream().findFirst().orElse(-1), "")
-        ).setHeader("Item Name").setAutoWidth(true);
+        // Grid<BidRecieptDTO> shopBidsGrid = new Grid<>(BidRecieptDTO.class, false);
+        // shopBidsGrid.addColumn(dto ->
+        //     itemNames.getOrDefault(
+        //         dto.getItems().keySet().stream().findFirst().orElse(-1), "")
+        // ).setHeader("Item Name").setAutoWidth(true);
 
-        shopBidsGrid.addColumn(dto -> matchUserName(dto.getUserId()))
-            .setHeader("Owner Bid Name").setAutoWidth(true);
-        shopBidsGrid.addColumn(BidRecieptDTO::getInitialPrice)
-            .setHeader("Initial Price").setAutoWidth(true);
-        shopBidsGrid.addColumn(BidRecieptDTO::getHighestBid)
-            .setHeader("Highest Bid").setAutoWidth(true);
-        shopBidsGrid.addColumn(dto -> dto.isCompleted() ? "Yes" : "No")
-            .setHeader("Completed").setAutoWidth(true);
+        // shopBidsGrid.addColumn(dto -> matchUserName(dto.getUserId()))
+        //     .setHeader("Owner Bid Name").setAutoWidth(true);
+        // shopBidsGrid.addColumn(BidRecieptDTO::getInitialPrice)
+        //     .setHeader("Initial Price").setAutoWidth(true);
+        // shopBidsGrid.addColumn(BidRecieptDTO::getHighestBid)
+        //     .setHeader("Highest Bid").setAutoWidth(true);
+        // shopBidsGrid.addColumn(dto -> dto.isCompleted() ? "Yes" : "No")
+        //     .setHeader("Completed").setAutoWidth(true);
 
-        shopBidsGrid.addColumn(new ComponentRenderer<>(dto -> {
-            Span timer = new Span();
-            Runnable update = () -> {
-                LocalDateTime now = LocalDateTime.now();
-                LocalDateTime end = dto.getEndTime();
-                if (end == null) {
-                    timer.setText("—");
-                } else if (end.isBefore(now)) {
-                    timer.setText("Ended");
-                } else {
-                    Duration d = Duration.between(now, end);
-                    timer.setText(String.format(
-                        "%02d:%02d:%02d",
-                        d.toHours(),
-                        d.toMinutesPart(),
-                        d.toSecondsPart()
-                    ));
-                }
-            };
-            update.run();
-            UI ui = UI.getCurrent();
-            ui.setPollInterval(1000);
-            ui.addPollListener(e -> update.run());
-            return timer;
-        })).setHeader("Time Left").setAutoWidth(true);
+        // shopBidsGrid.addColumn(new ComponentRenderer<>(dto -> {
+        //     Span timer = new Span();
+        //     Runnable update = () -> {
+        //         LocalDateTime now = LocalDateTime.now();
+        //         LocalDateTime end = dto.getEndTime();
+        //         if (end == null) {
+        //             timer.setText("—");
+        //         } else if (end.isBefore(now)) {
+        //             timer.setText("Ended");
+        //         } else {
+        //             Duration d = Duration.between(now, end);
+        //             timer.setText(String.format(
+        //                 "%02d:%02d:%02d",
+        //                 d.toHours(),
+        //                 d.toMinutesPart(),
+        //                 d.toSecondsPart()
+        //             ));
+        //         }
+        //     };
+        //     update.run();
+        //     UI ui = UI.getCurrent();
+        //     ui.setPollInterval(1000);
+        //     ui.addPollListener(e -> update.run());
+        //     return timer;
+        // })).setHeader("Time Left").setAutoWidth(true);
 
-        shopBidsGrid.addColumn(new ComponentRenderer<>(dto -> {
-            if (dto.getEndTime() != null) {
-                Button btn = new Button("Add Offer", e -> {
-                    Integer me = getUserId();
-                    if (me != null && me.equals(dto.getUserId())) {
-                        Notification.show(
-                            "You cannot place a bid on your own auction",
-                            3000, Position.MIDDLE
-                        );
-                    } else {
-                        UI.getCurrent().navigate("auction/" + dto.getPurchaseId());
-                    }
-                });
-                if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended")) || isGuest()) {
-                    btn.setVisible(false);
-                }
-                return btn;
-            } else {
-                return new Span();
-            }
-        })).setHeader("Auction").setAutoWidth(true);
+        // shopBidsGrid.addColumn(new ComponentRenderer<>(dto -> {
+        //     if (dto.getEndTime() != null) {
+        //         Button btn = new Button("Add Offer", e -> {
+        //             Integer me = getUserId();
+        //             if (me != null && me.equals(dto.getUserId())) {
+        //                 Notification.show(
+        //                     "You cannot place a bid on your own auction",
+        //                     3000, Position.MIDDLE
+        //                 );
+        //             } else {
+        //                 UI.getCurrent().navigate("auction/" + dto.getPurchaseId());
+        //             }
+        //         });
+        //         if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+        //             btn.setVisible(false);
+        //         }
+        //         return btn;
+        //     } else {
+        //         return new Span();
+        //     }
+        // })).setHeader("Auction").setAutoWidth(true);
 
-        shopBidsGrid.setAllRowsVisible(true);
-        fetchStoreBids(shopBidsGrid);
-        shopBidsGrid.asSingleSelect().addValueChangeListener(ev -> {
-            BidRecieptDTO sel = ev.getValue();
-            if (sel != null) {
-                UI.getCurrent().navigate("bid/" + sel.getPurchaseId());
-            }
-        });
+        // shopBidsGrid.setAllRowsVisible(true);
+        // fetchStoreBids(shopBidsGrid);
+        // shopBidsGrid.asSingleSelect().addValueChangeListener(ev -> {
+        //     BidRecieptDTO sel = ev.getValue();
+        //     if (sel != null) {
+        //         UI.getCurrent().navigate("bid/" + sel.getPurchaseId());
+        //     }
+        // });
 
-        contentLayout.add(shopBidsGrid);
-        contentLayout.expand(shopBidsGrid);
+        // contentLayout.add(shopBidsGrid);
+        // contentLayout.expand(shopBidsGrid);
 
         // Reviews section
         contentLayout.add(new H2("📝 Reviews"));
@@ -363,33 +363,33 @@ public class ShopView extends BaseView
         contentLayout.add(addReviewButton);
     }
 
-    private void fetchStoreBids(Grid<BidRecieptDTO> shopBidsGrid) {
-        try {
-            String authToken = (String) VaadinSession.getCurrent().getAttribute("authToken");
-            if (authToken == null || authToken.isBlank()) {
-                shopBidsGrid.setItems(Collections.emptyList());
-                return;
-            }
-            String url = purchaseHistoryUrl
-                + "/" + shop.getShopId() + "/bids?authToken=" + authToken;
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<Void> entity = new HttpEntity<>(headers);
+    // private void fetchStoreBids(Grid<BidRecieptDTO> shopBidsGrid) {
+    //     try {
+    //         String authToken = (String) VaadinSession.getCurrent().getAttribute("authToken");
+    //         if (authToken == null || authToken.isBlank()) {
+    //             shopBidsGrid.setItems(Collections.emptyList());
+    //             return;
+    //         }
+    //         String url = purchaseHistoryUrl
+    //             + "/" + shop.getShopId() + "/bids?authToken=" + authToken;
+    //         HttpHeaders headers = new HttpHeaders();
+    //         headers.setContentType(MediaType.APPLICATION_JSON);
+    //         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-            ResponseEntity<List<BidRecieptDTO>> response = restTemplate.exchange(
-                url, HttpMethod.GET, entity,
-                new ParameterizedTypeReference<>() {}
-            );
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                shopBidsGrid.setItems(response.getBody());
-            } else {
-                add(new H2("Failed to load shop’s bids"));
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            add(new H2("Error fetching shop’s bids"));
-        }
-    }
+    //         ResponseEntity<List<BidRecieptDTO>> response = restTemplate.exchange(
+    //             url, HttpMethod.GET, entity,
+    //             new ParameterizedTypeReference<>() {}
+    //         );
+    //         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+    //             shopBidsGrid.setItems(response.getBody());
+    //         } else {
+    //             add(new H2("Failed to load shop’s bids"));
+    //         }
+    //     } catch (Exception ex) {
+    //         ex.printStackTrace();
+    //         add(new H2("Error fetching shop’s bids"));
+    //     }
+    // }
 
     private void loadUsers() {
         try {

@@ -212,18 +212,34 @@ public class AuctionDetailView extends BaseView implements BeforeEnterObserver {
 
     private String getItemName(int shopId, BidRecieptDTO bid) {
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-        String url = apiBase + "/shops/" + shopId + "/items?token=" + token;
-        ResponseEntity<JsonNode> resp = rest.exchange(
-            url, HttpMethod.GET,
-            new HttpEntity<>(new HttpHeaders()),
-            JsonNode.class
-        );
-        if (resp.getStatusCode().is2xxSuccessful() && resp.getBody()!=null) {
-            for (JsonNode item : resp.getBody()) {
-                if (bid.getItems().containsKey(item.path("id").asInt(-1))) {
-                    return item.path("name").asText("");
+        String url   = apiBase + "/shops/" + shopId + "/items?token=" + token;
+        try {
+            ResponseEntity<JsonNode> resp = rest.exchange(
+                url, HttpMethod.GET, HttpEntity.EMPTY, JsonNode.class
+            );
+            JsonNode body = resp.getBody();
+
+            if (body != null && body.isArray() && body.size() > 0) {
+                // 1) If our DTO map is empty, just grab the first element's name:
+                if (bid.getItems().isEmpty()) {
+                    JsonNode first = body.get(0);
+                    int    fid   = first.path("id").asInt(-1);
+                    String fname = first.path("name").asText("(no-name)");
+                    return fname;
                 }
+
+                // 2) Otherwise do your normal matching:
+                for (JsonNode item : body) {
+                    int    id   = item.path("id").asInt(-1);
+                    String name = item.path("name").asText("(no-name)");
+                    if (bid.getItems().containsKey(id)) {
+                        return name;
+                    }
+                }
+            } else {
             }
+        } catch (Exception e) {
+            /*ignore */
         }
         return "";
     }

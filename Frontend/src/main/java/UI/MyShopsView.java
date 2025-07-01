@@ -16,6 +16,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
@@ -258,6 +259,8 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
         header.setAlignItems(Alignment.CENTER);
         add(header);
 
+        
+
         // Open Shops container
         shopsContainer = new VerticalLayout();
         shopsContainer.setSizeFull();
@@ -267,9 +270,6 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
             .set("gap", "0px")
             .set("background", "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)")
             .set("min-height", "100vh");
-            
-        add(shopsContainer);
-
 
         // Closed Shops container
         closedShopsContainer = new VerticalLayout();
@@ -280,9 +280,24 @@ public class MyShopsView extends VerticalLayout implements BeforeEnterObserver {
             .set("gap", "0px")
             .set("background", "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)")
             .set("min-height", "100vh");
-            
-        add(closedShopsContainer);
 
+            // ─── Open Shops Section ──────────────────────
+            H2 openHeader = new H2("Open Shops");
+            openHeader.getStyle()
+                    .set("margin",      "16px 0 8px")
+                    .set("font-size",   "24px")
+                    .set("font-weight", "700")
+                    .set("color",       "#333");
+            add(openHeader, shopsContainer);
+
+            // ─── Closed Shops Section ────────────────────
+            H2 closedHeader = new H2("Closed Shops");
+            closedHeader.getStyle()
+                        .set("margin",      "24px 0 8px")
+                        .set("font-size",   "24px")
+                        .set("font-weight", "700")
+                        .set("color",       "#333");
+            add(closedHeader, closedShopsContainer);
     }
 
     @Override
