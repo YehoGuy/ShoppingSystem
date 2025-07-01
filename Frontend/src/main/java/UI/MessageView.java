@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -43,7 +44,7 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
     private final String MSG_BASE_URL;
     private final String NOTIFICATIONS_URL;
     private final String PENDING_ROLES_URL;
-    private final String GET_BY_RECIVER;
+    private final String GET_USER_MESSAGES;
     private final String ROLES_URL;
 
     private final RestTemplate rest = new RestTemplate();
@@ -55,7 +56,7 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
     private final Map<Integer, String> userDirectory;
     private final Map<String, Integer> usernameToId;
     private List<MessageDTO> allmessages;
-    private int currentChatUserId = 2;
+    private int currentChatUserId;
 
     private final int thisUserId = Integer.parseInt(VaadinSession.getCurrent().getAttribute("userId").toString());
 
@@ -67,14 +68,15 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
         this.NOTIFICATIONS_URL = BASE_URL + "/users/notifications";
         this.PENDING_ROLES_URL = BASE_URL + "/users/getPendingRoles";
         this.ROLES_URL = BASE_URL + "/users/roles/";
-        this.GET_BY_RECIVER = this.MSG_BASE_URL + "/receiver?authToken=";
+        this.GET_USER_MESSAGES = this.MSG_BASE_URL + "/conversations?token=";
+        this.currentChatUserId = getUserId();
 
         this.token = getToken();
         ResponseEntity<MemberDTO[]> allmem = rest.getForEntity(
-            BASE_URL + "/users/allmembers?token=" + token, MemberDTO[].class);
+                BASE_URL + "/users/allmembers?token=" + token, MemberDTO[].class);
 
         ResponseEntity<MessageDTO[]> allmessagesRe = rest.getForEntity(
-                GET_BY_RECIVER + token,
+                GET_USER_MESSAGES + token,
                 MessageDTO[].class);
         this.allmessages = Arrays.asList(allmessagesRe.getBody());
 
@@ -180,10 +182,13 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
     private void loadAndDisplayConversation(int fromId) {
         threadContainer.removeAll();
         try {
-            List<MessageDTO> conversation = allmessages.stream()
-                    .filter(msg -> (msg.getSenderId() == fromId || msg.getReceiverId() == fromId) &&
-                            (msg.getSenderId() != thisUserId || msg.getReceiverId() == thisUserId))
-                    .collect(Collectors.toList());
+            List<MessageDTO> conversation = new LinkedList<>();
+            if (currentChatUserId != getUserId()) {
+                conversation = allmessages.stream()
+                        .filter(msg -> (msg.getSenderId() == fromId || msg.getReceiverId() == fromId) &&
+                                (msg.getSenderId() == getUserId() || msg.getReceiverId() == getUserId()))
+                        .collect(Collectors.toList());
+            }
 
             conversation.sort(Comparator.comparing(MessageDTO::getTimestamp));
 
@@ -341,8 +346,8 @@ public class MessageView extends VerticalLayout implements BeforeEnterObserver {
         if (token == null) {
             return;
         }
-        String url = BASE_URL + "/users/" 
-            + userId + "/isSuspended?token=" + token;
+        String url = BASE_URL + "/users/"
+                + userId + "/isSuspended?token=" + token;
 
         ResponseEntity<Boolean> response = rest.getForEntity(url, Boolean.class);
 
