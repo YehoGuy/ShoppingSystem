@@ -798,4 +798,10 @@ public class UserRepository implements IUserRepository {
         return member.getMissingNotificationsQuantity();
     }
 
+    @Override
+    public void removeBidFromCart(int userId, int bidId) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'removeBidFromCart'");
+    }
+
 }
