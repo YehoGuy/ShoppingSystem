@@ -203,7 +203,7 @@ public class UserRepositoryDBImpl implements IUserRepository {
         if (user instanceof Member) {
             return ((Member) user).isAdmin();
         } else {
-            throw new OurRuntime("User is not a member: " + id);
+            return false;
         }
     }
 
@@ -789,9 +789,10 @@ public class UserRepositoryDBImpl implements IUserRepository {
                 return user.getShoppingCart();
             } else if (user instanceof Guest) {
                 // For guests, we can directly access the shopping cart
+                ShoppingCart cart = user.getShoppingCartForGuest();
                 return user.getShoppingCartForGuest();
             }
-            //return user.getShoppingCart();
+            // return user.getShoppingCart();
         }
         return null;
     }
@@ -808,19 +809,7 @@ public class UserRepositoryDBImpl implements IUserRepository {
         if (user instanceof Member) {
             updateUserInDB((Member) user);
         }
-        else 
-        {
-            Guest guest = guests.get(userId);
-            if (guest == null) {
-                throw new OurRuntime("Guest not found: " + userId);
-            }
-            ShoppingCart guestCart = guest.getShoppingCart();
-            guestCart.addItem(shopId, itemId, quantity);
-            guest.setShoppingCart(guestCart);
-        }
     }
-
-
 
     @Override
     public void removeItemFromShoppingCart(int userId, int shopId, int itemId) {

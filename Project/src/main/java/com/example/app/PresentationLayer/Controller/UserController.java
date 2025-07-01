@@ -362,7 +362,9 @@ public class UserController {
 
         try {
             authService.ValidateToken(token); // only authenticated callers
+            System.out.println("isAdmin1");
             boolean res = userService.isAdmin(userId);
+            System.out.println("isAdmin2");
             return ResponseEntity.ok(res);
 
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
@@ -863,6 +865,8 @@ public class UserController {
         try {
             authService.ValidateToken(token);
             HashMap<Integer, HashMap<Integer, Integer>> cart = userService.getUserShoppingCartItems(userId);
+            System.out.println(cart != null);
+            System.out.println(cart != null ? cart.isEmpty() : "");
             return ResponseEntity.ok(cart);
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(null);

@@ -29,7 +29,7 @@ public class LoginView extends BaseView {
         super("Member Login", "Access your account", "🔒", "➡️");
 
         this.baseUrl = api + "/users";
-        this.authUrl  = api + "/auth";
+        this.authUrl = api + "/auth";
 
         /* ── Card container ───────────────────────────────────────────── */
         Div card = new Div();
@@ -63,6 +63,7 @@ public class LoginView extends BaseView {
                 String token = loginAsGuest();
                 VaadinSession.getCurrent().setAttribute("authToken", token);
                 VaadinSession.getCurrent().setAttribute("username", "guest");
+                setUserId();
                 Notification.show("✅ Logged in as guest!");
                 VaadinSession.getCurrent().setAttribute("isAdmin", false);
                 getUI().ifPresent(ui -> ui.navigate("home"));
@@ -114,10 +115,8 @@ public class LoginView extends BaseView {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-        HttpEntity<MultiValueMap<String, String>> request =
-                new HttpEntity<>(new LinkedMultiValueMap<>(), headers);
-        ResponseEntity<String> response =
-                restTemplate.postForEntity(url, request, String.class);
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(new LinkedMultiValueMap<>(), headers);
+        ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
 
         if (response.getStatusCode().is2xxSuccessful()) {
             return response.getBody();
@@ -140,8 +139,8 @@ public class LoginView extends BaseView {
 
     private void setUserId() {
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-        if (token == null) return;
-
+        if (token == null)
+            return;
         String url = authUrl + "/validate?authToken=" + token;
         ResponseEntity<Integer> response = restTemplate.getForEntity(url, Integer.class);
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
@@ -155,9 +154,11 @@ public class LoginView extends BaseView {
 
     private void handleAdmin() {
         Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
-        if (userId == null) return;
+        if (userId == null)
+            return;
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-        if (token == null) return;
+        if (token == null)
+            return;
 
         String url = baseUrl + "/" + userId + "/isAdmin?token=" + token;
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
@@ -170,9 +171,11 @@ public class LoginView extends BaseView {
 
     private void handleSuspence() {
         Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
-        if (userId == null) return;
+        if (userId == null)
+            return;
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-        if (token == null) return;
+        if (token == null)
+            return;
 
         String url = baseUrl + "/" + userId + "/isSuspended?token=" + token;
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
@@ -180,7 +183,7 @@ public class LoginView extends BaseView {
             VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
         } else {
             Notification.show("❌ Failed to check suspension status", 3000,
-                              Notification.Position.MIDDLE);
+                    Notification.Position.MIDDLE);
         }
     }
 }

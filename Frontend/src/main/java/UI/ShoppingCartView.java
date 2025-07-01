@@ -78,8 +78,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
         handleSuspence();
 
-        if(!isGuest())
-        {
+        if (!isGuest()) {
             getWonAuctionsSection();
             getFinishedBidsSection();
         }
@@ -101,7 +100,6 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         this.URLItem = baseUrl + "/items";
         this.baseUrl = baseUrl;
 
-        
         setSizeFull();
         setSpacing(true);
         setPadding(true);
@@ -113,7 +111,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         getData();
 
         this.totalPrice = getTotalAllShops();
-        
+
         if (cart.getShopItems() == null || cart.getShopItems().isEmpty()) {
             H2 empty = new H2("Your shopping cart is empty 😕");
             empty.getStyle().set("color", "var(--lumo-secondary-text-color)");
@@ -143,7 +141,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 dialog.setHeaderTitle("Purchase Summary");
 
                 PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(baseUrl, cart,
-                        dialog, -1, totalPrice );/////////////
+                        dialog, -1, totalPrice);/////////////
 
                 // Add your component to the dialog
                 dialog.add(purchaseCompletion);
@@ -183,7 +181,8 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 }
             }
 
-            Button buyBasketButton = new Button("Buy basket from " + shopName + " price after discounts: " + shopTotal + "₪");
+            Button buyBasketButton = new Button(
+                    "Buy basket from " + shopName + " price after discounts: " + shopTotal + "₪");
             if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
                 buyBasketButton.setVisible(false);
             }
@@ -192,7 +191,6 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
                 Dialog dialog = new Dialog();
                 dialog.setHeaderTitle("Purchase Summary");
-                ShoppingCartDTO newCart = cart.getShoppingCartDTOofShop(shopID);
                 PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(
                         baseUrl, cart.getShoppingCartDTOofShop(shopID), dialog, shopID, shopTotal);
 
@@ -263,23 +261,18 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             add(grid);
         });
 
-        
-
-
         HorizontalLayout totalContainer = new HorizontalLayout();
         totalContainer.setAlignItems(Alignment.CENTER);
         totalContainer.getStyle()
                 .set("bottom", "0")
                 .set("right", "0")
                 .set("margin", "0px");
-        
-        H2 total = new H2("Total after discounts: " + totalPrice  + "₪");
+
+        H2 total = new H2("Total after discounts: " + totalPrice + "₪");
         totalContainer.add(total, buyButton);
         add(buyButtonContainer, totalContainer);
 
-
-        if(!isGuest())
-        {
+        if (!isGuest()) {
 
             // Your Won Auctions section
             H2 wonHeader = new H2("Your Won Auctions");
@@ -328,7 +321,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
     }
 
     private Double getTotalAllShops() {
-        
+
         List<Integer> shopIds = new ArrayList<>(cart.getShopItems().keySet());
         Double total = 0.0;
         for (Integer shopId : shopIds) {
@@ -339,7 +332,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
     private Double getShopPrice(int shopId) {
         String token = VaadinSession.getCurrent().getAttribute("authToken").toString();
-        Map<Integer, Integer> itemQuantities = cart.getShopItemQuantities().get(shopId); 
+        Map<Integer, Integer> itemQuantities = cart.getShopItemQuantities().get(shopId);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -359,8 +352,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         }
 
         return 0.0;
-}
-
+    }
 
     private void getData() {
         HashMap<Integer, HashMap<Integer, Integer>> IDs = getCartIDs();
@@ -471,7 +463,6 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Void> entity = new HttpEntity<>(headers);
-
             ResponseEntity<HashMap<Integer, HashMap<Integer, Integer>>> resp = restTemplate.exchange(
 
                     URLUser + "/shoppingCart?token=" + token + "&userId=" + getUserId(),
@@ -709,25 +700,24 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
     private String fetchItemName(int shopId, BidRecieptDTO bid) {
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-        String url   = baseUrl + "/shops/" + shopId + "/items?token=" + token;
+        String url = baseUrl + "/shops/" + shopId + "/items?token=" + token;
         try {
             ResponseEntity<JsonNode> resp = restTemplate.exchange(
-                url, HttpMethod.GET, HttpEntity.EMPTY, JsonNode.class
-            );
+                    url, HttpMethod.GET, HttpEntity.EMPTY, JsonNode.class);
             JsonNode body = resp.getBody();
 
             if (body != null && body.isArray() && body.size() > 0) {
                 // 1) If our DTO map is empty, just grab the first element's name:
                 if (bid.getItems().isEmpty()) {
                     JsonNode first = body.get(0);
-                    int    fid   = first.path("id").asInt(-1);
+                    int fid = first.path("id").asInt(-1);
                     String fname = first.path("name").asText("(no-name)");
                     return fname;
                 }
 
                 // 2) Otherwise do your normal matching:
                 for (JsonNode item : body) {
-                    int    id   = item.path("id").asInt(-1);
+                    int id = item.path("id").asInt(-1);
                     String name = item.path("name").asText("(no-name)");
                     if (bid.getItems().containsKey(id)) {
                         return name;
@@ -736,7 +726,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
             } else {
             }
         } catch (Exception e) {
-            /*ignore */
+            /* ignore */
         }
         return "";
     }
@@ -760,7 +750,6 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         dialog.open(); // Show the dialog
         buildView(); // Refresh the view after purchase
     }
-
 
     private boolean isGuest() {
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
