@@ -24,6 +24,7 @@ import org.springframework.web.client.RestTemplate;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Route(value = "auctions", layout = AppLayoutBasic.class)
 @AnonymousAllowed
@@ -69,7 +70,6 @@ public class AuctionListView extends BaseView {
         configureGrid();
         fetchAllAuctions();
     }
-
 
     private void configureGrid() {
         auctionGrid.addColumn(dto -> getShopName(dto.getStoreId()))
@@ -163,7 +163,14 @@ public class AuctionListView extends BaseView {
         );
 
         if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
-            auctionGrid.setItems(resp.getBody());
+            List<BidRecieptDTO> all = resp.getBody();
+            List<BidRecieptDTO> filtered = all.stream()
+                .filter(dto -> {
+                    String name = getItemName(dto.getStoreId(), dto);
+                    return name != null && !name.isEmpty();
+                })
+                .collect(Collectors.toList());
+            auctionGrid.setItems(filtered);
         } else {
             add(new Text("Failed to load auctions"));
         }

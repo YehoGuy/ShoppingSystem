@@ -597,7 +597,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 .setAutoWidth(true);
 
         // 2) Item Name
-        grid.addColumn(this::fetchItemName)
+        grid.addColumn(dto -> fetchItemName(dto.getStoreId(), dto))
                 .setHeader("Item Name")
                 .setAutoWidth(true);
 
@@ -660,7 +660,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 .setAutoWidth(true);
 
         // 2) Item Name
-        grid.addColumn(this::fetchItemName)
+        grid.addColumn(dto -> fetchItemName(dto.getStoreId(), dto))
                 .setHeader("Item Name")
                 .setAutoWidth(true);
 
@@ -699,27 +699,38 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         }
     }
 
-    private String fetchItemName(BidRecieptDTO dto) {
+    private String fetchItemName(int shopId, BidRecieptDTO bid) {
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        String url   = baseUrl + "/shops/" + shopId + "/items?token=" + token;
         try {
-            String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-            ResponseEntity<List<ItemDTO>> resp = restTemplate.exchange(
-                    URLShop + "/" + dto.getStoreId() + "/items?token=" + token,
-                    HttpMethod.GET,
-                    new HttpEntity<>(new HttpHeaders()),
-                    new ParameterizedTypeReference<List<ItemDTO>>() {
-                    });
-            List<ItemDTO> items = resp.getBody();
-            if (items != null) {
-                for (ItemDTO item : items) {
-                    if (dto.getItems().containsKey(item.getId())) {
-                        return item.getName();
+            ResponseEntity<JsonNode> resp = restTemplate.exchange(
+                url, HttpMethod.GET, HttpEntity.EMPTY, JsonNode.class
+            );
+            JsonNode body = resp.getBody();
+
+            if (body != null && body.isArray() && body.size() > 0) {
+                // 1) If our DTO map is empty, just grab the first element's name:
+                if (bid.getItems().isEmpty()) {
+                    JsonNode first = body.get(0);
+                    int    fid   = first.path("id").asInt(-1);
+                    String fname = first.path("name").asText("(no-name)");
+                    return fname;
+                }
+
+                // 2) Otherwise do your normal matching:
+                for (JsonNode item : body) {
+                    int    id   = item.path("id").asInt(-1);
+                    String name = item.path("name").asText("(no-name)");
+                    if (bid.getItems().containsKey(id)) {
+                        return name;
                     }
                 }
+            } else {
             }
         } catch (Exception e) {
-            log.warn("Error fetching items for store {}", dto.getStoreId(), e);
+            /*ignore */
         }
-        return "Unknown Item";
+        return "";
     }
 
     private void payForBid(BidRecieptDTO dto) {
