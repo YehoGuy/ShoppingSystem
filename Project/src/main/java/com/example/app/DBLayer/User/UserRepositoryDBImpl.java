@@ -203,7 +203,7 @@ public class UserRepositoryDBImpl implements IUserRepository {
         if (user instanceof Member) {
             return ((Member) user).isAdmin();
         } else {
-            throw new OurRuntime("User is not a member: " + id);
+            return false;
         }
     }
 
@@ -678,7 +678,7 @@ public class UserRepositoryDBImpl implements IUserRepository {
         if (user instanceof Member) {
             return ((Member) user).isSuspended();
         } else {
-            throw new OurRuntime("User is not a member: " + userId);
+            return false; // Non-members are not suspended
         }
     }
 
@@ -785,7 +785,14 @@ public class UserRepositoryDBImpl implements IUserRepository {
     public ShoppingCart getShoppingCartById(int userId) {
         User user = getUserById(userId);
         if (user != null) {
-            return user.getShoppingCart();
+            if (user instanceof Member) {
+                return user.getShoppingCart();
+            } else if (user instanceof Guest) {
+                // For guests, we can directly access the shopping cart
+                ShoppingCart cart = user.getShoppingCartForGuest();
+                return user.getShoppingCartForGuest();
+            }
+            // return user.getShoppingCart();
         }
         return null;
     }
@@ -795,7 +802,6 @@ public class UserRepositoryDBImpl implements IUserRepository {
         if (quantity <= 0) {
             throw new OurRuntime("Quantity must be greater than 0.");
         }
-
         User user = getUserById(userId);
         ShoppingCart cart = user.getShoppingCart();
         cart.addItem(shopId, itemId, quantity);

@@ -170,7 +170,7 @@ public class ItemSearchView extends BaseView implements BeforeEnterObserver {
             });
 
             Button addRev = new Button("Add Review", ev -> openReviewDialog(item.getId(), item.getName()));
-            if (Boolean.TRUE.equals((Boolean)VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+            if (Boolean.TRUE.equals((Boolean)VaadinSession.getCurrent().getAttribute("isSuspended")) || isGuest()) {
                 addRev.setVisible(false);
             }
 
@@ -236,5 +236,28 @@ public class ItemSearchView extends BaseView implements BeforeEnterObserver {
         String url = apiBase + "/users/" + u + "/isSuspended?token=" + token;
         Boolean suspended = rest.getForObject(url, Boolean.class);
         VaadinSession.getCurrent().setAttribute("isSuspended", suspended);
+    }
+
+    private boolean isGuest() {
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            Notification.show("No auth token found. Please log in.", 3000, Notification.Position.MIDDLE);
+            return true; // Default to guest if not authenticated
+        }
+
+        String url = apiBase + "/users/isGuest?token=" + token;
+
+        try {
+            ResponseEntity<Boolean> response = rest.getForEntity(url, Boolean.class);
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                return response.getBody();
+            } else {
+                Notification.show("Could not determine guest status", 3000, Notification.Position.MIDDLE);
+            }
+        } catch (Exception e) {
+            Notification.show("Error checking guest status", 3000, Notification.Position.MIDDLE);
+        }
+
+        return true; // fallback to guest on error
     }
 }

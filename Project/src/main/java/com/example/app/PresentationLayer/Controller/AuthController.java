@@ -17,29 +17,29 @@ import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.validation.ConstraintViolationException;
 
 /**
- *  Base path: /api/auth         (all calls are JSON in / JSON out)
+ * Base path: /api/auth (all calls are JSON in / JSON out)
  *
- * 1. POST   /guest
- *    Params : guestId
- *    Success: 201 →  "eyJhbGciOi..."   (JWT token)
+ * 1. POST /guest
+ * Params : guestId
+ * Success: 201 → "eyJhbGciOi..." (JWT token)
  *
- * 2. POST   /login
- *    Params : username, password, userId
- *    Success: 201 →  "eyJhbGciOi..."
+ * 2. POST /login
+ * Params : username, password, userId
+ * Success: 201 → "eyJhbGciOi..."
  *
- * 3. POST   /logout
- *    Params : authToken
- *    Success: 204  (empty)
+ * 3. POST /logout
+ * Params : authToken
+ * Success: 204 (empty)
  *
- * 4. POST   /validate
- *    Params : authToken
- *    Success: 200 →  123          (userId extracted)
+ * 4. POST /validate
+ * Params : authToken
+ * Success: 200 → 123 (userId extracted)
  *
- *  Error mapping (all endpoints)
- *    400 – Bad data / validation failure
- *    401 – Unauthorized / token expired or invalid
- *    404 – Token not found (logout / validate)
- *    500 – Unhandled server error
+ * Error mapping (all endpoints)
+ * 400 – Bad data / validation failure
+ * 401 – Unauthorized / token expired or invalid
+ * 404 – Token not found (logout / validate)
+ * 500 – Unhandled server error
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -69,7 +69,7 @@ public class AuthController {
 
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                 .body("Internal server error");
+                    .body("Internal server error");
         }
     }
 
@@ -92,7 +92,7 @@ public class AuthController {
 
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                 .body("Internal server error");
+                    .body("Internal server error");
         }
     }
 
@@ -126,6 +126,7 @@ public class AuthController {
             @RequestParam String authToken) {
         try {
             Integer userId = authService.ValidateToken(authToken);
+            System.out.println("userId: " + userId);
             return ResponseEntity.ok(userId);
 
         } catch (NoSuchElementException ex) {

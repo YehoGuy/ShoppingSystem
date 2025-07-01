@@ -30,13 +30,18 @@ public abstract class User {
     }
 
     // public User(int cartId, Address address) {
-    //     this.shoppingCart = new ShoppingCart(); // Initialize the shopping cart
-    //     this.address = address; // Set the user's shipping address
-    //     this.paymentMethodString = "";
+    // this.shoppingCart = new ShoppingCart(); // Initialize the shopping cart
+    // this.address = address; // Set the user's shipping address
+    // this.paymentMethodString = "";
     // }
 
     public ShoppingCart getShoppingCart() {
         shoppingCart.loadFromPersistentCollections();
+        return shoppingCart; // Return the user's shopping cart
+    }
+
+    public ShoppingCart getShoppingCartForGuest() {
+        // shoppingCart.loadFromPersistentCollections();
         return shoppingCart; // Return the user's shopping cart
     }
 
@@ -76,7 +81,6 @@ public abstract class User {
 
     public void updateShoppingCartItemQuantity(int shopID, int itemID, boolean b) {
         if (!shoppingCart.hasItemOfShop(shopID, itemID)) {
-            System.out.println("hola");
             throw new OurRuntime("item not in cart.", shopID, itemID);
         }
         int addOrRemove = b ? 1 : -1;
