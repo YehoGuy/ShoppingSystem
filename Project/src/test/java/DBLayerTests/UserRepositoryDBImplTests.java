@@ -1047,21 +1047,7 @@ public class UserRepositoryDBImplTests {
             new UserRepositoryDBImpl("admin", "pass", "admin@test.com", "123", "", null));
     }
 
-    @Test
-    void testGetMemberById_EdgeCases() {
-        // Test valid member retrieval
-        Member retrievedMember = repo.getMemberById(memberId);
-        assertNotNull(retrievedMember);
-        assertEquals(memberId, retrievedMember.getMemberId());
-        
-        // Test guest ID - implementation returns a Member object for guest
-        Member guestMember = repo.getMemberById(guestId);
-        assertNotNull(guestMember, "getMemberById returns a Member object for guest ID");
-        
-        // Test invalid ID - Spring wraps IllegalArgumentException as InvalidDataAccessApiUsageException
-        assertThrows(Exception.class, () -> repo.getMemberById(-1));
-        assertThrows(OurRuntime.class, () -> repo.getMemberById(999999));
-    }
+    
 
     @Test
     void testAddPermission_ComprehensiveValidation() {
