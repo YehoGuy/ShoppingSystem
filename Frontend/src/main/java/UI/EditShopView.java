@@ -231,6 +231,13 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
     }
 
     private void DisplayRoles() {
+        String canManageUrl = usersBaseUrl + "/hasPermission"
+            + "?token=" + getToken()
+            + "&userId=" + getUserId()
+            + "&shopId=" + shop.getShopId()
+            + "&permission=" + PermissionsEnum.manageManagers;
+
+        Boolean canManage = restTemplate.getForEntity(canManageUrl, Boolean.class).getBody();
         Map<Integer, PermissionsEnum[]> roles = getRoles();
         H2 rolesTitle = new H2("Roles and Permissions");
         rolesLayout.removeAll();
@@ -310,6 +317,10 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         // Add Manager button
         Button addManager = new Button("Add Manager", e -> openAddManagerDialog(members));
         if (Boolean.TRUE.equals(VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+            addManager.setVisible(false);
+        }
+        
+        if( !canManage) {
             addManager.setVisible(false);
         }
 
