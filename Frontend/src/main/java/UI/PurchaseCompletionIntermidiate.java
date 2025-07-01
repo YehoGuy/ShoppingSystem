@@ -42,6 +42,7 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
     private Map<ItemDTO, Integer> items;
     private double totalPrice = 0;
     private int partialCart = -1;
+    private Integer bidId;
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
@@ -61,13 +62,14 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
         return null; // Return null if userId is not available
     }
 
-    public PurchaseCompletionIntermidiate(@Value("${url.api}") String api, ShoppingCartDTO cart, Dialog addressDialog, int partialCart, double price) {
+    public PurchaseCompletionIntermidiate(@Value("${url.api}") String api, ShoppingCartDTO cart, Dialog addressDialog,
+     int partialCart, double price, Integer bidId) {
         this.api = api;
         this.totalPrice = price;
         this.cartDto = cart;;
 
         this.partialCart = partialCart;
-
+        this.bidId = bidId;
         setAllItems();
         setSizeFull();
         setSpacing(true);
@@ -126,11 +128,11 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
 
     private void displayCartSummary() {
         if (cartDto == null) {
-            Notification.show("No cart data available.");
+            //Notification.show("No cart data available.");
             return;
         }
         if (cartDto.getShopItemPrices() == null || cartDto.getShopItemQuantities() == null) {
-            Notification.show("No items in cart.");
+            //Notification.show("No items in cart.");
             return;
         }
         add(new H1("🛒 Cart Summary"));
@@ -150,7 +152,7 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
                 address.getHouseNumber(),
                 address.getZipCode(),
                 addressDialog,  
-                partialCart);
+                partialCart, bidId);
 
         Dialog paymentDialog = new Dialog(paymentPage);
         paymentDialog.setWidth("400px");

@@ -52,6 +52,7 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
     private String houseNumber;
     private String zipCode;
     private Dialog addressDialog;
+    private Integer bidId;
 
     private int partialCart = -1;
 
@@ -76,7 +77,7 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
 
     public PaymenPageView(@Value("${url.api}") String api, double totalAmount, String country, String city,
             String street, String houseNumber,
-            String zipCode, Dialog addressDialog, int partialCart) {
+            String zipCode, Dialog addressDialog, int partialCart, Integer bidId) {
 
         this.api = api;
         this.paymentMethodUrl = api + "/payment-method";
@@ -89,7 +90,7 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
         this.houseNumber = houseNumber;
         this.zipCode = zipCode;
         this.addressDialog = addressDialog;
-
+        this.bidId = bidId;
         this.partialCart = partialCart;
 
         setUpLayout();
@@ -190,6 +191,21 @@ public class PaymenPageView extends VerticalLayout implements BeforeEnterObserve
 
             if (response.getStatusCode() == HttpStatus.CREATED) {
                 Notification.show("Payment successful");
+                
+                if (bidId != null) {
+                    RestTemplate restTemplate = new RestTemplate();
+                    String urlS = url + "/shops/" + bidId + "/bids?authToken=" + token;
+
+                    try {
+                        
+                        restTemplate.postForEntity(urlS, null, String.class);
+                    } catch (Exception e) {
+                        System.err.println("Error notifying server about bid payment: " + e.getMessage());
+                    }
+
+
+                   
+                }
                 addressDialog.close(); // Close the dialog if payment is successful
 
             } else {

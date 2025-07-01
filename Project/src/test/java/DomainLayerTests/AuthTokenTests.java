@@ -37,4 +37,26 @@ public class AuthTokenTests {
         Thread.sleep(1000);
         assertTrue(authToken.isExpired());
     }
+
+    @Test
+    public void testGetUserId() {
+        assertEquals(10, authToken.getUserId());
+    }
+
+    @Test
+    public void testSetUserId() {
+        authToken.setUserId(20);
+        assertEquals(20, authToken.getUserId());
+    }
+
+    @Test
+    public void testConstructor() {
+        AuthToken newAuthToken = new AuthToken("newToken", new Date(), 20);
+        assertEquals("newToken", newAuthToken.getToken());
+        assertEquals(20, newAuthToken.getUserId());
+        assertTrue(newAuthToken.getExpirationTime().after(new Date(0))); // Ensure expiration
+        assertTrue(newAuthToken.getExpirationTime().before(new Date(System.currentTimeMillis() + 1000 * 60 * 60))); // Ensure expiration is in the future
+    }
+
+
 }

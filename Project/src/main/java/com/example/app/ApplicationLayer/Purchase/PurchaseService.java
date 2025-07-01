@@ -517,13 +517,14 @@ public class PurchaseService {
                     int shopId = bid.getShopId();
                     int shopOwnerId = userService.getShopOwner(shopId);
                     if ((shopOwnerId == userId) || (bid.getUserId() == userId)) { // if the shop is closed the shopOwnerId = -1
-                        
-                        returnBids.add(bid);
-
+                        // 3.Distinguish between the bids of the user to auctions he has participated in
+                        // - present only the bids he has made
+                        if (bid.getEndTime() == null) {
+                            returnBids.add(bid); 
+                        }
                     }
                 }
-                bids = returnBids;
-                
+                bids = returnBids;       
             } 
             else 
             {
@@ -546,6 +547,9 @@ public class PurchaseService {
                 .map(Item::getId)
             )
             .collect(Collectors.toSet());
+            // print for debugging validItemIds
+            System.out.println("Valid item IDs: " +
+                validItemIds.stream().map(String::valueOf).collect(Collectors.joining(", ")));
             bids.removeIf(b -> b.getItems().keySet().stream()
                     .anyMatch(itemId -> !validItemIds.contains(itemId)));
             return bids;
@@ -708,7 +712,7 @@ public class PurchaseService {
     }
 
     public List<BidReciept> getFinishedBidsList(String authToken) {
-        List<BidReciept> allBidsOfUser = getAllBids(authToken, true);
+        List<BidReciept> allBidsOfUser = getAllBidsNew(authToken, true);
         int userId;
         try {
             userId = authTokenService.ValidateToken(authToken);

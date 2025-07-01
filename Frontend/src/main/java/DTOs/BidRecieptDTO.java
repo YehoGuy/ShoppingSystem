@@ -172,7 +172,7 @@ public class BidRecieptDTO {
         this.endTime = endTime;
     }
 
-    public ShoppingCartDTO toShopingCartDTO(String api) {
+    public ShoppingCartDTO toShopingCartDTO(String api, String token) {
         Map<Integer, List<Integer>> shopItems = new java.util.HashMap<>();
         shopItems.put(storeId, items.keySet().stream().toList());
 
@@ -183,7 +183,7 @@ public class BidRecieptDTO {
         shopItemPrices.put(storeId, itemPriceMap);
         Map<Integer, Map<Integer, Integer>> shopItemQuantities = new java.util.HashMap<>();
 
-        List<ItemDTO> itemsList = List.of(getItemById(itemId, api)); // Placeholder, implement as needed
+        List<ItemDTO> itemsList = List.of(getItemById(itemId, api, token)); // Placeholder, implement as needed
 
         return new ShoppingCartDTO(
                 shopItems,
@@ -192,10 +192,10 @@ public class BidRecieptDTO {
                 itemsList);
     }
 
-    private ItemDTO getItemById(int id, String api) {
+    private ItemDTO getItemById(int id, String api, String token) {
 
         org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
-        String url = api + "/items/" + id;
+        String url = api + "/items/" + id + "?token=" + token;
         try {
             return restTemplate.getForObject(url, ItemDTO.class);
         } catch (Exception e) {

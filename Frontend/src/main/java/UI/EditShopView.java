@@ -231,6 +231,13 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
     }
 
     private void DisplayRoles() {
+        String canManageUrl = usersBaseUrl + "/hasPermission"
+            + "?token=" + getToken()
+            + "&userId=" + getUserId()
+            + "&shopId=" + shop.getShopId()
+            + "&permission=" + PermissionsEnum.manageManagers;
+
+        Boolean canManage = restTemplate.getForEntity(canManageUrl, Boolean.class).getBody();
         Map<Integer, PermissionsEnum[]> roles = getRoles();
         H2 rolesTitle = new H2("Roles and Permissions");
         rolesLayout.removeAll();
@@ -307,7 +314,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
 
         rolesGrid.setItems(userPermissionsList);
 
-        // Add Manager button
+         // Add Manager button
         // 1️⃣ Grab the current user's permissions
         PermissionsEnum[] currentUserPerms = roles.get(getUserId());
 

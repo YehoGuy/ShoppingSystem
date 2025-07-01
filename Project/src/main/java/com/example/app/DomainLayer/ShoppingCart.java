@@ -249,6 +249,7 @@ public class ShoppingCart {
             }
         }
         syncToPersistentCollections();
+
     }
 
     /**
@@ -291,5 +292,21 @@ public class ShoppingCart {
         List<Integer> shopIds = new ArrayList<>(items.keySet());
         shopIds.addAll(bids.keySet());
         return shopIds;
+    }
+
+    public void removeBid(int bidId) {
+        for (Map.Entry<Integer, CopyOnWriteArrayList<Integer>> entry : bids.entrySet()) {
+            Integer shopId = entry.getKey();
+            CopyOnWriteArrayList<Integer> productBids = entry.getValue();
+            if (productBids.contains(bidId)) {
+                productBids.remove(Integer.valueOf(bidId));
+                // Also remove from items if it exists
+                ConcurrentHashMap<Integer, Integer> shopItems = items.get(shopId);
+                if (shopItems != null) {
+                    shopItems.remove(bidId);
+                }
+            }
+        }
+        syncToPersistentCollections();
     }
 }

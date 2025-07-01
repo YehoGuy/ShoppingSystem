@@ -242,7 +242,6 @@ public class Purchase {
      * @return a string containing the purchase details.
      */
     public Reciept generateReciept() {
-        postLoad();
         if (!isCompleted)
             return new Reciept(purchaseId, userId, storeId, items, shippingAddress, null, this.price);
         else
@@ -250,12 +249,13 @@ public class Purchase {
     }
 
     @PostLoad
-    private void postLoad() {
-        // Sync persistedItems to items
+    protected void postLoad() {
+        items = new ConcurrentHashMap<>();
         for (Map.Entry<Integer, Integer> entry : persistedItems.entrySet()) {
             items.put(entry.getKey(), entry.getValue());
         }
     }
+
 
     @PrePersist
     @PreUpdate

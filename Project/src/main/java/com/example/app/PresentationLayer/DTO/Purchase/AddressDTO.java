@@ -13,6 +13,15 @@ public record AddressDTO(
         String zipCode) {
 
     public static AddressDTO fromDomain(com.example.app.DomainLayer.Purchase.Address a) {
+        if (a == null) {
+            return new AddressDTO(
+                    "",
+                    "",
+                    "",
+                    "",
+                    null,
+                    null);
+        }
         return new AddressDTO(
                 a.getCountry(),
                 a.getCity(),

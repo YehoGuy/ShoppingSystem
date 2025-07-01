@@ -1,11 +1,13 @@
 package PresentationLayerTests;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import static org.hamcrest.Matchers.hasSize;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -27,15 +29,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
-
-import com.example.app.ApplicationLayer.AuthTokenService;
-import com.example.app.ApplicationLayer.User.UserService;
-import com.example.app.DomainLayer.Member;
-import com.example.app.DomainLayer.User;
-import com.example.app.DomainLayer.Roles.PermissionsEnum;
-import com.example.app.DomainLayer.Roles.Role;
-import com.example.app.PresentationLayer.Controller.UserController;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -43,6 +36,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.example.app.ApplicationLayer.AuthTokenService;
+import com.example.app.ApplicationLayer.OurRuntime;
+import com.example.app.ApplicationLayer.User.UserService;
+import com.example.app.DomainLayer.Member;
+import com.example.app.DomainLayer.Roles.PermissionsEnum;
+import com.example.app.DomainLayer.Roles.Role;
+import com.example.app.DomainLayer.User;
+import com.example.app.PresentationLayer.Controller.UserController;
+
+import jakarta.validation.ConstraintViolationException;
 
 /**
  * Comprehensive slice tests for UserController.
@@ -1052,4 +1056,1863 @@ public class UserControllerTests {
         }
     }
 
+    /* ══════════════════ COMPREHENSIVE ENDPOINT TESTS ══════════════════ */
+
+    @Nested
+    @DisplayName("Get All Members Enhanced Tests")
+    class GetAllMembersEnhancedTests {
+        @Test
+        void success_returnsMembersList() throws Exception {
+            List<Member> members = List.of(
+                new Member(1, "user1", "pass1", "e1@mail", "123", "addr1"),
+                new Member(2, "user2", "pass2", "e2@mail", "456", "addr2")
+            );
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getAllMembers()).thenReturn(members);
+
+            mvc.perform(get("/api/users/allmembers").param("token", "tok"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].memberId").value(1))
+                .andExpect(jsonPath("$[1].memberId").value(2));
+        }
+
+        @Test
+        void emptyResult_returnsEmptyArray() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getAllMembers()).thenReturn(List.of());
+
+            mvc.perform(get("/api/users/allmembers").param("token", "tok"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken("badtoken");
+
+            mvc.perform(get("/api/users/allmembers").param("token", "badtoken"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getAllMembers()).thenThrow(new RuntimeException("Service error"));
+
+            mvc.perform(get("/api/users/allmembers").param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getAllMembers()).thenThrow(new RuntimeException("Internal error"));
+
+            mvc.perform(get("/api/users/allmembers").param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Change Permissions Enhanced Tests")
+    class ChangePermissionsEnhancedTests {
+        @Test
+        void success_returns204() throws Exception {
+            PermissionsEnum[] permissions = {PermissionsEnum.manageItems, PermissionsEnum.setPolicy};
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doNothing().when(userService).changePermissions(eq("tok"), eq(2), eq(1), any(PermissionsEnum[].class));
+
+            mvc.perform(post("/api/users/shops/1/permissions/2")
+                    .param("token", "tok")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("[\"manageItems\", \"setPolicy\"]"))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken("badtoken");
+
+            mvc.perform(post("/api/users/shops/1/permissions/2")
+                    .param("token", "badtoken")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("[\"manageItems\"]"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void badRequest_constraintViolation_returns400() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new ConstraintViolationException("Invalid constraint", null)).when(userService)
+                .changePermissions(anyString(), anyInt(), anyInt(), any());
+
+            mvc.perform(post("/api/users/shops/1/permissions/2")
+                    .param("token", "tok")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("[\"manageItems\"]"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Service error")).when(userService)
+                .changePermissions(anyString(), anyInt(), anyInt(), any());
+
+            mvc.perform(post("/api/users/shops/1/permissions/2")
+                    .param("token", "tok")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("[\"manageItems\"]"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Get Shop Owner Enhanced Tests")
+    class GetShopOwnerEnhancedTests {
+        @Test
+        void success_returnsOwnerId() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getShopOwner(1)).thenReturn(42);
+
+            mvc.perform(get("/api/users/shops/1/owner").param("token", "tok"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("42"));
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken("badtoken");
+
+            mvc.perform(get("/api/users/shops/1/owner").param("token", "badtoken"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void notFound_shopNotFound_returns404() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getShopOwner(999)).thenThrow(new NoSuchElementException());
+
+            mvc.perform(get("/api/users/shops/999/owner").param("token", "tok"))
+                .andExpect(status().isNotFound());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getShopOwner(1)).thenThrow(new RuntimeException("Internal error"));
+
+            mvc.perform(get("/api/users/shops/1/owner").param("token", "tok"))
+                .andExpect(status().isInternalServerError());
+        }
+    }
+
+    @Nested
+    @DisplayName("Get Permissions By Shop Enhanced Tests")
+    class GetPermissionsByShopEnhancedTests {
+        @Test
+        void success_returnsPermissionsMap() throws Exception {
+            HashMap<Integer, PermissionsEnum[]> permissions = new HashMap<>();
+            permissions.put(1, new PermissionsEnum[]{PermissionsEnum.manageItems});
+            permissions.put(2, new PermissionsEnum[]{PermissionsEnum.setPolicy});
+
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getPermitionsByShop("tok", 1)).thenReturn(permissions);
+
+            mvc.perform(get("/api/users/shops/1/permissions").param("token", "tok"))
+                .andExpect(status().isOk());
+        }
+
+        @Test
+        void emptyResult_returnsEmptyMap() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getPermitionsByShop("tok", 1)).thenReturn(new HashMap<>());
+
+            mvc.perform(get("/api/users/shops/1/permissions").param("token", "tok"))
+                .andExpect(status().isOk());
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken("badtoken");
+
+            mvc.perform(get("/api/users/shops/1/permissions").param("token", "badtoken"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getPermitionsByShop("tok", 1)).thenThrow(new RuntimeException("Service error"));
+
+            mvc.perform(get("/api/users/shops/1/permissions").param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getPermitionsByShop("tok", 1)).thenThrow(new RuntimeException("Internal error"));
+
+            mvc.perform(get("/api/users/shops/1/permissions").param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Get Accepted Roles Enhanced Tests")
+    class GetAcceptedRolesEnhancedTests {
+        @Test
+        void success_returnsAcceptedRoles() throws Exception {
+            List<Role> roles = Arrays.asList(
+                new Role(2, 1, new PermissionsEnum[]{PermissionsEnum.manageItems})
+            );
+            Member member = new Member(2, "user2", "pass", "e@mail", "123", "addr");
+            
+            when(userService.getAcceptedRoles("tok")).thenReturn(roles);
+            when(userService.getUserById(2)).thenReturn(member);
+            doNothing().when(userService).validateMemberId(2);
+
+            mvc.perform(get("/api/users/getAcceptedRoles").param("authToken", "tok"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)));
+        }
+
+        @Test
+        void emptyResult_returnsEmptyArray() throws Exception {
+            when(userService.getAcceptedRoles("tok")).thenReturn(List.of());
+
+            mvc.perform(get("/api/users/getAcceptedRoles").param("authToken", "tok"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(userService).getAcceptedRoles("badtoken");
+
+            mvc.perform(get("/api/users/getAcceptedRoles").param("authToken", "badtoken"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            doThrow(new RuntimeException("Service error")).when(userService).getAcceptedRoles("tok");
+
+            mvc.perform(get("/api/users/getAcceptedRoles").param("authToken", "tok"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Ban User Enhanced Tests")
+    class BanUserEnhancedTests {
+        @Test
+        void success_returns204() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doNothing().when(userService).banUser(2);
+
+            mvc.perform(post("/api/users/2/ban").param("token", "tok"))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken("badtoken");
+
+            mvc.perform(post("/api/users/2/ban").param("token", "badtoken"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Service error")).when(userService).banUser(2);
+
+            mvc.perform(post("/api/users/2/ban").param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Internal error")).when(userService).banUser(2);
+
+            mvc.perform(post("/api/users/2/ban").param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("List Suspended Enhanced Tests")
+    class ListSuspendedEnhancedTests {
+        @Test
+        void success_returnsSuspendedList() throws Exception {
+            List<Integer> suspended = List.of(2, 3, 5);
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getSuspendedUsers()).thenReturn(suspended);
+
+            mvc.perform(get("/api/users/suspended").param("token", "tok"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(3)))
+                .andExpect(jsonPath("$[0]").value(2));
+        }
+
+        @Test
+        void emptyResult_returnsEmptyArray() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getSuspendedUsers()).thenReturn(List.of());
+
+            mvc.perform(get("/api/users/suspended").param("token", "tok"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+        }
+    }
+
+    @Nested
+    @DisplayName("Has Permission Enhanced Tests")
+    class HasPermissionEnhancedTests {
+        @Test
+        void success_returnsTrue() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.hasPermission(2, PermissionsEnum.manageItems, 1)).thenReturn(true);
+
+            mvc.perform(get("/api/users/hasPermission")
+                    .param("token", "tok")
+                    .param("userId", "2")
+                    .param("shopId", "1")
+                    .param("permission", "manageItems"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("true"));
+        }
+
+        @Test
+        void success_returnsFalse() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.hasPermission(2, PermissionsEnum.manageItems, 1)).thenReturn(false);
+
+            mvc.perform(get("/api/users/hasPermission")
+                    .param("token", "tok")
+                    .param("userId", "2")
+                    .param("shopId", "1")
+                    .param("permission", "manageItems"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("false"));
+        }
+
+        @Test
+        void badRequest_invalidToken_returnsFalse() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken("badtoken");
+
+            mvc.perform(get("/api/users/hasPermission")
+                    .param("token", "badtoken")
+                    .param("userId", "2")
+                    .param("shopId", "1")
+                    .param("permission", "manageItems"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("false"));
+        }
+
+        @Test
+        void conflict_returnsFalse() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException()).when(userService).hasPermission(anyInt(), any(), anyInt());
+
+            mvc.perform(get("/api/users/hasPermission")
+                    .param("token", "tok")
+                    .param("userId", "2")
+                    .param("shopId", "1")
+                    .param("permission", "manageItems"))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("false"));
+        }
+
+        @Test
+        void internalError_returnsFalse() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Internal error")).when(userService).hasPermission(anyInt(), any(), anyInt());
+
+            mvc.perform(get("/api/users/hasPermission")
+                    .param("token", "tok")
+                    .param("userId", "2")
+                    .param("shopId", "1")
+                    .param("permission", "manageItems"))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("false"));
+        }
+    }
+
+    @Nested
+    @DisplayName("Has Role Enhanced Tests")
+    class HasRoleEnhancedTests {
+        @Test
+        void success_returnsTrue() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.hasRoleInShop(2, 1)).thenReturn(true);
+
+            mvc.perform(get("/api/users/hasRole")
+                    .param("token", "tok")
+                    .param("userId", "2")
+                    .param("shopId", "1"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("true"));
+        }
+
+        @Test
+        void success_returnsFalse() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.hasRoleInShop(2, 1)).thenReturn(false);
+
+            mvc.perform(get("/api/users/hasRole")
+                    .param("token", "tok")
+                    .param("userId", "2")
+                    .param("shopId", "1"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("false"));
+        }
+
+        @Test
+        void badRequest_returnsFalse() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken("badtoken");
+
+            mvc.perform(get("/api/users/hasRole")
+                    .param("token", "badtoken")
+                    .param("userId", "2")
+                    .param("shopId", "1"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("false"));
+        }
+    }
+
+    @Nested
+    @DisplayName("Get Pending Roles Enhanced Tests")
+    class GetPendingRolesEnhancedTests {
+        @Test
+        void success_returnsPendingRoles() throws Exception {
+            List<Role> roles = List.of(
+                new Role(2, 1, new PermissionsEnum[]{PermissionsEnum.manageItems})
+            );
+            Member member = new Member(2, "user2", "pass", "e@mail", "123", "addr");
+            
+            when(userService.getPendingRoles("tok")).thenReturn(roles);
+            when(userService.getUserById(2)).thenReturn(member);
+            doNothing().when(userService).validateMemberId(2);
+
+            mvc.perform(get("/api/users/getPendingRoles").param("authToken", "tok"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)));
+        }
+
+        @Test
+        void emptyResult_returnsEmptyArray() throws Exception {
+            when(userService.getPendingRoles("tok")).thenReturn(List.of());
+
+            mvc.perform(get("/api/users/getPendingRoles").param("authToken", "tok"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+        }
+
+        @Test
+        void badRequest_returnsNull() throws Exception {
+            doThrow(new IllegalArgumentException()).when(userService).getPendingRoles("badtoken");
+
+            mvc.perform(get("/api/users/getPendingRoles").param("authToken", "badtoken"))
+                .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Nested
+    @DisplayName("Get Shop Members Enhanced Tests")
+    class GetShopMembersEnhancedTests {
+        @Test
+        void success_returnsMembersList() throws Exception {
+            List<Member> members = List.of(
+                new Member(1, "user1", "pass1", "e1@mail", "123", "addr1"),
+                new Member(2, "user2", "pass2", "e2@mail", "456", "addr2")
+            );
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getShopMembers(1)).thenReturn(members);
+
+            mvc.perform(get("/api/users/shops/1/workers").param("token", "tok"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].memberId").value(1))
+                .andExpect(jsonPath("$[1].memberId").value(2));
+        }
+
+        @Test
+        void emptyResult_returnsEmptyArray() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getShopMembers(1)).thenReturn(List.of());
+
+            mvc.perform(get("/api/users/shops/1/workers").param("token", "tok"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken("badtoken");
+
+            mvc.perform(get("/api/users/shops/1/workers").param("token", "badtoken"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getShopMembers(1)).thenThrow(new RuntimeException("Service error"));
+
+            mvc.perform(get("/api/users/shops/1/workers").param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getShopMembers(1)).thenThrow(new RuntimeException("Internal error"));
+
+            mvc.perform(get("/api/users/shops/1/workers").param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Logout Enhanced Tests")
+    class LogoutEnhancedTests {
+        @Test
+        void success_returnsGuestToken() throws Exception {
+            when(userService.logout("tok")).thenReturn("guestToken123");
+
+            mvc.perform(post("/api/users/logout").param("token", "tok"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("guestToken123"));
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            doThrow(new RuntimeException("Service error")).when(userService).logout("tok");
+
+            mvc.perform(post("/api/users/logout").param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            doThrow(new RuntimeException("Internal error")).when(userService).logout("tok");
+
+            mvc.perform(post("/api/users/logout").param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Login As Guest Enhanced Tests")
+    class LoginAsGuestEnhancedTests {
+        @Test
+        void success_returnsToken() throws Exception {
+            when(userService.loginAsGuest()).thenReturn("guestToken123");
+
+            mvc.perform(post("/api/users/login/guest"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("guestToken123"));
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            doThrow(new RuntimeException("Service error")).when(userService).loginAsGuest();
+
+            mvc.perform(post("/api/users/login/guest"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            doThrow(new RuntimeException("Internal error")).when(userService).loginAsGuest();
+
+            mvc.perform(post("/api/users/login/guest"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Login As Member Enhanced Tests")
+    class LoginAsMemberEnhancedTests {
+        @Test
+        void success_returnsToken() throws Exception {
+            when(userService.loginAsMember("user123", "pass123", "")).thenReturn("memberToken123");
+
+            mvc.perform(post("/api/users/login/member")
+                    .param("username", "user123")
+                    .param("password", "pass123")
+                    .param("guestToken", ""))
+                .andExpect(status().isOk())
+                .andExpect(content().string("memberToken123"));
+        }
+
+        @Test
+        void successWithGuest_returnsToken() throws Exception {
+            when(userService.loginAsMember("user123", "pass123", "guestToken123")).thenReturn("memberToken123");
+
+            mvc.perform(post("/api/users/login/member")
+                    .param("username", "user123")
+                    .param("password", "pass123")
+                    .param("guestToken", "guestToken123"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("memberToken123"));
+        }
+
+        @Test
+        void badRequest_constraintViolation_returns400() throws Exception {
+            doThrow(new ConstraintViolationException("Invalid input", null)).when(userService)
+                .loginAsMember(anyString(), anyString(), anyString());
+
+            mvc.perform(post("/api/users/login/member")
+                    .param("username", "")
+                    .param("password", "pass123")
+                    .param("guestToken", ""))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_invalidCredentials_returns409() throws Exception {
+            doThrow(new RuntimeException("Invalid credentials")).when(userService)
+                .loginAsMember("user123", "wrongpass", "");
+
+            mvc.perform(post("/api/users/login/member")
+                    .param("username", "user123")
+                    .param("password", "wrongpass")
+                    .param("guestToken", ""))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            doThrow(new RuntimeException("Internal error")).when(userService)
+                .loginAsMember(anyString(), anyString(), anyString());
+
+            mvc.perform(post("/api/users/login/member")
+                    .param("username", "user123")
+                    .param("password", "pass123")
+                    .param("guestToken", ""))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Update Username Enhanced Tests")
+    class UpdateUsernameEnhancedTests {
+        @Test
+        void success_returns204() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doNothing().when(userService).updateMemberUsername("tok", "newUsername");
+
+            mvc.perform(patch("/api/users/1/username")
+                    .param("token", "tok")
+                    .param("username", "newUsername"))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken("badtoken");
+
+            mvc.perform(patch("/api/users/1/username")
+                    .param("token", "badtoken")
+                    .param("username", "newUsername"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void badRequest_constraintViolation_returns400() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new ConstraintViolationException("Invalid username", null)).when(userService)
+                .updateMemberUsername(anyString(), anyString());
+
+            mvc.perform(patch("/api/users/1/username")
+                    .param("token", "tok")
+                    .param("username", ""))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_usernameExists_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Username already exists")).when(userService)
+                .updateMemberUsername("tok", "existingUser");
+
+            mvc.perform(patch("/api/users/1/username")
+                    .param("token", "tok")
+                    .param("username", "existingUser"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Internal error")).when(userService)
+                .updateMemberUsername(anyString(), anyString());
+
+            mvc.perform(patch("/api/users/1/username")
+                    .param("token", "tok")
+                    .param("username", "newUsername"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Remove All Assigned Enhanced Tests")
+    class RemoveAllAssignedEnhancedTests {
+        @Test
+        void success_returns204() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doNothing().when(userService).removeAllAssigned(2, 1);
+
+            mvc.perform(delete("/api/users/shops/1/assignee/2/all")
+                    .param("token", "tok"))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken("badtoken");
+
+            mvc.perform(delete("/api/users/shops/1/assignee/2/all")
+                    .param("token", "badtoken"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Service error")).when(userService).removeAllAssigned(2, 1);
+
+            mvc.perform(delete("/api/users/shops/1/assignee/2/all")
+                    .param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Internal error")).when(userService).removeAllAssigned(2, 1);
+
+            mvc.perform(delete("/api/users/shops/1/assignee/2/all")
+                    .param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Make Manager Of Store Enhanced Tests")
+    class MakeManagerOfStoreEnhancedTests {
+        @Test
+        void success_returns204() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doNothing().when(userService).makeManagerOfStore(eq("tok"), eq(2), eq(1), any(PermissionsEnum[].class));
+
+            mvc.perform(post("/api/users/shops/1/managers")
+                    .param("token", "tok")
+                    .param("memberId", "2")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("[\"manageItems\", \"setPolicy\"]"))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken("badtoken");
+
+            mvc.perform(post("/api/users/shops/1/managers")
+                    .param("token", "badtoken")
+                    .param("memberId", "2")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("[\"manageItems\"]"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Service error")).when(userService)
+                .makeManagerOfStore(anyString(), anyInt(), anyInt(), any(PermissionsEnum[].class));
+
+            mvc.perform(post("/api/users/shops/1/managers")
+                    .param("token", "tok")
+                    .param("memberId", "2")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("[\"manageItems\"]"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Internal error")).when(userService)
+                .makeManagerOfStore(anyString(), anyInt(), anyInt(), any(PermissionsEnum[].class));
+
+            mvc.perform(post("/api/users/shops/1/managers")
+                    .param("token", "tok")
+                    .param("memberId", "2")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("[\"manageItems\"]"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Add New Item To Shopping Cart Enhanced Tests")
+    class AddNewItemToShoppingCartEnhancedTests {
+        @Test
+        void success_returns204() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doNothing().when(userService).addItemToShoppingCart("tok", 1, 5, 3);
+
+            mvc.perform(post("/api/users/shoppingCart/1/5")
+                    .param("quantity", "3")
+                    .param("token", "tok"))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken("badtoken");
+
+            mvc.perform(post("/api/users/shoppingCart/1/5")
+                    .param("quantity", "3")
+                    .param("token", "badtoken"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Service error")).when(userService)
+                .addItemToShoppingCart(anyString(), anyInt(), anyInt(), anyInt());
+
+            mvc.perform(post("/api/users/shoppingCart/1/5")
+                    .param("quantity", "3")
+                    .param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Internal error")).when(userService)
+                .addItemToShoppingCart(anyString(), anyInt(), anyInt(), anyInt());
+
+            mvc.perform(post("/api/users/shoppingCart/1/5")
+                    .param("quantity", "3")
+                    .param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Add Item To Shopping Cart Enhanced Tests") 
+    class AddItemToShoppingCartEnhancedTests {
+        @Test
+        void success_returns204() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doNothing().when(userService).updateShoppingCartItemQuantity(2, 1, 5, true);
+
+            mvc.perform(post("/api/users/shoppingCart/1/5/plus")
+                    .param("token", "tok")
+                    .param("userId", "2"))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken("badtoken");
+
+            mvc.perform(post("/api/users/shoppingCart/1/5/plus")
+                    .param("token", "badtoken")
+                    .param("userId", "2"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Service error")).when(userService)
+                .updateShoppingCartItemQuantity(anyInt(), anyInt(), anyInt(), anyBoolean());
+
+            mvc.perform(post("/api/users/shoppingCart/1/5/plus")
+                    .param("token", "tok")
+                    .param("userId", "2"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+                       doThrow(new RuntimeException("Internal error")).when(userService)
+                .updateShoppingCartItemQuantity(anyInt(), anyInt(), anyInt(), anyBoolean());
+
+            mvc.perform(post("/api/users/shoppingCart/1/5/plus")
+                    .param("token", "tok")
+                    .param("userId", "2"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Decrease Item In Shopping Cart Enhanced Tests")
+    class DecreaseItemInShoppingCartEnhancedTests {
+        @Test
+        void success_returns204() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doNothing().when(userService).updateShoppingCartItemQuantity(2, 1, 5, false);
+
+            mvc.perform(post("/api/users/shoppingCart/1/5/minus")
+                    .param("token", "tok")
+                    .param("userId", "2"))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken("badtoken");
+
+            mvc.perform(post("/api/users/shoppingCart/1/5/minus")
+                    .param("token", "badtoken")
+                    .param("userId", "2"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Service error")).when(userService)
+                .updateShoppingCartItemQuantity(anyInt(), anyInt(), anyInt(), anyBoolean());
+
+            mvc.perform(post("/api/users/shoppingCart/1/5/minus")
+                    .param("token", "tok")
+                    .param("userId", "2"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Internal error")).when(userService)
+                .updateShoppingCartItemQuantity(anyInt(), anyInt(), anyInt(), anyBoolean());
+
+            mvc.perform(post("/api/users/shoppingCart/1/5/minus")
+                    .param("token", "tok")
+                    .param("userId", "2"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Remove Completely Item From Shopping Cart Enhanced Tests")
+    class RemoveCompletelyItemFromShoppingCartEnhancedTests {
+        @Test
+        void success_returns204() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doNothing().when(userService).removeItemFromShoppingCart(2, 1, 5);
+
+            mvc.perform(post("/api/users/shoppingCart/1/5/remove")
+                    .param("token", "tok")
+                    .param("userId", "2"))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken("badtoken");
+
+            mvc.perform(post("/api/users/shoppingCart/1/5/remove")
+                    .param("token", "badtoken")
+                    .param("userId", "2"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Service error")).when(userService)
+                .removeItemFromShoppingCart(anyInt(), anyInt(), anyInt());
+
+            mvc.perform(post("/api/users/shoppingCart/1/5/remove")
+                    .param("token", "tok")
+                    .param("userId", "2"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Internal error")).when(userService)
+                .removeItemFromShoppingCart(anyInt(), anyInt(), anyInt());
+
+            mvc.perform(post("/api/users/shoppingCart/1/5/remove")
+                    .param("token", "tok")
+                    .param("userId", "2"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Update Password Enhanced Tests")
+    class UpdatePasswordEnhancedTests {
+        @Test
+        void success_returns204() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doNothing().when(userService).updateMemberPassword("tok", "newPassword123");
+
+            mvc.perform(patch("/api/users/1/password")
+                    .param("token", "tok")
+                    .param("password", "newPassword123"))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken("badtoken");
+
+            mvc.perform(patch("/api/users/1/password")
+                    .param("token", "badtoken")
+                    .param("password", "newPassword123"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void badRequest_emptyPassword_returns400() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new ConstraintViolationException("Password cannot be empty", null)).when(userService)
+                .updateMemberPassword(anyString(), anyString());
+
+            mvc.perform(patch("/api/users/1/password")
+                    .param("token", "tok")
+                    .param("password", ""))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Service error")).when(userService)
+                .updateMemberPassword("tok", "newPassword123");
+
+            mvc.perform(patch("/api/users/1/password")
+                    .param("token", "tok")
+                    .param("password", "newPassword123"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Internal error")).when(userService)
+                .updateMemberPassword(anyString(), anyString());
+
+            mvc.perform(patch("/api/users/1/password")
+                    .param("token", "tok")
+                    .param("password", "newPassword123"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Update Email Enhanced Tests")
+    class UpdateEmailEnhancedTests {
+        @Test
+        void success_returns204() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doNothing().when(userService).updateMemberEmail("tok", "newemail@example.com");
+
+            mvc.perform(patch("/api/users/1/email")
+                    .param("token", "tok")
+                    .param("email", "newemail@example.com"))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken("badtoken");
+
+            mvc.perform(patch("/api/users/1/email")
+                    .param("token", "badtoken")
+                    .param("email", "newemail@example.com"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void badRequest_invalidEmail_returns400() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new ConstraintViolationException("Invalid email format", null)).when(userService)
+                .updateMemberEmail(anyString(), anyString());
+
+            mvc.perform(patch("/api/users/1/email")
+                    .param("token", "tok")
+                    .param("email", "invalid-email"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_emailExists_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Email already exists")).when(userService)
+                .updateMemberEmail("tok", "existing@example.com");
+
+            mvc.perform(patch("/api/users/1/email")
+                    .param("token", "tok")
+                    .param("email", "existing@example.com"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Internal error")).when(userService)
+                .updateMemberEmail(anyString(), anyString());
+
+            mvc.perform(patch("/api/users/1/email")
+                    .param("token", "tok")
+                    .param("email", "newemail@example.com"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Update Phone Enhanced Tests")
+    class UpdatePhoneEnhancedTests {
+        @Test
+        void success_returns204() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doNothing().when(userService).updateMemberPhoneNumber("tok", "0501234567");
+
+            mvc.perform(patch("/api/users/1/phone")
+                    .param("token", "tok")
+                    .param("phoneNumber", "0501234567"))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken("badtoken");
+
+            mvc.perform(patch("/api/users/1/phone")
+                    .param("token", "badtoken")
+                    .param("phoneNumber", "0501234567"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void badRequest_emptyPhone_returns400() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new ConstraintViolationException("Phone cannot be empty", null)).when(userService)
+                .updateMemberPhoneNumber(anyString(), anyString());
+
+            mvc.perform(patch("/api/users/1/phone")
+                    .param("token", "tok")
+                    .param("phoneNumber", ""))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Service error")).when(userService)
+                .updateMemberPhoneNumber("tok", "0501234567");
+
+            mvc.perform(patch("/api/users/1/phone")
+                    .param("token", "tok")
+                    .param("phoneNumber", "0501234567"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Internal error")).when(userService)
+                .updateMemberPhoneNumber(anyString(), anyString());
+
+            mvc.perform(patch("/api/users/1/phone")
+                    .param("token", "tok")
+                    .param("phoneNumber", "0501234567"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Update Address Enhanced Tests")
+    class UpdateAddressEnhancedTests {
+        @Test
+        void success_returns204() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doNothing().when(userService).updateMemberAddress("tok", "Tel Aviv", "Rothschild", 5, "12345");
+
+            mvc.perform(patch("/api/users/1/address")
+                    .param("token", "tok")
+                    .param("city", "Tel Aviv")
+                    .param("street", "Rothschild")
+                    .param("apartmentNumber", "5")
+                    .param("postalCode", "12345"))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken("badtoken");
+
+            mvc.perform(patch("/api/users/1/address")
+                    .param("token", "badtoken")
+                    .param("city", "Tel Aviv")
+                    .param("street", "Rothschild")
+                    .param("apartmentNumber", "5")
+                    .param("postalCode", "12345"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void badRequest_emptyCity_returns400() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new ConstraintViolationException("City cannot be empty", null)).when(userService)
+                .updateMemberAddress(anyString(), anyString(), anyString(), anyInt(), anyString());
+
+            mvc.perform(patch("/api/users/1/address")
+                    .param("token", "tok")
+                    .param("city", "")
+                    .param("street", "Rothschild")
+                    .param("apartmentNumber", "5")
+                    .param("postalCode", "12345"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Service error")).when(userService)
+                .updateMemberAddress(anyString(), anyString(), anyString(), anyInt(), anyString());
+
+            mvc.perform(patch("/api/users/1/address")
+                    .param("token", "tok")
+                    .param("city", "Tel Aviv")
+                    .param("street", "Rothschild")
+                    .param("apartmentNumber", "5")
+                    .param("postalCode", "12345"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Internal error")).when(userService)
+                .updateMemberAddress(anyString(), anyString(), anyString(), anyInt(), anyString());
+
+            mvc.perform(patch("/api/users/1/address")
+                    .param("token", "tok")
+                    .param("city", "Tel Aviv")
+                    .param("street", "Rothschild")
+                    .param("apartmentNumber", "5")
+                    .param("postalCode", "12345"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Set Suspended Enhanced Tests")
+    class SetSuspendedEnhancedTests {
+        @Test
+        void success_returns204() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            LocalDateTime suspendUntil = LocalDateTime.of(2025, 12, 31, 23, 59);
+            doNothing().when(userService).setSuspended(2, suspendUntil);
+
+            mvc.perform(post("/api/users/2/suspension")
+                    .param("token", "tok")
+                    .param("until", "2025-12-31T23:59:00"))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void success_withoutUntil_returns204() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doNothing().when(userService).setSuspended(2, null);
+
+            mvc.perform(post("/api/users/2/suspension")
+                    .param("token", "tok"))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken("badtoken");
+
+            mvc.perform(post("/api/users/2/suspension")
+                    .param("token", "badtoken")
+                    .param("until", "2025-12-31T23:59:00"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Service error")).when(userService).setSuspended(anyInt(), any());
+
+            mvc.perform(post("/api/users/2/suspension")
+                    .param("token", "tok")
+                    .param("until", "2025-12-31T23:59:00"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Internal error")).when(userService).setSuspended(anyInt(), any());
+
+            mvc.perform(post("/api/users/2/suspension")
+                    .param("token", "tok")
+                    .param("until", "2025-12-31T23:59:00"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Set Un Suspended Enhanced Tests")
+    class SetUnSuspendedEnhancedTests {
+        @Test
+        void success_returns204() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doNothing().when(userService).setUnSuspended(2);
+
+            mvc.perform(post("/api/users/2/unsuspension")
+                    .param("token", "tok"))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken("badtoken");
+
+            mvc.perform(post("/api/users/2/unsuspension")
+                    .param("token", "badtoken"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Service error")).when(userService).setUnSuspended(2);
+
+            mvc.perform(post("/api/users/2/unsuspension")
+                    .param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Internal error")).when(userService).setUnSuspended(2);
+
+            mvc.perform(post("/api/users/2/unsuspension")
+                    .param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Get Shopping Cart Enhanced Tests")
+    class GetShoppingCartEnhancedTests {
+        @Test
+        void success_returnsShoppingCart() throws Exception {
+            HashMap<Integer, HashMap<Integer, Integer>> cart = new HashMap<>();
+            HashMap<Integer, Integer> shopItems = new HashMap<>();
+            shopItems.put(5, 2); // item 5 with quantity 2
+            shopItems.put(7, 1); // item 7 with quantity 1
+            cart.put(1, shopItems); // shop 1
+            
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getUserShoppingCartItems(2)).thenReturn(cart);
+
+            mvc.perform(get("/api/users/shoppingCart")
+                    .param("token", "tok")
+                    .param("userId", "2"))
+                .andExpect(status().isOk());
+        }
+
+        @Test
+        void emptyResult_returnsEmptyCart() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getUserShoppingCartItems(2)).thenReturn(new HashMap<>());
+
+            mvc.perform(get("/api/users/shoppingCart")
+                    .param("token", "tok")
+                    .param("userId", "2"))
+                .andExpect(status().isOk());
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken("badtoken");
+
+            mvc.perform(get("/api/users/shoppingCart")
+                    .param("token", "badtoken")
+                    .param("userId", "2"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getUserShoppingCartItems(2)).thenThrow(new RuntimeException("Service error"));
+
+            mvc.perform(get("/api/users/shoppingCart")
+                    .param("token", "tok")
+                    .param("userId", "2"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getUserShoppingCartItems(2)).thenThrow(new RuntimeException("Internal error"));
+
+            mvc.perform(get("/api/users/shoppingCart")
+                    .param("token", "tok")
+                    .param("userId", "2"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Is Suspended Enhanced Tests")
+    class IsSuspendedEnhancedTests {
+        @Test
+        void success_returnsTrue() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.isSuspended(2)).thenReturn(true);
+
+            mvc.perform(get("/api/users/2/isSuspended")
+                    .param("token", "tok"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("true"));
+        }
+
+        @Test
+        void success_returnsFalse() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.isSuspended(2)).thenReturn(false);
+
+            mvc.perform(get("/api/users/2/isSuspended")
+                    .param("token", "tok"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("false"));
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken("badtoken");
+
+            mvc.perform(get("/api/users/2/isSuspended")
+                    .param("token", "badtoken"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.isSuspended(2)).thenThrow(new RuntimeException("Service error"));
+
+            mvc.perform(get("/api/users/2/isSuspended")
+                    .param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.isSuspended(2)).thenThrow(new RuntimeException("Internal error"));
+
+            mvc.perform(get("/api/users/2/isSuspended")
+                    .param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Make Store Owner Enhanced Tests")
+    class MakeStoreOwnerEnhancedTests {
+        @Test
+        void success_returns204() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doNothing().when(userService).makeStoreOwner("tok", 2, 1);
+
+            mvc.perform(post("/api/users/shops/1/owners")
+                    .param("token", "tok")
+                    .param("memberId", "2"))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException("Invalid token")).when(userService)
+                .makeStoreOwner("badtoken", 2, 1);
+
+            mvc.perform(post("/api/users/shops/1/owners")
+                    .param("token", "badtoken")
+                    .param("memberId", "2"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Service error")).when(userService)
+                .makeStoreOwner("tok", 2, 1);
+
+            mvc.perform(post("/api/users/shops/1/owners")
+                    .param("token", "tok")
+                    .param("memberId", "2"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Internal error")).when(userService)
+                .makeStoreOwner("tok", 2, 1);
+
+            mvc.perform(post("/api/users/shops/1/owners")
+                    .param("token", "tok")
+                    .param("memberId", "2"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Accept Role Enhanced Tests")
+    class AcceptRoleEnhancedTests {
+        @Test
+        void success_returns204() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doNothing().when(userService).acceptRole("tok", 1);
+
+            mvc.perform(post("/api/users/roles/1/accept")
+                    .param("token", "tok"))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException("Invalid token")).when(userService).acceptRole("badtoken", 1);
+
+            mvc.perform(post("/api/users/roles/1/accept")
+                    .param("token", "badtoken"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Service error")).when(userService).acceptRole("tok", 1);
+
+            mvc.perform(post("/api/users/roles/1/accept")
+                    .param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Internal error")).when(userService).acceptRole("tok", 1);
+
+            mvc.perform(post("/api/users/roles/1/accept")
+                    .param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Decline Role Enhanced Tests")
+    class DeclineRoleEnhancedTests {
+        @Test
+        void success_returns204() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doNothing().when(userService).declineRole("tok", 1);
+
+            mvc.perform(post("/api/users/roles/1/decline")
+                    .param("token", "tok"))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException("Invalid token")).when(userService).declineRole("badtoken", 1);
+
+            mvc.perform(post("/api/users/roles/1/decline")
+                    .param("token", "badtoken"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Service error")).when(userService).declineRole("tok", 1);
+
+            mvc.perform(post("/api/users/roles/1/decline")
+                    .param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Internal error")).when(userService).declineRole("tok", 1);
+
+            mvc.perform(post("/api/users/roles/1/decline")
+                    .param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Get User Won Auctions Enhanced Tests")
+    class GetUserWonAuctionsEnhancedTests {
+        @Test
+        void success_returnsAuctionsList() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getAuctionsWinList(1)).thenReturn(List.of());
+
+            mvc.perform(get("/api/users/auctions/won")
+                    .param("authToken", "tok"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+        }
+
+        @Test
+        void badRequest_invalidToken_returns401() throws Exception {
+            doThrow(new IllegalArgumentException()).when(authService).ValidateToken("badtoken");
+
+            mvc.perform(get("/api/users/auctions/won")
+                    .param("authToken", "badtoken"))
+                .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            when(userService.getAuctionsWinList(1)).thenThrow(new RuntimeException("Internal error"));
+
+            mvc.perform(get("/api/users/auctions/won")
+                    .param("authToken", "tok"))
+                .andExpect(status().isInternalServerError());
+        }
+    }
+
+    @Nested
+    @DisplayName("Get Missing Notifications Quantity Enhanced Tests")
+    class GetMissingNotificationsQuantityEnhancedTests {
+        @Test
+        void success_returnsQuantity() throws Exception {
+            when(userService.getMissingNotificationsQuantity("tok")).thenReturn(5);
+
+            mvc.perform(get("/api/users/getNotificationsQuantity")
+                    .param("token", "tok"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("5"));
+        }
+
+        @Test
+        void success_returnsZero() throws Exception {
+            when(userService.getMissingNotificationsQuantity("tok")).thenReturn(0);
+
+            mvc.perform(get("/api/users/getNotificationsQuantity")
+                    .param("token", "tok"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("0"));
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            doThrow(new OurRuntime("Service error")).when(userService)
+                .getMissingNotificationsQuantity("tok");
+
+            mvc.perform(get("/api/users/getNotificationsQuantity")
+                    .param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            doThrow(new RuntimeException("Internal error")).when(userService)
+                .getMissingNotificationsQuantity("tok");
+
+            mvc.perform(get("/api/users/getNotificationsQuantity")
+                    .param("token", "tok"))
+                .andExpect(status().isInternalServerError());
+        }
+    }
+
+    @Nested
+    @DisplayName("Remove Manager From Store Enhanced Tests")
+    class RemoveManagerFromStoreEnhancedTests {
+        @Test
+        void success_returns204() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doNothing().when(userService).removeManagerFromStore("tok", 2, 1);
+
+            mvc.perform(delete("/api/users/shops/1/managers/2")
+                    .param("token", "tok"))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(userService)
+                .removeManagerFromStore("badtoken", 2, 1);
+
+            mvc.perform(delete("/api/users/shops/1/managers/2")
+                    .param("token", "badtoken"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Service error")).when(userService)
+                .removeManagerFromStore("tok", 2, 1);
+
+            mvc.perform(delete("/api/users/shops/1/managers/2")
+                    .param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Internal error")).when(userService)
+                .removeManagerFromStore("tok", 2, 1);
+
+            mvc.perform(delete("/api/users/shops/1/managers/2")
+                    .param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Remove Owner From Store Enhanced Tests")
+    class RemoveOwnerFromStoreEnhancedTests {
+        @Test
+        void success_returns204() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doNothing().when(userService).removeOwnerFromStore("tok", 2, 1);
+
+            mvc.perform(delete("/api/users/shops/1/owners/2")
+                    .param("token", "tok"))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void badRequest_invalidToken_returns400() throws Exception {
+            doThrow(new IllegalArgumentException()).when(userService)
+                .removeOwnerFromStore("badtoken", 2, 1);
+
+            mvc.perform(delete("/api/users/shops/1/owners/2")
+                    .param("token", "badtoken"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_serviceError_returns409() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Service error")).when(userService)
+                .removeOwnerFromStore("tok", 2, 1);
+
+            mvc.perform(delete("/api/users/shops/1/owners/2")
+                    .param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(authService.ValidateToken("tok")).thenReturn(1);
+            doThrow(new RuntimeException("Internal error")).when(userService)
+                .removeOwnerFromStore("tok", 2, 1);
+
+            mvc.perform(delete("/api/users/shops/1/owners/2")
+                    .param("token", "tok"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Validate Member Id Enhanced Tests")
+    class ValidateMemberIdEnhancedTests {
+        @Test
+        void success_returns204() throws Exception {
+            doNothing().when(userService).validateMemberId(1);
+
+            mvc.perform(get("/api/users/validate/1"))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void badRequest_invalidId_returns400() throws Exception {
+            doThrow(new IllegalArgumentException("Invalid member ID")).when(userService).validateMemberId(0);
+
+            mvc.perform(get("/api/users/validate/0"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void conflict_memberNotFound_returns409() throws Exception {
+            doThrow(new RuntimeException("Member not found")).when(userService).validateMemberId(999);
+
+            mvc.perform(get("/api/users/validate/999"))
+                .andExpect(status().isConflict());
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            doThrow(new RuntimeException("Internal error")).when(userService).validateMemberId(1);
+
+            mvc.perform(get("/api/users/validate/1"))
+                .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("Get Notifications Enhanced Tests")
+    class GetNotificationsEnhancedTests {
+        @Test
+        void success_returnsNotifications() throws Exception {
+            when(userService.getNotificationsAndClear("tok"))
+                .thenReturn(List.of("Notification 1", "Notification 2"));
+
+            mvc.perform(get("/api/users/notifications")
+                    .param("authToken", "tok"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0]").value("Notification 1"))
+                .andExpect(jsonPath("$[1]").value("Notification 2"));
+        }
+
+        @Test
+        void emptyResult_returnsEmptyArray() throws Exception {
+            when(userService.getNotificationsAndClear("tok")).thenReturn(List.of());
+
+            mvc.perform(get("/api/users/notifications")
+                    .param("authToken", "tok"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+        }
+
+        @Test
+        void internalError_returns500() throws Exception {
+            when(userService.getNotificationsAndClear("tok")).thenThrow(new RuntimeException("Internal error"));
+
+            mvc.perform(get("/api/users/notifications")
+                    .param("authToken", "tok"))
+                .andExpect(status().isInternalServerError());
+        }
+    }
+    
 }
+

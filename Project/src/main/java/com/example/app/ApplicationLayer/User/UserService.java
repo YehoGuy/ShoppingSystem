@@ -4,8 +4,13 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
 import com.example.app.ApplicationLayer.LoggerService;
@@ -22,6 +27,9 @@ import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
 import com.example.app.DomainLayer.User;
 import com.example.app.InfrastructureLayer.PasswordEncoderUtil;
+
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.constraints.Min;
 
 @Service
 public class UserService {
@@ -2197,4 +2205,24 @@ public class UserService {
             throw new OurRuntime("getMissingNotificationsQuantity: " + e.getMessage(), e);
         }
     }
+
+    public void removeBidFromCart(String authToken, int bidId) {
+        try {
+            LoggerService.logMethodExecution("removeBidFromCart", authToken, bidId);
+            int userId = authTokenService.ValidateToken(authToken); // Validate the token and get the user ID
+            userRepository.removeBidFromCart(userId, bidId); // Remove the bid from the user's shopping cart
+            LoggerService.logMethodExecutionEndVoid("removeBidFromCart");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("removeBidFromCart", e);
+            throw new OurRuntime("removeBidFromCart: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("removeBidFromCart", e);
+            throw new OurArg("removeBidFromCart: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("removeBidFromCart", e, authToken, bidId);
+            throw new OurRuntime("removeBidFromCart: " + e.getMessage(), e);
+        }
+    }
+
+
 }
