@@ -139,7 +139,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 dialog.setHeaderTitle("Purchase Summary");
 
                 PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(baseUrl, cart,
-                        dialog, -1, totalPrice );/////////////
+                        dialog, -1, totalPrice, null );
 
                 // Add your component to the dialog
                 dialog.add(purchaseCompletion);
@@ -190,7 +190,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 dialog.setHeaderTitle("Purchase Summary");
                 ShoppingCartDTO newCart = cart.getShoppingCartDTOofShop(shopID);
                 PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(
-                        baseUrl, cart.getShoppingCartDTOofShop(shopID), dialog, shopID, shopTotal);
+                        baseUrl, cart.getShoppingCartDTOofShop(shopID), dialog, shopID, shopTotal, null);
 
                 // Add your component to the dialog
                 dialog.add(purchaseCompletion);
@@ -725,9 +725,9 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
     private void payForBid(BidRecieptDTO dto) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Purchase Summary");
-        ShoppingCartDTO cartDto = dto.toShopingCartDTO(baseUrl);
+        ShoppingCartDTO cartDto = dto.toShopingCartDTO(baseUrl, (String) VaadinSession.getCurrent().getAttribute("authToken"));
         PurchaseCompletionIntermidiate purchaseCompletion = new PurchaseCompletionIntermidiate(baseUrl, cartDto,
-                dialog, dto.getStoreId(), dto.getHighestBid());
+                dialog, dto.getStoreId(), dto.getHighestBid(), dto.getPurchaseId());
 
         // Add your component to the dialog
         dialog.add(purchaseCompletion);
@@ -740,5 +740,6 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
         dialog.open(); // Show the dialog
         buildView(); // Refresh the view after purchase
+
     }
 }

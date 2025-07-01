@@ -165,4 +165,6 @@ public interface IUserRepository {
 
         int getMissingNotificationsQuantity(int userId);
 
+        void removeBidFromCart(int userId, int bidId);
+
 }

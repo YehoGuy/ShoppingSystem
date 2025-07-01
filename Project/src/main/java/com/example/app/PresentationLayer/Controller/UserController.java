@@ -443,6 +443,27 @@ public class UserController {
         }
     }
 
+    @PostMapping("/shops/{bidId}/bids") 
+    public ResponseEntity<String> removeBidFromCart(
+        @PathVariable("bidId") @Min(1) int bidId,
+        @RequestParam String authToken) {
+        try {
+            authService.ValidateToken(authToken);
+            userService.removeBidFromCart(authToken, bidId);
+            return ResponseEntity.noContent().build(); // 204 No Content
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage()); // 400
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage()); // 404
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Internal server error"); // 500
+        }
+    }
+
+
     @GetMapping("/shops/{shopId}/permissions")
     public ResponseEntity<?> getPermissionsByShop(
             @PathVariable @Min(1) int shopId,
