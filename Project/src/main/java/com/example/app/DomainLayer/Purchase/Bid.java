@@ -189,7 +189,8 @@ public class Bid extends Purchase {
     }
 
     @PostLoad
-    private void postLoad() {
+    protected void postLoad() {
+        super.postLoad();
         // Sync persistedItems to items
         for (Map.Entry<Integer, Boolean> entry : persistedBiddersIds.entrySet()) {
             biddersIds.put(entry.getKey(), entry.getValue());

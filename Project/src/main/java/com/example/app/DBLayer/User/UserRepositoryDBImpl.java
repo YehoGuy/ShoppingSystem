@@ -990,4 +990,17 @@ public class UserRepositoryDBImpl implements IUserRepository {
         Member member = (Member) user;
         return member.getMissingNotificationsQuantity();
     }
+
+    @Override
+    public void removeBidFromCart(int userId, int bidId) {
+        User user = getUserById(userId);
+        if (user instanceof Member) {
+            Member member = (Member) user;
+            ShoppingCart cart = member.getShoppingCart();
+            cart.removeBid(bidId);
+            jpaRepo.save(member);
+        } else {
+            throw new OurRuntime("User is not a member: " + userId);
+        }
+    }
 }

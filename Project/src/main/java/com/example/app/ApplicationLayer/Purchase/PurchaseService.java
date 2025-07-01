@@ -712,7 +712,7 @@ public class PurchaseService {
     }
 
     public List<BidReciept> getFinishedBidsList(String authToken) {
-        List<BidReciept> allBidsOfUser = getAllBids(authToken, true);
+        List<BidReciept> allBidsOfUser = getAllBidsNew(authToken, true);
         int userId;
         try {
             userId = authTokenService.ValidateToken(authToken);

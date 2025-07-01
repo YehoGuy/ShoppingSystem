@@ -1038,19 +1038,16 @@ class PurchaseServiceTests {
         BidReciept open = mock(BidReciept.class);
 
         when(done.isCompleted()).thenReturn(true);
-        when(done.getUserId())     .thenReturn(uid);
+        when(done.getUserId()).thenReturn(uid);
+        
+        when(open.isCompleted()).thenReturn(false);
+        when(open.getUserId()).thenReturn(uid);
 
-        // spy the service
-        PurchaseService spySvc = spy(service);
+        // Mock the required dependencies for getAllBids
+        when(auth.ValidateToken(token)).thenReturn(uid);
+        when(repo.getAllBids()).thenReturn(List.of(done, open));
 
-        // make these two lenient stubs:
-        lenient().doReturn(List.of(done, open))
-                .when(spySvc).getAllBids(eq(token), eq(true));
-
-        lenient().when(auth.ValidateToken(token))
-                .thenReturn(uid);
-
-        List<BidReciept> out = spySvc.getFinishedBidsList(token);
+        List<BidReciept> out = service.getFinishedBidsList(token);
 
         assertEquals(1, out.size());
         assertSame(done, out.get(0));
