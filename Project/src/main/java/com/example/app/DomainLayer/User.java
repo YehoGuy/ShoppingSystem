@@ -29,11 +29,11 @@ public abstract class User {
         this.paymentMethodString = "";
     }
 
-    public User(int cartId, Address address) {
-        this.shoppingCart = new ShoppingCart(); // Initialize the shopping cart
-        this.address = address; // Set the user's shipping address
-        this.paymentMethodString = "";
-    }
+    // public User(int cartId, Address address) {
+    //     this.shoppingCart = new ShoppingCart(); // Initialize the shopping cart
+    //     this.address = address; // Set the user's shipping address
+    //     this.paymentMethodString = "";
+    // }
 
     public ShoppingCart getShoppingCart() {
         shoppingCart.loadFromPersistentCollections();

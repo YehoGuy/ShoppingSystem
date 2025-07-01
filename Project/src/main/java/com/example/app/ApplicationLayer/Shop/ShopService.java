@@ -1035,7 +1035,8 @@ public class ShopService {
                 throw new OurRuntime("No permission to view policies for shop " + shopId);
             }
             // println("getPolicies called for shop " + shopId);
-            for (Policy p : shopRepository.getPolicies(shopId)) {
+            List<Policy> policies = shopRepository.getPolicies(shopId);
+            for (Policy p : policies) {
                 if (p == null) {
                     //System.out.println("sdlkcsl;dkcsdkcsdds;k");
                 } else {
@@ -1043,7 +1044,7 @@ public class ShopService {
 
                 }
             }
-            return shopRepository.getPolicies(shopId);
+            return policies;
         } catch (OurArg e) {
             LoggerService.logDebug("getPolicies", e);
             throw new OurArg("getPolicies" + e.getMessage());

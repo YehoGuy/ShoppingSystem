@@ -55,9 +55,13 @@ public class CartItem {
         if (obj == null || getClass() != obj.getClass())
             return false;
         CartItem cartItem = (CartItem) obj;
-        return shopId != null ? shopId.equals(cartItem.shopId)
-                : cartItem.shopId == null &&
-                        productId != null ? productId.equals(cartItem.productId) : cartItem.productId == null;
+        if(shopId != null && shopId.equals(cartItem.shopId))
+            return false;
+        if(productId != null && productId.equals(cartItem.productId))
+            return false;
+        if(quantity != null && quantity.equals(cartItem.quantity))
+            return false;
+        return true;
     }
 
     @Override
