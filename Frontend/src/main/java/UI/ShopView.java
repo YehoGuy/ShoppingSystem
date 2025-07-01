@@ -156,7 +156,7 @@ public class ShopView extends BaseView
                 createBidForItem(item.getId(), shop.getShopId())
             );
 
-            if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+            if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended")) || isGuest()) {
                 bidButton.setVisible(false);
             }
 
@@ -316,7 +316,7 @@ public class ShopView extends BaseView
                         UI.getCurrent().navigate("auction/" + dto.getPurchaseId());
                     }
                 });
-                if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
+                if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended")) || isGuest()) {
                     btn.setVisible(false);
                 }
                 return btn;
@@ -356,8 +356,7 @@ public class ShopView extends BaseView
         Button addReviewButton = new Button("Add Review", e ->
             addReview(shop.getShopId())
         );
-        if (Boolean.TRUE.equals(
-            VaadinSession.getCurrent().getAttribute("isSuspended")))
+        if (Boolean.TRUE.equals(VaadinSession.getCurrent().getAttribute("isSuspended")) || isGuest())
         {
             addReviewButton.setVisible(false);
         }
@@ -720,5 +719,28 @@ public class ShopView extends BaseView
         } catch (Exception e) {
             return false;
         }
+    }
+
+    private boolean isGuest() {
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            Notification.show("No auth token found. Please log in.", 3000, Notification.Position.MIDDLE);
+            return true; // Default to guest if not authenticated
+        }
+
+        String url = usersUrl + "/isGuest?token=" + token;
+
+        try {
+            ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                return response.getBody();
+            } else {
+                Notification.show("Could not determine guest status", 3000, Notification.Position.MIDDLE);
+            }
+        } catch (Exception e) {
+            Notification.show("Error checking guest status", 3000, Notification.Position.MIDDLE);
+        }
+
+        return true; // fallback to guest on error
     }
 }
