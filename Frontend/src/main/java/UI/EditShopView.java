@@ -314,7 +314,7 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
 
         rolesGrid.setItems(userPermissionsList);
 
-         // Add Manager button
+        // Add Manager button
         // 1️⃣ Grab the current user's permissions
         PermissionsEnum[] currentUserPerms = roles.get(getUserId());
 
