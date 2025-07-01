@@ -133,4 +133,11 @@ public class MessageRepositoryDBImpl implements IMessageRepository {
         }
     }
 
+    @Override
+    public List<Message> getUserConversations(int userId) {
+        List<Message> output = getMessagesBySenderId(userId);
+        output.addAll(getMessagesByReceiverId(userId));
+        return output;
+    }
+
 }
