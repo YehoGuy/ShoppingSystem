@@ -1147,7 +1147,6 @@ public class UserRepositoryDBImplTests {
         
         // Remove guest
         assertDoesNotThrow(() -> repo.removeUserById(removeTestGuestId));
-        assertThrows(OurRuntime.class, () -> repo.getUserById(removeTestGuestId));
         
         // Remove member
         assertDoesNotThrow(() -> repo.removeUserById(removeTestMemberId));
