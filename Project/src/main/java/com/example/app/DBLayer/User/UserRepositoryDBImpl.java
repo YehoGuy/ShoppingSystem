@@ -678,7 +678,7 @@ public class UserRepositoryDBImpl implements IUserRepository {
         if (user instanceof Member) {
             return ((Member) user).isSuspended();
         } else {
-            throw new OurRuntime("User is not a member: " + userId);
+            return false; // Non-members are not suspended
         }
     }
 
@@ -785,7 +785,13 @@ public class UserRepositoryDBImpl implements IUserRepository {
     public ShoppingCart getShoppingCartById(int userId) {
         User user = getUserById(userId);
         if (user != null) {
-            return user.getShoppingCart();
+            if (user instanceof Member) {
+                return user.getShoppingCart();
+            } else if (user instanceof Guest) {
+                // For guests, we can directly access the shopping cart
+                return user.getShoppingCartForGuest();
+            }
+            //return user.getShoppingCart();
         }
         return null;
     }
@@ -795,7 +801,6 @@ public class UserRepositoryDBImpl implements IUserRepository {
         if (quantity <= 0) {
             throw new OurRuntime("Quantity must be greater than 0.");
         }
-
         User user = getUserById(userId);
         ShoppingCart cart = user.getShoppingCart();
         cart.addItem(shopId, itemId, quantity);
@@ -803,7 +808,19 @@ public class UserRepositoryDBImpl implements IUserRepository {
         if (user instanceof Member) {
             updateUserInDB((Member) user);
         }
+        else 
+        {
+            Guest guest = guests.get(userId);
+            if (guest == null) {
+                throw new OurRuntime("Guest not found: " + userId);
+            }
+            ShoppingCart guestCart = guest.getShoppingCart();
+            guestCart.addItem(shopId, itemId, quantity);
+            guest.setShoppingCart(guestCart);
+        }
     }
+
+
 
     @Override
     public void removeItemFromShoppingCart(int userId, int shopId, int itemId) {

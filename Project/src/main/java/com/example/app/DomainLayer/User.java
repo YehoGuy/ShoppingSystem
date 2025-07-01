@@ -40,6 +40,11 @@ public abstract class User {
         return shoppingCart; // Return the user's shopping cart
     }
 
+    public ShoppingCart getShoppingCartForGuest() {
+        //shoppingCart.loadFromPersistentCollections();
+        return shoppingCart; // Return the user's shopping cart
+    }
+
     public void setShoppingCart(ShoppingCart shoppingCart) {
         this.shoppingCart = shoppingCart; // Set a new shopping cart for the user
     }

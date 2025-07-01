@@ -78,8 +78,12 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
         handleSuspence();
 
-        getWonAuctionsSection();
-        getFinishedBidsSection();
+        if(!isGuest())
+        {
+            getWonAuctionsSection();
+            getFinishedBidsSection();
+        }
+
     }
 
     public Integer getUserId() {
@@ -273,48 +277,53 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         totalContainer.add(total, buyButton);
         add(buyButtonContainer, totalContainer);
 
-        // Your Won Auctions section
-        H2 wonHeader = new H2("Your Won Auctions");
-        add(wonHeader);
 
-        // Fetch the list of won auctions for this user
-        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-        HttpHeaders wonHeaders = new HttpHeaders();
-        wonHeaders.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<Void> wonEntity = new HttpEntity<>(wonHeaders);
-        ResponseEntity<List<BidRecieptDTO>> wonResp = restTemplate.exchange(
-                URLPurchases + "/auctions/won?authToken=" + token,
-                HttpMethod.GET,
-                wonEntity,
-                new ParameterizedTypeReference<List<BidRecieptDTO>>() {
-                },
-                token);
-        List<BidRecieptDTO> wonList = wonResp.getBody();
+        if(!isGuest())
+        {
 
-        // Build and display the grid
-        Grid<BidRecieptDTO> wonGrid = new Grid<>(BidRecieptDTO.class, false);
-        wonGrid.addColumn(BidRecieptDTO::getPurchaseId)
-                .setHeader("Auction ID")
-                .setAutoWidth(true);
-        wonGrid.addColumn(BidRecieptDTO::getHighestBid)
-                .setHeader("Winning Bid")
-                .setAutoWidth(true);
-        wonGrid.addComponentColumn(dto -> {
-            Button payNow = new Button("Pay Now");
-            payNow.addClickListener(e -> {
+            // Your Won Auctions section
+            H2 wonHeader = new H2("Your Won Auctions");
+            add(wonHeader);
 
-                payForBid(dto);
+            // Fetch the list of won auctions for this user
+            String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+            HttpHeaders wonHeaders = new HttpHeaders();
+            wonHeaders.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Void> wonEntity = new HttpEntity<>(wonHeaders);
+            ResponseEntity<List<BidRecieptDTO>> wonResp = restTemplate.exchange(
+                    URLPurchases + "/auctions/won?authToken=" + token,
+                    HttpMethod.GET,
+                    wonEntity,
+                    new ParameterizedTypeReference<List<BidRecieptDTO>>() {
+                    },
+                    token);
+            List<BidRecieptDTO> wonList = wonResp.getBody();
 
-            });
-            return payNow;
-        })
-                .setHeader("Auction")
-                .setAutoWidth(true);
+            // Build and display the grid
+            Grid<BidRecieptDTO> wonGrid = new Grid<>(BidRecieptDTO.class, false);
+            wonGrid.addColumn(BidRecieptDTO::getPurchaseId)
+                    .setHeader("Auction ID")
+                    .setAutoWidth(true);
+            wonGrid.addColumn(BidRecieptDTO::getHighestBid)
+                    .setHeader("Winning Bid")
+                    .setAutoWidth(true);
+            wonGrid.addComponentColumn(dto -> {
+                Button payNow = new Button("Pay Now");
+                payNow.addClickListener(e -> {
 
-        if (wonList != null) {
-            wonGrid.setItems(wonList);
+                    payForBid(dto);
+
+                });
+                return payNow;
+            })
+                    .setHeader("Auction")
+                    .setAutoWidth(true);
+
+            if (wonList != null) {
+                wonGrid.setItems(wonList);
+            }
+            add(wonGrid);
         }
-        add(wonGrid);
 
     }
 
@@ -354,8 +363,10 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
 
     private void getData() {
+        System.out.println("1111111");
         HashMap<Integer, HashMap<Integer, Integer>> IDs = getCartIDs();
-
+        System.out.println("ids: " + IDs);
+        System.out.println("2222222");
         // Initialize cart with empty collections first
         cart = new ShoppingCartDTO();
         cart.setShopItems(new HashMap<>());
@@ -368,6 +379,9 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         }
 
         shops = getShopNames(IDs.keySet());
+        System.out.println("12121212121212121212121212121212121212121212121212121212121212");
+        System.out.println("Shops: " + shops);
+        System.out.println("21212121212121212121212121212121212121212121212121212121212121212");
         List<ItemDTO> items = getAllItems();
 
         // Build DTO fields
@@ -447,9 +461,11 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 }
             } catch (HttpClientErrorException.NotFound nf) {
                 // skip
+                System.out.println("))))))))))))))))))))");
                 log.warn("Shop with ID {} not found, skipping", id);
             } catch (Exception e) {
                 // skip all other errors silently
+                System.out.println("(((((((((((((((((((((");
                 log.warn("Error fetching shop with ID {}", id);
                 return Collections.emptyList();
             }
@@ -740,5 +756,29 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
         dialog.open(); // Show the dialog
         buildView(); // Refresh the view after purchase
+    }
+
+
+    private boolean isGuest() {
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        if (token == null) {
+            Notification.show("No auth token found. Please log in.", 3000, Notification.Position.MIDDLE);
+            return true; // Default to guest if not authenticated
+        }
+
+        String url = URLUser + "/isGuest?token=" + token;
+
+        try {
+            ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                return response.getBody();
+            } else {
+                Notification.show("Could not determine guest status", 3000, Notification.Position.MIDDLE);
+            }
+        } catch (Exception e) {
+            Notification.show("Error checking guest status", 3000, Notification.Position.MIDDLE);
+        }
+
+        return true; // fallback to guest on error
     }
 }
