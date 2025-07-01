@@ -308,11 +308,23 @@ public class EditShopView extends VerticalLayout implements HasUrlParameter<Inte
         rolesGrid.setItems(userPermissionsList);
 
         // Add Manager button
-        Button addManager = new Button("Add Manager", e -> openAddManagerDialog(members));
-        if (Boolean.TRUE.equals(VaadinSession.getCurrent().getAttribute("isSuspended"))) {
-            addManager.setVisible(false);
-        }
+        // 1️⃣ Grab the current user's permissions
+        PermissionsEnum[] currentUserPerms = roles.get(getUserId());
 
+        // 2️⃣ Check for the two required permissions
+        boolean canAddManager = currentUserPerms != null &&
+            Arrays.stream(currentUserPerms)
+                .anyMatch(p ->
+                    p == PermissionsEnum.manageOwners
+                || p == PermissionsEnum.leaveShopAsOwner
+                );
+
+        // 3️⃣ Create the button and set its visibility accordingly
+        Button addManager = new Button("Add Manager", e -> openAddManagerDialog(members));
+        boolean isSuspended = Boolean.TRUE.equals(VaadinSession.getCurrent().getAttribute("isSuspended"));
+        addManager.setVisible(canAddManager && !isSuspended);
+
+        // 4️⃣ Finally add it to the layout
         rolesLayout.add(addManager, rolesGrid);
     }
 
