@@ -999,21 +999,11 @@ class PurchaseServiceTests {
         when(auth.ValidateToken(token)).thenReturn(uid);
         when(repo.getAllBids()).thenReturn(List.of(done, open));
 
-        lenient().when(shops.getclosedShops(token))
+        when(shops.getclosedShops(token))
                 .thenReturn(List.of(2));  // shop #2 is closed
 
-        lenient().when(shops.searchItemsInShop(
-            eq(1),       // the only shop we care about
-            isNull(),    // name
-            isNull(),    // category
-            eq(Collections.emptyList()), // keywords
-            isNull(),    // minPrice
-            isNull(),    // maxPrice
-            isNull(),    // minRating
-            eq(token)    // auth token
-        )).thenReturn(List.of(
-            new Item(100, "", "", 0)  // only item #100 exists in shop #1
-        ));
+        when(items.getAllItems(token))
+                .thenReturn(List.of(new Item(100, "", "", 0)));  // item #100 exists globally
 
         List<BidReciept> out = service.getAllBids(token, false);
         assertEquals(1, out.size());
