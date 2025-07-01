@@ -363,10 +363,7 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
 
 
     private void getData() {
-        System.out.println("1111111");
         HashMap<Integer, HashMap<Integer, Integer>> IDs = getCartIDs();
-        System.out.println("ids: " + IDs);
-        System.out.println("2222222");
         // Initialize cart with empty collections first
         cart = new ShoppingCartDTO();
         cart.setShopItems(new HashMap<>());
@@ -379,9 +376,6 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
         }
 
         shops = getShopNames(IDs.keySet());
-        System.out.println("12121212121212121212121212121212121212121212121212121212121212");
-        System.out.println("Shops: " + shops);
-        System.out.println("21212121212121212121212121212121212121212121212121212121212121212");
         List<ItemDTO> items = getAllItems();
 
         // Build DTO fields
@@ -461,11 +455,9 @@ public class ShoppingCartView extends VerticalLayout implements BeforeEnterObser
                 }
             } catch (HttpClientErrorException.NotFound nf) {
                 // skip
-                System.out.println("))))))))))))))))))))");
                 log.warn("Shop with ID {} not found, skipping", id);
             } catch (Exception e) {
                 // skip all other errors silently
-                System.out.println("(((((((((((((((((((((");
                 log.warn("Error fetching shop with ID {}", id);
                 return Collections.emptyList();
             }
