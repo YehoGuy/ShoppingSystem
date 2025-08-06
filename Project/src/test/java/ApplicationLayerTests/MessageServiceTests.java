@@ -12,6 +12,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.springframework.beans.factory.annotation.Value;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
 import com.example.app.ApplicationLayer.OurArg;
@@ -51,11 +52,17 @@ public class MessageServiceTests {
     
     @BeforeEach
     void setUp() {
+        String adminUsername       = "admin";
+        String adminPlainPassword  = "admin";
+        String adminEmail          = "admin@mail.com";
+        String adminPhoneNumber    = "0";
+        String adminAddress        = "admin st.";
+
         // Initialize the message service and repository before each test
         NotificationService notificationMock = mock(NotificationService.class);
         authTokenRepository = new AuthTokenRepository();
         authTokenService = new AuthTokenService(authTokenRepository);
-        userRepository = new UserRepository();
+        userRepository = new UserRepository(adminUsername, adminPlainPassword, adminEmail, adminPhoneNumber, adminAddress);
         userService = new UserService(userRepository, authTokenService, notificationMock);
         shopRepository = new ShopRepository();
         shopService = new ShopService(shopRepository, authTokenService, userService, new ItemService(new ItemRepository(),authTokenService,userService));

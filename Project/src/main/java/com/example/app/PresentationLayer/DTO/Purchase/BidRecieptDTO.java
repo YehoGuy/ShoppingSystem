@@ -16,6 +16,7 @@ public record BidRecieptDTO(
         boolean completed,
         LocalDateTime timeOfCompletion,
         double price,
+        LocalDateTime endTime, // End time of the auction, if applicable
         /* ——— bid‑specific fields ——— */
         @Positive int thisBidderId,
         @Positive int initialPrice,
@@ -27,7 +28,7 @@ public record BidRecieptDTO(
         return new BidRecieptDTO(
                 b.getPurchaseId(),
                 b.getUserId(),
-                b.getStoreId(),
+                b.getShopId(),
                 new AddressDTO(
                     "xxx","xxx", "xxx", "xxx", "xxx", "xxx" // Placeholder, replace with actual address fields
                 ),
@@ -35,9 +36,11 @@ public record BidRecieptDTO(
                 b.isCompleted(),
                 b.getTimeOfCompletion(),
                 b.getPrice(),
+                b.getEndTime(),
                 b.getThisBidderId(),
                 b.getInitialPrice(),
                 b.getHighestBid(),
                 b.getHighestBidderId());
     }
+
 }

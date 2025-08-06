@@ -4,8 +4,13 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
 import com.example.app.ApplicationLayer.LoggerService;
@@ -15,12 +20,16 @@ import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
 import com.example.app.DomainLayer.IUserRepository;
 import com.example.app.DomainLayer.Member;
-import com.example.app.DomainLayer.Notification;
 import com.example.app.DomainLayer.Purchase.Address;
+import com.example.app.DomainLayer.Purchase.Bid;
+import com.example.app.DomainLayer.Purchase.BidReciept;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
 import com.example.app.DomainLayer.User;
 import com.example.app.InfrastructureLayer.PasswordEncoderUtil;
+
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.constraints.Min;
 
 @Service
 public class UserService {
@@ -352,6 +361,25 @@ public class UserService {
         }
     }
 
+    public boolean isGuest(String token) {
+        try {
+            LoggerService.logMethodExecution("isGuestById", token);
+            int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            boolean isGuest = userRepository.isGuestById(id);
+            LoggerService.logMethodExecutionEnd("isGuestById", isGuest);
+            return isGuest;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("isGuestById", e);
+            throw new OurRuntime("isGuestById: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("isGuestById", e);
+            throw new OurArg("isGuestById: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("isGuestById", e, token);
+            throw new OurRuntime("isGuestById: " + e.getMessage(), e);
+        }
+    }
+
     public String loginAsMember(String username, String password, String token_if_guest) {
         LoggerService.logMethodExecution("loginAsMember", username, "****", token_if_guest);
         String token = null;
@@ -370,13 +398,12 @@ public class UserService {
                 member.setConnected(true);
                 if (token_if_guest == null || token_if_guest.equals("") || token_if_guest.isEmpty()) {
                     token = authTokenService.Login(username, password, loginAsMember_id);
-                    
+
                     int id = authTokenService.ValidateToken(token); // Validate the token and get the user ID
-                    //if (isSuspended(id)) 
-                        //{throw new OurRuntime("the user is suspended");}
+                    // if (isSuspended(id))
+                    // {throw new OurRuntime("the user is suspended");}
 
                     LoggerService.logMethodExecutionEnd("loginAsMember", loginAsMember_id);
-                    return token; // Return the ID of the logged-in member
                 } else {
                     int id = authTokenService.ValidateToken(token_if_guest); // guest id
                     // merge the guest cart with the member cart
@@ -386,8 +413,9 @@ public class UserService {
                     userRepository.removeUserById(id);
                     token = authTokenService.Login(username, password, loginAsMember_id);
                     LoggerService.logMethodExecutionEnd("loginAsMember", loginAsMember_id);
-                    return token;
                 }
+                this.userRepository.updateUserInDB(member);
+                return token;
             } else {
                 LoggerService.logError("loginAsMember", new OurArg("Invalid username or password."));
                 throw new OurArg("Invalid username or password.");
@@ -404,77 +432,6 @@ public class UserService {
         }
     }
 
-    /*
-     * public int loginAsMember(String username, String password, int id_if_guest) {
-     * try {
-     * if (username == null || password == null) {
-     * throw new OurArg("Username and password cannot be null.");
-     * }
-     * if (username.isEmpty() || password.isEmpty()) {
-     * throw new OurArg("Username and password cannot be empty.");
-     * }
-     * int loginAsMember_id = userRepository.isUsernameAndPasswordValid(username,
-     * password);
-     * if (loginAsMember_id>0)//valid login attempt
-     * {
-     * if (id_if_guest == -1) { //if the user is not a guest,its his initial logging
-     * in and we just return the id of the member
-     * return loginAsMember_id; // Return the ID of the logged-in member
-     * }
-     * else if (userRepository.isGuestById(id_if_guest)){ //we ensure that the given
-     * id matches a guest in the data!
-     * //we merge the guest cart with the member cart
-     * User member = userRepository.getUserById(loginAsMember_id);
-     * User guest = userRepository.getUserById(id_if_guest);
-     * member.mergeShoppingCart(guest.getShoppingCart());
-     * //we remove the guest user from the data
-     * userRepository.removeUserById(id_if_guest);
-     * // Return the ID of the logged-in member
-     * return loginAsMember_id;
-     * 
-     * }
-     * else {
-     * throw new
-     * OurArg("The given id does not match a guest in the data. probably it is a member id!"
-     * );
-     * }
-     * 
-     * }
-     * 
-     * 
-     * }
-     * catch (Exception e) {
-     * return -1; // Indicate failure to log in as a member
-     * }
-     * }
-     * 
-     */
-
-    // public String signUp(String username, String password, String email, String
-    // phoneNumber, String address) {
-    // password = passwordEncoder.encode(password); // Encode the password using the
-    // PasswordEncoderUtil
-    // try {
-    // if (userRepository.isUsernameTaken(username)) {
-    // LoggerService.logError("signUp", new OurArg("Username is already taken."));
-    // throw new OurArg("Username is already taken.");
-    // }
-    // if (!email.contains("@")) {
-    // throw new OurArg("Invalid email format.");
-    // }
-    // String token = authTokenService.generateAuthToken(username); // Generate a
-    // token for the member
-    // LoggerService.logMethodExecution("signUp", username, password, email,
-    // phoneNumber, address);
-    // userRepository.addMember(username, password, email, phoneNumber, address);
-    // return token;
-    // } catch (Exception e) {
-    // LoggerService.logError("signUp", e, username, password, email, phoneNumber,
-    // address);
-    // throw new OurRuntime("Error signing up: " + e.getMessage(), e);
-    // }
-    // }
-
     public String logout(String token) {
         try {
             LoggerService.logMethodExecution("logout", token);
@@ -484,6 +441,7 @@ public class UserService {
             } else {
                 Member member = userRepository.getMemberById(id);
                 member.setConnected(false); // Set the member as disconnected
+                this.userRepository.updateUserInDB(member);
             }
             authTokenService.Logout(token); // Logout the user by removing the token
 
@@ -506,12 +464,6 @@ public class UserService {
         try {
 
             LoggerService.logMethodExecution("getPermitionsByShop", shopId);
-            // int id = authTokenService.ValidateToken(token); // Validate the token and get
-            // the user ID
-            // if (!userRepository.isOwner(id, shopId)) {
-            // throw new OurArg("Member ID " + token + " is not an owner of shop ID " +
-            // shopId);
-            // }
 
             HashMap<Integer, PermissionsEnum[]> permissions = new HashMap<>();
             for (Member member : userRepository.getMembersList()) {
@@ -616,16 +568,16 @@ public class UserService {
     public void makeManagerOfStore(String token, int memberId, int shopId, PermissionsEnum[] permissions) {
         try {
             LoggerService.logMethodExecution("makeManagerOfStore", token, shopId, permissions);
-            int assignee = authTokenService.ValidateToken(token); // Validate the token and get the user ID
-            if (isSuspended(assignee)) {
+            int owner = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            if (isSuspended(owner)) {
                 throw new OurRuntime("the user is suspended");
             }
-            if (!userRepository.isOwner(assignee, shopId)) {
+            if (!userRepository.isOwner(owner, shopId)) {
                 LoggerService.logDebug("makeManagerOfStore",
-                        new OurRuntime("Member ID " + assignee + " is not an owner of shop ID " + shopId));
-                throw new OurRuntime("Member ID " + assignee + " is not an owner of shop ID " + shopId);
+                        new OurRuntime("Member ID " + owner + " is not an owner of shop ID " + shopId));
+                throw new OurRuntime("Member ID " + owner + " is not an owner of shop ID " + shopId);
             }
-            Role role = new Role(assignee, shopId, permissions);
+            Role role = new Role(owner, shopId, permissions);
             userRepository.addRoleToPending(memberId, role);
             LoggerService.logMethodExecutionEndVoid("makeManagerOfStore");
         } catch (OurRuntime e) {
@@ -728,6 +680,43 @@ public class UserService {
         } catch (Exception e) {
             LoggerService.logError("removeOwnerFromStore", e, token, shopId);
             throw new OurRuntime("removeOwnerFromStore: " + e.getMessage(), e);
+        }
+    }
+
+    public void removeOwnerFromStoreAsAdmin(String token, int memberId, int shopId) {
+        try {
+            // token and userId of system admin
+
+            LoggerService.logMethodExecution("removeOwnerFromStoreAsAdmin", token, shopId);
+            Role role = userRepository.getRole(memberId, shopId);
+            if (!role.isOwner()) {
+                LoggerService.logDebug("removeOwnerFromStoreAsAdmin",
+                        new OurRuntime("Member ID " + memberId + " is not an owner of shop ID " + shopId));
+                throw new OurRuntime("Member ID " + memberId + " is not an owner of shop ID " + shopId);
+            }
+            int assigneeId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
+            if (isSuspended(assigneeId)) {
+                throw new OurRuntime("the user is suspended");
+            }
+            if (role.getAssigneeId() != assigneeId) {
+                LoggerService.logDebug("removeOwnerFromStoreAsAdmin", new OurRuntime("Member ID " + assigneeId
+                        + " is not the assignee of member ID " + memberId + " in shop ID " + shopId));
+                throw new OurRuntime("Member ID " + assigneeId + " is not the assignee of member ID " + memberId
+                        + " in shop ID " + shopId);
+            }
+            userRepository.removeRole(memberId, shopId);
+            removeAllAssigned(memberId, shopId); // Remove all assigned roles for the member
+            removedAppointment(memberId, "Owner", shopId);
+            LoggerService.logMethodExecutionEndVoid("removeOwnerFromStoreAsAdmin");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("removeOwnerFromStoreAsAdmin", e);
+            throw new OurRuntime("removeOwnerFromStoreAsAdmin: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("removeOwnerFromStoreAsAdmin", e);
+            throw new OurArg("removeOwnerFromStoreAsAdmin: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("removeOwnerFromStoreAsAdmin", e, token, shopId);
+            throw new OurRuntime("removeOwnerFromStoreAsAdmin: " + e.getMessage(), e);
         }
     }
 
@@ -915,6 +904,7 @@ public class UserService {
                 throw new OurRuntime("Member ID " + memberId + " does not exist.");
             }
             member.addRole(role); // Add the role to the member
+            userRepository.updateUserInDB(member);
             LoggerService.logMethodExecutionEnd("addFounderRole", true);
             return true;
         } catch (OurRuntime e) {
@@ -1145,13 +1135,13 @@ public class UserService {
             if (userRepository.getUserMapping().containsKey(id)) {
                 User user = userRepository.getUserById(id);
                 // if (userRepository.isSuspended(id)) {
-                //     LoggerService.logMethodExecutionEnd("hasPermission", false);
-                //     return false; // User is suspended, no permissions granted
+                // LoggerService.logMethodExecutionEnd("hasPermission", false);
+                // return false; // User is suspended, no permissions granted
                 // }
                 validateMemberId(id);
                 // if (isSuspended(id)) {
-                //     LoggerService.logMethodExecutionEnd("hasPermission", false);
-                //     return false; // User is suspended, no permissions granted
+                // LoggerService.logMethodExecutionEnd("hasPermission", false);
+                // return false; // User is suspended, no permissions granted
                 // }
                 return ((Member) user).hasPermission(permission, shopId); // Check if the user has the specified
                                                                           // permission
@@ -1221,6 +1211,23 @@ public class UserService {
         }
     }
 
+    public void clearUserShoppingCartByShopId(int userId, int shopId) {
+        try {
+            LoggerService.logMethodExecution("clearUserShoppingCartByShopId", userId);
+            userRepository.getShoppingCartById(userId).removeBasket(shopId);
+            LoggerService.logMethodExecutionEndVoid("clearUserShoppingCartByShopId");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("clearUserShoppingCartByShopId", e);
+            throw new OurRuntime("clearUserShoppingCartByShopId: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("clearUserShoppingCartByShopId", e);
+            throw new OurArg("clearUserShoppingCartByShopId: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("clearUserShoppingCartByShopId", e, userId);
+            throw new OurRuntime("clearUserShoppingCartByShopId: " + e.getMessage(), e);
+        }
+    }
+
     /**
      * Restores the shopping cart for a user by their ID.
      * 
@@ -1247,6 +1254,29 @@ public class UserService {
         } catch (Exception e) {
             LoggerService.logError("restoreUserShoppingCart", e, userId, items);
             throw new OurRuntime("restoreUserShoppingCart: " + e.getMessage(), e);
+        }
+    }
+
+    public void restoreUserShoppingCartByShopId(int userId, HashMap<Integer, HashMap<Integer, Integer>> items,
+            int shopId) {
+        try {
+            LoggerService.logMethodExecution("restoreUserShoppingCartByShopId", userId, items, shopId);
+
+            HashMap<Integer, HashMap<Integer, Integer>> itemsOfShopId = new HashMap<>();
+            itemsOfShopId.put(shopId, items.get(shopId));
+
+            userRepository.getShoppingCartById(userId).restoreCart(itemsOfShopId);
+            LoggerService.logMethodExecutionEndVoid("restoreUserShoppingCartByShopId");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("restoreUserShoppingCartByShopId", e);
+            throw new OurRuntime("restoreUserShoppingCartByShopId: " + e.getMessage(), e); // Rethrow the custom
+                                                                                           // exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("restoreUserShoppingCartByShopId", e);
+            throw new OurArg("restoreUserShoppingCartByShopId: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("restoreUserShoppingCartByShopId", e, userId, items);
+            throw new OurRuntime("restoreUserShoppingCartByShopId: " + e.getMessage(), e);
         }
     }
 
@@ -1488,7 +1518,7 @@ public class UserService {
          * 
          * // Regex for required rules
          * String pattern =
-         * "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$";
+         * "^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$";
          * 
          * return password.matches(pattern);
          */
@@ -1506,7 +1536,7 @@ public class UserService {
         // (-\d+)? → optional single dash followed by digits
         // $ → end of string
         // Full length between 9 to 15 characters including dash/+ if present
-        String pattern = "^\\+?\\d+(-\\d+)?$";
+        String pattern = "^\\+?\\d+(-\\d+)?$"; //// 2 \ or 1 \ ??
 
         if (!phoneNumber.trim().matches(pattern)) {
             return false;
@@ -1526,7 +1556,7 @@ public class UserService {
         }
 
         // Regex for a standard email format
-        String pattern = "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
+        String pattern = "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"; //// 2 \ or 1 \ ??
 
         return email.trim().matches(pattern);
     }
@@ -1585,6 +1615,24 @@ public class UserService {
         }
     }
 
+    public boolean addBidToUserShoppingCart(int userId, int shopId, Map<Integer, Integer> items) {
+        try {
+            LoggerService.logMethodExecution("addToUserShoppingCart", userId, items);
+            userRepository.addBidToShoppingCart(userId, shopId, items); // Add the items to the user's shopping cart
+            LoggerService.logMethodExecutionEndVoid("addToUserShoppingCart");
+            return true; // Items added successfully
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("addToUserShoppingCart", e);
+            throw new OurRuntime("addToUserShoppingCart: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("addToUserShoppingCart", e);
+            throw new OurArg("addToUserShoppingCart: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("addToUserShoppingCart", e, userId, items);
+            throw new OurRuntime("addToUserShoppingCart: " + e.getMessage(), e);
+        }
+    }
+
     /**
      * Pays for user's order
      * 
@@ -1596,16 +1644,19 @@ public class UserService {
      * 
      *                * @throws OurRuntime, Exception
      */
-    public boolean pay(String token, int shopId, double payment) {
+    public int pay(String token, int shopId, double amount, String currency, String cardNumber,
+            String expirationDateMonth, String expirationDateYear, String cardHolderName, String cvv, String id) {
         try {
-            LoggerService.logMethodExecution("pay", token, shopId, payment);
+            LoggerService.logMethodExecution("pay", token, shopId, amount, currency, cardNumber, expirationDateMonth,
+                    expirationDateYear, cardHolderName, cvv, id);
             int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             if (isSuspended(userId)) {
                 throw new OurRuntime("the user is suspended");
             }
-            userRepository.pay(userId, shopId, payment); // Set the payment method for the user
+            int pid = userRepository.pay(userId, amount, currency, cardNumber, expirationDateMonth, expirationDateYear,
+                    cardHolderName, cvv, id); // Process the payment
             LoggerService.logMethodExecutionEnd("pay", true);
-            return true;
+            return pid;
         } catch (OurRuntime e) {
             LoggerService.logDebug("pay", e);
             throw new OurRuntime("pay: " + e.getMessage(), e); // Rethrow the custom exception
@@ -1613,17 +1664,18 @@ public class UserService {
             LoggerService.logDebug("pay", e);
             throw new OurArg("pay: " + e.getMessage(), e); // Rethrow the custom exception
         } catch (Exception e) {
-            LoggerService.logError("pay", e, token, shopId, payment);
+            LoggerService.logError("pay", e, token, shopId, amount, currency, cardNumber, expirationDateMonth,
+                    expirationDateYear, cardHolderName, cvv, id);
             throw new OurRuntime("pay: " + e.getMessage(), e);
         }
     }
 
     // NO API ENDPOINT!
-    public boolean refundPaymentAuto(String token, int shopId, double payment) {
+    public boolean refundPaymentAuto(String token, int paymnetID) {
         try {
-            LoggerService.logMethodExecution("refundPayment", token, shopId, payment);
+            LoggerService.logMethodExecution("refundPayment", token, paymnetID);
             int userId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
-            userRepository.refund(userId, shopId, payment); // Set the payment method for the user
+            userRepository.refund(userId, paymnetID); // Set the payment method for the user
             LoggerService.logMethodExecutionEnd("refundPayment", true);
             return true;
         } catch (OurRuntime e) {
@@ -1633,22 +1685,22 @@ public class UserService {
             LoggerService.logDebug("refundPayment", e);
             throw new OurArg("refundPayment: " + e.getMessage(), e); // Rethrow the custom exception
         } catch (Exception e) {
-            LoggerService.logError("refundPayment", e, token, shopId, payment);
+            LoggerService.logError("refundPayment", e, token, paymnetID);
             throw new OurRuntime("refundPayment: " + e.getMessage(), e);
         }
 
     }
 
-    public boolean refundPaymentByStoreEmployee(String token, int userId, int shopId, double payment) {
+    public boolean refundPaymentByStoreEmployee(String token, int userId, int shopId, int paymentId) {
         try {
-            LoggerService.logMethodExecution("refundPaymentByStoreEmployee", token, shopId, payment);
+            LoggerService.logMethodExecution("refundPaymentByStoreEmployee", token, shopId, paymentId);
             int initiatingUserId = authTokenService.ValidateToken(token); // Validate the token and get the user ID
             if (userRepository.getRole(initiatingUserId, shopId) == null) {
                 LoggerService.logDebug("refundPaymentByStoreEmployee",
                         new OurRuntime("Member ID " + initiatingUserId + " has no role for shop ID " + shopId));
                 throw new OurRuntime("Member ID " + initiatingUserId + " has no role for shop ID " + shopId);
             }
-            userRepository.refund(userId, shopId, payment); // Set the payment method for the user
+            userRepository.refund(userId, paymentId); // Set the payment method for the user
             LoggerService.logMethodExecutionEnd("refundPayment", true);
             return true;
         } catch (OurRuntime e) {
@@ -1658,7 +1710,7 @@ public class UserService {
             LoggerService.logDebug("refundPayment", e);
             throw new OurArg("refundPayment: " + e.getMessage(), e); // Rethrow the custom exception
         } catch (Exception e) {
-            LoggerService.logError("refundPayment", e, token, shopId, payment);
+            LoggerService.logError("refundPayment", e, token, shopId, paymentId);
             throw new OurRuntime("refundPayment: " + e.getMessage(), e);
         }
 
@@ -1753,6 +1805,27 @@ public class UserService {
         }
     }
 
+    public void reOpenShopNotification(Integer shopId) {
+        try {
+            LoggerService.logMethodExecution("reOpenShopNotification", shopId);
+            List<Member> owners = userRepository.getOwners(shopId);
+            for (Member owner : owners) {
+                this.notificationService.sendToUser(owner.getMemberId(), "Shop re-opened",
+                        "Your shop ID: " + shopId + " has been re-opened.");
+            }
+            LoggerService.logMethodExecutionEndVoid("reOpenShopNotification");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("reOpenShopNotification", e);
+            throw new OurRuntime("reOpenShopNotification: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("reOpenShopNotification", e);
+            throw new OurArg("reOpenShopNotification: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("reOpenShopNotification", e, shopId);
+            throw new OurRuntime("reOpenShopNotification: " + e.getMessage(), e);
+        }
+    }
+
     public void removedAppointment(Integer memberId, String appointment, Integer shopId) {
         try {
             LoggerService.logMethodExecution("removedAppointment", memberId, appointment);
@@ -1779,40 +1852,37 @@ public class UserService {
     // if isFromShop is true, then the message is from the shop to the user
     // if isFromShop is false, then the message is from the user to the shop
     public void messageNotification(Integer memberId, Integer shopId, boolean isFromShop) {
-        if (isFromShop) {
-            try {
-                LoggerService.logMethodExecution("messageUserNotification", memberId);
-                this.notificationService.sendToUser(memberId, "Message Received",
-                        "You have received a new message from the shop (id=" + shopId + ").");
-                LoggerService.logMethodExecutionEndVoid("messageUserNotification");
-            } catch (OurRuntime e) {
-                LoggerService.logDebug("messageUserNotification", e);
-                throw new OurRuntime("messageUserNotification: " + e.getMessage(), e); // Rethrow the custom exception
-            } catch (OurArg e) {
-                LoggerService.logDebug("messageUserNotification", e);
-                throw new OurArg("messageUserNotification: " + e.getMessage(), e); // Rethrow the custom exception
-            } catch (Exception e) {
-                LoggerService.logError("messageUserNotification", e, memberId);
-                throw new OurRuntime("messageUserNotification: " + e.getMessage(), e);
-            }
-        } else {
-            try {
-                LoggerService.logMethodExecution("messageUserNotification", memberId);
-                this.notificationService.sendToUser(memberId, "Message Received",
-                        "You have received a new message from the user (id=" + memberId + ").");
-                LoggerService.logMethodExecutionEndVoid("messageUserNotification");
-            } catch (OurRuntime e) {
-                LoggerService.logDebug("messageUserNotification", e);
-                throw new OurRuntime("messageUserNotification: " + e.getMessage(), e); // Rethrow the custom exception
-            } catch (OurArg e) {
-                LoggerService.logDebug("messageUserNotification", e);
-                throw new OurArg("messageUserNotification: " + e.getMessage(), e); // Rethrow the custom exception
-            } catch (Exception e) {
-                LoggerService.logError("messageUserNotification", e, memberId);
-                throw new OurRuntime("messageUserNotification: " + e.getMessage(), e);
-            }
-        }
+        try {
+            LoggerService.logMethodExecution("messageUserNotification", memberId);
 
+            // build the exact payload your tests expect
+            String payload;
+            if (isFromShop) {
+                payload = "You have received a new message from the shop (id=" + shopId + ").";
+            } else {
+                payload = "You have received a new message from the user (id=" + memberId + ").";
+            }
+
+            // now actually send the notification
+            this.notificationService.sendToUser(
+                    memberId,
+                    "Message Received",
+                    payload);
+
+            LoggerService.logMethodExecutionEndVoid("messageUserNotification");
+
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("messageUserNotification", e);
+            throw new OurRuntime("messageUserNotification: " + e.getMessage(), e);
+
+        } catch (OurArg e) {
+            LoggerService.logDebug("messageUserNotification", e);
+            throw new OurArg("messageUserNotification: " + e.getMessage(), e);
+
+        } catch (Exception e) {
+            LoggerService.logError("messageUserNotification", e, memberId);
+            throw new OurRuntime("messageUserNotification: " + e.getMessage(), e);
+        }
     }
 
     // LocalDateTime is used to represent the date and time of suspension
@@ -1837,10 +1907,10 @@ public class UserService {
             throw new OurRuntime("Error setting suspension for user ID " + userId + ": " + e.getMessage(), e);
         }
     }
-    
+
     public void setUnSuspended(int userId) {
         try {
-            if(!isSuspended(userId)) {
+            if (!isSuspended(userId)) {
                 throw new OurRuntime("User is already unsuspended");
             }
             LoggerService.logMethodExecution("setUnSuspended", userId);
@@ -1857,6 +1927,7 @@ public class UserService {
             throw new OurRuntime("Error setting suspension for user ID " + userId + ": " + e.getMessage(), e);
         }
     }
+
     public boolean isSuspended(int userId) {
         try {
             LoggerService.logMethodExecution("isSuspended", userId);
@@ -1910,7 +1981,6 @@ public class UserService {
             throw new OurRuntime("Error setting banUser for user ID " + userId + ": " + e.getMessage(), e);
         }
     }
-
 
     public List<Integer> getShopIdsByWorkerId(int userId) {
         try {
@@ -2060,4 +2130,99 @@ public class UserService {
             throw new OurRuntime("hasRoleInShop: " + e.getMessage(), e);
         }
     }
+
+    public List<BidReciept> getAuctionsWinList(int userId) {
+        try {
+            LoggerService.logMethodExecution("getAuctionsWinList", userId);
+            List<BidReciept> auctionsWinList = userRepository.getAuctionsWinList(userId);
+            LoggerService.logMethodExecutionEnd("getAuctionsWinList", auctionsWinList);
+            return auctionsWinList;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getAuctionsWinList", e);
+            throw new OurRuntime("getAuctionsWinList: " + e.getMessage(), e);
+        } catch (OurArg e) {
+            LoggerService.logDebug("getAuctionsWinList", e);
+            throw new OurArg("getAuctionsWinList: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("getAuctionsWinList", e, userId);
+            throw new OurRuntime("getAuctionsWinList: " + e.getMessage(), e);
+        }
+    }
+
+    public void addAuctionWinBidToUserShoppingCart(int winnerId, Bid bid) {
+        try {
+            LoggerService.logMethodExecution("addAuctionWinBidToUserShoppingCart", winnerId, bid);
+            userRepository.addAuctionWinBidToShoppingCart(winnerId, bid); // Add the auction win bid to the user's
+                                                                          // shopping cart
+            LoggerService.logMethodExecutionEndVoid("addAuctionWinBidToUserShoppingCart");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("addAuctionWinBidToUserShoppingCart", e);
+            throw new OurRuntime("addAuctionWinBidToUserShoppingCart: " + e.getMessage(), e); // Rethrow the custom
+                                                                                              // exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("addAuctionWinBidToUserShoppingCart", e);
+            throw new OurArg("addAuctionWinBidToUserShoppingCart: " + e.getMessage(), e); // Rethrow the custom
+                                                                                          // exception
+        } catch (Exception e) {
+            LoggerService.logError("addAuctionWinBidToUserShoppingCart", e, winnerId, bid);
+            throw new OurRuntime("addAuctionWinBidToUserShoppingCart: " + e.getMessage(), e);
+        }
+    }
+
+    public int getShopOwner(int shopId) {
+        try {
+            LoggerService.logMethodExecution("getShopOwner", shopId);
+            int shopOwner = userRepository.getShopOwner(shopId);
+            LoggerService.logMethodExecutionEnd("getShopOwner", shopOwner);
+            return shopOwner;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getShopOwner", e);
+            throw new OurRuntime("getShopOwner: " + e.getMessage(), e);
+        } catch (OurArg e) {
+            LoggerService.logDebug("getShopOwner", e);
+            throw new OurArg("getShopOwner: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("getShopOwner", e, shopId);
+            throw new OurRuntime("getShopOwner: " + e.getMessage(), e);
+        }
+    }
+
+    public Integer getMissingNotificationsQuantity(String token) {
+        try {
+            LoggerService.logMethodExecution("getMissingNotificationsQuantity", token);
+            int userId = authTokenService.getUserIdByToken(token);
+            int quantity = userRepository.getMissingNotificationsQuantity(userId);
+            LoggerService.logMethodExecutionEnd("getMissingNotificationsQuantity", token);
+            return quantity;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getMissingNotificationsQuantity", e);
+            throw new OurRuntime("getMissingNotificationsQuantity: " + e.getMessage(), e);
+        } catch (OurArg e) {
+            LoggerService.logDebug("getMissingNotificationsQuantity", e);
+            throw new OurArg("getMissingNotificationsQuantity: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("getMissingNotificationsQuantity", e, token);
+            throw new OurRuntime("getMissingNotificationsQuantity: " + e.getMessage(), e);
+        }
+    }
+
+    public void removeBidFromCart(String authToken, int bidId) {
+        try {
+            LoggerService.logMethodExecution("removeBidFromCart", authToken, bidId);
+            int userId = authTokenService.ValidateToken(authToken); // Validate the token and get the user ID
+            userRepository.removeBidFromCart(userId, bidId); // Remove the bid from the user's shopping cart
+            LoggerService.logMethodExecutionEndVoid("removeBidFromCart");
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("removeBidFromCart", e);
+            throw new OurRuntime("removeBidFromCart: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (OurArg e) {
+            LoggerService.logDebug("removeBidFromCart", e);
+            throw new OurArg("removeBidFromCart: " + e.getMessage(), e); // Rethrow the custom exception
+        } catch (Exception e) {
+            LoggerService.logError("removeBidFromCart", e, authToken, bidId);
+            throw new OurRuntime("removeBidFromCart: " + e.getMessage(), e);
+        }
+    }
+
+
 }

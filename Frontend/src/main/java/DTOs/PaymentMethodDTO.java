@@ -1,24 +1,89 @@
 package DTOs;
 
 public class PaymentMethodDTO {
+    private String currency;
+    private String cardNumber;
+    private String expirationDateMonth;
+    private String expirationDateYear;
+    private String cardHolderName;
+    private String cvv;
+    private String id;
 
-    private String methodDetails;
-
-    // Constructor
+    // Default constructor for Jackson
     public PaymentMethodDTO() {
-        methodDetails = null;
     }
 
-    public PaymentMethodDTO(String methodDetails) {
-        this.methodDetails = methodDetails; // to be implemented when we imolement the payment method in domain
+    public PaymentMethodDTO(String currency, String cardNumber, String expirationDateMonth, String expirationDateYear, String cardHolderName, String cvv, String id) {
+        this.currency = currency;
+        this.cardNumber = cardNumber;
+        this.expirationDateMonth = expirationDateMonth;
+        this.expirationDateYear = expirationDateYear;
+        this.cardHolderName = cardHolderName;
+        this.cvv = cvv;
+        this.id = id;
     }
 
-    public String getMethodDetails() {
-        return methodDetails;
+    public String getCurrency() {
+        return currency;
     }
 
-    public void setMethodDetails(String methodDetails) {
-        this.methodDetails = methodDetails;
+    public void setCurrency(String currency) {
+        this.currency = currency;
     }
 
+    public String getCardNumber() {
+        return cardNumber;
+    }
+
+    public void setCardNumber(String cardNumber) {
+        this.cardNumber = cardNumber;
+    }
+
+    public String getExpirationDateMonth() {
+        return expirationDateMonth;
+    }
+
+    public void setExpirationDateMonth(String expirationDateMonth) {
+        this.expirationDateMonth = expirationDateMonth;
+    }
+
+    public String getExpirationDateYear() {
+        return expirationDateYear;
+    }
+
+    public void setExpirationDateYear(String expirationDateYear) {
+        this.expirationDateYear = expirationDateYear;
+    }
+
+    public String getCardHolderName() {
+        return cardHolderName;
+    }
+
+    public void setCardHolderName(String cardHolderName) {
+        this.cardHolderName = cardHolderName;
+    }
+
+    public String getCvv() {
+        return cvv;
+    }
+
+    public void setCvv(String cvv) {
+        this.cvv = cvv;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+@Override
+public String toString() {
+    return String.format(
+        "{ \"currency\": \"%s\", \"cardNumber\": \"%s\", \"expirationDateMonth\": \"%s\", \"expirationDateYear\": \"%s\", \"cardHolderName\": \"%s\", \"cvv\": \"%s\", \"id\": \"%s\" }",
+        currency, cardNumber, expirationDateMonth, expirationDateYear, cardHolderName, cvv, id
+    );
+}
 }

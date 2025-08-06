@@ -1,6 +1,7 @@
 package com.example.app.ApplicationLayer.Message;
 
 import java.time.LocalDate;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -14,22 +15,23 @@ import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.IMessageRepository;
 import com.example.app.DomainLayer.Message;
 import com.example.app.DomainLayer.Shop.Shop;
+
 @Service
 public class MessageService {
 
     private final IMessageRepository messageRepository;
-    private final AuthTokenService   authTokenService;
-    private final UserService        userService;
-    private final ShopService        shopService;
+    private final AuthTokenService authTokenService;
+    private final UserService userService;
+    private final ShopService shopService;
 
     public MessageService(IMessageRepository messageRepository,
-                          AuthTokenService   authTokenService,
-                          UserService        userService,
-                          ShopService        shopService) {
+            AuthTokenService authTokenService,
+            UserService userService,
+            ShopService shopService) {
         this.messageRepository = messageRepository;
-        this.authTokenService  = authTokenService;
-        this.userService       = userService;
-        this.shopService       = shopService;
+        this.authTokenService = authTokenService;
+        this.userService = userService;
+        this.shopService = shopService;
     }
 
     public String sendMessageToUser(String token, int receiverId, String content, int previousMessageId) {
@@ -39,10 +41,12 @@ public class MessageService {
             userService.validateMemberId(senderId);
             userService.validateMemberId(receiverId);
             if (!messageRepository.isMessagePrevious(previousMessageId, senderId, receiverId)) {
-                throw new OurRuntime("Previous message with ID " + previousMessageId + " isn't proper previous message.");
+                throw new OurRuntime(
+                        "Previous message with ID " + previousMessageId + " isn't proper previous message.");
             }
-            messageRepository.addMessage(senderId, receiverId, content, LocalDate.now().toString(), true, previousMessageId);
-            userService.messageNotification(receiverId, senderId, true);
+            messageRepository.addMessage(senderId, receiverId, content, LocalDate.now().toString(), true,
+                    previousMessageId);
+            userService.messageNotification(receiverId, senderId, false);
             LoggerService.logMethodExecutionEnd("sendMessageToUser", "Message sent successfully!");
             return "Message sent successfully!";
         } catch (OurArg e) {
@@ -67,15 +71,17 @@ public class MessageService {
                 throw new OurRuntime("Shop with ID " + receiverId + " doesn't exist.");
             }
             if (!messageRepository.isMessagePrevious(previousMessageId, userId, receiverId)) {
-                throw new OurRuntime("Previous message with ID " + previousMessageId + " isn't proper previous message.");
+                throw new OurRuntime(
+                        "Previous message with ID " + previousMessageId + " isn't proper previous message.");
             }
-            messageRepository.addMessage(userId, receiverId, content, LocalDate.now().toString(), false, previousMessageId);
-            userService.messageNotification(userId, receiverId, false);
+            messageRepository.addMessage(userId, receiverId, content, LocalDate.now().toString(), false,
+                    previousMessageId);
+            userService.messageNotification(userId, receiverId, true);
             LoggerService.logMethodExecutionEnd("sendMessageToShop", "Message sent successfully!");
             return "Message sent successfully!";
         } catch (Exception e) {
             LoggerService.logError("sendMessageToShop", e, token, receiverId, content, previousMessageId);
-           return "Error sending message to shop: " + e.getMessage();
+            return "Error sending message to shop: " + e.getMessage();
         }
     }
 
@@ -221,6 +227,20 @@ public class MessageService {
         } catch (Exception e) {
             LoggerService.logError("getPreviousMessage", e, token, messageId);
             throw new OurRuntime("Error getting previous message: " + e.getMessage(), e);
+        }
+    }
+
+    public List<Message> getUserConversations(String token) {
+        try {
+            LoggerService.logMethodExecution("getUserConversations", token);
+            int userId = authTokenService.getUserIdByToken(token);
+            List<Message> messages = messageRepository.getUserConversations(userId);
+            LoggerService.logMethodExecutionEnd("getUserConversations", messages);
+            return messages;
+        } catch (OurRuntime | OurArg e) {
+            throw new OurRuntime("Error in getUserConversations: " + e.getMessage(), e);
+        } catch (Exception e) {
+            throw new OurRuntime("internal server error");
         }
     }
 }

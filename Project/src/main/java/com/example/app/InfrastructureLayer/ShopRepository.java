@@ -5,33 +5,31 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Purchase.ShippingMethod;
 import com.example.app.DomainLayer.Item.ItemCategory;
-import com.example.app.DomainLayer.Shop.IShopRepository;
-import com.example.app.DomainLayer.Shop.Operator;
-import com.example.app.DomainLayer.Shop.PurchasePolicy;
-import com.example.app.DomainLayer.Shop.Shop;
 import com.example.app.DomainLayer.Shop.Discount.Discount;
 import com.example.app.DomainLayer.Shop.Discount.Policy;
-import com.example.app.PresentationLayer.DTO.Shop.PoliciesDTO;
+import com.example.app.DomainLayer.Shop.IShopRepository;
+import com.example.app.DomainLayer.Shop.PurchasePolicy;
+import com.example.app.DomainLayer.Shop.Shop;
 
 @Repository
+@Profile("no-db | test")
 public class ShopRepository implements IShopRepository {
 
     private final ConcurrentHashMap<Integer, Shop> shops = new ConcurrentHashMap<>();
     private final AtomicInteger shopIdCounter = new AtomicInteger(1);
     private final List<Shop> closedShops = new CopyOnWriteArrayList<>();
     private final Map<Integer, Shop> inMemory = new HashMap<>();
-
 
     @Override
     public Shop createShop(String name, PurchasePolicy purchasePolicy, ShippingMethod shippingMethod) {
@@ -68,6 +66,28 @@ public class ShopRepository implements IShopRepository {
                     shops.values().stream().collect(Collectors.toList()));
         } catch (Exception e) {
             throw new RuntimeException("Error retrieving all shops: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public List<Shop> getAllOpenShops() {
+        try {
+            return Collections.unmodifiableList(
+                    shops.values().stream()
+                            .filter(shop -> !shop.isClosed())
+                            .collect(Collectors.toList()));
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving open shops: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public List<Shop> getAllClosedShops() {
+        try {
+            return Collections.unmodifiableList(
+                    closedShops.stream().collect(Collectors.toList()));
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving closed shops: " + e.getMessage(), e);
         }
     }
 
@@ -248,16 +268,38 @@ public class ShopRepository implements IShopRepository {
     @Override
     public void closeShop(Integer shopId) {
         try {
-            
+
             Shop removed = shops.remove(shopId);
-            //print the removed shop for debugging purposes
-            System.out.println("Closing shop: " + removed);
+            // print the removed shop for debugging purposes
             if (removed == null) {
                 throw new IllegalArgumentException("Shop not found: " + shopId);
             }
+            removed.setClosed(true);
             closedShops.add(removed);
         } catch (Exception e) {
             throw new RuntimeException("Error closing shop: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void reOpenShop(Integer shopId) {
+        try {
+
+            Shop sh = null;
+            for (Shop shop : closedShops) {
+                if (shop.getId() == shopId) {
+                    sh = shop;
+                    closedShops.remove(shop);
+                    break;
+                }
+            }
+            if (sh == null) {
+                throw new IllegalArgumentException("Shop not found: " + shopId);
+            }
+            sh.setClosed(false);
+            shops.put(shopId, sh);
+        } catch (Exception e) {
+            throw new RuntimeException("Error reopening shop: " + e.getMessage(), e);
         }
     }
 
@@ -400,39 +442,27 @@ public class ShopRepository implements IShopRepository {
     }
 
     @Override
-    public void shipPurchase(int purchaseId, int shopId, String country, String city, String street,
+    public boolean shipPurchase(String name, int shopId, String country, String city, String street,
             String postalCode) {
         try {
             Shop shop = shops.get(shopId);
             if (shop == null)
                 throw new IllegalArgumentException("Shop not found: " + shopId);
 
-            shop.getShippingMethod().processShipment(purchaseId, country, city, street, postalCode);
+            return shop.getShippingMethod().processShipping(name, street, city, country, postalCode) != -1;
 
         } catch (Exception e) {
             throw new RuntimeException("Error shipping purchase: " + e.getMessage(), e);
         }
     }
 
-    public List<Shop> getClosedShops() {
+    @Override
+    public List<Integer> getClosedShops() {
         try {
-            return Collections.unmodifiableList(closedShops);
+            return Collections.unmodifiableList(
+                    closedShops.stream().map(Shop::getId).collect(Collectors.toList()));
         } catch (Exception e) {
             throw new RuntimeException("Error retrieving closed shops: " + e.getMessage(), e);
-        }
-    }
-
-    @Override
-    public void addDiscountPolicy(int threshold, int itemId, ItemCategory category, double basketValue,
-            Operator operator, int shopId) {
-        try {
-            Shop shop = shops.get(shopId);
-            if (shop == null) {
-                throw new IllegalArgumentException("Shop not found: " + shopId);
-            }
-            shop.addPolicy(threshold, itemId, category, basketValue, operator);
-        } catch (Exception e) {
-            throw new RuntimeException("Error adding discount policy: " + e.getMessage(), e);
         }
     }
 
@@ -470,5 +500,18 @@ public class ShopRepository implements IShopRepository {
             throw new NoSuchElementException("Shop not found: " + shopId);
         }
         return shop.getPolicies();
+    }
+
+    @Override
+    public double applyDiscount(Map<Integer, Integer> items, Map<Integer, ItemCategory> itemsCat, int shopId) {
+        try {
+            Shop shop = shops.get(shopId);
+            if (shop == null) {
+                throw new IllegalArgumentException("Shop not found: " + shopId);
+            }
+            return shop.applyDiscount(items, itemsCat);
+        } catch (Exception e) {
+            throw new RuntimeException("Error applying discount: " + e.getMessage(), e);
+        }
     }
 }

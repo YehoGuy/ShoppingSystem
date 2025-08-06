@@ -7,10 +7,12 @@ import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
 import com.example.app.DomainLayer.ShoppingCart;
 import com.example.app.DomainLayer.User;
 import com.example.app.DomainLayer.Purchase.Address;
+import com.example.app.ApplicationLayer.OurRuntime;
 
 import java.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 // A simple concrete subclass of User for testing purposes
 class TestUser extends User {
@@ -80,17 +82,10 @@ public class UserTest {
         sc.addItem(5, 50, 2);
         u.setShoppingCart(sc);
         assertSame(sc, u.getShoppingCart());
-
         // stub PaymentMethod implementation
-        PaymentMethod pm = new PaymentMethod() {
-            @Override public void processPayment(double amount, int shopId) {}
-            @Override public String getDetails() { return "stub"; }
-            @Override public void refundPayment(double amount, int shopId) {}
-            @Override public void processRefund(double refund, int shopId) {}
-        };
+        PaymentMethod pm = mock(PaymentMethod.class);
         u.setPaymentMethod(pm);
         assertSame(pm, u.getPaymentMethod());
-        assertEquals("stub", u.getPaymentMethod().getDetails());
 
         Address addr = new Address()
             .withCountry("C").withCity("Ci").withStreet("St")
@@ -100,5 +95,48 @@ public class UserTest {
 
         u.setAddress("X","Y","Z",2,"P");
         assertNotNull(u.getAddress());
+    }
+
+    @Test
+    void testUpdateShoppingCartItemQuantity() {
+        // Add an item to the cart
+        cart.addItem(1, 101, 2);
+        assertTrue(cart.hasItemOfShop(1, 101));
+
+        // Update quantity to increase
+        user.updateShoppingCartItemQuantity(1, 101, true);
+        assertEquals(3, cart.getItems().get(1).get(101));
+
+        // Update quantity to decrease
+        user.updateShoppingCartItemQuantity(1, 101, false);
+        assertEquals(2, cart.getItems().get(1).get(101));
+
+    }
+
+    @Test
+    void testUpdateShoppingCartItemQuantityThrowsExceptionForNonExistentItem() {
+        // Attempt to update quantity of an item not in the cart
+        assertThrows(OurRuntime.class, () -> {
+            user.updateShoppingCartItemQuantity(1, 999, true);
+        });
+    }
+
+    @Test
+    void testremoveItemFromCart() {
+        // Add an item to the cart
+        cart.addItem(1, 101, 2);
+        assertTrue(cart.hasItemOfShop(1, 101));
+
+        // Remove the item
+        user.removeShoppingCartItem(1, 101);
+        assertFalse(cart.hasItemOfShop(1, 101));
+    }
+
+    @Test
+    void testRemoveItemFromCartThrowsExceptionForNonExistentItem() {
+        // Attempt to remove an item not in the cart
+        assertThrows(OurRuntime.class, () -> {
+            user.removeShoppingCartItem(1, 999);
+        });
     }
 }

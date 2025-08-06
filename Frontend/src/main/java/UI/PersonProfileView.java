@@ -1,40 +1,29 @@
 package UI;
 
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
-import com.vaadin.flow.component.UI;
-import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
-import org.springframework.beans.factory.annotation.Value;
-
 
 import DTOs.MemberDTO;
 import DTOs.rolesDTO;
 
 @Route(value = "profile", layout = AppLayoutBasic.class)
-@JsModule("./js/notification-client.js")
-public class PersonProfileView extends VerticalLayout implements BeforeEnterObserver {
+public class PersonProfileView extends BaseView implements BeforeEnterObserver {
 
-    @Value("${url.api}/users")
-    private String USER_URL;
-
-    @Value("${url.api}/users/notifications")
-    private String NOTIF_URL;
-
-    @Value("${url.api}/users/getAcceptedRoles")
-    private String ACCEPT_ROLES_URL;
-
-    @Value("${url.api}/shops")
-    private String SHOPS_URL;
+    private final String userUrl;
+    private final String notificationsUrl;
+    private final String acceptedRolesUrl;
+    private final String shopsUrl;
 
     private final RestTemplate rest = new RestTemplate();
 
@@ -45,86 +34,104 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
     private String token;
     private int profileUserId;
 
+    public PersonProfileView(@Value("${url.api}") String api) {
+        super("Profile", "Manage your account", "👤", "⚙️");
+
+        this.userUrl          = api + "/users";
+        this.notificationsUrl = api + "/users/notifications";
+        this.acceptedRolesUrl = api + "/users/getAcceptedRoles";
+        this.shopsUrl         = api + "/shops";
+
+        setSizeFull();
+        setPadding(true);
+        setSpacing(true);
+    }
+
+    private String currentUsername = null;
+
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
-        // 1) Auth
+        // redirect if not authenticated
         token = (String) VaadinSession.getCurrent().getAttribute("authToken");
         if (token == null) {
             event.forwardTo("login");
             return;
         }
-        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m => m.connectNotifications($0))",
-                getUserId());
 
-        handleSuspence();
-
-        // 2) Parse ?userId= from URL
-        String userIdString = VaadinSession.getCurrent().getAttribute("userId").toString();
-        if (userIdString == null) {
+        // ensure userId
+        Object uid = VaadinSession.getCurrent().getAttribute("userId");
+        if (uid == null) {
             event.forwardTo("home");
             return;
         }
-        profileUserId = Integer.parseInt(userIdString);
+        profileUserId = (Integer) uid;
 
-        // 3) Build UI
+        handleSuspence();
+
         buildLayout();
         loadProfile();
         loadNotifications();
         loadRoles();
     }
 
-    private String getUserId() {
-        return VaadinSession.getCurrent().getAttribute("userId").toString();
+    private void buildLayout() {
+        removeAll(); // clear old content but keep header
+
+        HorizontalLayout row = new HorizontalLayout();
+        row.setSizeFull();
+        row.setSpacing(true);
+        row.setJustifyContentMode(JustifyContentMode.EVENLY);
+
+        // Profile Details card
+        VerticalLayout profileCard = new VerticalLayout(new H2("👤 Profile"));
+        profileCard.add(detailsLayout);
+        styleCard(profileCard);
+
+        // Notifications card
+        VerticalLayout notifCard = new VerticalLayout(new H2("🔔 Notifications"));
+        notifCard.add(notificationsLayout);
+        styleCard(notifCard);
+
+        // Roles card
+        VerticalLayout rolesCard = new VerticalLayout(new H2("⚙️ Roles"));
+        rolesCard.add(rolesLayout);
+        styleCard(rolesCard);
+
+        row.add(profileCard, notifCard, rolesCard);
+        add(row);
     }
 
-    private void buildLayout() {
-        removeAll();
-
-        HorizontalLayout page = new HorizontalLayout();
-        page.setSizeFull();
-
-        // ── Left: Profile details
-        VerticalLayout left = new VerticalLayout(new H2("👤 Profile"));
-        left.setWidth("30%");
-        left.add(detailsLayout);
-
-        // ── Middle: Notifications
-        VerticalLayout mid = new VerticalLayout(new H2("🔔 Notifications"));
-        mid.setWidth("30%");
-        mid.add(notificationsLayout);
-
-        // ── Right: Roles
-        VerticalLayout right = new VerticalLayout(new H2("⚙️ Roles"));
-        right.setWidth("30%");
-        right.add(rolesLayout);
-
-        page.add(left, mid, right);
-        page.getStyle()
-                .set("display", "flex")
-                .set("justify-content", "space-between")
-                .set("align-items", "flex-start");
-
-        add(page);
+    private void styleCard(VerticalLayout card) {
+        card.addClassName("view-card");
+        card.setWidth("30%");
+        card.setPadding(true);
+        card.setSpacing(true);
+        card.getStyle()
+            .set("background", "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)")
+            .set("border-radius", "1rem")
+            .set("box-shadow", "0 8px 32px rgba(0,0,0,0.1)");
     }
 
     private void loadProfile() {
         detailsLayout.removeAll();
         try {
             ResponseEntity<MemberDTO> resp = rest.getForEntity(
-                    USER_URL + "/" + profileUserId + "?token=" + token,
-                    MemberDTO.class);
+                userUrl + "/" + profileUserId + "?token=" + token,
+                MemberDTO.class);
             if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
-                MemberDTO memberDTO = resp.getBody();
+                MemberDTO m = resp.getBody();
+                currentUsername = m.getUsername(); // Store the current user's username
                 detailsLayout.add(
-                        new Span("User ID: " + memberDTO.getMemberId()),
-                        new Span("Username: " + memberDTO.getUsername()),
-                        new Span("Email: " + memberDTO.getEmail()),
-                        new Span("Phone: " + memberDTO.getPhoneNumber()));
+                    new Span("User ID: " + m.getMemberId()),
+                    new Span("Username: " + m.getUsername()),
+                    new Span("Email: " + m.getEmail()),
+                    new Span("Phone: " + m.getPhoneNumber())
+                );
             } else {
-                detailsLayout.add(new Span("Cannot load profile: " + resp.getStatusCode()));
+                detailsLayout.add(new Span("Cannot load profile"));
             }
         } catch (Exception ex) {
-            detailsLayout.add(new Span("Error: " + ex.getMessage()));
+            detailsLayout.add(new Span("Error loading profile"));
         }
     }
 
@@ -132,8 +139,8 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
         notificationsLayout.removeAll();
         try {
             ResponseEntity<String[]> resp = rest.getForEntity(
-                    NOTIF_URL + "?authToken=" + token,
-                    String[].class);
+                notificationsUrl + "?authToken=" + token,
+                String[].class);
             if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 for (String note : resp.getBody()) {
                     notificationsLayout.add(new Span("• " + note));
@@ -142,7 +149,7 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
                 notificationsLayout.add(new Span("No notifications"));
             }
         } catch (Exception ex) {
-            notificationsLayout.add(new Span("Error: " + ex.getMessage()));
+            notificationsLayout.add(new Span("Error loading notifications"));
         }
     }
 
@@ -150,51 +157,83 @@ public class PersonProfileView extends VerticalLayout implements BeforeEnterObse
         rolesLayout.removeAll();
         try {
             ResponseEntity<rolesDTO[]> resp = rest.getForEntity(
-                    ACCEPT_ROLES_URL + "?authToken=" + token,
-                    rolesDTO[].class);
+                acceptedRolesUrl + "?authToken=" + token,
+                rolesDTO[].class);
+            
             if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
-                for (rolesDTO r : resp.getBody()) {
-                    if (r.getUserName().equalsIgnoreCase( /* your MemberDTO.getUsername() */ "")) {
-                        HorizontalLayout row = new HorizontalLayout();
-                        DTOs.ShopDTO shop = rest.getForObject(
-                            SHOPS_URL + "/" + r.getShopId() + "?authToken=" + token,
-                            DTOs.ShopDTO.class);
-
-                        String shopName = shop.getName();
-                        row.add(
-                                new Span(r.getRoleName() + " @ " + shopName),
-                                new Span("Perms: " + String.join(",", r.getPermissions())));
-                        rolesLayout.add(row);
+                rolesDTO[] roles = resp.getBody();
+                
+                for (rolesDTO r : roles) {
+                    // Check if this role belongs to the current user
+                    if (currentUsername != null) {
+                        VerticalLayout roleCard = new VerticalLayout();
+                        roleCard.setPadding(false);
+                        roleCard.setSpacing(false);
+                        roleCard.getStyle()
+                            .set("margin-bottom", "10px")
+                            .set("padding", "8px")
+                            .set("border", "1px solid #e0e0e0")
+                            .set("border-radius", "4px")
+                            .set("background-color", "#f9f9f9");
+                        
+                        String shopName = "Shop " + r.getShopId(); // Default fallback
+                        try {
+                            // Try different parameter formats for the shop API
+                            DTOs.ShopDTO shop = null;
+                            try {
+                                // First try with authToken parameter
+                                shop = rest.getForObject(
+                                    shopsUrl + "/" + r.getShopId() + "?token=" + token,
+                                    DTOs.ShopDTO.class);
+                            } catch (Exception e1) {
+                                // add a span with text that says the error
+                                Span errorSpan = new Span("Error loading shop details");
+                                errorSpan.getStyle().set("color", "red");
+                                roleCard.add(errorSpan);
+                            }
+                            
+                            if (shop != null) {
+                                shopName = shop.getName();
+                            }
+                        } catch (Exception ex) {
+                            // Shop lookup failed, use fallback
+                        }
+                        
+                        Span roleSpan = new Span(r.getRoleName() + " @ " + shopName);
+                        roleSpan.getStyle().set("font-weight", "bold");
+                        
+                        Span permsSpan = new Span("Permissions: " + String.join(", ", r.getPermissions()));
+                        permsSpan.getStyle()
+                            .set("word-wrap", "break-word")
+                            .set("white-space", "normal")
+                            .set("font-size", "0.9em")
+                            .set("color", "#666");
+                        
+                        roleCard.add(roleSpan, permsSpan);
+                        rolesLayout.add(roleCard);
                     }
                 }
                 if (rolesLayout.getComponentCount() == 0) {
                     rolesLayout.add(new Span("No roles for this user"));
                 }
             } else {
-                rolesLayout.add(new Span("Cannot load roles: " + resp.getStatusCode()));
+                rolesLayout.add(new Span("Cannot load roles - Status: " + resp.getStatusCode()));
             }
         } catch (Exception ex) {
-            rolesLayout.add(new Span("Error: " + ex.getMessage()));
+            rolesLayout.add(new Span("Error loading roles"));
         }
     }
+
     private void handleSuspence() {
         Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
-        if (userId == null) {
-            return;
-        }
-        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
-        if (token == null) {
-            return;
-        }
-        String url = "http://localhost:8080/api/users" + "/"+userId+"/suspension?token=" +token;
-        ResponseEntity<Boolean> response = rest.getForEntity(url, Boolean.class);
-
-        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-            VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
+        if (userId == null) return;
+        ResponseEntity<Boolean> resp = rest.getForEntity(
+            userUrl + "/" + userId + "/isSuspended?token=" + token,
+            Boolean.class);
+        if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
+            VaadinSession.getCurrent().setAttribute("isSuspended", resp.getBody());
         } else {
-            throw new RuntimeException(
-                "Failed to check admin status: HTTP " + response.getStatusCode().value()
-            );
+            Notification.show("Failed to check suspension status");
         }
     }
 }

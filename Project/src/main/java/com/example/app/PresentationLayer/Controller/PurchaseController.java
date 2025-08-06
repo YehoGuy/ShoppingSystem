@@ -1,9 +1,13 @@
 package com.example.app.PresentationLayer.Controller;
 
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import org.springframework.boot.context.properties.bind.DefaultValue;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -14,11 +18,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.format.annotation.DateTimeFormat.ISO;
 
+import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Purchase.PurchaseService;
+import com.example.app.PresentationLayer.DTO.Purchase.PaymentDetailsDTO;
 import com.example.app.DomainLayer.Purchase.BidReciept;
 import com.example.app.PresentationLayer.DTO.Purchase.BidRecieptDTO;
 import com.example.app.PresentationLayer.DTO.Purchase.RecieptDTO;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.constraints.Min;
@@ -74,8 +83,7 @@ public class PurchaseController {
         this.purchaseService = purchaseService;
     }
 
-    /* ────────────────────────── CHECKOUT ───────────────────────── */
-
+    /* ────────────────────────── CHECKOUT ───────────────────────── */    
     @PostMapping("/checkout")
     public ResponseEntity<?> checkout(
             @RequestParam String authToken,
@@ -83,7 +91,8 @@ public class PurchaseController {
             @RequestParam String city,
             @RequestParam String street,
             @RequestParam String houseNumber,
-            @RequestParam(required = false) String zipCode) {
+            @RequestParam String zipCode,
+            @RequestBody PaymentDetailsDTO paymentDetails) {
 
         try {
             // compose Address inline
@@ -94,8 +103,11 @@ public class PurchaseController {
                     .withHouseNumber(houseNumber)
                     .withZipCode(zipCode);
 
-            List<Integer> ids = purchaseService.checkoutCart(authToken, shipping);
-            return ResponseEntity.status(HttpStatus.CREATED).body(ids); // 201 Created
+            List<Integer> ids = purchaseService.checkoutCart(authToken, shipping, paymentDetails.getCurrency(),
+                    paymentDetails.getCardNumber(), paymentDetails.getExpirationDateMonth(),
+                    paymentDetails.getExpirationDateYear(), paymentDetails.getCardHolderName(),
+                    paymentDetails.getCvv(), paymentDetails.getId());
+            return ResponseEntity.status(HttpStatus.CREATED).body(ids); // 201 Created
 
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
             // bad parameters (e.g., empty city or invalid token format)
@@ -116,6 +128,54 @@ public class PurchaseController {
         }
     }
 
+    
+    @PostMapping("/partial-checkout")
+    public ResponseEntity<?> partialheckout(
+            @RequestParam String authToken,
+            @RequestParam String country,
+            @RequestParam String city,
+            @RequestParam String street,
+            @RequestParam String houseNumber,
+            @RequestParam String zipCode,
+            @RequestParam int shopId,
+            @RequestBody PaymentDetailsDTO paymentDetails) {
+
+        try {
+            // compose Address inline
+            com.example.app.DomainLayer.Purchase.Address shipping = new com.example.app.DomainLayer.Purchase.Address()
+                    .withCity(city)
+                    .withCountry(country)
+                    .withStreet(street)
+                    .withHouseNumber(houseNumber)
+                    .withZipCode(zipCode);
+
+            List<Integer> ids = purchaseService.partialCheckoutCart(authToken, shipping, paymentDetails.getCurrency(),
+                    paymentDetails.getCardNumber(), paymentDetails.getExpirationDateMonth(),
+                    paymentDetails.getExpirationDateYear(), paymentDetails.getCardHolderName(),
+                    paymentDetails.getCvv(), paymentDetails.getId(), shopId);
+            return ResponseEntity.status(HttpStatus.CREATED).body(ids); // 201 Created
+
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            // bad parameters (e.g., empty city or invalid token format)
+            return ResponseEntity.badRequest().body(ex.getMessage()); // 400
+
+        } catch (NoSuchElementException ex) {
+            // guest/member or cart not found
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage()); // 404
+
+        } catch (RuntimeException ex) {
+            // business conflict (e.g., inventory unavailable)
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
+
+        } catch (Exception ex) {
+            // anything unexpected
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Internal server error"); // 500
+        }
+    }
+
+
+    
     /* ─────────────────────────── BIDS ────────────────────────── */
 
     @PostMapping("/bids")
@@ -152,10 +212,10 @@ public class PurchaseController {
     public ResponseEntity<String> postBidOffer(
             @PathVariable @Min(1) int bidId,
             @RequestParam String authToken,
-            @RequestParam @Min(1) int bidAmount) {
+            @RequestParam @Min(1) int bidPrice) {
 
         try {
-            purchaseService.postBidding(authToken, bidId, bidAmount);
+            purchaseService.postBidding(authToken, bidId, bidPrice);
             // Success: 202 Accepted, no body needed
             return ResponseEntity.accepted().build();
 
@@ -186,16 +246,16 @@ public class PurchaseController {
             @RequestParam String authToken) {
 
         try {
-            int winnerId = purchaseService.finalizeBid(authToken, bidId);
-            // success → 200 OK, return the winner’s user‑id
+            // Parse the payment details JSON
+            int winnerId = purchaseService.finalizeBid(authToken, bidId, false);
+            // success → 200 OK, return the winner's user‑id
             return ResponseEntity.ok(winnerId);
-
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
             // bad parameters (e.g., negative id, malformed token) → 400
             return ResponseEntity.badRequest().body(ex.getMessage());
 
         } catch (NoSuchElementException ex) {
-            // bid doesn’t exist → 404
+            // bid doesn't exist → 404
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
 
         } catch (RuntimeException ex) {
@@ -209,12 +269,12 @@ public class PurchaseController {
         }
     }
 
-     @GetMapping("/bids")
+    @GetMapping("/bids")
     public ResponseEntity<?> getAllBids(
             @RequestParam String authToken) {
 
         try {
-            List<BidReciept> bids = purchaseService.getAllBids(authToken);
+            List<BidReciept> bids = purchaseService.getAllBidsNew(authToken, true);
             List<BidRecieptDTO> bidDTOs = bids.stream()
                     .map(BidRecieptDTO::fromDomain) // convert to DTO
                     .toList();
@@ -233,6 +293,24 @@ public class PurchaseController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Internal server error"); // 500
         }
+    }
+
+    @GetMapping("/bids/finished")
+    public ResponseEntity<List<BidRecieptDTO>> getFinishedBidsSection(
+            @RequestParam String authToken) {
+        try {
+            List<BidReciept> finishedBids = purchaseService.getFinishedBidsList(authToken);
+            // map domain‐model receipts → DTOs
+            List<BidRecieptDTO> dtos = finishedBids.stream()
+                .map(BidRecieptDTO::fromDomain)  
+                .toList();
+            return ResponseEntity.ok(dtos);
+        } catch (IllegalArgumentException ex) {
+            // token invalid
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        } 
     }
 
     @GetMapping("/shops/{shopId}/bids")
@@ -284,6 +362,18 @@ public class PurchaseController {
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Internal server error"); // 500
+        }
+    }
+
+    @PostMapping("/bids/{bidId}/accept")
+    public ResponseEntity<String> acceptBid(
+            @PathVariable @Min(1) int bidId,
+            @RequestParam String authToken) {
+        try {
+            purchaseService.acceptBid(authToken, bidId);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
         }
     }
 
@@ -353,6 +443,7 @@ public class PurchaseController {
                 .stream()
                 .map(RecieptDTO::fromDomain)          // map to DTO
                 .toList();
+
             return ResponseEntity.ok(receipts);     // 200 + JSON array
 
         } catch (ConstraintViolationException|IllegalArgumentException ex) {
@@ -367,7 +458,148 @@ public class PurchaseController {
         }
     }
 
-   
+    /* ─────────────────────────── AUCTIONS ────────────────────────── */
 
+    @PostMapping("/auctions")
+    public ResponseEntity<Integer> startAuction(
+            @RequestParam String authToken,
+            @RequestParam @Min(1) int storeId,
+            @RequestBody Map<Integer, Integer> items,
+            @RequestParam @Min(0) int initialPrice,
+            @RequestParam @DateTimeFormat(iso = ISO.DATE_TIME) LocalDateTime auctionEndTime
+    ) {
+        try {
+            int auctionId = purchaseService.startAuction(
+                authToken, storeId, items, initialPrice, auctionEndTime
+            );
+            return ResponseEntity.status(HttpStatus.CREATED).body(auctionId);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(-1);
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(-1);
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(-1);
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(-1);
+        }
+    }
+
+    @PostMapping("/auctions/{auctionId}/offers")
+    public ResponseEntity<Void> placeAuctionBid(
+            @PathVariable @Min(1) int auctionId,
+            @RequestParam String authToken,
+            @RequestParam @Min(1) int bidAmount
+    ) {
+        try {
+            purchaseService.postBiddingAuction(authToken, auctionId, bidAmount);
+            return ResponseEntity.accepted().build();
+        } catch (IllegalArgumentException | ConstraintViolationException ex) {
+            //System.out.println("Invalid parameters (400): " + ex.getMessage());
+            return ResponseEntity.badRequest().body(null); // 400
+        } catch (NoSuchElementException ex) {
+            //System.out.println("Invalid parameters (404): " + ex.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); // 404
+        } catch (RuntimeException ex) {
+            //System.out.println("Invalid parameters (409): " + ex.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(null); // 409
+        } catch (Exception ex) {
+            //System.out.println("Invalid parameters (500): " + ex.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(null); // 500
+        }
+    }
+
+    @PostMapping("/auctions/{auctionId}/finalize")
+    public ResponseEntity<?> finalizeAuctionInternal(
+            @PathVariable("auctionId") @Min(1) int auctionId,
+            @RequestParam String authToken) {
+
+        try {
+            // Parse the payment details JSON
+            
+            int winnerId = purchaseService.finalizeBid(authToken, auctionId, false);
+            // success → 200 OK, return the winner's user‑id
+            return ResponseEntity.ok(winnerId);
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            // bad parameters (e.g., negative id, malformed token) → 400
+            return ResponseEntity.badRequest().body(ex.getMessage());
+
+        } catch (NoSuchElementException ex) {
+            // bid doesn't exist → 404
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+
+        } catch (RuntimeException ex) {
+            // business‑rule violations (e.g., bid already finalized) → 409
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+
+        } catch (Exception ex) {
+            // anything unexpected → 500
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Internal server error");
+        }
+    }
+
+    @GetMapping("/auctions")
+    public ResponseEntity<List<BidRecieptDTO>> listAuctions(
+            @RequestParam String authToken) {
+        try {
+            List<BidReciept> domain = purchaseService.getAllBids(authToken, false);
+            List<BidRecieptDTO> dtos = domain.stream()
+                .map(BidRecieptDTO::fromDomain)
+                .toList();
+            return ResponseEntity.ok(dtos);
+        } catch (IllegalArgumentException | NoSuchElementException ex) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception ex) {
+            return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .build();
+        }
+    }
+
+    @GetMapping("/auctions/{auctionId}")
+    public ResponseEntity<BidRecieptDTO> getAuctionDetails(
+            @PathVariable @Min(1) int auctionId,
+            @RequestParam String authToken) {
+
+        try {
+            BidReciept rec = purchaseService.getBid(authToken, auctionId);
+            return ResponseEntity.ok(BidRecieptDTO.fromDomain(rec)); // 200
+
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(null); // 400
+
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); // 404
+
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(null); // 409
+
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(null); // 500
+        }
+    }
+
+    @GetMapping("/auctions/won")
+    public ResponseEntity<List<BidRecieptDTO>> getUserWonAuctions(
+            @RequestParam String authToken) {
+        try {
+            List<BidReciept> won = purchaseService.getAuctionsWinList(authToken);
+            // map domain‐model receipts → DTOs
+            List<BidRecieptDTO> dtos = won.stream()
+                .map(BidRecieptDTO::fromDomain)  
+                .toList();
+            return ResponseEntity.ok(dtos);
+        } catch (IllegalArgumentException ex) {
+            // token invalid
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+
+    
 
 }

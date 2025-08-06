@@ -1,11 +1,13 @@
 package com.example.app.InfrastructureLayer;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 import com.example.app.ApplicationLayer.OurRuntime;
@@ -13,6 +15,7 @@ import com.example.app.DomainLayer.IMessageRepository;
 import com.example.app.DomainLayer.Message;
 
 @Repository
+@Profile("no-db | test")
 public class MessageRepository implements IMessageRepository {
     private Map<Integer, Message> messages; // Map to store messages with their IDs as keys
     private AtomicInteger nextId; // Counter for generating unique message IDs
@@ -140,13 +143,12 @@ public class MessageRepository implements IMessageRepository {
             }
             int prevId = current.getPreviousMessageId();
             if (prevId == -1) {
-                break;   // no more history
+                break; // no more history
             }
             current = messages.get(prevId);
         }
         return conversation;
     }
-
 
     public boolean isMessagePrevious(int previousMessageId, int senderId, int receiverId) {
         if (previousMessageId == -1)
@@ -159,6 +161,16 @@ public class MessageRepository implements IMessageRepository {
             }
         }
         return false; // Return false if the message is not found or does not match the IDs
+    }
+
+    @Override
+    public List<Message> getUserConversations(int userId) {
+        List<Message> output = new LinkedList<>();
+        for (Message message : this.messages.values()) {
+            if (message.getReceiverId() == userId || message.getSenderId() == userId)
+                output.add(message);
+        }
+        return output;
     }
 
 }

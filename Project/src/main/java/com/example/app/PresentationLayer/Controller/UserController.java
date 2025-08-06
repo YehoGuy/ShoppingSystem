@@ -22,6 +22,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
+import com.example.app.ApplicationLayer.OurArg;
+import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
 import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.Guest;
@@ -29,7 +31,8 @@ import com.example.app.DomainLayer.Member;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
 import com.example.app.DomainLayer.User;
-import com.example.app.PresentationLayer.DTO.Purchase.PaymentMethodDTO;
+import com.example.app.DomainLayer.Purchase.BidReciept;
+import com.example.app.PresentationLayer.DTO.Purchase.BidRecieptDTO;
 import com.example.app.PresentationLayer.DTO.Role.RoleDTO;
 import com.example.app.PresentationLayer.DTO.User.GuestDTO;
 import com.example.app.PresentationLayer.DTO.User.MemberDTO;
@@ -177,26 +180,6 @@ public class UserController {
 
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
-
-        } catch (RuntimeException ex) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
-
-        } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
-        }
-    }
-
-    @GetMapping("/paymentMethod/{userId}")
-    public ResponseEntity<?> getUserPaymentMethod(int userId) {
-        try {
-            PaymentMethod paymentMethod = userService.getUserPaymentMethod(userId);
-            return ResponseEntity.ok(PaymentMethodDTO.fromDomain(paymentMethod));
-
-        } catch (ConstraintViolationException | IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().body(ex.getMessage());
-
-        } catch (NoSuchElementException ex) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
 
         } catch (RuntimeException ex) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
@@ -379,7 +362,9 @@ public class UserController {
 
         try {
             authService.ValidateToken(token); // only authenticated callers
+            System.out.println("isAdmin1");
             boolean res = userService.isAdmin(userId);
+            System.out.println("isAdmin2");
             return ResponseEntity.ok(res);
 
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
@@ -448,6 +433,21 @@ public class UserController {
         }
     }
 
+    @GetMapping("/isGuest")
+    public ResponseEntity<?> isGuest(@RequestParam String token) {
+        try {
+            authService.ValidateToken(token);
+            boolean isGuest = userService.isGuest(token);
+            return ResponseEntity.ok(isGuest);
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
+    }
+
     @PostMapping("/logout")
     public ResponseEntity<?> logout(@RequestParam String token) {
         try {
@@ -459,6 +459,27 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
         }
     }
+
+    @PostMapping("/shops/{bidId}/bids") 
+    public ResponseEntity<String> removeBidFromCart(
+        @PathVariable("bidId") @Min(1) int bidId,
+        @RequestParam String authToken) {
+        try {
+            authService.ValidateToken(authToken);
+            userService.removeBidFromCart(authToken, bidId);
+            return ResponseEntity.noContent().build(); // 204 No Content
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage()); // 400
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage()); // 404
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage()); // 409
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Internal server error"); // 500
+        }
+    }
+
 
     @GetMapping("/shops/{shopId}/permissions")
     public ResponseEntity<?> getPermissionsByShop(
@@ -572,6 +593,26 @@ public class UserController {
         }
     }
 
+    @GetMapping("/shops/{shopId}/owner")
+    public ResponseEntity<Integer> getShopOwner(
+            @PathVariable @Min(1) int shopId,
+            @RequestParam("token") String token) {
+        try {
+            // only authenticated callers
+            authService.ValidateToken(token);
+            // delegate to your service layer
+            int ownerId = userService.getShopOwner(shopId);
+            return ResponseEntity.ok(ownerId);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().build();
+        } catch (NoSuchElementException ex) {
+            // shop not found
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     @DeleteMapping("/shops/{shopId}/assignee/{assigneeId}/all")
     public ResponseEntity<Void> removeAllAssigned(
             @PathVariable @Min(1) int shopId,
@@ -673,7 +714,7 @@ public class UserController {
     }
 
     /* Check whether the user is currently suspended. */
-    @GetMapping("/{userId}/suspension")
+    @GetMapping("/{userId}/isSuspended")
     public ResponseEntity<?> isSuspended(
             @PathVariable @Min(1) int userId,
             @RequestParam String token) {
@@ -710,8 +751,7 @@ public class UserController {
         }
     }
 
-
-        /*
+    /*
      * Suspend or unsuspend a user (admin-only token).
      * Pass an ISO-8601 timestamp in `until`. To unsuspend, omit the param.
      */
@@ -846,6 +886,8 @@ public class UserController {
         try {
             authService.ValidateToken(token);
             HashMap<Integer, HashMap<Integer, Integer>> cart = userService.getUserShoppingCartItems(userId);
+            System.out.println(cart != null);
+            System.out.println(cart != null ? cart.isEmpty() : "");
             return ResponseEntity.ok(cart);
         } catch (ConstraintViolationException | IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(null);
@@ -856,7 +898,26 @@ public class UserController {
         }
     }
 
-    @GetMapping("/shoppingCart/{shopID}/{itemID}/plus")
+    @PostMapping("/shoppingCart/{shopID}/{itemID}")
+    public ResponseEntity<Void> addNewItemToShoppingCart(
+            @RequestParam int quantity,
+            @RequestParam String token,
+            @PathVariable int shopID,
+            @PathVariable int itemID) {
+        try {
+            authService.ValidateToken(token);
+            userService.addItemToShoppingCart(token, shopID, itemID, quantity);
+            return ResponseEntity.noContent().build();
+        } catch (ConstraintViolationException | IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().build();
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/shoppingCart/{shopID}/{itemID}/plus")
     public ResponseEntity<Void> addItemToShoppingCart(
             @RequestParam String token,
             @RequestParam int userId,
@@ -875,7 +936,7 @@ public class UserController {
         }
     }
 
-    @GetMapping("/shoppingCart/{shopID}/{itemID}/minus")
+    @PostMapping("/shoppingCart/{shopID}/{itemID}/minus")
     public ResponseEntity<Void> decreaseItemInShoppingCart(
             @RequestParam String token,
             @RequestParam int userId,
@@ -894,7 +955,7 @@ public class UserController {
         }
     }
 
-    @GetMapping("/shoppingCart/{shopID}/{itemID}/remove")
+    @PostMapping("/shoppingCart/{shopID}/{itemID}/remove")
     public ResponseEntity<Void> removeCompletelyItemFromShoppingCart(
             @RequestParam String token,
             @RequestParam int userId,
@@ -947,6 +1008,36 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(false);
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(false);
+        }
+    }
+
+    @GetMapping("/auctions/won")
+    public ResponseEntity<List<BidRecieptDTO>> getUserWonAuctions(
+            @RequestParam String authToken) {
+        try {
+            int userId = authService.ValidateToken(authToken);
+            List<BidReciept> won = userService.getAuctionsWinList(userId);
+            // map domain‐model receipts → DTOs
+            List<BidRecieptDTO> dtos = won.stream()
+                    .map(BidRecieptDTO::fromDomain)
+                    .toList();
+            return ResponseEntity.ok(dtos);
+        } catch (IllegalArgumentException ex) {
+            // token invalid
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/getNotificationsQuantity")
+    public ResponseEntity<Integer> getMissingNotificationsQuantity(@RequestParam String token) {
+        try {
+            return ResponseEntity.ok(userService.getMissingNotificationsQuantity(token));
+        } catch (OurArg | OurRuntime ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

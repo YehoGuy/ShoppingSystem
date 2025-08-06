@@ -1,5 +1,6 @@
 package UI;
 
+import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -7,11 +8,13 @@ import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
@@ -23,8 +26,9 @@ import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 
-@JsModule("./js/notification-client.js")
 public class PurchaseCompletionIntermidiate extends VerticalLayout implements BeforeEnterObserver {
+
+    private final String api;
 
     private ComboBox<String> shippingTypeCombo;
     private TextField countryField;
@@ -33,30 +37,40 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
     private TextField houseNumberField;
     private TextField apartmentNumberField;
     private TextField zipCodeField;
-
+    
     private ShoppingCartDTO cartDto;
     private Map<ItemDTO, Integer> items;
     private double totalPrice = 0;
+    private int partialCart = -1;
+    private Integer bidId;
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
+        getUserId(); // Ensure userId is set in session
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("");
         }
-        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m -> m.connectNotifications($0))",
-                getUserId());
+
         handleSuspence();
     }
 
-    private String getUserId() {
-        return VaadinSession.getCurrent().getAttribute("userId").toString();
+    public Integer getUserId() {
+        if (VaadinSession.getCurrent().getAttribute("userId") != null) {
+            return Integer.parseInt(VaadinSession.getCurrent().getAttribute("userId").toString());
+        }
+        UI.getCurrent().navigate(""); // Redirect to login if userId is not set
+        return null; // Return null if userId is not available
     }
 
-    public PurchaseCompletionIntermidiate(ShoppingCartDTO cart) {
-        setAllItems();
+    public PurchaseCompletionIntermidiate(@Value("${url.api}") String api, ShoppingCartDTO cart, Dialog addressDialog,
+     int partialCart, double price, Integer bidId) {
+        this.api = api;
+        this.totalPrice = price;
+        this.cartDto = cart;;
 
-        this.cartDto = cart;
-        this.totalPrice = cart.getTotalPrice();
+        this.partialCart = partialCart;
+        this.bidId = bidId;
+        setAllItems();
         setSizeFull();
         setSpacing(true);
         setPadding(true);
@@ -67,13 +81,24 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
         displayCartSummary();
 
         Button completeButton = new Button("Complete Purchase", event -> {
-            AddressDTO address = getAddressFromForm();
-            completePurchase(address);
+            if (isAddressDetailsValid()) {
+                AddressDTO address = getAddressFromForm();
+                completePurchase(address, addressDialog);
+            } else {
+                Notification.show("Please fill in all address details correctly.");
+            }
+
         });
         if (Boolean.TRUE.equals((Boolean) VaadinSession.getCurrent().getAttribute("isSuspended"))) {
             completeButton.setVisible(false);
         }
         add(completeButton);
+    }
+
+    private boolean isAddressDetailsValid() {
+        return !countryField.isEmpty() && !cityField.isEmpty() && !streetField.isEmpty()
+                && !houseNumberField.isEmpty() && !zipCodeField.isEmpty()
+                && shippingTypeCombo.getValue() != null;
     }
 
     private void setupAddressForm() {
@@ -102,36 +127,45 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
     }
 
     private void displayCartSummary() {
+        if (cartDto == null) {
+            //Notification.show("No cart data available.");
+            return;
+        }
+        if (cartDto.getShopItemPrices() == null || cartDto.getShopItemQuantities() == null) {
+            //Notification.show("No items in cart.");
+            return;
+        }
         add(new H1("🛒 Cart Summary"));
 
-        cartDto.getShopItemPrices().forEach((shopId, itemPrices) -> {
-            itemPrices.forEach((itemId, price) -> {
-                ItemDTO item = getItemById(itemId);
-                if (item != null) {
-                    String line = "- " + item.getName() + " x" + cartDto.getShopItemQuantities().get(shopId).get(itemId)
-                            + " = $" + (price * cartDto.getShopItemQuantities().get(shopId).get(itemId));
-                    add(new Span(line));
-                }
-            });
-        });
-
-        Span total = new Span("💰 Total: $" + totalPrice);
+        Span total = new Span("💰 Total after discounts: $" + totalPrice);
         total.getStyle().set("font-weight", "bold").set("font-size", "18px");
         add(total);
     }
 
-    private void completePurchase(AddressDTO address) {
-        PaymenPageView paymentPage = new PaymenPageView(totalPrice, address.getCountry(), address.getCity(),
-                address.getStreet(), address.getHouseNumber(), address.getZipCode());
+    private void completePurchase(AddressDTO address, Dialog addressDialog) {
+        PaymenPageView paymentPage = new PaymenPageView(
+                api,
+                totalPrice,
+                address.getCountry(),
+                address.getCity(),
+                address.getStreet(),
+                address.getHouseNumber(),
+                address.getZipCode(),
+                addressDialog,  
+                partialCart, bidId);
+
         Dialog paymentDialog = new Dialog(paymentPage);
         paymentDialog.setWidth("400px");
         paymentDialog.setHeight("300px");
-        paymentDialog.add(new Span("Please complete your payment in the dialog."));
         paymentDialog.open();
     }
 
     private void setAllItems() {
         items = new java.util.HashMap<>();
+        if (cartDto == null || cartDto.getItems() == null) {
+            Notification.show(getUserId() + " - No items in cart.");
+            return;
+        }
         cartDto.getShopItemQuantities()
                 .forEach((shopId, itemQuantities) -> {
                     itemQuantities.forEach((itemId, quantity) -> {
@@ -147,12 +181,16 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
     }
 
     private ItemDTO getItemById(int id) {
+        if (items == null || items.isEmpty()) {
+            Notification.show("No items available.");
+            return null;
+        }
         return items.keySet().stream()
                 .filter(item -> item.getId() == id)
                 .findFirst()
                 .orElse(null);
     }
-    
+
     private void handleSuspence() {
         RestTemplate restTemplate = new RestTemplate();
 
@@ -164,15 +202,15 @@ public class PurchaseCompletionIntermidiate extends VerticalLayout implements Be
         if (token == null) {
             return;
         }
-        String url = "http://localhost:8080/api/users" + "/"+userId+"/suspension?token=" +token;
+        String url = api + "/users/" + userId + "/isSuspended?token=" + token;
+
         ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
         } else {
-            throw new RuntimeException(
-                "Failed to check admin status: HTTP " + response.getStatusCode().value()
-            );
+            Notification.show(
+                    "Failed to check admin status");
         }
     }
 

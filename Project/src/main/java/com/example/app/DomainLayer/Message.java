@@ -1,18 +1,58 @@
 package com.example.app.DomainLayer;
 
-public class Message {
-    private final int messageId;
-    private final int senderId; // User ID of the sender
-    private final int receiverId; // User/Shop ID of the receiver (depends on userToUser flag)
-    private final String content; // Message content
-    private final String timestamp; // Timestamp of when the message was sent
-    private final boolean userToUser; // true if the message is between users, false if it's User to Shop
-    private final int previousMessageId; // ID of the previous message in the conversation, -1 if none
-    private boolean isDeleted; // Flag to indicate if the message is deleted
-    private final Object lock = new Object(); // Synchronization lock
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
-    public Message(int messageId, int senderId, int receiverId, String content, String timestamp, boolean userToUser, int previousMessageId) {
+@Entity
+@Table(name = "messages")
+public class Message {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer messageId;
+
+    private final int senderId;
+
+    private final int receiverId;
+
+    private final String content;
+
+    private final String timestamp;
+
+    private final boolean userToUser;
+
+    private final int previousMessageId;
+
+    private boolean isDeleted; // Flag to indicate if the message is deleted
+
+    // JPA requires a no-arg constructor
+    public Message() {
+        this.senderId = -1;
+        this.receiverId = -1;
+        this.content = "null";
+        this.timestamp = "null";
+        this.userToUser = false;
+        this.previousMessageId = -1;
+        this.isDeleted = false;
+    }
+
+    public Message(int messageId, int senderId, int receiverId, String content, String timestamp, boolean userToUser,
+            int previousMessageId) {
         this.messageId = messageId;
+        this.senderId = senderId;
+        this.receiverId = receiverId;
+        this.content = content;
+        this.timestamp = timestamp;
+        this.userToUser = userToUser;
+        this.previousMessageId = previousMessageId;
+        this.isDeleted = false;
+    }
+
+    public Message(int senderId, int receiverId, String content, String timestamp, boolean userToUser,
+            int previousMessageId) {
         this.senderId = senderId;
         this.receiverId = receiverId;
         this.content = content;
@@ -50,16 +90,12 @@ public class Message {
         return previousMessageId;
     }
 
-    public boolean isDeleted() {
-        synchronized (lock) {
-            return isDeleted;
-        }
+    public synchronized boolean isDeleted() {
+        return isDeleted;
     }
 
     public void delete() {
-        synchronized (lock) {
-            isDeleted = true;
-        }
+        isDeleted = true;
     }
 
     @Override

@@ -1,7 +1,11 @@
 package DomainLayerTests;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -137,5 +141,27 @@ public class RoleTests {
     void testIsOwnerAndIsFounderDefaultsFalse() {
         assertFalse(nullPermRole.isOwner());
         assertFalse(nullPermRole.isFounder());
+    }
+
+    @Test
+    void testHashCode() {
+        Role r1 = new Role(0, 0, new PermissionsEnum[]{PermissionsEnum.getHistory});
+        Role r2 = new Role(0, 0, new PermissionsEnum[]{PermissionsEnum.getHistory});
+        Role r3 = new Role(0, 0, new PermissionsEnum[]{PermissionsEnum.closeShop});
+
+        assertEquals(r1.hashCode(), r2.hashCode(), "Roles with same perms must have same hash");
+        assertNotEquals(r1.hashCode(), r3.hashCode(), "Different perms must yield different hash");
+    }
+
+    @Test
+    void testEquals() {
+        Role r1 = new Role(0, 0, new PermissionsEnum[]{PermissionsEnum.getHistory});
+        Role r2 = new Role(0, 0, new PermissionsEnum[]{PermissionsEnum.getHistory});
+        Role r3 = new Role(0, 0, new PermissionsEnum[]{PermissionsEnum.closeShop});
+
+        assertEquals(r1, r2, "Roles with same perms must be equal");
+        assertNotEquals(r1, r3, "Different perms must not be equal");
+        assertNotEquals(r1, null, "Role must not equal null");
+        assertNotEquals(r1, "string", "Role must not equal non‐Role object");
     }
 }

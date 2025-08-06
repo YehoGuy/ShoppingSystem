@@ -1,19 +1,30 @@
 package com.example.app.ApplicationLayer.Purchase;
 
+import java.sql.Date;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.time.ZoneId;
 
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
 import com.example.app.ApplicationLayer.Item.ItemService;
 import com.example.app.ApplicationLayer.LoggerService;
+import com.example.app.ApplicationLayer.NotificationService;
 import com.example.app.ApplicationLayer.Message.MessageService;
 import com.example.app.ApplicationLayer.OurArg;
 import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Shop.ShopService;
 import com.example.app.ApplicationLayer.User.UserService;
+import com.example.app.DomainLayer.Member;
+import com.example.app.DomainLayer.Item.Item;
 import com.example.app.DomainLayer.Purchase.Address;
 import com.example.app.DomainLayer.Purchase.Bid;
 import com.example.app.DomainLayer.Purchase.BidReciept;
@@ -21,6 +32,9 @@ import com.example.app.DomainLayer.Purchase.IPurchaseRepository;
 import com.example.app.DomainLayer.Purchase.Purchase;
 import com.example.app.DomainLayer.Purchase.Reciept;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
+
+import jakarta.validation.constraints.Min;
+import java.util.HashSet;
 
 @Service
 public class PurchaseService {
@@ -31,19 +45,26 @@ public class PurchaseService {
     private ItemService itemService;
     private ShopService shopService;
     private MessageService messageService;
+    private NotificationService notificationService;
+    // private NotificationService notificationService;
+    private TaskScheduler taskscheduler;
 
     public PurchaseService(IPurchaseRepository purchaseRepository,
             AuthTokenService authTokenService,
             UserService userService,
             ShopService shopService,
             ItemService itemService,
-            MessageService messageService) {
-        this.messageService = messageService;
+            MessageService messageService,
+            NotificationService notificationService,
+            TaskScheduler taskscheduler) {
         this.purchaseRepository = purchaseRepository;
         this.authTokenService = authTokenService;
         this.userService = userService;
         this.shopService = shopService;
         this.itemService = itemService;
+        this.messageService = messageService;
+        this.notificationService = notificationService;
+        this.taskscheduler = taskscheduler;
     }
 
     public void setServices(AuthTokenService authTokenService, UserService userService, ItemService itemService,
@@ -55,12 +76,14 @@ public class PurchaseService {
         this.messageService = messageService;
     }
 
-    public List<Integer> checkoutCart(String authToken, Address shippingAddress) {
+    public List<Integer> checkoutCart(String authToken, Address shippingAddress, String currency, String cardNumber,
+            String expirationDateMonth, String expirationDateYear, String cardHolderName, String cvv, String id) {
         LoggerService.logMethodExecution("checkoutCart", authToken, shippingAddress);
         HashMap<Integer, HashMap<Integer, Integer>> aqcuired = new HashMap<>();
         HashMap<Integer, HashMap<Integer, Integer>> cartBackup = null;
         HashMap<Integer, Double> totalPrices = new HashMap<>();
         HashMap<Integer, Integer> purchaseIds = new HashMap<>();
+        List<Integer> paymentIds = new ArrayList<>();
         int userId = -1;
         try {
             userId = authTokenService.ValidateToken(authToken);
@@ -70,10 +93,13 @@ public class PurchaseService {
                 double totalPrice = shopService.purchaseItems(cart.get(shopId), shopId, authToken);
                 totalPrices.put(shopId, totalPrice);
                 aqcuired.put(shopId, cart.get(shopId));
+
+                int payid = userService.pay(authToken, shopId, totalPrice, currency, cardNumber,
+                        expirationDateMonth, expirationDateYear, cardHolderName, cvv, id);
+                paymentIds.add(payid);
                 int pid = purchaseRepository.addPurchase(userId, shopId, aqcuired.get(shopId), totalPrice,
                         shippingAddress);
                 purchaseIds.put(pid, shopId);
-                userService.pay(authToken, shopId, totalPrice);
             }
             userService.clearUserShoppingCart(userId);
             for (Integer purchaseId : purchaseIds.keySet()) {
@@ -81,15 +107,32 @@ public class PurchaseService {
                         shippingAddress.getCountry(),
                         shippingAddress.getCity(), shippingAddress.getStreet(), shippingAddress.getZipCode());
             }
+            // genrate reciept for each purchase
+            for (Integer purchaseId : purchaseIds.keySet()) {
+                Purchase purchase = purchaseRepository.getPurchaseById(purchaseId);
+                if (purchase != null) {
+                    Reciept reciept = purchase.generateReciept();
+                    purchaseRepository.addReciept(reciept);
+                }
+            }
             LoggerService.logMethodExecutionEnd("checkoutCart", purchaseIds);
             userService.purchaseNotification(cart);
             return purchaseIds.keySet().stream().toList();
-        } catch (OurArg e) {
-            LoggerService.logDebug("checkoutCart", e);
-            throw new OurArg("checkoutCart: " + e.getMessage(), e);
-        } catch (OurRuntime e) {
-            LoggerService.logDebug("checkoutCart", e);
-            throw new OurRuntime("checkoutCart: " + e.getMessage(), e);
+            // } catch (OurArg e) {
+            // LoggerService.logDebug("checkoutCart", e);
+            // throw new OurArg("checkoutCart: " + e.getMessage(), e);
+            // } catch (OurRuntime e) {
+            // for (Integer shopId : aqcuired.keySet()) {
+            // shopService.rollBackPurchase(aqcuired.get(shopId), shopId);
+            // }
+            // if (cartBackup != null) {
+            // userService.restoreUserShoppingCart(userId, cartBackup);
+            // }
+            // for (Integer pid : paymentIds) {
+            // userService.refundPaymentAuto(authToken, pid);
+            // }
+            // LoggerService.logError("checkoutCart", e, authToken, shippingAddress);
+            // throw new OurRuntime("checkoutCart: " + e.getMessage(), e);
         } catch (Exception e) {
             for (Integer shopId : aqcuired.keySet()) {
                 shopService.rollBackPurchase(aqcuired.get(shopId), shopId);
@@ -97,11 +140,87 @@ public class PurchaseService {
             if (cartBackup != null) {
                 userService.restoreUserShoppingCart(userId, cartBackup);
             }
-            for (Integer shopId : totalPrices.keySet()) {
-                userService.refundPaymentAuto(authToken, shopId, totalPrices.get(shopId));
+            for (Integer pid : paymentIds) {
+                userService.refundPaymentAuto(authToken, pid);
             }
             LoggerService.logError("checkoutCart", e, authToken, shippingAddress);
             throw new OurRuntime("checkoutCart: " + e.getMessage(), e);
+        }
+    }
+
+    public List<Integer> partialCheckoutCart(String authToken, Address shippingAddress, String currency,
+            String cardNumber, String expirationDateMonth, String expirationDateYear, String cardHolderName, String cvv,
+            String id, int shopIdToBuy) {
+        LoggerService.logMethodExecution("partialCheckoutCart", authToken, shippingAddress);
+        HashMap<Integer, HashMap<Integer, Integer>> aqcuired = new HashMap<>();
+        HashMap<Integer, HashMap<Integer, Integer>> cartBackup = null;
+        HashMap<Integer, Double> totalPrices = new HashMap<>();
+        HashMap<Integer, Integer> purchaseIds = new HashMap<>();
+        List<Integer> paymentIds = new ArrayList<>();
+        int userId = -1;
+        try {
+            userId = authTokenService.ValidateToken(authToken);
+            HashMap<Integer, HashMap<Integer, Integer>> cart = userService.getUserShoppingCartItems(userId);
+            cartBackup = cart;
+            for (Integer shopId : cart.keySet()) {
+                if (shopId != shopIdToBuy) {
+                    continue; // Skip shops that are not the one we want to buy from
+                }
+                aqcuired.put(shopId, cart.get(shopId));
+                double totalPrice = shopService.purchaseItems(cart.get(shopId), shopId, authToken);
+                totalPrices.put(shopId, totalPrice);
+
+                int payid = userService.pay(authToken, shopId, totalPrice, currency, cardNumber,
+                        expirationDateMonth, expirationDateYear, cardHolderName, cvv, id);
+                paymentIds.add(payid);
+                int pid = purchaseRepository.addPurchase(userId, shopId, aqcuired.get(shopId), totalPrice,
+                        shippingAddress);
+                purchaseIds.put(pid, shopId);
+            }
+            userService.clearUserShoppingCartByShopId(userId, shopIdToBuy);
+            for (Integer purchaseId : purchaseIds.keySet()) {
+                shopService.shipPurchase(authToken, purchaseId, purchaseIds.get(purchaseId),
+                        shippingAddress.getCountry(),
+                        shippingAddress.getCity(), shippingAddress.getStreet(), shippingAddress.getZipCode());
+            }
+            // genrate reciept for each purchase
+            for (Integer purchaseId : purchaseIds.keySet()) {
+                Purchase purchase = purchaseRepository.getPurchaseById(purchaseId);
+                if (purchase != null) {
+                    Reciept reciept = purchase.generateReciept();
+                    purchaseRepository.addReciept(reciept);
+                }
+            }
+            LoggerService.logMethodExecutionEnd("partialCheckoutCart", purchaseIds);
+            userService.purchaseNotification(cart);
+            return purchaseIds.keySet().stream().toList();
+            // } catch (OurArg e) {
+            // LoggerService.logDebug("checkoutCart", e);
+            // throw new OurArg("checkoutCart: " + e.getMessage(), e);
+            // } catch (OurRuntime e) {
+            // for (Integer shopId : aqcuired.keySet()) {
+            // shopService.rollBackPurchase(aqcuired.get(shopId), shopId);
+            // }
+            // if (cartBackup != null) {
+            // userService.restoreUserShoppingCart(userId, cartBackup);
+            // }
+            // for (Integer pid : paymentIds) {
+            // userService.refundPaymentAuto(authToken, pid);
+            // }
+            // LoggerService.logError("checkoutCart", e, authToken, shippingAddress);
+            // throw new OurRuntime("checkoutCart: " + e.getMessage(), e);
+        } catch (Exception e) {
+            for (Integer shopId : aqcuired.keySet()) {
+                shopService.rollBackPurchase(aqcuired.get(shopId), shopId);
+            }
+            if (cartBackup != null) {
+                userService.restoreUserShoppingCartByShopId(userId, cartBackup, shopIdToBuy);
+            }
+            for (Integer pid : paymentIds) {
+                userService.refundPaymentAuto(authToken, pid);
+            }
+            LoggerService.logError("partialCheckoutCart", e, authToken, shippingAddress);
+            throw new OurRuntime("partialCheckoutCart: " + e.getMessage(), e);
         }
     }
 
@@ -148,19 +267,16 @@ public class PurchaseService {
         }
     }
 
-    public void postBidding(String authToken, int purchaseId, int bidAmount) {
-        LoggerService.logMethodExecution("postBidding", authToken, purchaseId, bidAmount);
+    public void postBidding(String authToken, int purchaseId, int bidPrice) {
+        LoggerService.logMethodExecution("postBidding", authToken, purchaseId, bidPrice);
         try {
             int userId = authTokenService.ValidateToken(authToken);
             Purchase purchase = purchaseRepository.getPurchaseById(purchaseId);
             if (!(purchase instanceof Bid)) {
                 throw new OurRuntime("Purchase " + purchaseId + " is not a bid");
             }
-            if (purchase.getUserId() == userId) {
-                throw new OurRuntime(
-                        "User " + userId + " is the owner of the bid " + purchaseId + " and cannot bid on it");
-            }
-            ((Bid) purchase).addBidding(userId, bidAmount);
+
+            purchaseRepository.postBidding((Bid) purchase, userId, bidPrice);
             LoggerService.logMethodExecutionEndVoid("postBidding");
         } catch (OurArg e) {
             LoggerService.logDebug("postBidding", e);
@@ -169,15 +285,14 @@ public class PurchaseService {
             LoggerService.logDebug("postBidding", e);
             throw new OurRuntime("postBidding: " + e.getMessage(), e);
         } catch (Exception e) {
-            LoggerService.logError("postBidding", e, authToken, purchaseId, bidAmount);
+            LoggerService.logError("postBidding", e, authToken, purchaseId, bidPrice);
             throw new OurRuntime("postBidding: " + e.getMessage(), e);
         }
     }
 
-    public int finalizeBid(String authToken, int purchaseId) {
+    public int finalizeBid(String authToken, int purchaseId, boolean fromAcceptBid) {
         int initiatingUserId = -1;
         boolean payed = false;
-        int highestBidderId = -1;
         int finalPrice = -1;
         int shopId = -1;
         try {
@@ -187,32 +302,40 @@ public class PurchaseService {
                 throw new OurRuntime("Purchase " + purchaseId + " is not a bid");
             }
             initiatingUserId = authTokenService.ValidateToken(authToken);
-            if (initiatingUserId != purchase.getUserId()) {
-                throw new OurRuntime("User " + initiatingUserId + " is not the owner of the bid " + purchaseId);
-            }
-            highestBidderId = ((Bid) purchase).getHighestBidderId();
-            finalPrice = ((Bid) purchase).getMaxBidding();
-            shopId = purchase.getStoreId();
-            userService.pay(authToken, shopId, finalPrice);
-            payed = true;
-            Address shippingAddress = userService.getUserShippingAddress(initiatingUserId);
-            purchase.setAddress(shippingAddress);
-            shopService.shipPurchase(authToken, purchaseId, shopId, shippingAddress.getCountry(),
-                    shippingAddress.getCity(), shippingAddress.getStreet(), shippingAddress.getZipCode());
-            try {
-                List<Integer> bidders = ((Bid) purchase).getBiddersIds();
-                Reciept receipt = purchase.generateReciept();
-                for (Integer uid : bidders) {
-                    String msg = (uid != highestBidderId)
-                            ? "Bid " + purchaseId + " has been finalized. You didn't win.\n" + receipt
-                            : "Congratulations! You have won the bid " + purchaseId + "!\n" + receipt;
-                    messageService.sendMessageToUser(authToken, uid, msg, 0);
+            if (!fromAcceptBid) {
+                if (initiatingUserId == purchase.getUserId()) {
+                    throw new OurRuntime("You need to be shop's owner to finalize bid");
                 }
-                purchase.completePurchase();
-            } catch (Exception ignored) {
             }
-            LoggerService.logMethodExecutionEnd("finalizeBid", highestBidderId);
-            return highestBidderId;
+            shopId = purchase.getStoreId();
+            int ownerId = userService.getShopOwner(shopId);
+            if (!fromAcceptBid) {
+                if (initiatingUserId != ownerId) {
+                    throw new OurRuntime(
+                            "User " + initiatingUserId +
+                                    " is not the owner of shop " + shopId);
+                }
+            }
+            finalPrice = ((Bid) purchase).getMaxBidding();
+            if (finalPrice == -1) {
+                throw new OurRuntime("No final price was set for purchase " + purchaseId);
+            }
+            if (shopId == -1) {
+                throw new OurRuntime("No shop ID was set for purchase " + purchaseId);
+            }
+            Map<Integer, Integer> items = purchase.getItems();
+            userService.addBidToUserShoppingCart(initiatingUserId, shopId, items);
+            String msg = "The bid is finalized #"
+                    + purchaseId
+                    + ".\nIt has been added to your bids list.\n\n";
+            notificationService.sendToUser(initiatingUserId, "The bid is over ", msg);
+            purchase.completePurchase();
+            userService.addBidToUserShoppingCart(initiatingUserId, shopId, items);
+            // generate reciept for the bid
+            Reciept reciept = purchase.generateReciept();
+            purchaseRepository.addReciept(reciept);
+            LoggerService.logMethodExecutionEnd("finalizeBid", initiatingUserId);
+            return initiatingUserId;
         } catch (OurArg e) {
             LoggerService.logDebug("finalizeBid", e);
             throw new OurArg("finalizeBid: " + e.getMessage(), e);
@@ -221,7 +344,7 @@ public class PurchaseService {
             throw new OurRuntime("finalizeBid: " + e.getMessage(), e);
         } catch (Exception e) {
             if (payed) {
-                userService.refundPaymentByStoreEmployee(authToken, highestBidderId, shopId, finalPrice);
+                userService.refundPaymentByStoreEmployee(authToken, initiatingUserId, shopId, finalPrice);
             }
             LoggerService.logError("finalizeBid", e, authToken, purchaseId);
             throw new OurRuntime("Error finalizing bid " + purchaseId + ": " + e.getMessage(), e);
@@ -290,12 +413,12 @@ public class PurchaseService {
         }
     }
 
-    public List<Reciept> getStorePurchases(String authToken, int shopId) {   
+    public List<Reciept> getStorePurchases(String authToken, int shopId) {
         try {
             LoggerService.logMethodExecution("getStorePurchases", authToken, shopId);
             int userId = authTokenService.ValidateToken(authToken);
             PermissionsEnum[] permissions = userService.getPermitionsByShop(authToken, shopId).get(userId);
-            for(PermissionsEnum permission : permissions) {
+            for (PermissionsEnum permission : permissions) {
                 if (permission == PermissionsEnum.getHistory) {
                     LoggerService.logMethodExecutionEnd("getStorePurchases", null);
                     return purchaseRepository.getStorePurchases(shopId);
@@ -316,12 +439,53 @@ public class PurchaseService {
         }
     }
 
-    public List<BidReciept> getAllBids(String authToken){
+    public List<BidReciept> getAllBids(String authToken, boolean fromBid) {
         try {
             LoggerService.logMethodExecution("getAllBids", authToken);
-            authTokenService.ValidateToken(authToken);
-            List<BidReciept> bids = purchaseRepository.getAllBids();
-            LoggerService.logMethodExecutionEnd("getAllBids", bids);
+            int userId = authTokenService.ValidateToken(authToken);
+            // 1. fetch everything...
+            List<BidReciept> bids = new ArrayList<>(purchaseRepository.getAllBids());
+
+            if (fromBid) {
+                // find shop owner of each bid - for owner only has to see all bids of his shops
+                for (BidReciept bid : bids) {
+                    int shopId = bid.getShopId();
+                    int shopOwnerId = userService.getShopOwner(shopId);
+                    if (shopOwnerId != userId) { // if the shop is closed the shopOwnerId = -1
+                        // 2. filter out other users’ bids
+                        bids = bids.stream().filter(b -> b.getUserId() == userId).collect(Collectors.toList());
+
+                        // 3.Distinguish between the bids of the user to auctions he has participated in
+                        // - present only the bids he has made
+                        bids = bids.stream().filter(b -> b.getUserId() == userId && b.getEndTime() == null).collect(Collectors.toList());
+
+                        LoggerService.logMethodExecutionEnd("getAllBids", bids);
+                    } else {
+                        // 3.Distinguish between the bids of the user to auctions he has participated in
+                        // - present only the bids he has made
+                        bids = bids.stream().filter(b -> b.getEndTime() == null).collect(Collectors.toList());
+                    }
+                }
+            } else {
+                bids = bids.stream().filter(b -> b.getEndTime() != null).collect(Collectors.toList());
+
+                LoggerService.logMethodExecutionEnd("getAllBids", bids);
+            }
+            // Sort the list finishedBids so it will return only the bids that the shop is
+            // not close
+            List<Integer> closedShopsIds = shopService.getclosedShops(authToken);
+            bids.removeIf(b -> closedShopsIds.contains(b.getShopId()));
+
+            // drop bids whose item no longer exists
+            Set<Integer> validItemIds = bids.stream()
+            // for each bid, fetch that shop’s items
+            .flatMap(bid -> shopService.searchItemsInShop(bid.getShopId(),null,null, Collections.emptyList(),
+                    null, null, null,authToken).stream()
+                .map(Item::getId)
+            )
+            .collect(Collectors.toSet());
+            bids.removeIf(b -> b.getItems().keySet().stream()
+                    .anyMatch(itemId -> !validItemIds.contains(itemId)));
             return bids;
         } catch (OurArg e) {
             LoggerService.logDebug("getAllBids", e);
@@ -331,6 +495,72 @@ public class PurchaseService {
             throw new OurRuntime("getAllBids: " + e.getMessage(), e);
         } catch (Exception e) {
             LoggerService.logError("getAllBids", e, authToken);
+            throw new OurRuntime("Error retrieving all bids: " + e.getMessage(), e);
+        }
+    }
+
+
+    public List<BidReciept> getAllBidsNew(String authToken, boolean fromBid) {
+        try {
+            LoggerService.logMethodExecution("getAllBidsNew", authToken);
+            int userId = authTokenService.ValidateToken(authToken);
+            // 1. fetch everything...
+            List<BidReciept> bids = new ArrayList<>(purchaseRepository.getAllBids());
+            
+            List<BidReciept> returnBids = new ArrayList<>();
+
+            if (fromBid) 
+            {
+                // find shop owner of each bid - for owner only has to see all bids of his shops
+                for (BidReciept bid : bids) 
+                {
+                    int shopId = bid.getShopId();
+                    int shopOwnerId = userService.getShopOwner(shopId);
+                    if ((shopOwnerId == userId) || (bid.getUserId() == userId)) { // if the shop is closed the shopOwnerId = -1
+                        // 3.Distinguish between the bids of the user to auctions he has participated in
+                        // - present only the bids he has made
+                        if (bid.getEndTime() == null) {
+                            returnBids.add(bid); 
+                        }
+                    }
+                }
+                bids = returnBids;       
+            } 
+            else 
+            {
+                bids = bids.stream().filter(b -> b.getEndTime() != null).collect(Collectors.toList());
+
+            }
+            
+            LoggerService.logMethodExecutionEnd("getAllBidsNew", bids);
+
+            // Sort the list finishedBids so it will return only the bids that the shop is
+            // not close
+            List<Integer> closedShopsIds = shopService.getclosedShops(authToken);
+            bids.removeIf(b -> closedShopsIds.contains(b.getShopId()));
+
+            // drop bids whose item no longer exists
+            Set<Integer> validItemIds = bids.stream()
+            // for each bid, fetch that shop’s items
+            .flatMap(bid -> shopService.searchItemsInShop(bid.getShopId(),null,null, Collections.emptyList(),
+                    null, null, null,authToken).stream()
+                .map(Item::getId)
+            )
+            .collect(Collectors.toSet());
+            // print for debugging validItemIds
+            System.out.println("Valid item IDs: " +
+                validItemIds.stream().map(String::valueOf).collect(Collectors.joining(", ")));
+            bids.removeIf(b -> b.getItems().keySet().stream()
+                    .anyMatch(itemId -> !validItemIds.contains(itemId)));
+            return bids;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getAllBidsNew", e);
+            throw new OurArg("getAllBidsNew: " + e.getMessage(), e);
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getAllBidsNew", e);
+            throw new OurRuntime("getAllBidsNew: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("getAllBidsNew", e, authToken);
             throw new OurRuntime("Error retrieving all bids: " + e.getMessage(), e);
         }
     }
@@ -354,6 +584,181 @@ public class PurchaseService {
         }
     }
 
-    
+    @SuppressWarnings("deprecation")
+    public int startAuction(String authToken, int storeId, Map<Integer, Integer> items, int initialPrice,
+            LocalDateTime auctionEndTime) {
+        LoggerService.logMethodExecution("startAuction", authToken, storeId, items, initialPrice, auctionEndTime);
+        try {
+            int userId = authTokenService.ValidateToken(authToken);
+            shopService.purchaseItems(items, storeId, authToken);
+            int auctionId = purchaseRepository.addBid(userId, storeId, items, initialPrice, LocalDateTime.now(),
+                    auctionEndTime);
+            taskscheduler.schedule(
+                    () -> finalizeAuction(auctionId),
+                    Date.from(auctionEndTime.atZone(ZoneId.systemDefault()).toInstant()));
+            LoggerService.logMethodExecutionEnd("startAuction", auctionId);
+            return auctionId;
+        } catch (OurArg e) {
+            LoggerService.logDebug("startAuction", e);
+            throw new OurArg("startAuction: " + e.getMessage(), e);
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("startAuction", e);
+            throw new OurRuntime("startAuction: " + e.getMessage(), e);
+        } catch (Exception e) {
+            shopService.rollBackPurchase(items, storeId);
+            LoggerService.logError("startAuction", e, authToken, storeId, items);
+            throw new OurRuntime("startAuction: " + e.getMessage(), e);
+        }
+    }
+
+    public void postBiddingAuction(String authToken, int auctionId, int bidPrice) {
+        LoggerService.logMethodExecution("postBiddingAuction", authToken, auctionId);
+        try {
+            int userId = authTokenService.ValidateToken(authToken);
+            Purchase purchase = purchaseRepository.getPurchaseById(auctionId);
+            if (!(purchase instanceof Bid)) {
+                throw new OurRuntime("Purchase " + auctionId + " is not a bid");
+            }
+            if (purchase.getUserId() == userId) {
+                throw new OurRuntime(
+                        "User " + userId + " is the owner of the bid " + auctionId + " and cannot bid on it");
+            }
+            purchaseRepository.postBiddingAuction((Bid) purchase, userId, bidPrice);
+            LoggerService.logMethodExecutionEndVoid("postBiddingAuction");
+        } catch (OurArg e) {
+            LoggerService.logDebug("postBiddingAuction", e);
+            throw new OurArg("postBiddingAuction: " + e.getMessage(), e);
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("postBiddingAuction", e);
+            throw new OurRuntime("postBiddingAuction: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("postBiddingAuction", e, authToken, auctionId, 1);
+            throw new OurRuntime("postBiddingAuction: " + e.getMessage(), e);
+        }
+    }
+
+    private void finalizeAuction(int auctionId) {
+        int winnerId = -1;
+        int finalPrice = -1;
+        int shopId = -1;
+        try {
+            LoggerService.logMethodExecution("finalizeAuction", auctionId);
+            Purchase purchase = purchaseRepository.getPurchaseById(auctionId);
+            if (!(purchase instanceof Bid)) {
+                throw new OurRuntime("Purchase " + auctionId + " is not a bid");
+            }
+            Bid bid = (Bid) purchase;
+            bid.completePurchase();
+            winnerId = bid.getHighestBidderId();
+            finalPrice = bid.getMaxBidding();
+            shopId = bid.getStoreId();
+            if (winnerId == -1) {
+                throw new OurRuntime("No bids were placed on auction " + auctionId);
+            }
+            if (finalPrice == -1) {
+                throw new OurRuntime("No final price was set for auction " + auctionId);
+            }
+            if (shopId == -1) {
+                throw new OurRuntime("No shop was set for auction " + auctionId);
+            }
+            for (int pid : bid.getBiddersIds()) {
+                notificationService.sendToUser(
+                        pid,
+                        "Auction ended",
+                        (pid == winnerId ? " You won with a bid of " + finalPrice + "."
+                                : " You lost. The winning bid was " + finalPrice + "."));
+            }
+
+            // generate reciept for the bid
+            Reciept reciept = purchase.generateReciept();
+            purchaseRepository.addReciept(reciept);
+
+            userService.addAuctionWinBidToUserShoppingCart(winnerId, bid);
+        } catch (OurArg e) {
+            LoggerService.logDebug("finalizeAuction", e);
+            throw new OurArg("finalizeAuction: " + e.getMessage(), e);
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("finalizeAuction", e);
+            throw new OurRuntime("finalizeAuction: " + e.getMessage(), e);
+        }
+    }
+
+    public void acceptBid(String authToken, int bidId) {
+        try {
+            LoggerService.logMethodExecution("acceptBid", bidId);
+            Bid bid = (Bid) purchaseRepository.getPurchaseById(bidId);
+            if (bid == null) {
+                throw new OurRuntime("Bid " + bidId + " does not exist");
+            }
+            int userId;
+            try {
+                userId = authTokenService.ValidateToken(authToken);
+            } catch (Exception e) {
+                LoggerService.logError("acceptBid", e, authToken, bidId);
+                throw new OurRuntime("acceptBid: " + e.getMessage(), e);
+            }
+            int shopOwnerId = userService.getShopOwner(bid.getStoreId());
+            String msg = "User " + ((Member) userService.getUserById(userId)).getUsername()
+                    + " accepted bid with price " + bid.getHighestBid();
+            notificationService.sendToUser(shopOwnerId, authToken, msg);
+            finalizeBid(authToken, bidId, true); // do it automatically
+        } catch (OurArg e) {
+            LoggerService.logDebug("acceptBid", e);
+            throw new OurArg("acceptBid: " + e.getMessage(), e);
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("acceptBid", e);
+            throw new OurRuntime("acceptBid: " + e.getMessage(), e);
+        }
+    }
+
+    public List<BidReciept> getFinishedBidsList(String authToken) {
+        List<BidReciept> allBidsOfUser = getAllBidsNew(authToken, true);
+        int userId;
+        try {
+            userId = authTokenService.ValidateToken(authToken);
+        } catch (Exception e) {
+            LoggerService.logError("getFinishedBidsList", e, authToken);
+            throw new OurRuntime("getFinishedBidsList: " + e.getMessage(), e);
+        }
+        // Sort the list so it will return only the bids that were finished
+        List<BidReciept> finishedBids = new ArrayList<>();
+        for (BidReciept bid : allBidsOfUser) {
+            if (bid.isCompleted() == true && bid.getUserId() == userId) {
+                finishedBids.add(bid);
+            }
+        }
+        return finishedBids;
+    }
+
+    public List<BidReciept> getAuctionsWinList(String authToken) {
+        try {
+            int userId = authTokenService.ValidateToken(authToken);
+            LoggerService.logMethodExecution("getAuctionsWinList", userId);
+            List<BidReciept> auctionsWinList = userService.getAuctionsWinList(userId);
+            // Sort auctionsWinList so it will return only the wins that the shop is not
+            // close
+            List<Integer> closedShopsIds = shopService.getclosedShops(authToken);
+            auctionsWinList.removeIf(b -> closedShopsIds.contains(b.getShopId()));
+
+            // drop aucntions whose item no longer exists
+            Set<Integer> validItemIds = itemService.getAllItems(authToken).stream()
+                    .map(Item::getId)
+                    .collect(Collectors.toSet());
+            auctionsWinList.removeIf(b -> b.getItems().keySet().stream()
+                    .anyMatch(itemId -> !validItemIds.contains(itemId)));
+
+            LoggerService.logMethodExecutionEnd("getAuctionsWinList", auctionsWinList);
+            return auctionsWinList;
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getAuctionsWinList", e);
+            throw new OurRuntime("getAuctionsWinList: " + e.getMessage(), e);
+        } catch (OurArg e) {
+            LoggerService.logDebug("getAuctionsWinList", e);
+            throw new OurArg("getAuctionsWinList: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LoggerService.logError("getAuctionsWinList", e, authToken);
+            throw new OurRuntime("getAuctionsWinList: " + e.getMessage(), e);
+        }
+    }
 
 }

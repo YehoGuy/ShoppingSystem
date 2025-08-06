@@ -354,4 +354,177 @@ class PurchaseTests {
         assertEquals(expected, p.getItems().get(222),
                     "final quantity must equal total adds minus total removes");
     }
+
+    /* ---------------------------------------------------------------------- */
+    /*  getAddress method tests                                               */
+    /* ---------------------------------------------------------------------- */
+
+    @Test
+    @DisplayName("getAddress_whenSetInConstructor_shouldReturnExactSameAddressObject")
+    void getAddress_whenSetInConstructor_shouldReturnExactSameAddressObject() {
+        Address originalAddress = anyAddress();
+        Purchase p = new Purchase(1, 2, 3, originalAddress);
+
+        Address retrievedAddress = p.getAddress();
+
+        assertSame(originalAddress, retrievedAddress, "getAddress should return the exact same object reference");
+    }
+
+    @Test
+    @DisplayName("getAddress_whenSetInParameterizedConstructor_shouldReturnCorrectAddress")
+    void getAddress_whenSetInParameterizedConstructor_shouldReturnCorrectAddress() {
+        Address expectedAddress = new Address()
+            .withCountry("USA")
+            .withCity("New York")
+            .withStreet("5th Avenue")
+            .withHouseNumber("123")
+            .withZipCode("10001");
+        
+        Map<Integer, Integer> items = Map.of(1, 2, 3, 4);
+        Purchase p = new Purchase(10, 20, 30, items, 99.5, expectedAddress);
+
+        Address retrievedAddress = p.getAddress();
+
+        assertSame(expectedAddress, retrievedAddress);
+    }
+
+    @Test
+    @DisplayName("getAddress_whenUsingDefaultConstructor_shouldReturnDefaultAddress")
+    void getAddress_whenUsingDefaultConstructor_shouldReturnDefaultAddress() {
+        Purchase p = new Purchase();
+
+        Address retrievedAddress = p.getAddress();
+
+        assertNotNull(retrievedAddress, "default constructor should initialize address");
+        assertAll("default address should have N/A values",
+            () -> assertEquals("N/A", retrievedAddress.getCountry()),
+            () -> assertEquals("N/A", retrievedAddress.getCity()),
+            () -> assertEquals("N/A", retrievedAddress.getStreet()),
+            () -> assertEquals("N/A", retrievedAddress.getHouseNumber()),
+            () -> assertEquals("N/A", retrievedAddress.getApartmentNumber()),
+            () -> assertEquals("N/A", retrievedAddress.getZipCode())
+        );
+    }
+
+    @Test
+    @DisplayName("getAddress_afterSetAddress_shouldReturnNewAddress")
+    void getAddress_afterSetAddress_shouldReturnNewAddress() {
+        Purchase p = new Purchase(1, 2, 3, anyAddress());
+        
+        Address newAddress = new Address()
+            .withCountry("Canada")
+            .withCity("Toronto")
+            .withStreet("Queen Street")
+            .withHouseNumber("456")
+            .withZipCode("M5V 2A8");
+        
+        p.setAddress(newAddress);
+
+        Address retrievedAddress = p.getAddress();
+
+        assertSame(newAddress, retrievedAddress, "getAddress should return the updated address");
+    }
+
+    @Test
+    @DisplayName("getAddress_withNullAddress_shouldReturnNull")
+    void getAddress_withNullAddress_shouldReturnNull() {
+        Purchase p = new Purchase(1, 2, 3, anyAddress());
+        
+        p.setAddress(null);
+
+        assertNull(p.getAddress(), "getAddress should return null when address is set to null");
+    }
+
+    @Test
+    @DisplayName("getAddress_shouldReturnMutableAddressReference_allowingDirectModification")
+    void getAddress_shouldReturnMutableAddressReference_allowingDirectModification() {
+        Address originalAddress = anyAddress();
+        Purchase p = new Purchase(1, 2, 3, originalAddress);
+
+        Address retrievedAddress = p.getAddress();
+        retrievedAddress.withCountry("Modified Country");
+
+        assertEquals("Modified Country", p.getAddress().getCountry(), 
+            "modifications to returned address should affect the purchase's address");
+    }
+
+    @Test
+    @DisplayName("getAddress_afterMultipleSetAddressCalls_shouldReturnLatestAddress")
+    void getAddress_afterMultipleSetAddressCalls_shouldReturnLatestAddress() {
+        Purchase p = new Purchase(1, 2, 3, anyAddress());
+
+        Address firstAddress = new Address().withCountry("First").withCity("City1");
+        Address secondAddress = new Address().withCountry("Second").withCity("City2");
+        Address thirdAddress = new Address().withCountry("Third").withCity("City3");
+
+        p.setAddress(firstAddress);
+        p.setAddress(secondAddress);
+        p.setAddress(thirdAddress);
+
+        Address retrievedAddress = p.getAddress();
+
+        assertSame(thirdAddress, retrievedAddress, "getAddress should return the most recently set address");
+        assertEquals("Third", retrievedAddress.getCountry());
+        assertEquals("City3", retrievedAddress.getCity());
+    }
+
+    @Test
+    @DisplayName("getAddress_shouldBeConsistentWithGetShippingAddress")
+    void getAddress_shouldBeConsistentWithGetShippingAddress() {
+        Address testAddress = anyAddress();
+        Purchase p = new Purchase(1, 2, 3, testAddress);
+
+        Address fromGetAddress = p.getAddress();
+        Address fromGetShippingAddress = p.getShippingAddress();
+
+        assertSame(fromGetAddress, fromGetShippingAddress, 
+            "getAddress() and getShippingAddress() should return the same object reference");
+    }
+
+    @Test
+    @DisplayName("getAddress_afterPurchaseCompletion_shouldStillReturnSameAddress")
+    void getAddress_afterPurchaseCompletion_shouldStillReturnSameAddress() {
+        Address originalAddress = anyAddress();
+        Purchase p = new Purchase(1, 2, 3, originalAddress);
+
+        p.completePurchase();
+
+        Address retrievedAddress = p.getAddress();
+
+        assertSame(originalAddress, retrievedAddress, 
+            "completing purchase should not affect the address reference");
+    }
+
+    @Test
+    @DisplayName("getAddress_afterPurchaseCancellation_shouldStillReturnSameAddress")
+    void getAddress_afterPurchaseCancellation_shouldStillReturnSameAddress() {
+        Address originalAddress = anyAddress();
+        Purchase p = new Purchase(1, 2, 3, originalAddress);
+
+        p.completePurchase();
+        p.cancelPurchase();
+
+        Address retrievedAddress = p.getAddress();
+
+        assertSame(originalAddress, retrievedAddress, 
+            "cancelling purchase should not affect the address reference");
+    }
+
+    @Test
+    @DisplayName("getAddress_calledMultipleTimes_shouldReturnConsistentReference")
+    void getAddress_calledMultipleTimes_shouldReturnConsistentReference() {
+        Address originalAddress = anyAddress();
+        Purchase p = new Purchase(1, 2, 3, originalAddress);
+
+        Address first = p.getAddress();
+        Address second = p.getAddress();
+        Address third = p.getAddress();
+
+        assertAll("multiple calls should return same reference",
+            () -> assertSame(first, second),
+            () -> assertSame(second, third),
+            () -> assertSame(first, third),
+            () -> assertSame(originalAddress, first)
+        );
+    }
 }

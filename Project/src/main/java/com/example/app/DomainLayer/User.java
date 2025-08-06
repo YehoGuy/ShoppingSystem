@@ -1,24 +1,47 @@
 package com.example.app.DomainLayer;
 
+import com.example.app.ApplicationLayer.OurRuntime;
 import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
 import com.example.app.DomainLayer.Purchase.Address;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.Transient;
 
-
+@MappedSuperclass
 public abstract class User {
+    @Embedded
     protected ShoppingCart shoppingCart; // Shopping cart associated with the user
+    @Transient
     protected PaymentMethod paymentMethod; // Payment method associated with the user
+
+    private String paymentMethodString;
+
+    @Embedded
     protected Address address; // Shipping address associated with the user
+
+    public User() {
+        this.shoppingCart = new ShoppingCart(); // Initialize the shopping cart
+        this.paymentMethodString = "";
+    }
 
     public User(int cartId) {
         this.shoppingCart = new ShoppingCart(); // Initialize the shopping cart
+        this.paymentMethodString = "";
     }
 
-    public User(int cartId, Address address) {
-        this.shoppingCart = new ShoppingCart(); // Initialize the shopping cart
-        this.address = address; // Set the user's shipping address
-    }
+    // public User(int cartId, Address address) {
+    // this.shoppingCart = new ShoppingCart(); // Initialize the shopping cart
+    // this.address = address; // Set the user's shipping address
+    // this.paymentMethodString = "";
+    // }
 
     public ShoppingCart getShoppingCart() {
+        shoppingCart.loadFromPersistentCollections();
+        return shoppingCart; // Return the user's shopping cart
+    }
+
+    public ShoppingCart getShoppingCartForGuest() {
+        // shoppingCart.loadFromPersistentCollections();
         return shoppingCart; // Return the user's shopping cart
     }
 
@@ -50,10 +73,24 @@ public abstract class User {
 
     public void setAddress(String country, String city, String street, int aparmentNum, String postalCode) {
         this.address = new Address().withCountry(country)
-                                    .withCity(city)
-                                    .withStreet(street)
-                                    .withApartmentNumber(aparmentNum)
-                                    .withZipCode(postalCode); 
+                .withCity(city)
+                .withStreet(street)
+                .withApartmentNumber(aparmentNum)
+                .withZipCode(postalCode);
+    }
+
+    public void updateShoppingCartItemQuantity(int shopID, int itemID, boolean b) {
+        if (!shoppingCart.hasItemOfShop(shopID, itemID)) {
+            throw new OurRuntime("item not in cart.", shopID, itemID);
+        }
+        int addOrRemove = b ? 1 : -1;
+        shoppingCart.updateProductQuantity(shopID, itemID, addOrRemove);
+    }
+
+    public void removeShoppingCartItem(int shopID, int itemID) {
+        if (!shoppingCart.hasItemOfShop(shopID, itemID))
+            throw new OurRuntime("item not in cart.", shopID, itemID);
+        shoppingCart.removeItemFromCart(shopID, itemID);
     }
 
 }

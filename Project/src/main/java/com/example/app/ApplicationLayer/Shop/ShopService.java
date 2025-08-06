@@ -1,6 +1,7 @@
 package com.example.app.ApplicationLayer.Shop;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,36 +17,42 @@ import com.example.app.ApplicationLayer.Purchase.ShippingMethod;
 import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.Item.Item;
 import com.example.app.DomainLayer.Item.ItemCategory;
+import com.example.app.DomainLayer.Member;
+import com.example.app.DomainLayer.ShoppingCart;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
-import com.example.app.DomainLayer.Shop.IShopRepository;
-import com.example.app.DomainLayer.Shop.Operator;
-import com.example.app.DomainLayer.Shop.PurchasePolicy;
-import com.example.app.DomainLayer.Shop.Shop;
 import com.example.app.DomainLayer.Shop.Discount.Discount;
 import com.example.app.DomainLayer.Shop.Discount.Policy;
 import com.example.app.DomainLayer.Shop.Discount.PolicyComposite;
 import com.example.app.DomainLayer.Shop.Discount.PolicyLeaf;
-import com.example.app.DomainLayer.Shop.Discount.TriPredicate;
+import com.example.app.DomainLayer.Shop.IShopRepository;
+import com.example.app.DomainLayer.Shop.Operator;
+import com.example.app.DomainLayer.Shop.PurchasePolicy;
+import com.example.app.DomainLayer.Shop.Shop;
+import com.example.app.DomainLayer.User;
+import com.example.app.PresentationLayer.DTO.Item.ItemDTO;
 import com.example.app.PresentationLayer.DTO.Shop.CompositePolicyDTO;
 import com.example.app.PresentationLayer.DTO.Shop.LeafPolicyDTO;
-import com.example.app.PresentationLayer.DTO.Shop.PoliciesDTO;
+import com.example.app.PresentationLayer.DTO.User.ShoppingCartDTO;
+
+import io.micrometer.common.lang.NonNull;
+import jakarta.validation.constraints.NotNull;
 
 @Service
 public class ShopService {
     private final IShopRepository shopRepository;
     private final AuthTokenService authTokenService;
-    private final UserService      userService;
-    private final ItemService      itemService;
+    private final UserService userService;
+    private final ItemService itemService;
 
     public ShopService(IShopRepository shopRepository,
-                       AuthTokenService authTokenService,
-                       UserService      userService,
-                       ItemService      itemService) {
-        this.shopRepository  = shopRepository;
+            AuthTokenService authTokenService,
+            UserService userService,
+            ItemService itemService) {
+        this.shopRepository = shopRepository;
         this.authTokenService = authTokenService;
-        this.userService      = userService;
-        this.itemService      = itemService;
+        this.userService = userService;
+        this.itemService = itemService;
     }
 
     public Shop createShop(String name, PurchasePolicy purchasePolicy, ShippingMethod shippingMethod, String token) {
@@ -108,6 +115,47 @@ public class ShopService {
             throw new OurRuntime("Error retrieving all shops: " + e.getMessage(), e);
         }
     }
+
+    public List<Shop> getAllOpenShops(String token) {
+        try {
+            LoggerService.logMethodExecution("getAllShops", token);
+            authTokenService.ValidateToken(token);
+            List<Shop> returnShops = shopRepository.getAllOpenShops();
+            LoggerService.logMethodExecutionEnd("getAllShops", returnShops);
+            return returnShops;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getAllShops", e);
+            throw new OurArg("getAllShops" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getAllShops", e);
+            throw new OurRuntime("getAllShops" + e.getMessage());
+        } catch (Exception e) {
+            LoggerService.logError("getAllShops", e, token);
+            throw new OurRuntime("Error retrieving all shops: " + e.getMessage(), e);
+        }
+    }
+
+
+    public List<Shop> getAllClosedShops(String token) {
+        try {
+            LoggerService.logMethodExecution("getAllShops", token);
+            authTokenService.ValidateToken(token);
+            List<Shop> returnShops = shopRepository.getAllClosedShops();
+            LoggerService.logMethodExecutionEnd("getAllShops", returnShops);
+            return returnShops;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getAllShops", e);
+            throw new OurArg("getAllShops" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getAllShops", e);
+            throw new OurRuntime("getAllShops" + e.getMessage());
+        } catch (Exception e) {
+            LoggerService.logError("getAllShops", e, token);
+            throw new OurRuntime("Error retrieving all shops: " + e.getMessage(), e);
+        }
+    }
+
+
 
     public void updatePurchasePolicy(int shopId, PurchasePolicy newPolicy, String token) {
         try {
@@ -322,7 +370,8 @@ public class ShopService {
         }
     }
 
-    public void addItemToShop(int shopId, String name, String description, int quantity, ItemCategory category, int price, String token) {
+    public void addItemToShop(int shopId, String name, String description, int quantity, ItemCategory category,
+            int price, String token) {
         try {
             LoggerService.logMethodExecution("addItemToShop", shopId, quantity, price);
             Integer userId = authTokenService.ValidateToken(token);
@@ -444,14 +493,19 @@ public class ShopService {
         try {
             LoggerService.logMethodExecution("closeShop", shopId);
             Integer userId = authTokenService.ValidateToken(token);
-            if ((!userService.isAdmin(userId))&&(!userService.hasPermission(userId, PermissionsEnum.closeShop, shopId))) {
+            if ((!userService.isAdmin(userId))
+                    && (!userService.hasPermission(userId, PermissionsEnum.closeShop, shopId))) {
                 OurRuntime e = new OurRuntime("User does not have permission to close shop " + shopId);
                 LoggerService.logDebug("closeShop", e);
                 throw e;
             }
             shopRepository.closeShop(shopId);
             userService.closeShopNotification(shopId);
+            List<Item> itemsToRemove = searchItemsInShop(shopId,null, null, Collections.emptyList(), null, null, null, token);
+            for(Item itemToRemove : itemsToRemove){
+                removeItemFromShop(shopId, itemToRemove.getId(), token);
             LoggerService.logMethodExecutionEndVoid("closeShop");
+            }
         } catch (OurArg e) {
             LoggerService.logDebug("closeShop", e);
             throw new OurArg("closeShop" + e.getMessage());
@@ -460,6 +514,32 @@ public class ShopService {
             throw new OurRuntime("closeShop" + e.getMessage());
         } catch (Exception e) {
             LoggerService.logError("closeShop", e, shopId);
+            throw new OurRuntime("Error closing shop " + shopId + ": " + e.getMessage(), e);
+        }
+    }
+
+    public void reOpenShop(Integer shopId, String token) {
+        try {
+            LoggerService.logMethodExecution("reOpenShop", shopId);
+            Integer userId = authTokenService.ValidateToken(token);
+            if ((!userService.isAdmin(userId))
+                    && (!userService.hasPermission(userId, PermissionsEnum.closeShop, shopId))) {
+                OurRuntime e = new OurRuntime("User does not have permission to reOPen shop " + shopId);
+                LoggerService.logDebug("reOpen", e);
+                throw e;
+            }
+            shopRepository.reOpenShop(shopId);
+            userService.reOpenShopNotification(shopId);
+        
+            LoggerService.logMethodExecutionEndVoid("reOpenShop");
+        } catch (OurArg e) {
+            LoggerService.logDebug("reOpenShop", e);
+            throw new OurArg("reOpenShop" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("reOpenShop", e);
+            throw new OurRuntime("reOpenShop" + e.getMessage());
+        } catch (Exception e) {
+            LoggerService.logError("reOpenShop", e, shopId);
             throw new OurRuntime("Error closing shop " + shopId + ": " + e.getMessage(), e);
         }
     }
@@ -751,8 +831,20 @@ public class ShopService {
             String postalCode) {
         try {
             LoggerService.logMethodExecution("shipPurchase", purchaseId, country, city, street, postalCode);
-            authTokenService.ValidateToken(token);
-            shopRepository.shipPurchase(purchaseId, shopId, country, city, street, postalCode);
+            Integer userId = authTokenService.ValidateToken(token);
+            User user = userService.getUserById(userId);
+            String userName;
+            if (user instanceof Member) {
+                userName = ((Member) user).getUsername();
+            } else {
+                userName = "guest";
+            }
+            boolean b = shopRepository.shipPurchase(userName, shopId, country, city, street, postalCode);
+            if (!b) {
+                OurRuntime e = new OurRuntime("Failed to ship purchase " + purchaseId + " from shop " + shopId);
+                LoggerService.logDebug("shipPurchase", e);
+                throw e;
+            }
             LoggerService.logMethodExecutionEndVoid("shipPurchase");
         } catch (OurArg e) {
             LoggerService.logDebug("shipPurchase", e);
@@ -789,25 +881,56 @@ public class ShopService {
         }
     }
 
-    public void addDiscountPolicy(String token, int threshold, int itemId, ItemCategory category, double basketValue,
-            Operator operator, int shopId) throws Exception {
+    public List<Shop> getOpenShopsByWorker(int workerId, String token) {
         try {
-            LoggerService.logMethodExecution("addDiscountPolicy", threshold, itemId, category, basketValue, operator);
-            Integer userId = authTokenService.ValidateToken(token);
-            if (!userService.hasPermission(userId, PermissionsEnum.setPolicy, shopId)) {
-                OurRuntime e = new OurRuntime("User does not have permission to add discount policy for item " + itemId
-                        + " in shop " + shopId);
-                LoggerService.logDebug("addDiscountPolicy", e);
-                throw e;
+            LoggerService.logMethodExecution("getShopsByWorker", workerId);
+            List<Integer> shopIds = userService.getShopIdsByWorkerId(workerId);
+            List<Shop> returnShops = new ArrayList<>();
+            for (Integer shopId : shopIds) {
+                Shop shop = getShop(shopId, token);
+                if (!shop.isClosed())
+                {
+                    returnShops.add(shop);
+                }
             }
-            shopRepository.addDiscountPolicy(threshold, itemId, category, basketValue, operator, shopId);
-            LoggerService.logMethodExecutionEndVoid("addDiscountPolicy");
+            LoggerService.logMethodExecutionEnd("getShopsByWorker", returnShops);
+            return returnShops;
         } catch (OurArg e) {
-            LoggerService.logDebug("addDiscountPolicy", e);
-            throw new OurArg("addDiscountPolicy" + e.getMessage());
+            LoggerService.logDebug("getShopsByWorker", e);
+            throw new OurArg("getShopsByWorker" + e.getMessage());
         } catch (OurRuntime e) {
-            LoggerService.logDebug("addDiscountPolicy", e);
-            throw new OurRuntime("addDiscountPolicy" + e.getMessage());
+            LoggerService.logDebug("getShopsByWorker", e);
+            throw new OurRuntime("getShopsByWorker" + e.getMessage());
+        } catch (Exception e) {
+            LoggerService.logError("getShopsByWorker", e, workerId);
+            throw new OurRuntime("Error retrieving shops by worker " + workerId + ": " + e.getMessage(), e);
+        }
+    }
+
+
+    public List<Shop> getClosedShopsByWorker(int workerId, String token) {
+        try {
+            LoggerService.logMethodExecution("getShopsByWorker", workerId);
+            List<Integer> shopIds = userService.getShopIdsByWorkerId(workerId);
+            List<Shop> returnShops = new ArrayList<>();
+            for (Integer shopId : shopIds) {
+                Shop shop = getShop(shopId, token);
+                if (shop.isClosed())
+                {
+                    returnShops.add(shop);
+                }
+            }
+            LoggerService.logMethodExecutionEnd("getShopsByWorker", returnShops);
+            return returnShops;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getShopsByWorker", e);
+            throw new OurArg("getShopsByWorker" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getShopsByWorker", e);
+            throw new OurRuntime("getShopsByWorker" + e.getMessage());
+        } catch (Exception e) {
+            LoggerService.logError("getShopsByWorker", e, workerId);
+            throw new OurRuntime("Error retrieving shops by worker " + workerId + ": " + e.getMessage(), e);
         }
     }
 
@@ -819,12 +942,8 @@ public class ShopService {
                 throw new OurRuntime("No permission to set policy for shop " + shopId);
             }
             // convert DTO → domain Policy
-            // print the policy for debugging
-            System.out.print("setDiscountPolicy Mapping policy for shop " + shopId + ": " + dto);
             Policy policy = mapPolicyDTO(shopId, dto);
-            System.out.println(" policyfsdfsdfsd" + policy.toString());
             shopRepository.setDiscountPolicy(shopId, policy);
-            System.out.println(" setDiscountPolicy completed for shop " + shopId);
             LoggerService.logMethodExecutionEndVoid("setDiscountPolicy");
         } catch (OurArg e) {
             LoggerService.logDebug("setDiscountPolicy", e);
@@ -849,7 +968,7 @@ public class ShopService {
         } else if (dto.getLeafPolicy1() != null) {
             left = mapLeafPolicy(dto.getLeafPolicy1(), shopId);
         } else {
-            left = (items, prices, categories) -> true; // no requirement
+            left = new PolicyLeaf(null, null, null, 0.0); // no requirement
         }
         // map right side
         Policy right;
@@ -870,35 +989,24 @@ public class ShopService {
     }
 
     /**
-     Map a single LeafPolicyDTO to a Policy using a TriPredicate.
+     * Map a single LeafPolicyDTO to a Policy using a TriPredicate.
      */
     private Policy mapLeafPolicy(LeafPolicyDTO leaf, int shopId) {
         // item-level
         if (leaf.getThreshold() != null && leaf.getItemId() != null) {
             int threshold = leaf.getThreshold();
-            int itemId    = leaf.getItemId();
-            TriPredicate<Map<Integer,Integer>,Map<Integer,Double>,Map<Integer,ItemCategory>> p =
-                (items, prices, cats) -> items.getOrDefault(itemId, 0) >= threshold;
-            return new PolicyLeaf(threshold, itemId, null, 0.0, p);
+            int itemId = leaf.getItemId();
+            return new PolicyLeaf(threshold, itemId, null, 0.0);
         }
         // category-level
         if (leaf.getThreshold() != null && leaf.getItemCategory() != null) {
-            int threshold    = leaf.getThreshold();
+            int threshold = leaf.getThreshold();
             ItemCategory cat = leaf.getItemCategory();
-            TriPredicate<Map<Integer,Integer>,Map<Integer,Double>,Map<Integer,ItemCategory>> p =
-                (items, prices, cats) -> items.entrySet().stream()
-                        .filter(e -> cats.get(e.getKey()) == cat)
-                        .mapToInt(Map.Entry::getValue)
-                        .sum() >= threshold;
-            return new PolicyLeaf(threshold, null, cat, 0.0, p);
+            return new PolicyLeaf(threshold, null, cat, 0.0);
         }
         // basket-value
         double minValue = leaf.getBasketValue();
-        TriPredicate<Map<Integer,Integer>,Map<Integer,Double>,Map<Integer,ItemCategory>> p =
-            (items, prices, cats) -> items.entrySet().stream()
-                    .mapToDouble(e -> prices.get(e.getKey()) * e.getValue())
-                    .sum() >= minValue;
-        return new PolicyLeaf(null, null, null, minValue, p);
+        return new PolicyLeaf(null, null, null, minValue);
     }
 
     public List<Discount> getDiscounts(int shopId, String token) {
@@ -926,16 +1034,17 @@ public class ShopService {
             if (!userService.hasPermission(userId, PermissionsEnum.viewPolicy, shopId)) {
                 throw new OurRuntime("No permission to view policies for shop " + shopId);
             }
-            //println("getPolicies called for shop " + shopId);
-            for (Policy p : shopRepository.getPolicies(shopId)) {
+            // println("getPolicies called for shop " + shopId);
+            List<Policy> policies = shopRepository.getPolicies(shopId);
+            for (Policy p : policies) {
                 if (p == null) {
-                    System.out.println("sdlkcsl;dkcsdkcsdds;k");
+                    //System.out.println("sdlkcsl;dkcsdkcsdds;k");
                 } else {
-                    System.out.println("Policy4672829: " + p );
-                    
+                    //System.out.println("Policy4672829: " + p);
+
                 }
             }
-            return shopRepository.getPolicies(shopId);
+            return policies;
         } catch (OurArg e) {
             LoggerService.logDebug("getPolicies", e);
             throw new OurArg("getPolicies" + e.getMessage());
@@ -946,5 +1055,54 @@ public class ShopService {
             LoggerService.logError("getPolicies", e, shopId, token);
             throw new OurRuntime("Error retrieving policies for shop " + shopId + ": " + e.getMessage(), e);
         }
+    }
+
+    public List<Integer> getclosedShops(String authToken) {
+        try {
+            LoggerService.logMethodExecution("getclosedShops");
+            authTokenService.ValidateToken(authToken);
+            List<Integer> closedShops = shopRepository.getClosedShops();
+            LoggerService.logMethodExecutionEnd("getclosedShops", closedShops);
+            return closedShops;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getclosedShops", e);
+            throw new OurArg("getclosedShops" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getclosedShops", e);
+            throw new OurRuntime("getclosedShops" + e.getMessage());
+        } catch (Exception e) {
+            LoggerService.logError("getclosedShops", e);
+            throw new OurRuntime("Error retrieving closed shops: " + e.getMessage(), e);
+        }
+    }
+
+
+    public double applyDiscount( Map<Integer,Integer> cart, int shopId, String token) {
+        try {
+            LoggerService.logMethodExecution("applyDiscount", cart);
+            authTokenService.ValidateToken(token);
+
+            Map<Integer, ItemCategory> itemsCategory = itemService.getItemdId2Cat(cart);
+
+            double totalPrice = shopRepository.applyDiscount(cart, itemsCategory, shopId);
+
+
+            
+            //double applyDiscount(Map<Integer, Integer> items, Map<Integer, ItemCategory> itemsCat, int shopId);
+
+            LoggerService.logMethodExecutionEnd("applyDiscount", totalPrice);
+            return totalPrice;
+        } catch (OurArg e) {
+            LoggerService.logDebug("applyDiscount", e);
+            throw new OurArg("applyDiscount" + e.getMessage());
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("applyDiscount", e);
+            throw new OurRuntime("applyDiscount" + e.getMessage());
+        } catch (Exception e) {
+            LoggerService.logError("applyDiscount", e, cart);
+            throw new OurRuntime("Error applying discount: " + e.getMessage(), e);
+        }
+
+
     }
 }

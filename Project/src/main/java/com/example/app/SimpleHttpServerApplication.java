@@ -1,11 +1,18 @@
 package com.example.app;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.r2dbc.R2dbcAutoConfiguration;
 
-@SpringBootApplication(exclude = { R2dbcAutoConfiguration.class }) 
+@SpringBootApplication(
+
+)
 public class SimpleHttpServerApplication {
     public static void main(String[] args) {
-        SpringApplication.run(SimpleHttpServerApplication.class, args);
+        try {
+            SpringApplication.run(SimpleHttpServerApplication.class, args);
+        } catch (Exception e) {
+            System.out.println("probably some db error");
+            throw e;
+        }
     }
 }

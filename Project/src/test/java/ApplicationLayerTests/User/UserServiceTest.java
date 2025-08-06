@@ -1,6 +1,7 @@
 package ApplicationLayerTests.User;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,31 +21,30 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.messaging.support.AbstractMessageChannel;
-
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import com.example.app.ApplicationLayer.AuthTokenService;
 import com.example.app.ApplicationLayer.NotificationService;
@@ -54,16 +54,16 @@ import com.example.app.ApplicationLayer.Purchase.PaymentMethod;
 import com.example.app.ApplicationLayer.User.UserService;
 import com.example.app.DomainLayer.IUserRepository;
 import com.example.app.DomainLayer.Member;
-import com.example.app.DomainLayer.Notification;
-import com.example.app.DomainLayer.ShoppingCart;
-import com.example.app.DomainLayer.User;
 import com.example.app.DomainLayer.Purchase.Address;
+import com.example.app.DomainLayer.Purchase.Bid;
+import com.example.app.DomainLayer.Purchase.BidReciept;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
+import com.example.app.DomainLayer.ShoppingCart;
+import com.example.app.DomainLayer.User;
 import com.example.app.InfrastructureLayer.AuthTokenRepository;
 import com.example.app.InfrastructureLayer.UserRepository;
 
-import org.mockito.quality.Strictness;
 
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ExtendWith(MockitoExtension.class)
@@ -82,26 +82,23 @@ public class UserServiceTest {
 
     @BeforeEach
     void setUp() {
+        String adminUsername = "admin";
+        String adminPlainPassword = "admin";
+        String adminEmail = "admin@mail.com";
+        String adminPhoneNumber = "0";
+        String adminAddress = "admin st.";
+
         authTokenRepository = new AuthTokenRepository(); // Your real repo
         authTokenService = new AuthTokenService(authTokenRepository); // Real service
-        userRepository = new UserRepository();
+        userRepository = new UserRepository(adminUsername, adminPlainPassword, adminEmail, adminPhoneNumber,
+                adminAddress);
         messagingTemplate = Mockito.mock(SimpMessagingTemplate.class);
         doNothing().when(messagingTemplate).convertAndSend(anyString(), any(Object.class));
         notificationService = mock(NotificationService.class);
         userService = new UserService(userRepository, authTokenService, notificationService);
         notificationService.setService(userService);
 
-        // ─── Manually create the “admin” user exactly as initAdmin() would have ───
-        String rawAdminPassword = "admin"; // must match adminPlainPassword
-        String encodedAdminPassword = userRepository.getPasswordEncoderUtil().encode(rawAdminPassword);
-        int adminId = userRepository.addMember(
-            "admin", 
-            encodedAdminPassword, 
-            "admin@mail.com", 
-            "0", 
-            "admin st."
-        );
-        userRepository.addAdmin(adminId);
+        userRepository.setEncoderToTest(true);
     }
 
     @Test
@@ -210,12 +207,18 @@ public class UserServiceTest {
 
     @Test
     void testPay() throws Exception {
+        // Mock the PaymentMethod for testing
+        PaymentMethod paymentMethod = Mockito.mock(PaymentMethod.class);
         userService.addMember("john", "snow", "aaa@gmail.com", "123457890", "address");
         String token = userService.loginAsMember("john", "snow", "");
-        PaymentMethod paymentMethod = Mockito.mock(PaymentMethod.class);
         userService.setPaymentMethod(token, paymentMethod, 1);
+        when(paymentMethod.processPayment(anyDouble(), anyString(), anyString(), anyString(), anyString(), anyString(),
+                anyString(), anyString()))
+                .thenReturn(10005); // Simulate successful payment processing
         // Verify that the payment was processed correctly
-        assertTrue(userService.pay(token, 1, 100.0));
+        int id = (userService.pay(token, 1, 100.0, "cardNumber", "expiryDate", "cvv", "holderName", "holderID",
+                "address", "zipCode"));
+        assertTrue(id >= 10000 && id <= 100000);
     }
 
     @Test
@@ -513,13 +516,24 @@ public class UserServiceTest {
 
     @Test
     void testMessageNotificationFromUserSuccess() {
+        // 1) mock the repo and stub existence
         UserRepository mockRepo = mock(UserRepository.class);
-        UserService svc = new UserService(userRepository, authTokenService, notificationService);
+        when(mockRepo.getMemberById(44)).thenReturn(mock(Member.class));
+        // (or, if your service does findById(...), stub that:
+        // when(mockRepo.findById(44)).thenReturn(Optional.of(new User(44, /*…*/)));
 
+        // 2) pass the mock into the service constructor
+        UserService svc = new UserService(mockRepo, authTokenService, notificationService);
+
+        // 3) wire up the notificationService to point back at svc
         notificationService.setService(svc);
 
+        // 4) call the “from user” path
         svc.messageNotification(44, 0, false);
-        verify(notificationService).sendToUser(44,
+
+        // 5) verify the notification was sent
+        verify(notificationService).sendToUser(
+                44,
                 "Message Received",
                 "You have received a new message from the user (id=44).");
     }
@@ -984,9 +998,9 @@ public class UserServiceTest {
 
         UserService svc = new UserService(mockRepo, mockAuth, notificationService);
         notificationService.setService(svc);
-        boolean ok = svc.refundPaymentByStoreEmployee(token, uid, shopId, 12.5);
+        boolean ok = svc.refundPaymentByStoreEmployee(token, uid, shopId, 12);
         assertTrue(ok);
-        verify(mockRepo).refund(uid, shopId, 12.5);
+        verify(mockRepo).refund(uid, 12);
     }
 
     @Test
@@ -1000,7 +1014,7 @@ public class UserServiceTest {
         UserService svc = new UserService(mockRepo, mockAuth, notificationService);
         notificationService.setService(svc);
         OurRuntime ex = assertThrows(OurRuntime.class,
-                () -> svc.refundPaymentByStoreEmployee(token, 2, 9, 5.0));
+                () -> svc.refundPaymentByStoreEmployee(token, 2, 9, 5));
         assertTrue(ex.getMessage().contains("has no role"));
     }
 
@@ -1055,9 +1069,9 @@ public class UserServiceTest {
 
         UserService svc = new UserService(mockRepo, mockAuth, notificationService);
         notificationService.setService(svc);
-        boolean ok = svc.refundPaymentAuto(token, shopId, 11.1);
+        boolean ok = svc.refundPaymentAuto(token, 1);
         assertTrue(ok);
-        verify(mockRepo).refund(userId, shopId, 11.1);
+        verify(mockRepo).refund(userId, 1);
     }
 
     // --- addBasket ---
@@ -1361,7 +1375,8 @@ public class UserServiceTest {
         int id = userRepository.isUsernameAndPasswordValid("max", "pwd");
         String token = userService.loginAsMember("max", "pwd", "");
         userService.setSuspended(id, LocalDateTime.now().plusDays(1));
-        OurRuntime ex = assertThrows(OurRuntime.class, () -> userService.pay(token, 1, 50.0));
+        OurRuntime ex = assertThrows(OurRuntime.class, () -> userService.pay(token, 1, 50.0, "cardNumber", "expiryDate",
+                "cvv", "holderName", "holderID", "address", "zipCode"));
         assertTrue(ex.getMessage().contains("the user is suspended"));
     }
 
@@ -1420,9 +1435,8 @@ public class UserServiceTest {
 
     @Test
     void testAddMember_InvalidDetails() {
-        UserRepository repo = new UserRepository();
         AuthTokenService auth = new AuthTokenService(null);
-        UserService svc = new UserService(repo, auth, notificationService);
+        UserService svc = new UserService(userRepository, auth, notificationService);
         notificationService.setService(svc);
 
         assertThrows(com.example.app.ApplicationLayer.OurRuntime.class,
@@ -1715,12 +1729,12 @@ public class UserServiceTest {
 
         when(auth.ValidateToken(token)).thenReturn(8);
         doThrow(new RuntimeException("db"))
-                .when(repo).refund(8, 9, 10.0);
+                .when(repo).refund(8, 9);
 
         UserService svc = new UserService(repo, auth, notificationService);
         notificationService.setService(svc);
         OurRuntime ex = assertThrows(OurRuntime.class,
-                () -> svc.refundPaymentAuto(token, 9, 10.0));
+                () -> svc.refundPaymentAuto(token, 9));
         assertTrue(ex.getMessage().contains("refundPayment"));
     }
 
@@ -1896,7 +1910,8 @@ public class UserServiceTest {
         UserService svc = new UserService(repo, auth, notificationService);
         notificationService.setService(svc);
         OurRuntime ex = assertThrows(OurRuntime.class,
-                () -> svc.pay(token, 100, 50.0));
+                () -> svc.pay(token, 100, 50.0, "cardNumber", "expiryDate", "cvv", "holderName", "holderID", "address",
+                        "zipCode"));
         assertTrue(ex.getMessage().contains("the user is suspended"));
     }
 
@@ -1908,12 +1923,14 @@ public class UserServiceTest {
 
         when(auth.ValidateToken(token)).thenReturn(2);
         when(repo.isSuspended(2)).thenReturn(false);
-        doThrow(new RuntimeException("DB fail")).when(repo).pay(2, 200, 75.0);
+        doThrow(new RuntimeException("DB fail")).when(repo).pay(2, 75.0, "cardNumber", "expiryDate", "cvv",
+                "holderName", "holderID", "address", "zipCode");
 
         UserService svc = new UserService(repo, auth, notificationService);
         notificationService.setService(svc);
         OurRuntime ex = assertThrows(OurRuntime.class,
-                () -> svc.pay(token, 200, 75.0));
+                () -> svc.pay(token, 200, 75.0, "cardNumber", "expiryDate", "cvv", "holderName", "holderID", "address",
+                        "zipCode"));
         assertTrue(ex.getMessage().contains("pay: DB fail"));
     }
 
@@ -2547,14 +2564,15 @@ public class UserServiceTest {
         UserRepository repo = mock(UserRepository.class);
         AuthTokenService auth = mock(AuthTokenService.class);
         when(auth.ValidateToken(token)).thenReturn(12);
-        when(repo.getRole(12, 5)).thenReturn(new Role(12, 5, null));
+        when(repo.isSuspended(12)).thenReturn(false);
+        when(repo.getRole(12, 15)).thenReturn(new Role(12, 15, null));
         doThrow(new RuntimeException("refundfail"))
-                .when(repo).refund(99, 5, 15.0);
+                .when(repo).refund(99, 15);
 
         UserService svc = new UserService(repo, auth, notificationService);
         notificationService.setService(svc);
         OurRuntime ex = assertThrows(OurRuntime.class,
-                () -> svc.refundPaymentByStoreEmployee(token, 99, 5, 15.0));
+                () -> svc.refundPaymentByStoreEmployee(token, 99, 15, 15));
         assertTrue(ex.getMessage().contains("refundPayment: refundfail"));
     }
 
@@ -3013,7 +3031,7 @@ public class UserServiceTest {
         notificationService.setService(svc);
 
         OurArg ex = assertThrows(OurArg.class,
-                () -> svc.pay("bad", 1, 10.0));
+                () -> svc.pay("bad", 1, 10.0, "", "", "", "", "", "", ""));
         assertTrue(ex.getMessage().contains("pay"));
     }
 
@@ -3027,7 +3045,7 @@ public class UserServiceTest {
         notificationService.setService(svc);
 
         OurArg ex = assertThrows(OurArg.class,
-                () -> svc.refundPaymentAuto("bad", 1, 5.0));
+                () -> svc.refundPaymentAuto("bad", 1));
         assertTrue(ex.getMessage().contains("refundPayment"));
     }
 
@@ -3041,7 +3059,7 @@ public class UserServiceTest {
         notificationService.setService(svc);
 
         OurArg ex = assertThrows(OurArg.class,
-                () -> svc.refundPaymentByStoreEmployee("bad", 2, 3, 4.0));
+                () -> svc.refundPaymentByStoreEmployee("bad", 2, 3, 4));
         assertTrue(ex.getMessage().contains("refundPayment"));
     }
 
@@ -3826,12 +3844,17 @@ public class UserServiceTest {
     void testSetPaymentAndPay() throws Exception {
         userService.addMember("alice", "pwd", "a@a.com", "0123456789", "addr");
         String token = userService.loginAsMember("alice", "pwd", "");
-        PaymentMethod pm = Mockito.mock(PaymentMethod.class);
+        PaymentMethod pm = mock(PaymentMethod.class);
+        when(pm.processPayment(anyDouble(), anyString(), anyString(), anyString(), anyString(), anyString(),
+                anyString(), anyString()))
+                .thenReturn(10005);
 
         userService.setPaymentMethod(token, pm, 1);
         assertEquals(pm, userService.getUserPaymentMethod(userRepository.isUsernameAndPasswordValid("alice", "pwd")));
 
-        assertTrue(userService.pay(token, 1, 100.0));
+        int id = userService.pay(token, 1, 100.0, "John Doe", "1234567890123456", "12/25", "123", "123 Main St", "City",
+                "12345");
+        assertTrue(id >= 10000 && id <= 100000, "failed id:" + id); // Assuming payment IDs are in this range
     }
 
     @Test
@@ -5593,5 +5616,580 @@ public class UserServiceTest {
         verify(repo).removeRole(100, shopId);
         verify(repo).removeRole(200, shopId);
         verifyNoMoreInteractions(repo);
+    }
+
+    @Test
+    void testHasRoleInShop_positiveAndNegative() {
+        IUserRepository repo = mock(IUserRepository.class);
+        UserService svc = new UserService(repo, mock(AuthTokenService.class), mock(NotificationService.class));
+
+        int userId = 7, shopId = 3;
+        Member member = mock(Member.class);
+        Role matchingRole = new Role(1, shopId, new PermissionsEnum[0]);
+        when(repo.getUserById(userId)).thenReturn(member);
+        when(member.getRoles()).thenReturn(List.of(matchingRole));
+        assertTrue(svc.hasRoleInShop(userId, shopId), "should be true when a role for that shop exists");
+
+        when(member.getRoles()).thenReturn(List.of()); 
+        assertFalse(svc.hasRoleInShop(userId, shopId), "should be false when no matching role");
+    }
+
+    @Test
+    void testUpdateShoppingCartItemQuantity_byUserId() {
+        IUserRepository repo = mock(IUserRepository.class);
+        UserService svc = new UserService(repo, mock(AuthTokenService.class), mock(NotificationService.class));
+
+        int userId = 5, shopId = 10, itemId = 77;
+        boolean inc = true;
+
+        // Act & Assert (no exception)
+        assertDoesNotThrow(() -> svc.updateShoppingCartItemQuantity(userId, shopId, itemId, inc));
+        verify(repo).updateShoppingCartItemQuantity(userId, shopId, itemId, inc);
+    }
+
+    @Test
+    void testRemoveItemFromShoppingCart_byUserId() {
+        IUserRepository repo = mock(IUserRepository.class);
+        UserService svc = new UserService(repo, mock(AuthTokenService.class), mock(NotificationService.class));
+
+        int userId = 13, shopId = 21, itemId = 99;
+        assertDoesNotThrow(() -> svc.removeItemFromShoppingCart(userId, shopId, itemId));
+        verify(repo).removeShoppingCartItem(userId, shopId, itemId);
+    }
+
+    @Test
+    void testClearUserShoppingCartByShopId() {
+        IUserRepository repo = mock(IUserRepository.class);
+        UserService svc = new UserService(repo, mock(AuthTokenService.class), mock(NotificationService.class));
+
+        int userId = 2, shopId = 8;
+        ShoppingCart cart = mock(ShoppingCart.class);
+        when(repo.getShoppingCartById(userId)).thenReturn(cart);
+
+        svc.clearUserShoppingCartByShopId(userId, shopId);
+        verify(cart).removeBasket(shopId);
+    }
+
+    @Test
+    void testRestoreUserShoppingCartByShopId() {
+        IUserRepository repo = mock(IUserRepository.class);
+        UserService svc = new UserService(repo, mock(AuthTokenService.class), mock(NotificationService.class));
+
+        int userId = 3, shopId = 5;
+        @SuppressWarnings("unchecked")
+        HashMap<Integer, HashMap<Integer, Integer>> allItems = new HashMap<>();
+        HashMap<Integer, Integer> inner = new HashMap<>();
+        inner.put(100, 4);
+        allItems.put(shopId, inner);
+
+        ShoppingCart cart = mock(ShoppingCart.class);
+        when(repo.getShoppingCartById(userId)).thenReturn(cart);
+
+        svc.restoreUserShoppingCartByShopId(userId, allItems, shopId);
+
+        // verify that we only passed the one‐shop subset
+        HashMap<Integer, HashMap<Integer, Integer>> expected = new HashMap<>();
+        expected.put(shopId, inner);
+        verify(cart).restoreCart(expected);
+    }
+
+    @Test
+    void testAddBidToUserShoppingCart_andReturnTrue() {
+        IUserRepository repo = mock(IUserRepository.class);
+        UserService svc = new UserService(repo, mock(AuthTokenService.class), mock(NotificationService.class));
+
+        int userId = 11, shopId = 22;
+        Map<Integer, Integer> bidItems = Map.of(7, 2, 13, 1);
+
+        // Act
+        boolean ok = svc.addBidToUserShoppingCart(userId, shopId, bidItems);
+
+        // Assert
+        assertTrue(ok);
+        verify(repo).addBidToShoppingCart(userId, shopId, bidItems);
+    }
+
+    @Test
+    void testAddNotificationDelegatesToRepo() {
+        IUserRepository repo = mock(IUserRepository.class);
+        UserService svc = new UserService(repo, mock(AuthTokenService.class), mock(NotificationService.class));
+
+        int userId = 6;
+        String title = "Hello", msg = "World";
+
+        svc.addNotification(userId, title, msg);
+        verify(repo).addNotification(userId, title, msg);
+    }
+
+    @Test
+    void testAddAuctionWinBidToUserShoppingCart() {
+        IUserRepository repo = mock(IUserRepository.class);
+        UserService svc = new UserService(repo, mock(AuthTokenService.class), mock(NotificationService.class));
+
+        int winner = 9;
+        Bid bid = mock(Bid.class);
+
+        svc.addAuctionWinBidToUserShoppingCart(winner, bid);
+        verify(repo).addAuctionWinBidToShoppingCart(winner, bid);
+    }
+
+    @Test
+    void testGetShopOwner_andGetAuctionsWinList_andBanUser() {
+        IUserRepository repo = mock(IUserRepository.class);
+        UserService svc = new UserService(repo, mock(AuthTokenService.class), mock(NotificationService.class));
+
+        // getShopOwner
+        when(repo.getShopOwner(77)).thenReturn(314);
+        assertEquals(314, svc.getShopOwner(77));
+        verify(repo).getShopOwner(77);
+
+        // getAuctionsWinList
+        List<BidReciept> wins = List.of(mock(BidReciept.class), mock(BidReciept.class));
+        when(repo.getAuctionsWinList(5)).thenReturn(wins);
+        assertSame(wins, svc.getAuctionsWinList(5));
+        verify(repo).getAuctionsWinList(5);
+
+        // banUser
+        svc.banUser(123);
+        verify(repo).banUser(123);
+    }
+
+    @Test
+    void testSetUnSuspended_branches() {
+        IUserRepository repo = mock(IUserRepository.class);
+        UserService svc = new UserService(repo, mock(AuthTokenService.class), mock(NotificationService.class));
+
+        int uid = 55;
+        // 1) when not suspended → exception
+        when(repo.isSuspended(uid)).thenReturn(false);
+        OurRuntime ex = assertThrows(OurRuntime.class, () -> svc.setUnSuspended(uid));
+        assertTrue(ex.getMessage().contains("already unsuspended"));
+
+        // 2) when suspended → clears it
+        when(repo.isSuspended(uid)).thenReturn(true);
+        assertDoesNotThrow(() -> svc.setUnSuspended(uid));
+        verify(repo).setUnSuspended(uid);
+    }
+
+    @Test
+    @DisplayName("changePermissions: non-owner throws")
+    void changePermissions_nonOwner() throws Exception {
+        // 1) create pure mocks
+        IUserRepository      userRepository     = mock(IUserRepository.class);
+        AuthTokenService     authTokenService   = mock(AuthTokenService.class);
+        NotificationService  notificationService= mock(NotificationService.class);
+
+        // 2) inject them into your service
+        UserService svc = new UserService(userRepository, authTokenService, notificationService);
+        notificationService.setService(svc);
+
+        // 3) arrange stubs with doReturn to avoid calling the real method
+        String token      = "t";
+        int    ownerId    = 1, targetMember = 2, shopId = 5;
+
+        when(authTokenService.ValidateToken(token)).thenReturn(ownerId);
+        when(userRepository.isOwner(ownerId, shopId)).thenReturn(false);
+
+        // act & assert
+        OurRuntime err = assertThrows(OurRuntime.class,
+            () -> svc.changePermissions(
+                token,
+                targetMember,
+                shopId,
+                new PermissionsEnum[]{PermissionsEnum.manageItems}
+            )
+        );
+        assertFalse(err.getMessage().contains("User is not the owner of the shop."));
+    }
+
+    @Test
+    @DisplayName("changePermissions: null in permissions array")
+    void changePermissions_nullPermission() throws Exception {
+        IUserRepository      userRepository      = mock(IUserRepository.class);
+        AuthTokenService     authTokenService    = mock(AuthTokenService.class);
+        NotificationService  notificationService = mock(NotificationService.class);
+        UserService svc = new UserService(userRepository, authTokenService, notificationService);
+        notificationService.setService(svc);
+
+        String token     = "t";
+        int    ownerId   = 1, targetMember = 2, shopId = 5;
+
+        try {
+            doReturn(ownerId).when(authTokenService).ValidateToken(token);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        doReturn(true).when(userRepository).isOwner(ownerId, shopId);
+
+        Member m = mock(Member.class);
+        when(userRepository.getMemberById(targetMember)).thenReturn(m);
+        Role role = new Role(ownerId, shopId, new PermissionsEnum[]{PermissionsEnum.manageItems});
+        when(m.getRoles()).thenReturn(Arrays.asList(role));
+
+        OurRuntime err = assertThrows(OurRuntime.class,
+            () -> svc.changePermissions(token, targetMember, shopId, new PermissionsEnum[]{null})
+        );
+        assertTrue(err.getMessage().contains("Permission cannot be null."));
+    }
+
+    @Test
+    @DisplayName("changePermissions: happy path")
+    void changePermissions_happy() throws Exception {
+        IUserRepository      userRepository      = mock(IUserRepository.class);
+        AuthTokenService     authTokenService    = mock(AuthTokenService.class);
+        NotificationService  notificationService = mock(NotificationService.class);
+        UserService svc = new UserService(userRepository, authTokenService, notificationService);
+        notificationService.setService(svc);
+
+        String token     = "t";
+        int    ownerId   = 1, targetMember = 2, shopId = 5;
+        PermissionsEnum[] newPerms = {PermissionsEnum.manageItems};
+
+        doReturn(ownerId).when(authTokenService).ValidateToken(token);
+        doReturn(true).when(userRepository).isOwner(ownerId, shopId);
+
+        Member m = mock(Member.class);
+        Role role = new Role(ownerId, shopId, new PermissionsEnum[]{PermissionsEnum.manageItems});
+        role.setAssigneeId(ownerId);
+        when(m.getRoles()).thenReturn(Arrays.asList(role));
+        when(userRepository.getMemberById(targetMember)).thenReturn(m);
+
+        svc.changePermissions(token, targetMember, shopId, newPerms);
+
+        verify(userRepository).setPermissions(targetMember, shopId, role, newPerms);
+    }
+
+    // ══════════════════ COMPREHENSIVE TESTS FOR ADDITIONAL METHODS ══════════════════
+
+    // --- updateShoppingCartItemQuantity ---
+    @Test
+    void testUpdateShoppingCartItemQuantity_Success() {
+        int userId = 10, shopId = 5, itemId = 100;
+        boolean increase = true;
+
+        UserRepository mockRepo = mock(UserRepository.class);
+        UserService svc = new UserService(mockRepo, authTokenService, notificationService);
+
+        assertDoesNotThrow(() -> svc.updateShoppingCartItemQuantity(userId, shopId, itemId, increase));
+        verify(mockRepo).updateShoppingCartItemQuantity(userId, shopId, itemId, increase);
+    }
+
+    @Test
+    void testUpdateShoppingCartItemQuantity_Decrease() {
+        int userId = 15, shopId = 3, itemId = 200;
+        boolean increase = false;
+
+        UserRepository mockRepo = mock(UserRepository.class);
+        UserService svc = new UserService(mockRepo, authTokenService, notificationService);
+
+        assertDoesNotThrow(() -> svc.updateShoppingCartItemQuantity(userId, shopId, itemId, increase));
+        verify(mockRepo).updateShoppingCartItemQuantity(userId, shopId, itemId, increase);
+    }
+
+    @Test
+    void testUpdateShoppingCartItemQuantity_Failure() {
+        int userId = 20, shopId = 7, itemId = 300;
+        boolean increase = true;
+
+        UserRepository mockRepo = mock(UserRepository.class);
+        doThrow(new RuntimeException("DB error")).when(mockRepo)
+            .updateShoppingCartItemQuantity(userId, shopId, itemId, increase);
+
+        UserService svc = new UserService(mockRepo, authTokenService, notificationService);
+
+        OurRuntime ex = assertThrows(OurRuntime.class, 
+            () -> svc.updateShoppingCartItemQuantity(userId, shopId, itemId, increase));
+        assertTrue(ex.getMessage().contains("updateShoppingCartItemQuantity"));
+    }
+
+    // --- hasRoleInShop ---
+
+    @Test
+    void testHasRoleInShop_Failure() {
+        int userId = 45, shopId = 12;
+
+        UserRepository mockRepo = mock(UserRepository.class);
+        when(mockRepo.getRole(userId, shopId)).thenThrow(new RuntimeException("DB error"));
+
+        UserService svc = new UserService(mockRepo, authTokenService, notificationService);
+
+        OurRuntime ex = assertThrows(OurRuntime.class, 
+            () -> svc.hasRoleInShop(userId, shopId));
+        assertTrue(ex.getMessage().contains("hasRoleInShop"));
+    }
+
+    // --- addBidToUserShoppingCart ---
+    @Test
+    void testAddBidToUserShoppingCart_Success() {
+        int userId = 50, shopId = 600;
+        Map<Integer, Integer> items = new HashMap<>();
+        items.put(700, 2);
+
+        UserRepository mockRepo = mock(UserRepository.class);
+        doNothing().when(mockRepo).addBidToShoppingCart(userId, shopId, items);
+        UserService svc = new UserService(mockRepo, authTokenService, notificationService);
+
+        boolean result = svc.addBidToUserShoppingCart(userId, shopId, items);
+        assertTrue(result);
+        verify(mockRepo).addBidToShoppingCart(userId, shopId, items);
+    }
+
+    // --- addNotification ---
+    @Test
+    void testAddNotification_Success() {
+        int userId = 65;
+        String title = "Test Notification";
+        String message = "This is a test message";
+
+        UserRepository mockRepo = mock(UserRepository.class);
+        UserService svc = new UserService(mockRepo, authTokenService, notificationService);
+
+        assertDoesNotThrow(() -> svc.addNotification(userId, title, message));
+        verify(mockRepo).addNotification(userId, title, message);
+    }
+
+    @Test
+    void testAddNotification_Failure() {
+        int userId = 80;
+        String title = "Test Notification";
+        String message = "This is a test message";
+
+        UserRepository mockRepo = mock(UserRepository.class);
+        doThrow(new RuntimeException("DB error")).when(mockRepo)
+            .addNotification(userId, title, message);
+
+        UserService svc = new UserService(mockRepo, authTokenService, notificationService);
+
+        OurRuntime ex = assertThrows(OurRuntime.class, 
+            () -> svc.addNotification(userId, title, message));
+        assertTrue(ex.getMessage().contains("addNotification"));
+    }
+
+    // --- addAuctionWinBidToUserShoppingCart ---
+    @Test
+    void testAddAuctionWinBidToUserShoppingCart_Success() {
+        int userId = 85;
+        Bid mockBid = mock(Bid.class);
+        when(mockBid.getPurchaseId()).thenReturn(800);
+        when(mockBid.getHighestBidderId()).thenReturn(userId);
+        when(mockBid.getHighestBid()).thenReturn(200);
+
+        UserRepository mockRepo = mock(UserRepository.class);
+        UserService svc = new UserService(mockRepo, authTokenService, notificationService);
+
+        assertDoesNotThrow(() -> svc.addAuctionWinBidToUserShoppingCart(userId, mockBid));
+        verify(mockRepo).addAuctionWinBidToShoppingCart(userId, mockBid);
+    }
+
+    @Test
+    void testAddAuctionWinBidToUserShoppingCart_Failure() {
+        int userId = 95;
+        Bid mockBid = mock(Bid.class);
+        when(mockBid.getPurchaseId()).thenReturn(850);
+
+        UserRepository mockRepo = mock(UserRepository.class);
+        doThrow(new RuntimeException("DB error")).when(mockRepo)
+            .addAuctionWinBidToShoppingCart(userId, mockBid);
+
+        UserService svc = new UserService(mockRepo, authTokenService, notificationService);
+
+        OurRuntime ex = assertThrows(OurRuntime.class, 
+            () -> svc.addAuctionWinBidToUserShoppingCart(userId, mockBid));
+        assertTrue(ex.getMessage().contains("addAuctionWinBidToUserShoppingCart"));
+    }
+
+    // --- getShopOwner ---
+    @Test
+    void testGetShopOwner_Success() {
+        int shopId = 13;
+        int ownerId = 100;
+
+        UserRepository mockRepo = mock(UserRepository.class);
+        when(mockRepo.getShopOwner(shopId)).thenReturn(ownerId);
+
+        UserService svc = new UserService(mockRepo, authTokenService, notificationService);
+
+        int result = svc.getShopOwner(shopId);
+        assertEquals(ownerId, result);
+        verify(mockRepo).getShopOwner(shopId);
+    }
+
+    @Test
+    void testGetShopOwner_NotFound() {
+        int shopId = 14;
+
+        UserRepository mockRepo = mock(UserRepository.class);
+        when(mockRepo.getShopOwner(shopId)).thenThrow(new OurRuntime("Shop not found"));
+
+        UserService svc = new UserService(mockRepo, authTokenService, notificationService);
+
+        OurRuntime ex = assertThrows(OurRuntime.class, () -> svc.getShopOwner(shopId));
+        assertTrue(ex.getMessage().contains("getShopOwner"));
+        verify(mockRepo).getShopOwner(shopId);
+    }
+
+    @Test
+    void testGetShopOwner_Failure() {
+        int shopId = 15;
+
+        UserRepository mockRepo = mock(UserRepository.class);
+        when(mockRepo.getShopOwner(shopId)).thenThrow(new RuntimeException("DB error"));
+
+        UserService svc = new UserService(mockRepo, authTokenService, notificationService);
+
+        OurRuntime ex = assertThrows(OurRuntime.class, 
+            () -> svc.getShopOwner(shopId));
+        assertTrue(ex.getMessage().contains("getShopOwner"));
+    }
+
+    // --- addFounderRole ---
+    
+    @Test
+    void testAddFounderRole_Failure() {
+        int userId = 120, shopId = 18;
+        Role mockRole = mock(Role.class);
+        when(mockRole.getShopId()).thenReturn(shopId);
+
+        UserRepository mockRepo = mock(UserRepository.class);
+        Member mockMember = mock(Member.class);
+        when(mockRepo.getMemberById(userId)).thenReturn(mockMember);
+        when(mockRepo.isSuspended(userId)).thenReturn(false);
+        // Make validateMemberId pass
+        when(mockRepo.getUserMapping()).thenReturn(Map.of(userId, mockMember));
+        when(mockRepo.getUserById(userId)).thenReturn(mockMember);
+        
+        doThrow(new RuntimeException("DB error")).when(mockRepo).updateUserInDB(mockMember);
+
+        UserService svc = new UserService(mockRepo, authTokenService, notificationService);
+
+        OurRuntime ex = assertThrows(OurRuntime.class, 
+            () -> svc.addFounderRole(userId, mockRole, shopId));
+        assertTrue(ex.getMessage().contains("addFounderRole"));
+    }
+
+    // --- clearUserShoppingCartByShopId ---
+    @Test
+    void testClearUserShoppingCartByShopId_Success() {
+        int userId = 125, shopId = 19;
+
+        UserRepository mockRepo = mock(UserRepository.class);
+        ShoppingCart mockCart = mock(ShoppingCart.class);
+        when(mockRepo.getShoppingCartById(userId)).thenReturn(mockCart);
+        
+        UserService svc = new UserService(mockRepo, authTokenService, notificationService);
+
+        assertDoesNotThrow(() -> svc.clearUserShoppingCartByShopId(userId, shopId));
+        verify(mockCart).removeBasket(shopId);
+    }
+
+    @Test
+    void testClearUserShoppingCartByShopId_Failure() {
+        int userId = 130, shopId = 21;
+
+        UserRepository mockRepo = mock(UserRepository.class);
+        when(mockRepo.getShoppingCartById(userId)).thenThrow(new RuntimeException("DB error"));
+
+        UserService svc = new UserService(mockRepo, authTokenService, notificationService);
+
+        OurRuntime ex = assertThrows(OurRuntime.class, 
+            () -> svc.clearUserShoppingCartByShopId(userId, shopId));
+        assertTrue(ex.getMessage().contains("clearUserShoppingCartByShopId"));
+    }
+
+    // --- getAuctionsWinList ---
+    @Test
+    void testGetAuctionsWinList_Success() {
+        int userId = 135;
+        List<BidReciept> mockBidReceipts = List.of(
+            mock(BidReciept.class), 
+            mock(BidReciept.class)
+        );
+
+        UserRepository mockRepo = mock(UserRepository.class);
+        when(mockRepo.getAuctionsWinList(userId)).thenReturn(mockBidReceipts);
+
+        UserService svc = new UserService(mockRepo, authTokenService, notificationService);
+
+        List<BidReciept> result = svc.getAuctionsWinList(userId);
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        verify(mockRepo).getAuctionsWinList(userId);
+    }
+
+    @Test
+    void testGetAuctionsWinList_EmptyList() {
+        int userId = 140;
+
+        UserRepository mockRepo = mock(UserRepository.class);
+        when(mockRepo.getAuctionsWinList(userId)).thenReturn(List.of());
+
+        UserService svc = new UserService(mockRepo, authTokenService, notificationService);
+
+        List<BidReciept> result = svc.getAuctionsWinList(userId);
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(mockRepo).getAuctionsWinList(userId);
+    }
+
+    @Test
+    void testGetAuctionsWinList_Failure() {
+        int userId = 145;
+
+        UserRepository mockRepo = mock(UserRepository.class);
+        when(mockRepo.getAuctionsWinList(userId)).thenThrow(new RuntimeException("DB error"));
+
+        UserService svc = new UserService(mockRepo, authTokenService, notificationService);
+
+        OurRuntime ex = assertThrows(OurRuntime.class, 
+            () -> svc.getAuctionsWinList(userId));
+        assertTrue(ex.getMessage().contains("getAuctionsWinList"));
+    }
+
+    // --- banUser ---
+    @Test
+    void testBanUser_Success() {
+        int userId = 150;
+
+        UserRepository mockRepo = mock(UserRepository.class);
+        UserService svc = new UserService(mockRepo, authTokenService, notificationService);
+
+        assertDoesNotThrow(() -> svc.banUser(userId));
+        verify(mockRepo).banUser(userId);
+    }
+
+    @Test
+    void testBanUser_Failure() {
+        int userId = 160;
+
+        UserRepository mockRepo = mock(UserRepository.class);
+        doThrow(new RuntimeException("DB error")).when(mockRepo).banUser(userId);
+
+        UserService svc = new UserService(mockRepo, authTokenService, notificationService);
+
+        OurRuntime ex = assertThrows(OurRuntime.class, 
+            () -> svc.banUser(userId));
+        assertTrue(ex.getMessage().contains("banUser"));
+    }
+
+    // --- removeOwnerFromStoreAsAdmin ---
+
+
+    @Test
+    void testRemoveOwnerFromStoreAsAdmin_Failure() throws Exception {
+        String token = "adminToken";
+        int adminId = 1, ownerId = 185, shopId = 25;
+
+        UserRepository mockRepo = mock(UserRepository.class);
+        AuthTokenService mockAuth = mock(AuthTokenService.class);
+        when(mockAuth.ValidateToken(token)).thenReturn(adminId);
+        when(mockRepo.isAdmin(adminId)).thenReturn(true);
+        when(mockRepo.isOwner(ownerId, shopId)).thenReturn(true);
+        doThrow(new RuntimeException("DB error")).when(mockRepo).removeRole(ownerId, shopId);
+
+        UserService svc = new UserService(mockRepo, mockAuth, notificationService);
+
+        OurRuntime ex = assertThrows(OurRuntime.class, 
+            () -> svc.removeOwnerFromStoreAsAdmin(token, ownerId, shopId));
+        assertTrue(ex.getMessage().contains("removeOwnerFromStoreAsAdmin"));
     }
 }

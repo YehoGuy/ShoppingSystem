@@ -10,6 +10,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 import com.example.app.ApplicationLayer.OurRuntime;
@@ -20,10 +21,10 @@ import com.example.app.DomainLayer.IUserRepository;
 import com.example.app.DomainLayer.Member;
 import com.example.app.DomainLayer.Notification;
 import com.example.app.DomainLayer.Purchase.Address;
+import com.example.app.DomainLayer.Purchase.Bid;
+import com.example.app.DomainLayer.Purchase.BidReciept;
 import com.example.app.DomainLayer.Roles.PermissionsEnum;
 import com.example.app.DomainLayer.Roles.Role;
-
-import jakarta.annotation.PostConstruct;
 
 import com.example.app.DomainLayer.ShoppingCart;
 import com.example.app.DomainLayer.User;
@@ -32,6 +33,7 @@ import com.example.app.DomainLayer.User;
 // and has a method getId() to retrieve the user's ID.
 
 @Repository
+@Profile("no-db | test")
 public class UserRepository implements IUserRepository {
     // A map to store users with their IDs as keys
     private ConcurrentHashMap<Integer, com.example.app.DomainLayer.User> userMapping;
@@ -39,47 +41,49 @@ public class UserRepository implements IUserRepository {
     private PasswordEncoderUtil passwordEncoderUtil;
     AtomicInteger userIdCounter;
 
-    @Value("${admin.username}")
-    private String adminUsername;
+    private final String adminUsername;
+    private final String adminPlainPassword;
+    private final String adminEmail;
+    private final String adminPhoneNumber;
+    private final String adminAddress;
 
-    @Value("${admin.password}")
-    private String adminPlainPassword;
+    public UserRepository(@Value("${admin.username:admin}") String adminUsername,
+            @Value("${admin.password:admin}") String adminPlainPassword,
+            @Value("${admin.email:admin@mail.com}") String adminEmail,
+            @Value("${admin.phoneNumber:0}") String adminPhoneNumber,
+            @Value("${admin.address:admin st.}") String adminAddress) {
 
-    @Value("${admin.email}")
-    private String adminEmail;
+        if (adminUsername == null || adminUsername.isEmpty()) {
+            throw new IllegalArgumentException("Admin username cannot be null or empty.");
+        }
+        if (adminPlainPassword == null || adminPlainPassword.isEmpty()) {
+            throw new IllegalArgumentException("Admin password cannot be null or empty.");
+        }
+        if (adminEmail == null || !adminEmail.contains("@") || adminEmail.isEmpty()) {
+            throw new IllegalArgumentException("Invalid admin email address.");
+        }
+        if (adminPhoneNumber == null || adminPhoneNumber.isEmpty()) {
+            throw new IllegalArgumentException("Admin phone number cannot be null or empty.");
+        }
+        if (adminAddress == null || adminAddress.isEmpty()) {
+            throw new IllegalArgumentException("Admin address cannot be null or empty.");
+        }
 
-    @Value("${admin.phoneNumber}")
-    private String adminPhoneNumber;
-
-    @Value("${admin.address}")
-    private String adminAddress;
-
-    public UserRepository() {
         this.userMapping = new ConcurrentHashMap<>();
         this.userIdCounter = new AtomicInteger(0); // Initialize the user ID counter
         this.managers = new CopyOnWriteArrayList<>(); // Initialize the managers list
         this.passwordEncoderUtil = new PasswordEncoderUtil();
-        // TODO: V should be removed when adding database
+
+        this.adminUsername = adminUsername;
+        this.adminPlainPassword = passwordEncoderUtil.encode(adminPlainPassword);
+        this.adminEmail = adminEmail;
+        this.adminPhoneNumber = adminPhoneNumber;
+        this.adminAddress = adminAddress;
+
+        initAdmin();
     }
 
-    @PostConstruct
-    public void initAdmin() {
-        if (adminUsername == null || adminUsername.isBlank()) {
-            adminUsername = "admin";
-        }
-        if (adminPlainPassword == null || adminPlainPassword.isBlank()) {
-            adminPlainPassword = "admin";
-        }
-        if (adminEmail == null || adminEmail.isBlank()) {
-            adminEmail = "admin@mail.com";
-        }
-        if (adminPhoneNumber == null || adminPhoneNumber.isBlank()) {
-            adminPhoneNumber = "0";
-        }
-        if (adminAddress == null || adminAddress.isBlank()) {
-            adminAddress = "admin st.";
-        }
-
+    private void initAdmin() {
         String passwordToStore = adminPlainPassword;
         int adminId = addMember(adminUsername, passwordToStore, adminEmail, adminPhoneNumber, adminAddress);
 
@@ -359,7 +363,7 @@ public class UserRepository implements IUserRepository {
         }
         User user = userMapping.get(userId);
         ShoppingCart shoppingCart = user.getShoppingCart();
-        shoppingCart.removeItem(shopId, shopId);
+        shoppingCart.removeItem(shopId, itemId);
         shoppingCart.addItem(shopId, itemId, quantity);
     }
 
@@ -523,24 +527,30 @@ public class UserRepository implements IUserRepository {
         user.setPaymentMethod(paymentMethod);
     }
 
-    public void pay(int userId, int shopId, double payment) {
+    @Override
+    public int pay(int userId, double amount, String currency, String cardNumber, String expirationDateMonth,
+            String expirationDateYear, String cardHolderName, String cvv, String id) {
         User user = userMapping.get(userId);
         if (user == null) {
             throw new OurRuntime("User with ID " + userId + " doesn't exist.");
         }
-        PaymentMethod paymentMethod = user.getPaymentMethod();
-        if (paymentMethod == null) {
-            throw new OurRuntime("Payment method not set for user with ID " + userId);
-        }
+
+        PaymentMethod paymentMethod = new WSEPPay();
+
         try {
-            paymentMethod.processPayment(payment, shopId); // Assuming PaymentMethod has a method to process payment
+            int pid = paymentMethod.processPayment(amount, currency, cardNumber, expirationDateMonth,
+                    expirationDateYear, cardHolderName, cvv, id);
+            if (pid < 0) {
+                throw new OurRuntime("Payment processing failed.");
+            }
+            return pid; // Return the payment ID if successful
         } catch (Exception e) {
             throw new OurRuntime("Payment failed: " + e.getMessage());
         }
     }
 
     @Override
-    public void refund(int userId, int shopId, double refund) {
+    public void refund(int userId, int paymentId) {
         User user = userMapping.get(userId);
         if (user == null) {
             throw new OurRuntime("User with ID " + userId + " doesn't exist.");
@@ -550,10 +560,23 @@ public class UserRepository implements IUserRepository {
             throw new OurRuntime("Payment method not set for user with ID " + userId);
         }
         try {
-            paymentMethod.refundPayment(refund, shopId); // Assuming PaymentMethod has a method to process refund
+            boolean worked = paymentMethod.cancelPayment(paymentId); // Assuming PaymentMethod has a method to process
+                                                                     // refund
+            if (!worked) {
+                throw new OurRuntime("Refund processing failed.");
+            }
         } catch (Exception e) {
             throw new OurRuntime("Refund failed: " + e.getMessage());
         }
+    }
+
+    public void addBidToShoppingCart(int userId, int shopId, Map<Integer, Integer> items) {
+        if (!userMapping.containsKey(userId)) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        User user = userMapping.get(userId);
+        ShoppingCart shoppingCart = user.getShoppingCart();
+        shoppingCart.addBid(shopId, items); // Assuming ShoppingCart has a method to add a bid
     }
 
     @Override
@@ -605,7 +628,6 @@ public class UserRepository implements IUserRepository {
         member.setUnSuspended();
     }
 
-
     @Override
     public boolean isSuspended(int userId) {
         Member member;
@@ -640,11 +662,10 @@ public class UserRepository implements IUserRepository {
         if (member == null) {
             throw new OurRuntime("User with ID " + userId + " doesn't exist.");
         }
-        //LocalDateTime suspendedUntil = LocalDateTime.now().plusYears((long)1000);
+        // LocalDateTime suspendedUntil = LocalDateTime.now().plusYears((long)1000);
         LocalDateTime suspendedUntil = LocalDateTime.of(9999, 12, 31, 23, 59);
         member.setSuspended(suspendedUntil);
     }
-
 
     @Override
     public List<Integer> getShopIdsByWorkerId(int userId) {
@@ -694,14 +715,13 @@ public class UserRepository implements IUserRepository {
                 .map(user -> (Member) user).toList());
     }
 
-    public void updateShoppingCartItemQuantity(int userId, int shopID, int itemID, boolean b)
-    {
+    public void updateShoppingCartItemQuantity(int userId, int shopID, int itemID, boolean b) {
         if (!userMapping.containsKey(userId)) {
             throw new OurRuntime("User with ID " + userId + " doesn't exist.");
         }
         User user = userMapping.get(userId);
         ShoppingCart shoppingCart = user.getShoppingCart();
-        Map<Integer, Integer> basket = shoppingCart.getBasket(userId);
+        Map<Integer, Integer> basket = shoppingCart.getBasket(shopID);
         if (basket == null || !basket.containsKey(itemID)) {
             throw new OurRuntime("Item with ID " + itemID + " not found in the shopping cart.");
         }
@@ -724,6 +744,64 @@ public class UserRepository implements IUserRepository {
         User user = userMapping.get(userId);
         ShoppingCart shoppingCart = user.getShoppingCart();
         shoppingCart.removeItem(shopID, itemID);
+    }
+
+    @Override
+    public List<BidReciept> getAuctionsWinList(int userId) {
+        if (!userMapping.containsKey(userId)) {
+            throw new OurRuntime("User with ID " + userId + " doesn't exist.");
+        }
+        Member user = (Member) userMapping.get(userId);
+        return user.getAuctionsWins();
+    }
+
+    @Override
+    public void addAuctionWinBidToShoppingCart(int winnerId, Bid bid) {
+        Member user = (Member) userMapping.get(winnerId);
+        BidReciept bidReciept = bid.generateReciept();
+        if (user == null) {
+            throw new OurRuntime("User " + user.getUsername() + " doesn't exist.");
+        }
+        user.addAuctionWin(bidReciept); // Assuming Member has a method to add an auction win to the shopping cart
+    }
+
+    @Override
+    public int getShopOwner(int shopId) {
+        // 1) try to find the founder
+        for (Member member : getMembersList()) {
+            if (member.getRoles().stream()
+                    .anyMatch(r -> r.isFounder() && r.getShopId() == shopId)) {
+                return member.getMemberId();
+            }
+        }
+        // 2) fallback to any owner
+        for (Member member : getMembersList()) {
+            if (member.getRoles().stream()
+                    .anyMatch(r -> r.isOwner() && r.getShopId() == shopId)) {
+                return member.getMemberId();
+            }
+        }
+        return -1;
+    }
+
+    @Override
+    public void updateUserInDB(Member member) {
+        return;
+    }
+
+    @Override
+    public int getMissingNotificationsQuantity(int userId) {
+        User user = getUserById(userId);
+        if (user instanceof Guest)
+            return 0;
+        Member member = (Member) user;
+        return member.getMissingNotificationsQuantity();
+    }
+
+    @Override
+    public void removeBidFromCart(int userId, int bidId) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'removeBidFromCart'");
     }
 
 }

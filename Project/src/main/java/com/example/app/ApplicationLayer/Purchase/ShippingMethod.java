@@ -8,25 +8,31 @@ package com.example.app.ApplicationLayer.Purchase;
 public interface ShippingMethod {
 
     /**
-     * Processes a shipment to the specified address.
+     * Checks if the shipping service is available.
      *
-     * @param purchaseId The ID of the purchase associated with the shipment.
-     * @param country    The country where the shipment is to be delivered.
-     * @param city       The city where the shipment is to be delivered.
-     * @param street     The street address where the shipment is to be delivered.
-     * @param postalCode The postal code of the delivery address.
-     * 
-     * @throws IllegalArgumentException if any of the address parameters are null or invalid.
+     * @return true if the shipping service is available, false otherwise.
+     * @throws RuntimeException if the shipping service is not available.
      */
-    void processShipment(int purchaseId, String country, String city, String street, String postalCode);
+    public boolean isShippingServiceAvailable();
 
     /**
-     * Retrieves the details of the shipping method.
-     * This may include information such as the type of shipping (e.g., standard, express),
-     * estimated delivery time, and cost.
+     * Processes the shipping with the provided details.
      *
-     * @return A string containing the details of the shipping method.
+     * @param name      The name of the recipient.
+     * @param address   The address for shipping.
+     * @param city      The city for shipping.
+     * @param country   The country for shipping.
+     * @param zipCode   The zip code for shipping.
+     * @return an integer representing the shipping ID or status.
+     * @throws IllegalArgumentException if any of the required details are missing or invalid.
      */
-    String getDetails();
+    public int processShipping(String name, String address, String city, String country, String zipCode);
 
+    /**
+     * Retrieves the shipping details for a given shipping ID.
+     *
+     * @param shippingId The ID of the shipping to retrieve details for.
+     * @return a string containing the shipping details.
+     */
+    public boolean cancelShipping(int shippingId);
 }

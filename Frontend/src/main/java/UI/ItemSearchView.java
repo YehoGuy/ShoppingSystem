@@ -3,17 +3,17 @@ package UI;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.web.client.RestTemplate;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
 
-import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dependency.JsModule;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
@@ -21,205 +21,243 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.router.Route;
-
-import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
-import org.springframework.beans.factory.annotation.Value;
-import jakarta.annotation.PostConstruct;
-
+import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinSession;
 
 import DTOs.ItemDTO;
 import DTOs.ItemReviewDTO;
-import Domain.ItemCategory;
+
 
 @Route(value = "items", layout = AppLayoutBasic.class)
-@JsModule("./js/notification-client.js")
-public class ItemSearchView extends VerticalLayout implements BeforeEnterObserver {
-    private List<ItemDTO> allItems = new ArrayList<>();
-    private List<ItemDTO> filteredItems = new ArrayList<>();
-    private VerticalLayout itemsContainer; // <--- FIELD REFERENCE
+@JsModule("@vaadin/dialog/vaadin-dialog.js")
+@JsModule("@vaadin/number-field/vaadin-number-field.js")
+public class ItemSearchView extends BaseView implements BeforeEnterObserver {
 
-    private final RestTemplate restTemplate = new RestTemplate();
-    
-    @Value("${url.api}/items")
-    private String URL;
+    private final RestTemplate rest = new RestTemplate();
+    private final List<ItemDTO> allItems      = new ArrayList<>();
+    private final List<ItemDTO> filteredItems = new ArrayList<>();
+    private final VerticalLayout itemsContainer = new VerticalLayout();
+    private final String apiBase;
+
+    public ItemSearchView(@Value("${url.api}") String api) {
+        // Animated header: icon + title + arrow
+        super("Items", "Discover products", "🛍️", "🔎");
+        this.apiBase = api;
+
+        setSizeFull();
+        setPadding(true);
+        setSpacing(true);
+
+        // 1) Fetch everything up‐front
+        fetchAllItems();
+
+        // 2) Build search bar
+        TextField search = new TextField();
+        search.setPlaceholder("Search items…");
+        search.setWidth("300px");
+        search.addValueChangeListener(e -> filterAndDisplay(e.getValue()));
+
+        // 3) Prepare the container for item cards
+        itemsContainer.setSizeFull();
+        itemsContainer.getStyle()
+            .set("overflow", "auto")
+            .set("padding", "1rem");
+
+        // 4) Wrap both in a styled “card”
+        VerticalLayout card = new VerticalLayout(search, itemsContainer);
+        card.addClassName("view-card");
+        card.setSizeFull();
+        card.setMaxWidth("1000px");
+        card.getStyle()
+            .set("background", "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)")
+            .set("box-shadow", "0 8px 32px rgba(0,0,0,0.1)")
+            .set("padding", "1.5rem");
+
+        // Let the itemsContainer take all leftover space below the search bar
+        card.expand(itemsContainer);
+
+        // 5) Add & expand into the view
+        add(card);
+        expand(card);
+
+        // 6) Initial display
+        filterAndDisplay("");
+    }
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
+        // redirect if not logged in
         if (VaadinSession.getCurrent().getAttribute("authToken") == null) {
             event.forwardTo("");
         }
-        UI.getCurrent().getPage().executeJs("import(./js/notification-client.js).then(m => m.connectNotifications($0))",
-                getUserId());
+        // hide “add review” if suspended
         handleSuspence();
     }
 
-    private String getUserId() {
-        return VaadinSession.getCurrent().getAttribute("userId").toString();
-    }
-
-    public ItemSearchView() {
-        setSizeFull();
-        setAlignItems(Alignment.CENTER);
-        setJustifyContentMode(JustifyContentMode.START);
-        setSpacing(true);
-        setPadding(true);
-    }
-
-    @PostConstruct
-    private void init() {
-        getItems();
-
-        H1 title = new H1("Available Items");
-        title.getStyle().set("margin-bottom", "10px");
-        add(title);
-
-        TextField searchField = new TextField();
-        searchField.setPlaceholder("Search items...");
-        searchField.addValueChangeListener(e -> searchItems(e.getValue()));
-        searchField.setWidth("300px");
-        add(searchField);
-
-        itemsContainer = new VerticalLayout(); // <--- set reference
-        itemsContainer.setWidth("80%");
-        itemsContainer.setHeight("70vh");
-        itemsContainer.getStyle().set("overflow", "auto");
-
-        HorizontalLayout content = new HorizontalLayout(itemsContainer);
-        content.setWidthFull();
-        content.setHeightFull();
-        content.setFlexGrow(1, itemsContainer);
-        add(content);
-
-        displayItems(filteredItems);
-    }
-
-    private void getItems() {
-        String url = URL + "/all?token=" + VaadinSession.getCurrent().getAttribute("authToken");
-        ResponseEntity<List<ItemDTO>> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                null,
-                new ParameterizedTypeReference<List<ItemDTO>>() {
-                });
-
-        if (response.getStatusCode().is2xxSuccessful()) {
-            List<ItemDTO> items = response.getBody();
+    private void fetchAllItems() {
+        String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
+        String url = apiBase + "/items/all?token=" + token;
+        ResponseEntity<List<ItemDTO>> resp = rest.exchange(
+            url, HttpMethod.GET, null,
+            new ParameterizedTypeReference<>() {}
+        );
+        if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
+            // 1) clear old lists
             allItems.clear();
-            if (items != null && !items.isEmpty()) {
-                allItems.addAll(items);
-                filteredItems.addAll(allItems);
-            } else {
-                // add mock items for demo purposes
-                ItemDTO item1 = new ItemDTO();
-                item1.setId(1);
-                item1.setName("Demo Item 1");
-                item1.setDescription("This is a demo item.");
-                item1.setCategory("GROCERY");
-                item1.setAverageRating(4.5);
-                item1.setReviews(new ArrayList<>());
-                allItems.add(item1);
-                filteredItems.add(item1);
-            }
+            filteredItems.clear();
+
+            // 2) populate from the response body
+            allItems.addAll(resp.getBody());
+            filteredItems.addAll(allItems);
+
+            // 3) render them
+            renderCards();
         } else {
-            Notification.show("Failed to fetch items: " + response.getStatusCode());
+            Notification.show("Failed to fetch items");
         }
-
     }
 
-    // search by name
-    private void searchItems(String query) {
+    private void filterAndDisplay(String q) {
         filteredItems.clear();
-        for (ItemDTO item : allItems) {
-            if (item.getName().toLowerCase().contains(query.toLowerCase())) {
-                filteredItems.add(item);
-            }
-        }
-        displayItems(filteredItems);
+        String lower = q == null ? "" : q.toLowerCase();
+        allItems.stream()
+                .filter(i -> i.getName().toLowerCase().contains(lower))
+                .forEach(filteredItems::add);
+        renderCards();
     }
 
-    private void displayItems(List<ItemDTO> items) {
+    private void renderCards() {
         itemsContainer.removeAll();
-
-        if (items.isEmpty()) {
-            Span noItems = new Span("No items found.");
-            noItems.getStyle().set("color", "red").set("font-size", "18px").set("font-weight", "bold");
-            itemsContainer.add(noItems);
+        if (filteredItems.isEmpty()) {
+            Span none = new Span("No items found.");
+            itemsContainer.add(none);
             return;
         }
+        for (ItemDTO item : filteredItems) {
+            VerticalLayout card = new VerticalLayout();
+            card.setWidth("100%");
+            card.getStyle()
+                .set("border-radius", "0.75rem")
+                .set("box-shadow", "0 4px 16px rgba(0,0,0,0.08)")
+                .set("padding", "1rem")
+                .set("margin-bottom", "1rem")
+                .set("background", "#fff");
 
-        for (ItemDTO item : items) {
-            VerticalLayout itemCard = new VerticalLayout();
-            itemCard.setWidth("100%");
-            itemCard.getStyle()
-                    .set("border", "1px solid #ccc")
-                    .set("border-radius", "8px")
-                    .set("padding", "10px")
-                    .set("box-shadow", "0 2px 5px rgba(0,0,0,0.05)")
-                    .set("margin-bottom", "10px")
-                    .set("background-color", "#f9f9f9");
+            card.add(
+                new Span("🛒 " + item.getName()),
+                new Span(item.getDescription()),
+                new Span("📦 Category: " + item.getCategory()),
+                new Span("⭐ Rating: " + item.getAverageRating())
+            );
 
-            Span name = new Span("🛒 " + item.getName());
-            name.getStyle().set("font-size", "18px").set("font-weight", "600");
+            // Reviews panel
+            VerticalLayout reviews = new VerticalLayout();
+            reviews.setVisible(false);
+            reviews.getStyle().set("padding", "0.5rem");
 
-            Span description = new Span(item.getDescription());
-            Span category = new Span("📦 Category: " + item.getCategory());
-            Span averageRating = new Span("⭐ Average Rating: " + item.getAverageRating());
-
-            VerticalLayout reviewsLayout = new VerticalLayout();
-            reviewsLayout.setVisible(false); // hidden by default
-
-            // Add reviews to the layout
-            for (ItemReviewDTO review : item.getReviews()) {
-                VerticalLayout singleReview = new VerticalLayout();
-                singleReview.add(
-                        new Span("Rating: " + review.getRating()),
-                        new Span("Comment: " + review.getReviewText()));
-                singleReview.getStyle().set("border", "1px solid #ccc");
-                singleReview.getStyle().set("padding", "10px");
-                singleReview.getStyle().set("margin-bottom", "10px");
-                reviewsLayout.add(singleReview);
+            for (ItemReviewDTO r : item.getReviews()) {
+                Span line = new Span("• [" + r.getRating() + "] " + r.getReviewText());
+                reviews.add(line);
             }
 
-            // Show more button
-            Button showMoreButton = new Button("Show Reviews");
-            showMoreButton.addClickListener(event -> {
-                boolean currentlyVisible = reviewsLayout.isVisible();
-                reviewsLayout.setVisible(!currentlyVisible);
-                showMoreButton.setText(currentlyVisible ? "Show Reviews" : "Hide Reviews");
+            Button toggle = new Button("Show Reviews");
+            toggle.addClickListener(ev -> {
+                boolean vis = reviews.isVisible();
+                reviews.setVisible(!vis);
+                toggle.setText(vis ? "Show Reviews" : "Hide Reviews");
             });
 
-            itemCard.add(
-                    name,
-                    description,
-                    category,
-                    averageRating,
-                    reviewsLayout,
-                    showMoreButton);
-            itemsContainer.add(itemCard);
+            Button addRev = new Button("Add Review", ev -> openReviewDialog(item.getId(), item.getName()));
+            if (Boolean.TRUE.equals((Boolean)VaadinSession.getCurrent().getAttribute("isSuspended")) || isGuest()) {
+                addRev.setVisible(false);
+            }
+
+            card.add(toggle, addRev, reviews);
+            itemsContainer.add(card);
         }
+    }
+
+    private void openReviewDialog(int itemId, String itemName) {
+        Dialog dlg = new Dialog();
+        dlg.setWidth("400px");
+
+        VerticalLayout form = new VerticalLayout();
+        form.add(new H1("Review “" + itemName + "”"));
+
+        NumberField rating = new NumberField("Rating (1–5)");
+        rating.setMin(1);
+        rating.setMax(5);
+        rating.setStep(1);
+        rating.setWidthFull();
+
+        TextField text = new TextField("Your Review");
+        text.setWidthFull();
+
+        Button submit = new Button("Submit", ev -> {
+            sendReview(itemId, rating.getValue(), text.getValue(), dlg);
+        });
+        Button cancel = new Button("Cancel", ev -> dlg.close());
+
+        form.add(rating, text, new HorizontalLayout(submit, cancel));
+        dlg.add(form);
+        dlg.open();
+    }
+
+    private void sendReview(int itemId, Double rating, String review, Dialog dlg) {
+        if (rating == null || rating < 1 || rating > 5) {
+            Notification.show("Rating must be 1–5"); return;
+        }
+        if (review == null || review.isBlank()) {
+            Notification.show("Please enter text"); return;
+        }
+        String token = (String)VaadinSession.getCurrent().getAttribute("authToken");
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + token);
+
+        String url = apiBase
+                   + "/items/" + itemId + "/reviews"
+                   + "?token=" + token
+                   + "&rating=" + rating.intValue()
+                   + "&reviewText=" + review;
+
+        rest.postForEntity(url, new HttpEntity<>(headers), Void.class);
+        Notification.show("Review added!");
+        dlg.close();
+        fetchAllItems();
+        filterAndDisplay("");
     }
 
     private void handleSuspence() {
-        Integer userId = (Integer) VaadinSession.getCurrent().getAttribute("userId");
-        if (userId == null) {
-            return;
-        }
+        Integer u = (Integer)VaadinSession.getCurrent().getAttribute("userId");
+        if (u == null) return;
+        String token = (String)VaadinSession.getCurrent().getAttribute("authToken");
+        String url = apiBase + "/users/" + u + "/isSuspended?token=" + token;
+        Boolean suspended = rest.getForObject(url, Boolean.class);
+        VaadinSession.getCurrent().setAttribute("isSuspended", suspended);
+    }
+
+    private boolean isGuest() {
         String token = (String) VaadinSession.getCurrent().getAttribute("authToken");
         if (token == null) {
-            return;
+            Notification.show("No auth token found. Please log in.", 3000, Notification.Position.MIDDLE);
+            return true; // Default to guest if not authenticated
         }
-        String url = "http://localhost:8080/api/users" + "/"+userId+"/suspension?token=" +token;
-        ResponseEntity<Boolean> response = restTemplate.getForEntity(url, Boolean.class);
 
-        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-            VaadinSession.getCurrent().setAttribute("isSuspended", response.getBody());
-        } else {
-            throw new RuntimeException(
-                "Failed to check admin status: HTTP " + response.getStatusCode().value()
-            );
+        String url = apiBase + "/users/isGuest?token=" + token;
+
+        try {
+            ResponseEntity<Boolean> response = rest.getForEntity(url, Boolean.class);
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                return response.getBody();
+            } else {
+                Notification.show("Could not determine guest status", 3000, Notification.Position.MIDDLE);
+            }
+        } catch (Exception e) {
+            Notification.show("Error checking guest status", 3000, Notification.Position.MIDDLE);
         }
+
+        return true; // fallback to guest on error
     }
 }
