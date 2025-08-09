@@ -1,0 +1,246 @@
+package com.example.app.ApplicationLayer.Message;
+
+import java.time.LocalDate;
+import java.util.LinkedList;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+
+import com.example.app.ApplicationLayer.AuthTokenService;
+import com.example.app.ApplicationLayer.LoggerService;
+import com.example.app.ApplicationLayer.OurArg;
+import com.example.app.ApplicationLayer.OurRuntime;
+import com.example.app.ApplicationLayer.Shop.ShopService;
+import com.example.app.ApplicationLayer.User.UserService;
+import com.example.app.DomainLayer.IMessageRepository;
+import com.example.app.DomainLayer.Message;
+import com.example.app.DomainLayer.Shop.Shop;
+
+@Service
+public class MessageService {
+
+    private final IMessageRepository messageRepository;
+    private final AuthTokenService authTokenService;
+    private final UserService userService;
+    private final ShopService shopService;
+
+    public MessageService(IMessageRepository messageRepository,
+            AuthTokenService authTokenService,
+            UserService userService,
+            ShopService shopService) {
+        this.messageRepository = messageRepository;
+        this.authTokenService = authTokenService;
+        this.userService = userService;
+        this.shopService = shopService;
+    }
+
+    public String sendMessageToUser(String token, int receiverId, String content, int previousMessageId) {
+        try {
+            LoggerService.logMethodExecution("sendMessageToUser", token, receiverId, content, previousMessageId);
+            int senderId = authTokenService.ValidateToken(token);
+            userService.validateMemberId(senderId);
+            userService.validateMemberId(receiverId);
+            if (!messageRepository.isMessagePrevious(previousMessageId, senderId, receiverId)) {
+                throw new OurRuntime(
+                        "Previous message with ID " + previousMessageId + " isn't proper previous message.");
+            }
+            messageRepository.addMessage(senderId, receiverId, content, LocalDate.now().toString(), true,
+                    previousMessageId);
+            userService.messageNotification(receiverId, senderId, false);
+            LoggerService.logMethodExecutionEnd("sendMessageToUser", "Message sent successfully!");
+            return "Message sent successfully!";
+        } catch (OurArg e) {
+            LoggerService.logDebug("sendMessageToUser", e);
+            return "Error sending message to user: " + e.getMessage();
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("sendMessageToUser", e);
+            return "Error sending message to user: " + e.getMessage();
+        } catch (Exception e) {
+            LoggerService.logError("sendMessageToUser", e, token, receiverId, content, previousMessageId);
+            return "Error sending message to user: " + e.getMessage();
+        }
+    }
+
+    public String sendMessageToShop(String token, int receiverId, String content, int previousMessageId) {
+        try {
+            LoggerService.logMethodExecution("sendMessageToShop", token, receiverId, content, previousMessageId);
+            int userId = authTokenService.ValidateToken(token);
+            userService.validateMemberId(userId);
+            Shop s = shopService.getShop(receiverId, token);
+            if (s == null) {
+                throw new OurRuntime("Shop with ID " + receiverId + " doesn't exist.");
+            }
+            if (!messageRepository.isMessagePrevious(previousMessageId, userId, receiverId)) {
+                throw new OurRuntime(
+                        "Previous message with ID " + previousMessageId + " isn't proper previous message.");
+            }
+            messageRepository.addMessage(userId, receiverId, content, LocalDate.now().toString(), false,
+                    previousMessageId);
+            userService.messageNotification(userId, receiverId, true);
+            LoggerService.logMethodExecutionEnd("sendMessageToShop", "Message sent successfully!");
+            return "Message sent successfully!";
+        } catch (Exception e) {
+            LoggerService.logError("sendMessageToShop", e, token, receiverId, content, previousMessageId);
+            return "Error sending message to shop: " + e.getMessage();
+        }
+    }
+
+    public String deleteMessage(String token, int messageId) {
+        try {
+            LoggerService.logMethodExecution("deleteMessage", token, messageId);
+            int senderId = authTokenService.ValidateToken(token);
+            userService.validateMemberId(senderId);
+            messageRepository.deleteMessage(messageId, senderId);
+            LoggerService.logMethodExecutionEnd("deleteMessage", "Message deleted successfully!");
+            return "Message deleted successfully!";
+        } catch (OurArg e) {
+            LoggerService.logDebug("deleteMessage", e);
+            return "Error deleting message: " + e.getMessage();
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("deleteMessage", e);
+            return "Error deleting message: " + e.getMessage();
+        } catch (Exception e) {
+            LoggerService.logError("deleteMessage", e, token, messageId);
+            throw new OurRuntime("Error deleting message: " + e.getMessage(), e);
+        }
+    }
+
+    public String updateMessage(String token, int messageId, String content) {
+        try {
+            LoggerService.logMethodExecution("updateMessage", token, messageId, content);
+            messageRepository.updateMessage(messageId, content, LocalDate.now().toString());
+            LoggerService.logMethodExecutionEnd("updateMessage", "Message updated successfully!");
+            return "Message updated successfully!";
+        } catch (OurArg e) {
+            LoggerService.logDebug("updateMessage", e);
+            return "Error updating message: " + e.getMessage();
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("updateMessage", e);
+            return "Error updating message: " + e.getMessage();
+        } catch (Exception e) {
+            LoggerService.logError("updateMessage", e, token, messageId, content);
+            throw new OurRuntime("Error updating message: " + e.getMessage(), e);
+        }
+    }
+
+    public String getFullConversation(String token, int messageId) {
+        try {
+            LoggerService.logMethodExecution("getFullConversation", token, messageId);
+            String output = "Full conversation:\n";
+            List<Message> messages = messageRepository.getFullConversation(messageId);
+            for (Message message : messages) {
+                if (message.isDeleted()) {
+                    output += "Message deleted\n";
+                } else {
+                    output += message.toString() + "\n";
+                }
+            }
+            LoggerService.logMethodExecutionEnd("getFullConversation", "Conversation retrieved successfully.");
+            return output;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getFullConversation", e);
+            throw new OurRuntime("getFullConversation", e);
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getFullConversation", e);
+            throw new OurRuntime("getFullConversation", e);
+        } catch (Exception e) {
+            LoggerService.logError("getFullConversation", e, token, messageId);
+            throw new OurRuntime("Error getting full conversation: " + e.getMessage(), e);
+        }
+    }
+
+    public List<Message> getMessagesBySenderId(String token, int senderId) {
+        try {
+            LoggerService.logMethodExecution("getMessagesBySenderId", token, senderId);
+            List<Message> messages = messageRepository.getMessagesBySenderId(senderId);
+            LoggerService.logMethodExecutionEnd("getMessagesBySenderId", "Messages retrieved successfully.");
+            return messages;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getMessagesBySenderId", e);
+            throw new OurRuntime("getMessagesBySenderId", e);
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getMessagesBySenderId", e);
+            throw new OurRuntime("getMessagesBySenderId", e);
+        } catch (Exception e) {
+            LoggerService.logError("getMessagesBySenderId", e, token, senderId);
+            throw new OurRuntime("Error getting messages by sender ID: " + e.getMessage(), e);
+        }
+    }
+
+    public List<Message> getMessagesByReceiverId(String token) {
+        try {
+            LoggerService.logMethodExecution("getMessagesByReceiverId", token);
+            int receiverId = authTokenService.getUserIdByToken(token);
+            List<Message> messages = messageRepository.getMessagesByReceiverId(receiverId);
+            LoggerService.logMethodExecutionEnd("getMessagesByReceiverId", "Messages retrieved successfully.");
+            return messages;
+        } catch (OurArg e) {
+            LoggerService.logDebug("getMessagesByReceiverId", e);
+            throw new OurRuntime("getMessagesByReceiverId", e);
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getMessagesByReceiverId", e);
+            throw new OurRuntime("getMessagesByReceiverId", e);
+        } catch (Exception e) {
+            LoggerService.logError("getMessagesByReceiverId", e, token);
+            throw new OurRuntime("Error getting messages by receiver ID: " + e.getMessage(), e);
+        }
+    }
+
+    public String getMessageById(String token, int messageId) {
+        try {
+            LoggerService.logMethodExecution("getMessageById", token, messageId);
+            Message message = messageRepository.getMessageById(messageId);
+            if (message == null) {
+                LoggerService.logMethodExecutionEnd("getMessageById", "Message not found.");
+                return "Message not found!";
+            }
+            LoggerService.logMethodExecutionEnd("getMessageById", "Message retrieved successfully.");
+            return message.toString();
+        } catch (OurArg e) {
+            LoggerService.logDebug("getMessageById", e);
+            throw new OurRuntime("getMessageById", e);
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getMessageById", e);
+            throw new OurRuntime("getMessageById", e);
+        } catch (Exception e) {
+            LoggerService.logError("getMessageById", e, token, messageId);
+            throw new OurRuntime("Error getting message by ID: " + e.getMessage(), e);
+        }
+    }
+
+    public String getPreviousMessage(String token, int messageId) {
+        try {
+            LoggerService.logMethodExecution("getPreviousMessage", token, messageId);
+            Message message = messageRepository.getPreviousMessage(messageId);
+            if (message == null) {
+                LoggerService.logMethodExecutionEnd("getPreviousMessage", "No previous message found.");
+                return "No previous message found!";
+            }
+            LoggerService.logMethodExecutionEnd("getPreviousMessage", "Previous message retrieved successfully.");
+            return message.toString();
+        } catch (OurArg e) {
+            LoggerService.logDebug("getPreviousMessage", e);
+            throw new OurRuntime("getPreviousMessage", e);
+        } catch (OurRuntime e) {
+            LoggerService.logDebug("getPreviousMessage", e);
+            throw new OurRuntime("getPreviousMessage", e);
+        } catch (Exception e) {
+            LoggerService.logError("getPreviousMessage", e, token, messageId);
+            throw new OurRuntime("Error getting previous message: " + e.getMessage(), e);
+        }
+    }
+
+    public List<Message> getUserConversations(String token) {
+        try {
+            LoggerService.logMethodExecution("getUserConversations", token);
+            int userId = authTokenService.getUserIdByToken(token);
+            List<Message> messages = messageRepository.getUserConversations(userId);
+            LoggerService.logMethodExecutionEnd("getUserConversations", messages);
+            return messages;
+        } catch (OurRuntime | OurArg e) {
+            throw new OurRuntime("Error in getUserConversations: " + e.getMessage(), e);
+        } catch (Exception e) {
+            throw new OurRuntime("internal server error");
+        }
+    }
+}

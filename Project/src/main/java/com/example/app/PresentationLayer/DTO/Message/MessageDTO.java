@@ -1,0 +1,46 @@
+package com.example.app.PresentationLayer.DTO.Message;
+
+import com.example.app.DomainLayer.Message;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
+
+/**
+ 
+Transport object for chat messages over the API.*/
+public record MessageDTO(
+        @Positive int messageId,
+        @Positive int senderId,
+        @Positive int receiverId,
+        @NotBlank String content,
+        @NotBlank String timestamp,       // ISO‑8601 string, e.g. "2025-05-07T13:45:30Z"
+        boolean userToUser,
+        int previousMessageId,
+        boolean deleted) {
+
+    //---------- Domain ➜ DTO ---------- /
+    public static MessageDTO fromDomain(Message m) {
+        return new MessageDTO(
+                m.getMessageId(),
+                m.getSenderId(),
+                m.getReceiverId(),
+                m.getContent(),
+                m.getTimestamp(),
+                m.isUserToUser(),
+                m.getPreviousMessageId(),
+                m.isDeleted());
+    }
+
+    /*  ---------- DTO ➜ Domain ---------- */
+    public com.example.app.DomainLayer.Message toDomain() {
+        com.example.app.DomainLayer.Message m = new com.example.app.DomainLayer.Message(
+                messageId,
+                senderId,
+                receiverId,
+                content,
+                timestamp,
+                userToUser,
+                previousMessageId);
+        if (deleted) m.delete();
+        return m;
+    }
+}

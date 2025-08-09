@@ -1,0 +1,75 @@
+.main {
+  width: 100% !important;
+  height: 100vh !important;
+  position: relative !important;
+  overflow: hidden;
+  margin: 0 !important;
+  padding: 0 !important;
+  z-index: 1;
+}
+
+.main::before {
+  content: "";
+  position: absolute;
+  top: 0; 
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url("images/hero-shopping.jpg") center/cover no-repeat;
+  filter: brightness(1.3);
+  transform: scale(1.05);
+  z-index: -1;
+  
+  /* Ensure the background respects the border radius */
+  border-radius: 30px;
+}
+
+.main .main-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end; /* push to bottom */
+  align-items: center;  
+  width: 100%; 
+  height: 100vh;
+  color: white;
+  text-shadow: 0 3px 6px rgba(0,0,0,0.8);
+  
+  /* Add a subtle overlay for better text readability */
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+}
+
+vaadin-app-layout [slot="drawer"] {
+  border-right: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.main .hero-buttons {
+  position: absolute;
+  bottom: 10rem;
+  left:   20rem;
+  display: flex;
+  gap: 1.5rem;
+}
+
+.main .pill-button,
+.main .hero-buttons vaadin-button {
+  background: #ffffff;
+  color: #333333;
+  border: none;
+  border-radius: 999px;
+  padding: 1rem 2.5rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.main .pill-button:hover,
+.main .hero-buttons vaadin-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}

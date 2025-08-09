@@ -1,0 +1,310 @@
+package com.example.app.DomainLayer.Shop;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.example.app.ApplicationLayer.Purchase.ShippingMethod;
+import com.example.app.DomainLayer.Item.ItemCategory;
+import com.example.app.DomainLayer.Shop.Discount.Discount;
+import com.example.app.DomainLayer.Shop.Discount.Policy;
+
+public interface IShopRepository {
+
+        /**
+         * Creates a new shop with the specified parameters.
+         *
+         * @param name           the shop name.
+         * @param purchasePolicy the shop purchase policy.
+         * @param globalDiscount the global discount for all items in the shop.
+         * @return the newly created Shop object with an auto-allocated id.
+         */
+        Shop createShop(String name, PurchasePolicy purchasePolicy, ShippingMethod shippingMethod);
+
+        /**
+         * Retrieves a shop by its id.
+         *
+         * @param id the shop id.
+         * @return the Shop object.
+         */
+        Shop getShop(int id);
+
+        /**
+         * Returns an unmodifiable list of all shops.
+         *
+         * @return a list containing all registered shops.
+         */
+        List<Shop> getAllShops();
+
+        List<Shop> getAllOpenShops();
+
+        List<Shop> getAllClosedShops();
+
+        /**
+         * Updates the purchase policy for the specified shop.
+         *
+         * @param shopId    the shop id.
+         * @param newPolicy the new purchase policy.
+         */
+        void updatePurchasePolicy(int shopId, PurchasePolicy newPolicy);
+
+        /**
+         * Sets the global discount for the specified shop.
+         *
+         * @param shopId   the shop id.
+         * @param discount the global discount value.
+         */
+        void setGlobalDiscount(int shopId, int discount, boolean isDouble);
+
+        /**
+         * Remove the global discount for the specified shop.
+         *
+         * @param shopId the shop id.
+         */
+        void removeGlobalDiscount(int shopId);
+
+        /**
+         * Sets a discount for a specific item in the specified shop.
+         *
+         * @param shopId   the shop id.
+         * @param itemId   the item id.
+         * @param discount the discount value.
+         * @param isDouble whether to apply the discount as a double discount.
+         */
+        void setDiscountForItem(int shopId, int itemId, int discount, boolean isDouble);
+
+        /**
+         * Sets a discount for a specific item category in the specified shop.
+         *
+         * @param shopId     the shop id.
+         * @param category   the item category.
+         * @param percentage the discount percentage.
+         * @param isDouble   whether to apply the discount as a double discount.
+         */
+        void setCategoryDiscount(int shopId, ItemCategory category, int percentage, boolean isDouble);
+
+        /**
+         * Removes the discount for a specific item category in the specified shop.
+         *
+         * @param shopId   the shop id.
+         * @param category the item category.
+         */
+        void removeCategoryDiscount(int shopId, ItemCategory category);
+
+        /**
+         * removes the discount for a specific item in the specified shop.
+         * 
+         * @param shopId
+         * @param itemId
+         */
+        void removeDiscountForItem(int shopId, int itemId);
+
+        /**
+         * Adds a review to the specified shop.
+         *
+         * @param shopId     the shop id.
+         * @param userId     the user id.
+         * @param rating     the review rating.
+         * @param reviewText the review text.
+         */
+        void addReviewToShop(int shopId, int userId, int rating, String reviewText);
+
+        /**
+         * Retrieves the average rating of the specified shop.
+         *
+         * @param shopId the shop id.
+         * @return the average rating.
+         */
+        double getShopAverageRating(int shopId);
+
+        /**
+         * Adds a given quantity of an item to the specified shop, and sets its price.
+         *
+         * @param shopId   the shop id.
+         * @param itemId   the item id.
+         * @param quantity the quantity to add.
+         * @param price    the price for the item (must be non-negative).
+         */
+        void addItemToShop(int shopId, int itemId, int quantity, int price);
+
+        /**
+         * Adds a given quantity of an item to the specified shop.
+         *
+         * @param shopId   the shop id.
+         * @param itemId   the item id.
+         * @param quantity the quantity to add.
+         */
+        void addSupplyToItem(int shopId, int itemId, int quantity);
+
+        /**
+         * Updates the price for an existing item in the specified shop.
+         *
+         * @param shopId the shop id.
+         * @param itemId the item id.
+         * @param price  the new price (must be non-negative).
+         */
+        void updateItemPriceInShop(int shopId, int itemId, int price);
+
+        /**
+         * Removes an item from the specified shop.
+         *
+         * @param shopId the shop id.
+         * @param itemId the item id.
+         */
+        void removeItemFromShop(int shopId, int itemId);
+
+        /**
+         * Retrieves the current quantity of an item from the specified shop.
+         *
+         * @param shopId the shop id.
+         * @param itemId the item id.
+         * @return the quantity.
+         */
+        int getItemQuantityFromShop(int shopId, int itemId);
+
+        /**
+         * Closes the shop identified by shopId.
+         * This removes the shop from the registry.
+         *
+         * @param shopId the shop id.
+         */
+        void closeShop(Integer shopId);
+
+        /**
+         * Reopens the shop identified by shopId.
+         * 
+         * @param shopId the shop id.
+         */
+        void reOpenShop(Integer shopId);
+
+        /**
+         * Checks if the supply is available for the given item in the specified shop.
+         *
+         * @param shopId the shop id.
+         * @param itemId the item id.
+         * @return true if the supply count is greater than zero, false otherwise.
+         */
+        boolean checkSupplyAvailability(Integer shopId, Integer itemId);
+
+        /**
+         * checks if the supply is available for the given item in the specified shop
+         * and acquires the supply if available.
+         * 
+         * @param shopId the shop id.
+         * @param itemId the item id.
+         * @param supply the supply to acquire.
+         * @return true if the supply was successfully acquired, false otherwise.
+         */
+        boolean checkSupplyAvailabilityAndAqcuire(Integer shopId, Integer itemId, Integer supply);
+
+        /**
+         * Decreases the supply count for the given item in the shop by the specified
+         * supply value.
+         *
+         * @param shopId the shop id.
+         * @param itemId the item id.
+         * @param supply the supply to remove.
+         */
+        void removeSupply(Integer shopId, Integer itemId, Integer supply);
+
+        /**
+         * Checks if the purchase policy allows the given items to be purchased.
+         * This is a placeholder method and should be implemented based on your business
+         * logic.
+         *
+         * @param cart  a map of item IDs and their quantities.
+         * @param token the token for the user.
+         * @return true if the purchase policy allows the items, false otherwise.
+         */
+        boolean checkPolicy(HashMap<Integer, HashMap<Integer, Integer>> cart, String token);
+
+        /**
+         * Retrieves a list of item IDs that belong to the shop identified by shopId.
+         *
+         * @param shopId the shop id.
+         * @return a list of item IDs.
+         */
+        List<Integer> getItemsByShop(Integer shopId);
+
+        /**
+         * Retrieves a list of item IDs that belong to the shop identified by shopId.
+         *
+         * @return a list of item IDs.
+         */
+        List<Integer> getItems();
+
+        /**
+         * Retrieves a list of all shops.
+         *
+         * @return a list of all shops.
+         */
+        void addSupply(Integer shopId, Integer itemId, Integer supply);
+
+
+        /**
+         * Purchases items from the specified shop.
+         * 
+         * @param purchaseLists a map of item IDs and their quantities to purchase.
+         * @param itemsCategory a map of item IDs and their categories.
+         * @param shopdId       the shop id.
+         * @return the total cost of the purchase.
+         */
+        double purchaseItems(Map<Integer, Integer> purchaseLists, Map<Integer, ItemCategory> itemsCategory,
+                        Integer shopdId);
+        
+        /**
+         * Rolls back a purchase for the specified shop.
+         * @param purchaseLists a map of item IDs and their quantities to roll back.
+         * @param shopId the shop id.
+         * @return void
+         */
+        void rollBackPurchase(Map<Integer, Integer> purchaseLists, Integer shopId);
+
+        /**
+         * Ships a purchase for the specified shop.
+         * 
+         * @param name        the name of the recipient.
+         * @param shopId     the shop id.
+         * @param country     the country of the recipient.
+         * @param city        the city of the recipient.
+         * @param street      the street of the recipient.
+         * @param postalCode  the postal code of the recipient.
+         * @return true if the purchase was successfully shipped, false otherwise.
+         */
+        public boolean shipPurchase(String name, int shopId, String country, String city, String street,
+                        String postalCode);
+
+        /**
+         * Retrieves a list of discounts for the specified shop.
+         * 
+         * @param shopId the shop id.
+         * @return a list of Discount objects.
+         */
+        List<Discount> getDiscounts(int shopId);
+
+        /**
+         * Sets a discount policy for the specified shop.
+         * 
+         * @param shopId the shop id.
+         * @param policy the discount policy to set.
+         */
+        void setDiscountPolicy(int shopId, Policy policy);
+
+        /**
+         * Retrieves a list of policies for the specified shop.
+         * 
+         * @param shopId the shop id.
+         * @return a list of Policy objects.
+         */
+        List<Policy> getPolicies(int shopId);
+
+        /*
+         * Retrieves a list of closed shops.
+         * 
+         * @return a list of closed shop IDs.
+         */
+        List<Integer> getClosedShops();
+
+        double applyDiscount(Map<Integer, Integer> items, Map<Integer, ItemCategory> itemsCat, int shopId);
+
+}

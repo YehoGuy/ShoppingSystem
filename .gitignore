@@ -1,0 +1,8 @@
+# Ignore Node and Vaadin build output
+**/node_modules/
+**/target/
+**/.vaadin/
+**/.npm/
+
+# Ignore Vaadin-generated frontend artifacts
+**/frontend/generated/

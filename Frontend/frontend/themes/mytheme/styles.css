@@ -1,0 +1,100 @@
+/* frontend/styles/styles.css */
+
+vaadin-app-layout.home-layout {
+  background: none !important;
+  overflow: hidden;
+}
+
+vaadin-app-layout.main-layout {
+  background: none !important;
+  overflow: hidden;
+}
+
+/* Ocean vibe */
+html, body, vaadin-app-layout {
+  background: linear-gradient(120deg, 
+    #89f7fe 0%, 
+    #66a6ff 100%);
+  min-height: 100vh;
+}
+
+
+/* Header container */
+.view-header {
+  background: linear-gradient(135deg, #7789d9 0%, #9166bd 100%);
+  padding: 3rem;
+  border-radius: 1.5rem;
+  color: white;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+/* Subtitle */
+.header-subtitle {
+  font-size: 1rem;
+  font-weight: 600;
+  opacity: 0.9;
+  margin-top: 0.5rem;
+}
+
+/* Title row (icons + H1) */
+.header-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.header-title-row span {
+  font-size: 2.5rem;
+  animation: bounce 2s ease-in-out infinite;
+}
+
+.header-title {
+  font-size: 2.75rem;
+  font-weight: 900;
+  text-shadow: 0 3px 10px rgba(0,0,0,0.4);
+  letter-spacing: 0.1rem;
+}
+
+/* Bounce animation for icons */
+@keyframes bounce {
+  0%,20%,50%,80%,100% { transform: translateY(0); }
+  40% { transform: translateY(-10px); }
+  60% { transform: translateY(-5px); }
+}
+
+/* Utility: gradient buttons */
+.gradient-button {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  box-shadow: 0 8px 25px rgba(240,147,251,0.4);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+.gradient-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 35px rgba(240,147,251,0.6);
+}
+
+/* Utility: card container */
+.view-card {
+  background: white;
+  border-radius: 1.25rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s ease;
+}
+.view-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
